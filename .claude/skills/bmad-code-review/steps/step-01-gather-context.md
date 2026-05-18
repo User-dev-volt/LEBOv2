@@ -77,7 +77,7 @@ story_key: '' # set at runtime when discovered from sprint status
 
 ### CHECKPOINT
 
-Present a summary before proceeding: diff stats (files changed, lines added/removed), `{review_mode}`, and loaded spec/context docs (if any). Then proceed immediately — do not wait for user confirmation.
+Present a summary before proceeding: diff stats (files changed, lines added/removed), `{review_mode}`, and loaded spec/context docs (if any). HALT and wait for user confirmation to proceed.
 
 
 ## NEXT
