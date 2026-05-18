@@ -1,0 +1,153 @@
+{
+  "id": "mage",
+  "name": "Mage",
+  "baseTree": {
+    "nodes": [
+      { "id": "mage-base-arcane-focus", "name": "Arcane Focus", "x": 0, "y": 0, "size": "large", "maxPoints": 8, "effects": [{ "description": "+4% Spell Damage per point", "tags": ["SPELL", "DAMAGE"] }] },
+      { "id": "mage-base-intelligence", "name": "Intelligence", "x": 280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4 Intelligence per point", "tags": ["INTELLIGENCE"] }] },
+      { "id": "mage-base-mana-well", "name": "Mana Well", "x": -280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+15 Mana per point", "tags": ["MANA"] }] },
+      { "id": "mage-base-spell-ward", "name": "Spell Ward", "x": 0, "y": -280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+8 Ward when you cast a spell per point", "tags": ["WARD", "SPELL"] }] },
+      { "id": "mage-base-critical-arcana", "name": "Critical Arcana", "x": 560, "y": 0, "size": "small", "maxPoints": 4, "effects": [{ "description": "+4% Spell Crit Chance per point", "tags": ["SPELL", "CRIT"] }] },
+      { "id": "mage-base-mana-regen", "name": "Mana Regeneration", "x": -560, "y": 0, "size": "small", "maxPoints": 4, "effects": [{ "description": "+2 Mana Regeneration per second per point", "tags": ["MANA"] }] },
+      { "id": "mage-base-arcane-potency", "name": "Arcane Potency", "x": 0, "y": -560, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+3% Spell Damage per point. Spells cast at full mana deal 10% more damage.", "tags": ["SPELL", "DAMAGE", "MANA"] }] },
+      { "id": "mage-base-crit-multiplier", "name": "Devastating Strikes", "x": 840, "y": 0, "size": "small", "maxPoints": 4, "effects": [{ "description": "+15% Spell Crit Multiplier per point", "tags": ["SPELL", "CRIT"] }] }
+    ],
+    "edges": [
+      { "fromId": "mage-base-arcane-focus", "toId": "mage-base-intelligence" },
+      { "fromId": "mage-base-arcane-focus", "toId": "mage-base-mana-well" },
+      { "fromId": "mage-base-arcane-focus", "toId": "mage-base-spell-ward" },
+      { "fromId": "mage-base-intelligence", "toId": "mage-base-critical-arcana" },
+      { "fromId": "mage-base-mana-well", "toId": "mage-base-mana-regen" },
+      { "fromId": "mage-base-spell-ward", "toId": "mage-base-arcane-potency" },
+      { "fromId": "mage-base-critical-arcana", "toId": "mage-base-crit-multiplier" }
+    ]
+  },
+  "skills": [
+    {
+      "id": "mage-fireball",
+      "name": "Fireball",
+      "masteryId": null,
+      "masteryGatePoints": null,
+      "skillTree": {
+        "nodes": [
+          { "id": "mage-fireball-core", "name": "Fireball", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Hurl a ball of fire at a target area.", "tags": ["FIRE", "SPELL", "AREA"] }] },
+          { "id": "mage-fireball-blast", "name": "Igniting Blast", "x": 280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+10% Ignite chance on Fireball hit per point.", "tags": ["FIRE", "IGNITE"] }] },
+          { "id": "mage-fireball-size", "name": "Expanded Explosion", "x": 0, "y": 280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+10% explosion radius per point.", "tags": ["FIRE", "AREA"] }] },
+          { "id": "mage-fireball-chain", "name": "Volatile Fireball", "x": 280, "y": 280, "size": "small", "maxPoints": 4, "effects": [{ "description": "+20% chance to split into 2 smaller fireballs per point.", "tags": ["FIRE", "CHAIN"] }] },
+          { "id": "mage-fireball-damage", "name": "Inferno Core", "x": 560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+8% Fire Spell Damage per point.", "tags": ["FIRE", "SPELL", "DAMAGE"] }] },
+          { "id": "mage-fireball-mana", "name": "Efficient Casting", "x": -280, "y": 0, "size": "small", "maxPoints": 4, "effects": [{ "description": "-1 Mana cost per point.", "tags": ["MANA", "SPELL"] }] }
+        ],
+        "edges": [
+          { "fromId": "mage-fireball-core", "toId": "mage-fireball-blast" },
+          { "fromId": "mage-fireball-core", "toId": "mage-fireball-size" },
+          { "fromId": "mage-fireball-core", "toId": "mage-fireball-mana" },
+          { "fromId": "mage-fireball-blast", "toId": "mage-fireball-chain" },
+          { "fromId": "mage-fireball-blast", "toId": "mage-fireball-damage" }
+        ]
+      }
+    },
+    {
+      "id": "mage-lightning-blast",
+      "name": "Lightning Blast",
+      "masteryId": "sorcerer",
+      "masteryGatePoints": 20,
+      "skillTree": {
+        "nodes": [
+          { "id": "mage-lightning-blast-core", "name": "Lightning Blast", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Unleash a bolt of lightning dealing damage in a line.", "tags": ["LIGHTNING", "SPELL"] }] },
+          { "id": "mage-lightning-blast-chain", "name": "Arc", "x": 280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+1 chain target per point.", "tags": ["LIGHTNING", "CHAIN"] }] },
+          { "id": "mage-lightning-blast-shock", "name": "Shock", "x": 0, "y": 280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+10% Shock chance per point.", "tags": ["LIGHTNING", "AILMENT"] }] },
+          { "id": "mage-lightning-blast-crit", "name": "Static Charge", "x": 280, "y": 280, "size": "small", "maxPoints": 4, "effects": [{ "description": "+5% Crit Chance per point.", "tags": ["LIGHTNING", "CRIT"] }] },
+          { "id": "mage-lightning-blast-damage", "name": "Surge", "x": 560, "y": 0, "size": "medium", "maxPoints": 4, "effects": [{ "description": "+10% Lightning Spell Damage per point.", "tags": ["LIGHTNING", "SPELL", "DAMAGE"] }] },
+          { "id": "mage-lightning-blast-penetration", "name": "Penetration", "x": -280, "y": 0, "size": "small", "maxPoints": 4, "effects": [{ "description": "+5% Lightning Penetration per point.", "tags": ["LIGHTNING", "PENETRATION"] }] }
+        ],
+        "edges": [
+          { "fromId": "mage-lightning-blast-core", "toId": "mage-lightning-blast-chain" },
+          { "fromId": "mage-lightning-blast-core", "toId": "mage-lightning-blast-shock" },
+          { "fromId": "mage-lightning-blast-core", "toId": "mage-lightning-blast-penetration" },
+          { "fromId": "mage-lightning-blast-chain", "toId": "mage-lightning-blast-crit" },
+          { "fromId": "mage-lightning-blast-chain", "toId": "mage-lightning-blast-damage" }
+        ]
+      }
+    }
+  ],
+  "masteries": [
+    {
+      "id": "sorcerer",
+      "name": "Sorcerer",
+      "passiveTree": {
+        "nodes": [
+          { "id": "sorcerer-passive-entry", "name": "Sorcerer", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Become a Sorcerer — master of elemental destruction", "tags": ["MASTERY"] }] },
+          { "id": "sorcerer-passive-elemental-power", "name": "Elemental Power", "x": 280, "y": 0, "size": "large", "maxPoints": 6, "effects": [{ "description": "+5% Elemental Damage per point", "tags": ["ELEMENTAL", "DAMAGE"] }] },
+          { "id": "sorcerer-passive-frost-nova", "name": "Frost Nova", "x": -280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Cold Damage. Kills have 10% chance to trigger Frost Nova per point.", "tags": ["COLD", "DAMAGE", "AREA"] }] },
+          { "id": "sorcerer-passive-crackling-energy", "name": "Crackling Energy", "x": 0, "y": 280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Lightning Damage. +2% Shock Chance per point.", "tags": ["LIGHTNING", "DAMAGE", "SHOCK"] }] },
+          { "id": "sorcerer-passive-inferno", "name": "Inferno", "x": 0, "y": -280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Fire Damage. Ignite duration +0.5s per point.", "tags": ["FIRE", "DAMAGE", "IGNITE"] }] },
+          { "id": "sorcerer-passive-arcane-torrent", "name": "Arcane Torrent", "x": 560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Elemental Damage. Elemental Crit hits apply a debuff reducing enemy resistance.", "tags": ["ELEMENTAL", "CRIT", "DEBUFF"] }] },
+          { "id": "sorcerer-passive-absolute-zero", "name": "Absolute Zero", "x": -560, "y": 0, "size": "large", "maxPoints": 6, "effects": [{ "description": "+6% Cold Damage. Frozen enemies take +15% Crit Damage per point.", "tags": ["COLD", "FREEZE", "CRIT"] }] },
+          { "id": "sorcerer-passive-sorcerer-mastery", "name": "Sorcerer Mastery", "x": 840, "y": 0, "size": "large", "maxPoints": 8, "effects": [{ "description": "+4% Elemental Damage. +2% Elemental Penetration. +3% Crit Chance per point.", "tags": ["ELEMENTAL", "DAMAGE", "PENETRATION", "MASTERY"] }] }
+        ],
+        "edges": [
+          { "fromId": "sorcerer-passive-entry", "toId": "sorcerer-passive-elemental-power" },
+          { "fromId": "sorcerer-passive-entry", "toId": "sorcerer-passive-frost-nova" },
+          { "fromId": "sorcerer-passive-entry", "toId": "sorcerer-passive-crackling-energy" },
+          { "fromId": "sorcerer-passive-entry", "toId": "sorcerer-passive-inferno" },
+          { "fromId": "sorcerer-passive-elemental-power", "toId": "sorcerer-passive-arcane-torrent" },
+          { "fromId": "sorcerer-passive-frost-nova", "toId": "sorcerer-passive-absolute-zero" },
+          { "fromId": "sorcerer-passive-arcane-torrent", "toId": "sorcerer-passive-sorcerer-mastery" },
+          { "fromId": "sorcerer-passive-absolute-zero", "toId": "sorcerer-passive-sorcerer-mastery" }
+        ]
+      }
+    },
+    {
+      "id": "spellblade",
+      "name": "Spellblade",
+      "passiveTree": {
+        "nodes": [
+          { "id": "spellblade-passive-entry", "name": "Spellblade", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Become a Spellblade — weave magic into melee combat", "tags": ["MASTERY"] }] },
+          { "id": "spellblade-passive-enchanted-weapons", "name": "Enchanted Weapons", "x": 280, "y": 0, "size": "large", "maxPoints": 6, "effects": [{ "description": "+5% Spell and Melee Damage per point", "tags": ["SPELL", "MELEE", "DAMAGE"] }] },
+          { "id": "spellblade-passive-arcane-blade", "name": "Arcane Blade", "x": -280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "Melee hits restore +2 Mana and deal +4% Arcane Damage per point", "tags": ["MELEE", "MANA", "ARCANE"] }] },
+          { "id": "spellblade-passive-mana-shield", "name": "Mana Shield", "x": 0, "y": 280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "Convert 20% damage taken to Mana loss. +3% Mana Shield effectiveness per point.", "tags": ["MANA", "DEFENCE"] }] },
+          { "id": "spellblade-passive-frost-claw", "name": "Frost Claw", "x": 0, "y": -280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Cold Melee Damage. Hits Chill enemies per point.", "tags": ["COLD", "MELEE", "CHILL"] }] },
+          { "id": "spellblade-passive-glass-cannon", "name": "Glass Cannon", "x": 560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+6% Spell and Melee Damage. -5% Health per point.", "tags": ["SPELL", "MELEE", "DAMAGE", "SACRIFICE"] }] },
+          { "id": "spellblade-passive-blade-weave", "name": "Blade Weave", "x": -560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "Casting a spell empowers next melee attack for +10% Damage per point", "tags": ["SPELL", "MELEE", "COMBO"] }] },
+          { "id": "spellblade-passive-spellblade-mastery", "name": "Spellblade Mastery", "x": 840, "y": 0, "size": "large", "maxPoints": 8, "effects": [{ "description": "+4% Spell and Melee Damage. Melee hits restore +1 Mana. +2% Crit per point.", "tags": ["SPELL", "MELEE", "MANA", "MASTERY"] }] }
+        ],
+        "edges": [
+          { "fromId": "spellblade-passive-entry", "toId": "spellblade-passive-enchanted-weapons" },
+          { "fromId": "spellblade-passive-entry", "toId": "spellblade-passive-arcane-blade" },
+          { "fromId": "spellblade-passive-entry", "toId": "spellblade-passive-mana-shield" },
+          { "fromId": "spellblade-passive-entry", "toId": "spellblade-passive-frost-claw" },
+          { "fromId": "spellblade-passive-enchanted-weapons", "toId": "spellblade-passive-glass-cannon" },
+          { "fromId": "spellblade-passive-arcane-blade", "toId": "spellblade-passive-blade-weave" },
+          { "fromId": "spellblade-passive-glass-cannon", "toId": "spellblade-passive-spellblade-mastery" },
+          { "fromId": "spellblade-passive-blade-weave", "toId": "spellblade-passive-spellblade-mastery" }
+        ]
+      }
+    },
+    {
+      "id": "runemaster",
+      "name": "Runemaster",
+      "passiveTree": {
+        "nodes": [
+          { "id": "runemaster-passive-entry", "name": "Runemaster", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Become a Runemaster — command ancient runic power", "tags": ["MASTERY"] }] },
+          { "id": "runemaster-passive-rune-carving", "name": "Rune Carving", "x": 280, "y": 0, "size": "large", "maxPoints": 6, "effects": [{ "description": "+5% Rune Spell Damage per point", "tags": ["SPELL", "RUNE", "DAMAGE"] }] },
+          { "id": "runemaster-passive-ancient-knowledge", "name": "Ancient Knowledge", "x": -280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Spell Damage. +3 Intelligence per point.", "tags": ["SPELL", "INTELLIGENCE", "DAMAGE"] }] },
+          { "id": "runemaster-passive-glacier", "name": "Glacier", "x": 0, "y": 280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Cold Damage. Cold spells have +4% increased area per point.", "tags": ["COLD", "DAMAGE", "AREA"] }] },
+          { "id": "runemaster-passive-volatile-runes", "name": "Volatile Runes", "x": 0, "y": -280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Lightning Damage. Rune detonations have +6% damage per point.", "tags": ["LIGHTNING", "RUNE", "DAMAGE"] }] },
+          { "id": "runemaster-passive-arcane-confluence", "name": "Arcane Confluence", "x": 560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "Combining two rune types grants +8% Spell Damage bonus per point", "tags": ["RUNE", "COMBO", "DAMAGE"] }] },
+          { "id": "runemaster-passive-rime-rune", "name": "Rime Rune", "x": -560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+6% Cold Damage. Rime Rune slows enemies by 20% per point.", "tags": ["COLD", "SLOW", "RUNE"] }] },
+          { "id": "runemaster-passive-runemaster-mastery", "name": "Runemaster Mastery", "x": 840, "y": 0, "size": "large", "maxPoints": 8, "effects": [{ "description": "+4% Rune Damage. +2% Cold and Lightning Penetration. +2% Crit per point.", "tags": ["RUNE", "COLD", "LIGHTNING", "MASTERY"] }] }
+        ],
+        "edges": [
+          { "fromId": "runemaster-passive-entry", "toId": "runemaster-passive-rune-carving" },
+          { "fromId": "runemaster-passive-entry", "toId": "runemaster-passive-ancient-knowledge" },
+          { "fromId": "runemaster-passive-entry", "toId": "runemaster-passive-glacier" },
+          { "fromId": "runemaster-passive-entry", "toId": "runemaster-passive-volatile-runes" },
+          { "fromId": "runemaster-passive-rune-carving", "toId": "runemaster-passive-arcane-confluence" },
+          { "fromId": "runemaster-passive-ancient-knowledge", "toId": "runemaster-passive-rime-rune" },
+          { "fromId": "runemaster-passive-arcane-confluence", "toId": "runemaster-passive-runemaster-mastery" },
+          { "fromId": "runemaster-passive-rime-rune", "toId": "runemaster-passive-runemaster-mastery" }
+        ]
+      }
+    }
+  ]
+}

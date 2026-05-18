@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LEBOv2 — UX Design Directions</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-base:      #0a0a0b;
+    --bg-surface:   #141417;
+    --bg-elevated:  #1c1c21;
+    --bg-hover:     #252530;
+    --accent-gold:  #C9A84C;
+    --accent-soft:  #D4B96A;
+    --accent-dim:   #8B7030;
+    --data-damage:  #E8614A;
+    --data-surv:    #4A9EE8;
+    --data-speed:   #4AE89E;
+    --data-pos:     #5EBD78;
+    --data-neg:     #E85E5E;
+    --node-alloc:   #C9A84C;
+    --node-avail:   #4A7A9E;
+    --node-locked:  #2A2A35;
+    --node-suggest: #7B68EE;
+    --text-primary: #F0EAE0;
+    --text-secondary: #9E9494;
+    --text-muted:   #5A5050;
+    --border:       #2A2A35;
+  }
+
+  body {
+    background: var(--bg-base);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 13px;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ─── APP HEADER ─── */
+  .app-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 16px;
+    height: 44px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .app-logo {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent-gold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .app-logo span {
+    color: var(--text-secondary);
+    font-weight: 400;
+    font-size: 12px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .header-build-name {
+    flex: 1;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+  .header-build-name strong {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+  .header-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--data-pos);
+    box-shadow: 0 0 6px var(--data-pos);
+  }
+  .status-dot.offline {
+    background: var(--accent-gold);
+    box-shadow: 0 0 6px var(--accent-gold);
+  }
+
+  /* ─── MAIN BODY ─── */
+  .app-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* ─── LEFT PANEL ─── */
+  .panel-left {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-section {
+    border-bottom: 1px solid var(--border);
+    padding: 12px;
+  }
+  .panel-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .class-display {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--bg-elevated);
+    border-radius: 6px;
+    border: 1px solid var(--accent-dim);
+    cursor: pointer;
+  }
+  .class-icon {
+    width: 32px; height: 32px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, var(--accent-dim), var(--accent-gold));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .class-info { flex: 1; }
+  .class-name { font-weight: 600; font-size: 13px; color: var(--text-primary); }
+  .class-mastery { font-size: 11px; color: var(--accent-gold); }
+  .chevron { color: var(--text-muted); font-size: 10px; }
+
+  .build-import-input {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .build-input {
+    flex: 1;
+    background: var(--bg-base);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 8px;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    outline: none;
+  }
+  .build-input:focus { border-color: var(--accent-gold); color: var(--text-primary); }
+  .btn-import {
+    padding: 6px 10px;
+    background: transparent;
+    border: 1px solid var(--accent-gold);
+    color: var(--accent-gold);
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-import:hover { background: var(--accent-dim); }
+
+  .saved-builds { display: flex; flex-direction: column; gap: 4px; }
+  .build-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .build-item:hover { background: var(--bg-hover); }
+  .build-item.active { background: var(--bg-hover); border-left: 2px solid var(--accent-gold); padding-left: 6px; }
+  .build-item-icon { width: 20px; height: 20px; border-radius: 3px; background: var(--bg-elevated); display: flex; align-items: center; justify-content: center; font-size: 11px; }
+  .build-item-name { flex: 1; font-size: 12px; color: var(--text-primary); }
+  .build-item-class { font-size: 10px; color: var(--text-secondary); }
+  .build-item-time { font-size: 10px; color: var(--text-muted); }
+
+  .context-slots { display: flex; flex-direction: column; gap: 4px; }
+  .context-slot {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 6px;
+    background: var(--bg-base);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .context-slot:hover { border-color: var(--text-muted); }
+  .slot-icon { width: 16px; text-align: center; color: var(--text-muted); }
+  .slot-name { flex: 1; color: var(--text-secondary); }
+  .slot-filled { color: var(--text-primary); }
+  .slot-badge {
+    font-size: 10px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+  }
+
+  /* ─── TREE CANVAS ─── */
+  .tree-canvas {
+    flex: 1;
+    background: var(--bg-base);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .tree-tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 16px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .tree-tab {
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.1s;
+  }
+  .tree-tab:hover { color: var(--text-primary); }
+  .tree-tab.active { color: var(--accent-gold); border-bottom-color: var(--accent-gold); }
+
+  .tree-viewport {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* SVG Tree */
+  .tree-svg { width: 100%; height: 100%; }
+
+  /* Node styles */
+  .node-allocated circle { fill: var(--node-alloc); stroke: #e8c060; stroke-width: 1.5; }
+  .node-available circle { fill: none; stroke: var(--node-avail); stroke-width: 1.5; }
+  .node-locked circle { fill: var(--node-locked); stroke: #3a3a45; stroke-width: 1; }
+  .node-suggested circle { fill: none; stroke: var(--node-suggest); stroke-width: 2; animation: pulse-suggest 1.5s ease-in-out infinite; }
+  @keyframes pulse-suggest {
+    0%, 100% { stroke-opacity: 1; r: 10; }
+    50% { stroke-opacity: 0.6; r: 11; }
+  }
+  .node-keystone circle { r: 16; }
+  .node-label { fill: var(--text-secondary); font-size: 8px; text-anchor: middle; dominant-baseline: middle; }
+
+  .tree-connection { stroke: #2A2A35; stroke-width: 1.5; }
+  .tree-connection.allocated { stroke: var(--accent-dim); stroke-width: 2; }
+  .tree-connection.suggested { stroke: var(--node-suggest); stroke-width: 2; stroke-dasharray: 4 2; animation: dash-move 1s linear infinite; }
+  @keyframes dash-move { to { stroke-dashoffset: -12; } }
+
+  /* Suggestion highlight overlay */
+  .suggestion-overlay {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: rgba(20,20,23,0.9);
+    border: 1px solid var(--node-suggest);
+    border-radius: 8px;
+    padding: 10px 12px;
+    max-width: 240px;
+    backdrop-filter: blur(8px);
+  }
+  .overlay-title { font-size: 10px; font-weight: 600; color: var(--node-suggest); margin-bottom: 6px; letter-spacing: 0.06em; }
+  .overlay-change { font-size: 12px; font-weight: 500; color: var(--text-primary); margin-bottom: 6px; }
+  .overlay-delta { display: flex; gap: 8px; margin-bottom: 6px; }
+  .delta-pill {
+    padding: 2px 7px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .delta-pos { background: rgba(94,189,120,0.15); color: var(--data-pos); border: 1px solid rgba(94,189,120,0.3); }
+  .delta-neg { background: rgba(232,94,94,0.15); color: var(--data-neg); border: 1px solid rgba(232,94,94,0.3); }
+  .delta-neu { background: rgba(107,114,128,0.15); color: var(--text-muted); border: 1px solid rgba(107,114,128,0.3); }
+
+  /* ─── RIGHT PANEL ─── */
+  .panel-right {
+    width: 320px;
+    flex-shrink: 0;
+    background: var(--bg-surface);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .goal-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+  .goal-btn {
+    padding: 6px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--bg-base);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.1s;
+  }
+  .goal-btn:hover { border-color: var(--text-muted); color: var(--text-primary); }
+  .goal-btn.active { border-color: var(--accent-gold); background: rgba(201,168,76,0.1); color: var(--accent-gold); }
+
+  .score-display {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .score-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .score-label { font-size: 11px; color: var(--text-secondary); width: 88px; }
+  .score-bar-bg {
+    flex: 1;
+    height: 5px;
+    background: var(--bg-base);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .score-bar-fill { height: 100%; border-radius: 99px; }
+  .score-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    width: 28px;
+    text-align: right;
+  }
+
+  .btn-optimize {
+    width: 100%;
+    padding: 11px;
+    background: var(--accent-gold);
+    color: #0a0a0b;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: background 0.15s;
+  }
+  .btn-optimize:hover { background: var(--accent-soft); }
+  .btn-optimize.loading {
+    background: var(--accent-dim);
+    color: var(--text-muted);
+    cursor: wait;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-optimize.loading::after {
+    content: '';
+    position: absolute;
+    left: -100%; top: 0; bottom: 0; width: 60%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    animation: shimmer 1.2s ease-in-out infinite;
+  }
+  @keyframes shimmer { to { left: 200%; } }
+
+  .suggestions-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px 4px;
+    border-top: 1px solid var(--border);
+  }
+  .suggestions-title { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
+  .suggestions-count { font-size: 10px; color: var(--text-muted); }
+
+  .suggestions-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px 8px 8px;
+  }
+  .suggestions-list::-webkit-scrollbar { width: 4px; }
+  .suggestions-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .suggestion-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.1s;
+  }
+  .suggestion-card:hover { border-color: var(--text-muted); }
+  .suggestion-card.active { border-color: var(--node-suggest); }
+  .suggestion-card.applied { border-color: var(--data-pos); opacity: 0.7; }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px 6px;
+  }
+  .card-rank {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--bg-hover);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .suggestion-card.active .card-rank { background: var(--node-suggest); border-color: var(--node-suggest); color: white; }
+  .card-change { flex: 1; font-size: 12px; font-weight: 500; color: var(--text-primary); line-height: 1.4; }
+  .card-change small { color: var(--text-secondary); font-size: 10px; display: block; font-weight: 400; }
+
+  .card-deltas {
+    display: flex;
+    gap: 4px;
+    padding: 0 10px 6px 36px;
+    flex-wrap: wrap;
+  }
+
+  .card-explanation {
+    padding: 6px 10px 8px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    border-top: 1px solid var(--border);
+    background: var(--bg-surface);
+  }
+  .card-explanation strong { color: var(--accent-gold); font-weight: 500; }
+
+  .card-actions {
+    display: flex;
+    gap: 4px;
+    padding: 6px 10px;
+    background: var(--bg-base);
+    border-top: 1px solid var(--border);
+  }
+  .card-btn {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-secondary);
+    transition: all 0.1s;
+  }
+  .card-btn:hover { color: var(--text-primary); border-color: var(--text-muted); }
+  .card-btn.primary { border-color: var(--accent-gold); color: var(--accent-gold); }
+  .card-btn.primary:hover { background: rgba(201,168,76,0.1); }
+  .card-btn.apply { border-color: var(--data-pos); color: var(--data-pos); }
+  .card-btn.apply:hover { background: rgba(94,189,120,0.1); }
+  .card-btn.applied { border-color: var(--data-pos); color: var(--data-pos); background: rgba(94,189,120,0.1); cursor: default; }
+
+  /* ─── STATUS BAR ─── */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 16px;
+    height: 28px;
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .status-item { display: flex; align-items: center; gap: 4px; }
+  .status-bar .spacer { flex: 1; }
+
+  /* ─── ANNOTATION OVERLAY ─── */
+  .annotations {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 100;
+  }
+  .anno-btn {
+    padding: 6px 14px;
+    border-radius: 99px;
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .anno-btn:hover, .anno-btn.active { border-color: var(--accent-gold); color: var(--accent-gold); background: rgba(201,168,76,0.1); }
+
+  /* ─── LOADING STATE ─── */
+  .loading-state {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px;
+    flex: 1;
+  }
+  .loading-spinner {
+    width: 28px; height: 28px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent-gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 12px; color: var(--text-secondary); text-align: center; }
+  .loading-sub { font-size: 11px; color: var(--text-muted); }
+
+  /* Interactive states */
+  .suggestion-card.collapsed .card-explanation { display: none; }
+  .suggestion-card.collapsed .card-actions { display: none; }
+</style>
+</head>
+<body>
+
+<!-- APP HEADER -->
+<div class="app-header">
+  <div class="app-logo">LEBO<span>v2</span></div>
+  <div class="header-build-name">
+    <strong>Kira's Falconer</strong> — Rogue › Falconer
+  </div>
+  <div class="header-status">
+    <div class="status-dot"></div>
+    Online
+  </div>
+</div>
+
+<!-- MAIN BODY -->
+<div class="app-body">
+
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+
+    <!-- Class & Mastery -->
+    <div class="panel-section">
+      <div class="panel-label">Class & Mastery</div>
+      <div class="class-display">
+        <div class="class-icon">🦅</div>
+        <div class="class-info">
+          <div class="class-name">Rogue</div>
+          <div class="class-mastery">Falconer</div>
+        </div>
+        <div class="chevron">▾</div>
+      </div>
+    </div>
+
+    <!-- Build Import -->
+    <div class="panel-section">
+      <div class="panel-label">Import Build</div>
+      <div class="build-import-input">
+        <input class="build-input" type="text" placeholder="Paste build code..." value="RGF...kK8=" readonly />
+        <button class="btn-import">Import</button>
+      </div>
+    </div>
+
+    <!-- Saved Builds -->
+    <div class="panel-section" style="flex:0">
+      <div class="panel-label">Saved Builds</div>
+      <div class="saved-builds">
+        <div class="build-item active">
+          <div class="build-item-icon">🦅</div>
+          <div>
+            <div class="build-item-name">Kira's Falconer</div>
+            <div class="build-item-class">Rogue › Falconer · 300h</div>
+          </div>
+          <div class="build-item-time">now</div>
+        </div>
+        <div class="build-item">
+          <div class="build-item-icon">⚔️</div>
+          <div>
+            <div class="build-item-name">Forge Guard Test</div>
+            <div class="build-item-class">Sentinel › Forge Guard</div>
+          </div>
+          <div class="build-item-time">2d</div>
+        </div>
+        <div class="build-item">
+          <div class="build-item-icon">❄️</div>
+          <div>
+            <div class="build-item-name">Glacier Mage S1</div>
+            <div class="build-item-class">Mage › Sorcerer</div>
+          </div>
+          <div class="build-item-time">1w</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Context Panel -->
+    <div class="panel-section" style="flex:1; overflow-y:auto;">
+      <div class="panel-label">AI Context</div>
+      <div class="context-slots">
+        <div class="context-slot">
+          <div class="slot-icon">⚔</div>
+          <div class="slot-name slot-filled">Shattered Lance · T7</div>
+          <div class="slot-badge">Weapon</div>
+        </div>
+        <div class="context-slot">
+          <div class="slot-icon">🛡</div>
+          <div class="slot-name slot-filled">Evasive Vest · T6</div>
+          <div class="slot-badge">Chest</div>
+        </div>
+        <div class="context-slot">
+          <div class="slot-icon">💍</div>
+          <div class="slot-name">Add Ring…</div>
+          <div class="slot-badge">Ring 1</div>
+        </div>
+        <div class="context-slot">
+          <div class="slot-icon">🦅</div>
+          <div class="slot-name slot-filled">Falcon Strike · Lv12</div>
+          <div class="slot-badge">Active</div>
+        </div>
+        <div class="context-slot">
+          <div class="slot-icon">🏹</div>
+          <div class="slot-name slot-filled">Aerial Assault · Lv8</div>
+          <div class="slot-badge">Active</div>
+        </div>
+        <div class="context-slot">
+          <div class="slot-icon">🔮</div>
+          <div class="slot-name">Add Idol…</div>
+          <div class="slot-badge">Idol</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TREE CANVAS -->
+  <div class="tree-canvas">
+    <div class="tree-tabs">
+      <div class="tree-tab active">Passive Tree</div>
+      <div class="tree-tab">Falcon Strike</div>
+      <div class="tree-tab">Aerial Assault</div>
+      <div class="tree-tab">Smoke Bomb</div>
+    </div>
+
+    <div class="tree-viewport">
+      <!-- Stylized passive tree SVG -->
+      <svg class="tree-svg" viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="bg-grad" cx="50%" cy="50%" r="55%">
+            <stop offset="0%" stop-color="#141417"/>
+            <stop offset="100%" stop-color="#0a0a0b"/>
+          </radialGradient>
+          <filter id="glow-gold">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glow-purple">
+            <feGaussianBlur stdDeviation="4" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <rect width="900" height="560" fill="url(#bg-grad)"/>
+
+        <!-- Grid dots -->
+        <g opacity="0.08">
+          <script type="text/javascript">
+          </script>
+          <!-- Manual grid dots pattern -->
+          <circle cx="50" cy="50" r="1" fill="#9E9494"/>
+          <circle cx="100" cy="50" r="1" fill="#9E9494"/>
+          <circle cx="150" cy="50" r="1" fill="#9E9494"/>
+          <circle cx="200" cy="50" r="1" fill="#9E9494"/>
+          <circle cx="250" cy="50" r="1" fill="#9E9494"/>
+          <circle cx="300" cy="50" r="1" fill="#9E9494"/>
+          <circle cx="350" cy="50" r="1" fill="#9E9494"/>
+          <circle cx="400" cy="50" r="1" fill="#9E9494"/>
+          <circle cx="450" cy="50" r="1" fill="#9E9494"/>
+          <circle cx="500" cy="50" r="1" fill="#9E9494"/>
+          <circle cx="550" cy="50" r="1" fill="#9E9494"/>
+          <circle cx="600" cy="50" r="1" fill="#9E9494"/>
+          <circle cx="650" cy="50" r="1" fill="#9E9494"/>
+          <circle cx="700" cy="50" r="1" fill="#9E9494"/>
+          <circle cx="750" cy="50" r="1" fill="#9E9494"/>
+          <circle cx="800" cy="50" r="1" fill="#9E9494"/>
+          <circle cx="850" cy="50" r="1" fill="#9E9494"/>
+        </g>
+
+        <!-- Connections — allocated path -->
+        <g class="tree-connection allocated">
+          <line x1="450" y1="480" x2="450" y2="430"/>
+          <line x1="450" y1="430" x2="380" y2="370"/>
+          <line x1="450" y1="430" x2="520" y2="370"/>
+          <line x1="380" y1="370" x2="310" y2="310"/>
+          <line x1="380" y1="370" x2="380" y2="300"/>
+          <line x1="520" y1="370" x2="520" y2="300"/>
+          <line x1="310" y1="310" x2="250" y2="250"/>
+          <line x1="310" y1="310" x2="310" y2="240"/>
+          <line x1="380" y1="300" x2="380" y2="240"/>
+          <line x1="520" y1="300" x2="520" y2="240"/>
+          <line x1="520" y1="300" x2="590" y2="240"/>
+          <line x1="380" y1="240" x2="450" y2="180"/>
+          <line x1="310" y1="240" x2="380" y2="180"/>
+          <line x1="250" y1="250" x2="200" y2="200"/>
+        </g>
+
+        <!-- Connections — available/locked -->
+        <g class="tree-connection">
+          <line x1="450" y1="180" x2="450" y2="120"/>
+          <line x1="450" y1="120" x2="390" y2="70"/>
+          <line x1="450" y1="120" x2="510" y2="70"/>
+          <line x1="200" y1="200" x2="150" y2="150"/>
+          <line x1="200" y1="200" x2="200" y2="140"/>
+          <line x1="590" y1="240" x2="650" y2="180"/>
+          <line x1="590" y1="240" x2="640" y2="300"/>
+          <line x1="650" y1="180" x2="700" y2="120"/>
+          <line x1="700" y1="120" x2="760" y2="80"/>
+          <line x1="520" y1="240" x2="570" y2="170"/>
+        </g>
+
+        <!-- Suggested path connections -->
+        <g class="tree-connection suggested">
+          <line x1="380" y1="240" x2="310" y2="180"/>
+          <line x1="310" y1="180" x2="310" y2="120"/>
+        </g>
+
+        <!-- ALLOCATED NODES -->
+        <g class="node-allocated" filter="url(#glow-gold)">
+          <!-- Keystone -->
+          <g><circle cx="450" cy="480" r="14"/><text class="node-label" x="450" y="500" fill="#C9A84C" font-size="9" text-anchor="middle">Falconer's</text><text class="node-label" x="450" y="510" fill="#C9A84C" font-size="9" text-anchor="middle">Bond</text></g>
+
+          <circle cx="450" cy="430" r="9"/>
+          <circle cx="380" cy="370" r="9"/>
+          <circle cx="520" cy="370" r="9"/>
+          <circle cx="310" cy="310" r="9"/>
+          <circle cx="380" cy="300" r="9"/>
+          <circle cx="520" cy="300" r="9"/>
+          <circle cx="250" cy="250" r="9"/>
+          <circle cx="310" cy="240" r="9"/>
+          <circle cx="380" cy="240" r="9"/>
+          <circle cx="520" cy="240" r="9"/>
+          <circle cx="200" cy="200" r="9"/>
+          <circle cx="450" cy="180" r="9"/>
+          <circle cx="380" cy="180" r="9"/>
+          <circle cx="590" cy="240" r="9"/>
+        </g>
+
+        <!-- AVAILABLE NODES -->
+        <g class="node-available">
+          <circle cx="450" cy="120" r="9"/>
+          <circle cx="390" cy="70" r="8"/>
+          <circle cx="510" cy="70" r="8"/>
+          <circle cx="150" cy="150" r="8"/>
+          <circle cx="200" cy="140" r="8"/>
+          <circle cx="650" cy="180" r="9"/>
+          <circle cx="640" cy="300" r="8"/>
+          <circle cx="700" cy="120" r="9"/>
+          <circle cx="570" cy="170" r="8"/>
+        </g>
+
+        <!-- LOCKED NODES -->
+        <g class="node-locked">
+          <circle cx="760" cy="80" r="8"/>
+          <circle cx="740" cy="160" r="7"/>
+          <circle cx="800" cy="180" r="7"/>
+        </g>
+
+        <!-- SUGGESTED NODES (pulsing) -->
+        <g class="node-suggested" filter="url(#glow-purple)">
+          <circle cx="310" cy="180" r="10"/>
+          <circle cx="310" cy="120" r="10"/>
+        </g>
+        <!-- Suggested node labels -->
+        <text x="310" y="162" fill="#7B68EE" font-size="8" text-anchor="middle" font-weight="600">AI</text>
+        <text x="310" y="102" fill="#7B68EE" font-size="8" text-anchor="middle" font-weight="600">AI</text>
+
+        <!-- Node labels for key nodes -->
+        <text x="450" y="428" fill="#0a0a0b" font-size="7" text-anchor="middle" dominant-baseline="middle" font-weight="700">4</text>
+        <text x="380" y="368" fill="#0a0a0b" font-size="7" text-anchor="middle" dominant-baseline="middle" font-weight="700">2</text>
+        <text x="520" y="368" fill="#0a0a0b" font-size="7" text-anchor="middle" dominant-baseline="middle" font-weight="700">3</text>
+
+        <!-- EFFICIENCY badge (being deallocated) -->
+        <g opacity="0.5">
+          <circle cx="380" cy="180" r="9" fill="none" stroke="#E85E5E" stroke-width="2" stroke-dasharray="3 2"/>
+          <text x="380" y="200" fill="#E85E5E" font-size="8" text-anchor="middle">-4pt</text>
+        </g>
+
+        <!-- FALCON STRIKES label (getting points) -->
+        <text x="310" y="140" fill="#7B68EE" font-size="8" text-anchor="middle">Falcon</text>
+        <text x="310" y="150" fill="#7B68EE" font-size="8" text-anchor="middle">Strikes</text>
+        <text x="310" y="100" fill="#7B68EE" font-size="8" text-anchor="middle">+4pt</text>
+
+        <!-- Legend -->
+        <g transform="translate(20, 470)">
+          <circle cx="8" cy="8" r="6" fill="#C9A84C"/>
+          <text x="18" y="12" fill="#9E9494" font-size="10">Allocated</text>
+          <circle cx="80" cy="8" r="6" fill="none" stroke="#4A7A9E" stroke-width="1.5"/>
+          <text x="90" y="12" fill="#9E9494" font-size="10">Available</text>
+          <circle cx="158" cy="8" r="6" fill="none" stroke="#7B68EE" stroke-width="2"/>
+          <text x="168" y="12" fill="#9E9494" font-size="10">AI Suggested</text>
+          <circle cx="252" cy="8" r="6" fill="#2A2A35" stroke="#3a3a45" stroke-width="1"/>
+          <text x="262" y="12" fill="#9E9494" font-size="10">Locked</text>
+        </g>
+      </svg>
+
+      <!-- Suggestion preview overlay -->
+      <div class="suggestion-overlay">
+        <div class="overlay-title">▶ PREVIEWING SUGGESTION #1</div>
+        <div class="overlay-change">Reallocate 4pts: Efficiency → Falcon Strikes</div>
+        <div class="overlay-delta">
+          <div class="delta-pill delta-pos">🗡 +18%</div>
+          <div class="delta-pill delta-neg">🛡 -2%</div>
+          <div class="delta-pill delta-neu">⚡ ±0</div>
+        </div>
+        <div style="font-size:10px; color:var(--text-muted)">Purple nodes = suggested changes</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel-right">
+
+    <!-- Optimization Goal -->
+    <div class="panel-section">
+      <div class="panel-label">Optimization Goal</div>
+      <div class="goal-selector">
+        <div class="goal-btn active">⚔ Damage</div>
+        <div class="goal-btn">🛡 Survivability</div>
+        <div class="goal-btn">⚡ Speed</div>
+        <div class="goal-btn">⚖ Balanced</div>
+      </div>
+    </div>
+
+    <!-- Score Display -->
+    <div class="panel-section">
+      <div class="panel-label">Current Build Scores</div>
+      <div class="score-display">
+        <div class="score-row">
+          <div class="score-label" style="color:var(--data-damage)">🗡 Damage</div>
+          <div class="score-bar-bg"><div class="score-bar-fill" style="width:42%; background:var(--data-damage)"></div></div>
+          <div class="score-val" style="color:var(--data-damage)">42</div>
+        </div>
+        <div class="score-row">
+          <div class="score-label" style="color:var(--data-surv)">🛡 Survivability</div>
+          <div class="score-bar-bg"><div class="score-bar-fill" style="width:67%; background:var(--data-surv)"></div></div>
+          <div class="score-val" style="color:var(--data-surv)">67</div>
+        </div>
+        <div class="score-row">
+          <div class="score-label" style="color:var(--data-speed)">⚡ Speed</div>
+          <div class="score-bar-bg"><div class="score-bar-fill" style="width:55%; background:var(--data-speed)"></div></div>
+          <div class="score-val" style="color:var(--data-speed)">55</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Optimize CTA -->
+    <div class="panel-section">
+      <button class="btn-optimize" id="optimizeBtn" onclick="toggleOptimize()">⚡ Optimize Build</button>
+    </div>
+
+    <!-- Suggestions -->
+    <div class="suggestions-header">
+      <div class="suggestions-title">AI Suggestions</div>
+      <div class="suggestions-count">4 found · Damage goal</div>
+    </div>
+
+    <div class="suggestions-list" id="suggestionsList">
+
+      <!-- Suggestion 1 — Active/Previewing -->
+      <div class="suggestion-card active" onclick="toggleCard(this)">
+        <div class="card-header">
+          <div class="card-rank">1</div>
+          <div class="card-change">
+            Reallocate 4pts: Efficiency → Falcon Strikes
+            <small>Passive Tree · 4 skill points</small>
+          </div>
+        </div>
+        <div class="card-deltas">
+          <div class="delta-pill delta-pos">🗡 +18%</div>
+          <div class="delta-pill delta-neg">🛡 -2%</div>
+          <div class="delta-pill delta-neu">⚡ ±0</div>
+          <div class="delta-pill delta-pos" style="margin-left:auto; font-size:10px;">42→51</div>
+        </div>
+        <div class="card-explanation">
+          You're not cooldown-capped. <strong>Efficiency</strong> offers diminishing returns here — <strong>Falcon Strikes</strong> directly scales your primary damage source and synergises with your current attack speed stacking.
+        </div>
+        <div class="card-actions">
+          <button class="card-btn primary">Preview</button>
+          <button class="card-btn apply" onclick="event.stopPropagation(); applyCard(this)">Apply</button>
+          <button class="card-btn" onclick="event.stopPropagation()">Skip</button>
+        </div>
+      </div>
+
+      <!-- Suggestion 2 -->
+      <div class="suggestion-card collapsed" onclick="toggleCard(this)">
+        <div class="card-header">
+          <div class="card-rank">2</div>
+          <div class="card-change">
+            Remove 2pts from Dodge Rating → Predator's Instinct
+            <small>Passive Tree · 2 skill points</small>
+          </div>
+        </div>
+        <div class="card-deltas">
+          <div class="delta-pill delta-pos">🗡 +11%</div>
+          <div class="delta-pill delta-neg">🛡 -3%</div>
+          <div class="delta-pill delta-pos">⚡ +4%</div>
+          <div class="delta-pill delta-pos" style="margin-left:auto; font-size:10px;">51→57</div>
+        </div>
+        <div class="card-explanation">
+          Your survivability score has headroom at this corruption level. <strong>Predator's Instinct</strong> scales with attack speed, which you're already stacking — the multiplicative bonus makes this a high-efficiency point allocation.
+        </div>
+        <div class="card-actions">
+          <button class="card-btn primary">Preview</button>
+          <button class="card-btn apply" onclick="event.stopPropagation(); applyCard(this)">Apply</button>
+          <button class="card-btn" onclick="event.stopPropagation()">Skip</button>
+        </div>
+      </div>
+
+      <!-- Suggestion 3 -->
+      <div class="suggestion-card collapsed" onclick="toggleCard(this)">
+        <div class="card-header">
+          <div class="card-rank">3</div>
+          <div class="card-change">
+            Add 3pts to Aerial Bombardment
+            <small>Falcon Strike Skill Tree · 3 skill points</small>
+          </div>
+        </div>
+        <div class="card-deltas">
+          <div class="delta-pill delta-pos">🗡 +7%</div>
+          <div class="delta-pill delta-neu">🛡 ±0</div>
+          <div class="delta-pill delta-pos">⚡ +2%</div>
+          <div class="delta-pill delta-pos" style="margin-left:auto; font-size:10px;">57→61</div>
+        </div>
+        <div class="card-explanation">
+          <strong>Aerial Bombardment</strong> is your highest DPS-per-point node given your current crit multiplier and the ailment stacking from your idol setup.
+        </div>
+        <div class="card-actions">
+          <button class="card-btn primary">Preview</button>
+          <button class="card-btn apply" onclick="event.stopPropagation(); applyCard(this)">Apply</button>
+          <button class="card-btn" onclick="event.stopPropagation()">Skip</button>
+        </div>
+      </div>
+
+      <!-- Suggestion 4 -->
+      <div class="suggestion-card collapsed" onclick="toggleCard(this)">
+        <div class="card-header">
+          <div class="card-rank">4</div>
+          <div class="card-change">
+            Reallocate 1pt: Haste → Dive Bomb Mastery
+            <small>Rogue Passive Tree · 1 skill point</small>
+          </div>
+        </div>
+        <div class="card-deltas">
+          <div class="delta-pill delta-pos">🗡 +4%</div>
+          <div class="delta-pill delta-neu">🛡 ±0</div>
+          <div class="delta-pill delta-neg">⚡ -5%</div>
+          <div class="delta-pill delta-pos" style="margin-left:auto; font-size:10px;">61→63</div>
+        </div>
+        <div class="card-explanation">
+          <strong>Haste</strong> provides movement speed which has no combat DPS contribution at your corruption tier. <strong>Dive Bomb Mastery</strong> directly adds flat damage to your highest-usage ability.
+        </div>
+        <div class="card-actions">
+          <button class="card-btn primary">Preview</button>
+          <button class="card-btn apply" onclick="event.stopPropagation(); applyCard(this)">Apply</button>
+          <button class="card-btn" onclick="event.stopPropagation()">Skip</button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <div class="status-item"><div class="status-dot"></div> Claude API connected</div>
+  <div class="status-item">📦 Game data v1.1.3 · Updated 2h ago</div>
+  <div class="spacer"></div>
+  <div class="status-item">340 nodes loaded · Rogue/Falconer</div>
+  <div class="status-item">LEBOv2 v0.1.0-alpha</div>
+</div>
+
+<script>
+function toggleCard(card) {
+  const wasActive = card.classList.contains('active');
+  // Collapse all
+  document.querySelectorAll('.suggestion-card').forEach(c => {
+    c.classList.remove('active');
+    c.classList.add('collapsed');
+  });
+  if (!wasActive) {
+    card.classList.remove('collapsed');
+    card.classList.add('active');
+  }
+}
+
+function applyCard(btn) {
+  const card = btn.closest('.suggestion-card');
+  card.classList.add('applied');
+  card.querySelector('.card-actions').innerHTML = '<span class="card-btn applied">✓ Applied</span>';
+  // Update scores visually
+  const bars = document.querySelectorAll('.score-bar-fill');
+  if (bars[0]) bars[0].style.width = '51%';
+}
+
+let optimizeRunning = false;
+function toggleOptimize() {
+  const btn = document.getElementById('optimizeBtn');
+  if (optimizeRunning) return;
+  optimizeRunning = true;
+  btn.classList.add('loading');
+  btn.textContent = '⚡ Analyzing your build…';
+
+  // Hide suggestions temporarily
+  const list = document.getElementById('suggestionsList');
+  list.style.opacity = '0.3';
+
+  setTimeout(() => {
+    btn.classList.remove('loading');
+    btn.textContent = '⚡ Optimize Build';
+    list.style.opacity = '1';
+    // Re-expand first card
+    document.querySelectorAll('.suggestion-card').forEach((c,i) => {
+      c.classList.remove('applied', 'active');
+      c.classList.add('collapsed');
+    });
+    const first = document.querySelector('.suggestion-card');
+    if (first) { first.classList.remove('collapsed'); first.classList.add('active'); }
+    optimizeRunning = false;
+  }, 2500);
+}
+</script>
+
+</body>
+</html>

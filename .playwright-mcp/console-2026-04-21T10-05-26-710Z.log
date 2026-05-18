@@ -1,0 +1,3 @@
+[      85ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=2efd2a44:20102
+[     198ms] [WARNING] Failed to decode downloaded font: http://localhost:1420/fonts/InterVariable.woff2 @ http://localhost:1420/:0
+[     198ms] [WARNING] OTS parsing error: invalid sfntVersion: 1008821359 @ http://localhost:1420/:0

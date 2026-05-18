@@ -1,0 +1,154 @@
+@font-face {
+  font-family: 'Inter Variable';
+  src: url('../fonts/InterVariable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono Variable';
+  src: url('../fonts/JetBrainsMonoVariable.woff2') format('woff2');
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@import "tailwindcss";
+
+@theme {
+  /* Backgrounds */
+  --color-bg-base:     #0a0a0b;
+  --color-bg-surface:  #141417;
+  --color-bg-elevated: #1c1c21;
+  --color-bg-hover:    #252530;
+
+  /* Accent — Last Epoch gold */
+  --color-accent-gold:      #C9A84C;
+  --color-accent-gold-soft: #D4B96A;
+  --color-accent-gold-dim:  #8B7030;
+
+  /* Data colors */
+  --color-data-damage:   #E8614A;
+  --color-data-surv:     #4A9EE8;
+  --color-data-speed:    #4AE89E;
+  --color-data-positive: #5EBD78;
+  --color-data-negative: #E85E5E;
+  --color-data-neutral:  #6B7280;
+
+  /* Node states */
+  --color-node-allocated: #C9A84C;
+  --color-node-available: #4A7A9E;
+  --color-node-locked:    #2A2A35;
+  --color-node-suggested: #7B68EE;
+
+  /* Skill picker */
+  --hex-clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  --color-badge-mastery-gate: #1A1208; /* PixiJS: 0x1A1208 — dark warm overlay for mastery gate badge */
+
+  /* Item tier pips */
+  --color-tier-pip-active:   #C9A84C; /* PixiJS: 0xC9A84C — matches --color-accent-gold */
+  --color-tier-pip-inactive: #1C1C21; /* PixiJS: 0x1C1C21 — matches --color-bg-elevated; border added via element style */
+
+  /* Optimization slider gradient */
+  --color-slider-glass-cannon: #C73232; /* PixiJS: 0xC73232 — high-saturation crimson-red for damage end */
+  --color-slider-juggernaut:   #2A4D7A; /* PixiJS: 0x2A4D7A — deep steel-blue for survivability end */
+
+  /* Text */
+  --color-text-primary:   #F0EAE0;
+  --color-text-secondary: #9E9494;
+  --color-text-muted:     #5A5050;
+
+  /* Typography */
+  --font-ui:   'Inter Variable', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', monospace;
+}
+
+.optimization-slider {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(
+    to right,
+    var(--color-slider-juggernaut),
+    var(--color-slider-glass-cannon)
+  );
+  outline: none;
+  cursor: pointer;
+}
+.optimization-slider:focus {
+  outline: 2px solid var(--color-accent-gold);
+  outline-offset: 2px;
+}
+.optimization-slider:focus-visible {
+  outline: 2px solid var(--color-accent-gold);
+  outline-offset: 2px;
+}
+.optimization-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-accent-gold);
+  cursor: pointer;
+  border: 2px solid var(--color-bg-base);
+}
+.optimization-slider::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-accent-gold);
+  cursor: pointer;
+  border: 2px solid var(--color-bg-base);
+}
+
+@keyframes analyzing-bar {
+  0%, 100% { height: 4px; }
+  50% { height: 14px; }
+}
+
+@keyframes analyzing-progress {
+  0% { transform: translateX(-100%); }
+  60% { transform: translateX(100%); }
+  100% { transform: translateX(100%); }
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-ui);
+    background-color: var(--color-bg-base);
+    color: var(--color-text-primary);
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  /* Reduced motion support — UX-DR15 */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Focus ring — all interactive elements */
+  :focus-visible {
+    outline: 2px solid var(--color-accent-gold);
+    outline-offset: 2px;
+  }
+}

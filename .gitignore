@@ -1,0 +1,16 @@
+# Dependencies & build artifacts
+lebo/node_modules/
+lebo/dist/
+lebo/src-tauri/target/
+tools/*/node_modules/
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+*.db

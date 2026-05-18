@@ -1,0 +1,60 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "lebo",
+  "version": "0.1.0",
+  "identifier": "com.lebo.dev",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "lebo",
+        "width": 800,
+        "height": 600
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQ5NTlBQkE1MDFFOTYyNTkKUldSWll1a0JwYXRaU2FYbENLdEZjZVhocUEwLzhKdjVOVUhCSE15UUhyS29udzFMSTEvMEs4dXQK",
+      "endpoints": [
+        "https://github.com/User-dev-volt/last-epoch-build-optimizer/releases/latest/download/latest.json"
+      ]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": [
+      "resources/game-data/manifest.json",
+      "resources/game-data/classes/sentinel.json",
+      "resources/game-data/classes/mage.json",
+      "resources/game-data/classes/primalist.json",
+      "resources/game-data/classes/acolyte.json",
+      "resources/game-data/classes/rogue.json",
+      "resources/icons/skill-icon-map.json",
+      "resources/icons/skills/**/*",
+      "resources/items/base-items.json",
+      "resources/items/uniques.json",
+      "resources/items/affixes.json"
+    ],
+    "windows": {
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "http://timestamp.digicert.com"
+    }
+  }
+}

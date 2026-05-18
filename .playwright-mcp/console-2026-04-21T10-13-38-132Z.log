@@ -1,0 +1,17 @@
+[      90ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=2efd2a44:20102
+[     162ms] [WARNING] Failed to decode downloaded font: http://localhost:1420/fonts/InterVariable.woff2 @ http://localhost:1420/:0
+[     162ms] [WARNING] OTS parsing error: invalid sfntVersion: 1008821359 @ http://localhost:1420/:0
+[     268ms] TypeError: Cannot read properties of null (reading 'split')
+    at logPrettyShaderError (http://localhost:1420/node_modules/.vite/deps/chunk-5GQ77FQG.js?v=2efd2a44:2224:47)
+    at logProgramError (http://localhost:1420/node_modules/.vite/deps/chunk-5GQ77FQG.js?v=2efd2a44:2250:7)
+    at generateProgram (http://localhost:1420/node_modules/.vite/deps/chunk-5GQ77FQG.js?v=2efd2a44:2283:5)
+    at GlShaderSystem._createProgramData (http://localhost:1420/node_modules/.vite/deps/chunk-5GQ77FQG.js?v=2efd2a44:2395:34)
+    at GlShaderSystem._getProgramData (http://localhost:1420/node_modules/.vite/deps/chunk-5GQ77FQG.js?v=2efd2a44:2391:56)
+    at GlShaderSystem._setProgram (http://localhost:1420/node_modules/.vite/deps/chunk-5GQ77FQG.js?v=2efd2a44:2383:30)
+    at GlShaderSystem.bind (http://localhost:1420/node_modules/.vite/deps/chunk-5GQ77FQG.js?v=2efd2a44:2331:10)
+    at GlGraphicsAdaptor.execute (http://localhost:1420/node_modules/.vite/deps/chunk-5GQ77FQG.js?v=2efd2a44:88:21)
+    at GraphicsPipe.execute (http://localhost:1420/node_modules/.vite/deps/chunk-QRPJWRHP.js?v=2efd2a44:826:19)
+    at executeInstructions (http://localhost:1420/node_modules/.vite/deps/chunk-YSQC7XFU.js?v=2efd2a44:588:40)
+[  191759ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=2efd2a44:20102
+[  191780ms] [WARNING] Failed to decode downloaded font: http://localhost:1420/fonts/InterVariable.woff2 @ http://localhost:1420/:0
+[  191780ms] [WARNING] OTS parsing error: invalid sfntVersion: 1008821359 @ http://localhost:1420/:0

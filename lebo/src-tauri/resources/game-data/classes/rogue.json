@@ -1,0 +1,153 @@
+{
+  "id": "rogue",
+  "name": "Rogue",
+  "baseTree": {
+    "nodes": [
+      { "id": "rogue-base-shadow-dancer", "name": "Shadow Dancer", "x": 0, "y": 0, "size": "large", "maxPoints": 8, "effects": [{ "description": "+4% Dexterity Damage per point", "tags": ["PHYSICAL", "DAMAGE"] }] },
+      { "id": "rogue-base-dexterity", "name": "Dexterity", "x": 280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4 Dexterity per point", "tags": ["DEXTERITY"] }] },
+      { "id": "rogue-base-nimble", "name": "Nimble", "x": -280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Movement Speed per point", "tags": ["MOVEMENT"] }] },
+      { "id": "rogue-base-evasion", "name": "Evasion", "x": 0, "y": -280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Dodge Chance per point", "tags": ["DODGE", "DEFENCE"] }] },
+      { "id": "rogue-base-ambush", "name": "Ambush", "x": 560, "y": 0, "size": "small", "maxPoints": 4, "effects": [{ "description": "+6% Damage to enemies from behind per point", "tags": ["PHYSICAL", "POSITIONAL", "DAMAGE"] }] },
+      { "id": "rogue-base-poison-expertise", "name": "Poison Expertise", "x": -560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Poison Damage per point", "tags": ["POISON", "DOT"] }] },
+      { "id": "rogue-base-shadow-step", "name": "Shadow Step", "x": 0, "y": -560, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Shadow Damage per point. Shadow Step cooldown -0.1s.", "tags": ["SHADOW", "MOVEMENT"] }] },
+      { "id": "rogue-base-death-mark", "name": "Death Mark", "x": 840, "y": 0, "size": "small", "maxPoints": 4, "effects": [{ "description": "+5% Critical Strike Multiplier per point", "tags": ["CRIT"] }] }
+    ],
+    "edges": [
+      { "fromId": "rogue-base-shadow-dancer", "toId": "rogue-base-dexterity" },
+      { "fromId": "rogue-base-shadow-dancer", "toId": "rogue-base-nimble" },
+      { "fromId": "rogue-base-shadow-dancer", "toId": "rogue-base-evasion" },
+      { "fromId": "rogue-base-dexterity", "toId": "rogue-base-ambush" },
+      { "fromId": "rogue-base-nimble", "toId": "rogue-base-poison-expertise" },
+      { "fromId": "rogue-base-evasion", "toId": "rogue-base-shadow-step" },
+      { "fromId": "rogue-base-ambush", "toId": "rogue-base-death-mark" }
+    ]
+  },
+  "skills": [
+    {
+      "id": "rogue-puncture",
+      "name": "Puncture",
+      "masteryId": null,
+      "masteryGatePoints": null,
+      "skillTree": {
+        "nodes": [
+          { "id": "rogue-puncture-core", "name": "Puncture", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Strike a target rapidly, applying a stacking bleed.", "tags": ["PHYSICAL", "BLEED", "MELEE"] }] },
+          { "id": "rogue-puncture-bleed", "name": "Deep Wound", "x": 280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+2 maximum Bleed stacks from Puncture per point.", "tags": ["BLEED", "DAMAGE"] }] },
+          { "id": "rogue-puncture-speed", "name": "Swift Strikes", "x": 0, "y": 280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+8% Attack Speed per point.", "tags": ["ATTACK_SPEED"] }] },
+          { "id": "rogue-puncture-poison", "name": "Venomous", "x": 280, "y": 280, "size": "small", "maxPoints": 4, "effects": [{ "description": "+10% chance to Poison per point.", "tags": ["POISON", "AILMENT"] }] },
+          { "id": "rogue-puncture-crit", "name": "Vital Strike", "x": 560, "y": 0, "size": "medium", "maxPoints": 4, "effects": [{ "description": "+6% Crit Chance per point.", "tags": ["PHYSICAL", "CRIT"] }] },
+          { "id": "rogue-puncture-evade", "name": "Evasive Strikes", "x": -280, "y": 0, "size": "small", "maxPoints": 4, "effects": [{ "description": "+5% Dodge Chance while attacking per point.", "tags": ["DODGE", "BUFF"] }] }
+        ],
+        "edges": [
+          { "fromId": "rogue-puncture-core", "toId": "rogue-puncture-bleed" },
+          { "fromId": "rogue-puncture-core", "toId": "rogue-puncture-speed" },
+          { "fromId": "rogue-puncture-core", "toId": "rogue-puncture-evade" },
+          { "fromId": "rogue-puncture-bleed", "toId": "rogue-puncture-poison" },
+          { "fromId": "rogue-puncture-bleed", "toId": "rogue-puncture-crit" }
+        ]
+      }
+    },
+    {
+      "id": "rogue-dancing-strikes",
+      "name": "Dancing Strikes",
+      "masteryId": "bladedancer",
+      "masteryGatePoints": 20,
+      "skillTree": {
+        "nodes": [
+          { "id": "rogue-dancing-strikes-core", "name": "Dancing Strikes", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Perform a rapid flurry of strikes that teleport you between nearby enemies.", "tags": ["PHYSICAL", "MOVEMENT", "MELEE"] }] },
+          { "id": "rogue-dancing-strikes-hits", "name": "Flourish", "x": 280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+1 hit per rotation per point.", "tags": ["PHYSICAL", "MELEE"] }] },
+          { "id": "rogue-dancing-strikes-range", "name": "Shadow Range", "x": 0, "y": 280, "size": "medium", "maxPoints": 4, "effects": [{ "description": "+15% blink range per point.", "tags": ["PHYSICAL", "MOVEMENT"] }] },
+          { "id": "rogue-dancing-strikes-crit", "name": "Lethal Rhythm", "x": 280, "y": 280, "size": "small", "maxPoints": 4, "effects": [{ "description": "+5% Crit Multiplier per strike per point.", "tags": ["PHYSICAL", "CRIT"] }] },
+          { "id": "rogue-dancing-strikes-ailment", "name": "Bleeding Dance", "x": 560, "y": 0, "size": "medium", "maxPoints": 4, "effects": [{ "description": "+15% Bleed chance per hit per point.", "tags": ["BLEED", "AILMENT"] }] },
+          { "id": "rogue-dancing-strikes-dodge", "name": "Elusive", "x": -280, "y": 0, "size": "small", "maxPoints": 4, "effects": [{ "description": "+6% Dodge during Dancing Strikes per point.", "tags": ["DODGE", "BUFF"] }] }
+        ],
+        "edges": [
+          { "fromId": "rogue-dancing-strikes-core", "toId": "rogue-dancing-strikes-hits" },
+          { "fromId": "rogue-dancing-strikes-core", "toId": "rogue-dancing-strikes-range" },
+          { "fromId": "rogue-dancing-strikes-core", "toId": "rogue-dancing-strikes-dodge" },
+          { "fromId": "rogue-dancing-strikes-hits", "toId": "rogue-dancing-strikes-crit" },
+          { "fromId": "rogue-dancing-strikes-hits", "toId": "rogue-dancing-strikes-ailment" }
+        ]
+      }
+    }
+  ],
+  "masteries": [
+    {
+      "id": "bladedancer",
+      "name": "Bladedancer",
+      "passiveTree": {
+        "nodes": [
+          { "id": "bladedancer-passive-entry", "name": "Bladedancer", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Become a Bladedancer — master of close-range swift strikes", "tags": ["MASTERY"] }] },
+          { "id": "bladedancer-passive-dual-wield", "name": "Dual Wield Mastery", "x": 280, "y": 0, "size": "large", "maxPoints": 6, "effects": [{ "description": "+5% Melee Damage with Dual Wield per point", "tags": ["MELEE", "DAMAGE", "DUAL_WIELD"] }] },
+          { "id": "bladedancer-passive-dance-of-death", "name": "Dance of Death", "x": -280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Attack Speed. Every 4th attack deals +20% extra damage per point.", "tags": ["ATTACK_SPEED", "DAMAGE"] }] },
+          { "id": "bladedancer-passive-shadow-clone", "name": "Shadow Clone", "x": 0, "y": 280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "Shadow Clones deal +6% of your damage per point", "tags": ["SHADOW", "MINION", "DAMAGE"] }] },
+          { "id": "bladedancer-passive-lethal-mirage", "name": "Lethal Mirage", "x": 0, "y": -280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Dodge Chance. After dodging, gain +10% Damage for 2s per point.", "tags": ["DODGE", "DAMAGE", "REACTIVE"] }] },
+          { "id": "bladedancer-passive-bleeding-strikes", "name": "Bleeding Strikes", "x": 560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+6% Bleed Damage. Melee hits apply a stack of Bleed per point.", "tags": ["BLEED", "MELEE", "DOT"] }] },
+          { "id": "bladedancer-passive-shadow-weave", "name": "Shadow Weave", "x": -560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Shadow Damage. Attacks from stealth deal +15% extra damage per point.", "tags": ["SHADOW", "STEALTH", "DAMAGE"] }] },
+          { "id": "bladedancer-passive-bladedancer-mastery", "name": "Bladedancer Mastery", "x": 840, "y": 0, "size": "large", "maxPoints": 8, "effects": [{ "description": "+4% Melee Damage. +3% Attack Speed. +2% Crit Chance per point.", "tags": ["MELEE", "ATTACK_SPEED", "CRIT", "MASTERY"] }] }
+        ],
+        "edges": [
+          { "fromId": "bladedancer-passive-entry", "toId": "bladedancer-passive-dual-wield" },
+          { "fromId": "bladedancer-passive-entry", "toId": "bladedancer-passive-dance-of-death" },
+          { "fromId": "bladedancer-passive-entry", "toId": "bladedancer-passive-shadow-clone" },
+          { "fromId": "bladedancer-passive-entry", "toId": "bladedancer-passive-lethal-mirage" },
+          { "fromId": "bladedancer-passive-dual-wield", "toId": "bladedancer-passive-bleeding-strikes" },
+          { "fromId": "bladedancer-passive-dance-of-death", "toId": "bladedancer-passive-shadow-weave" },
+          { "fromId": "bladedancer-passive-bleeding-strikes", "toId": "bladedancer-passive-bladedancer-mastery" },
+          { "fromId": "bladedancer-passive-shadow-weave", "toId": "bladedancer-passive-bladedancer-mastery" }
+        ]
+      }
+    },
+    {
+      "id": "marksman",
+      "name": "Marksman",
+      "passiveTree": {
+        "nodes": [
+          { "id": "marksman-passive-entry", "name": "Marksman", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Become a Marksman — strike from afar with lethal precision", "tags": ["MASTERY"] }] },
+          { "id": "marksman-passive-eagle-eye", "name": "Eagle Eye", "x": 280, "y": 0, "size": "large", "maxPoints": 6, "effects": [{ "description": "+5% Bow Damage per point. +3% Crit Chance.", "tags": ["BOW", "DAMAGE", "CRIT"] }] },
+          { "id": "marksman-passive-barrage", "name": "Barrage", "x": -280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Bow Attack Speed per point", "tags": ["BOW", "ATTACK_SPEED"] }] },
+          { "id": "marksman-passive-poison-arrow", "name": "Poison Arrow", "x": 0, "y": 280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Poison Damage. Bow hits have +10% Poison Chance per point.", "tags": ["POISON", "BOW", "DOT"] }] },
+          { "id": "marksman-passive-steady-aim", "name": "Steady Aim", "x": 0, "y": -280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+6% Bow Damage when stationary for 1+ seconds per point", "tags": ["BOW", "DAMAGE", "CONDITIONAL"] }] },
+          { "id": "marksman-passive-rain-of-arrows", "name": "Rain of Arrows", "x": 560, "y": 0, "size": "large", "maxPoints": 6, "effects": [{ "description": "+5% Rain of Arrows Damage per point. +2% Area.", "tags": ["BOW", "AREA", "DAMAGE"] }] },
+          { "id": "marksman-passive-kiting-mastery", "name": "Kiting Mastery", "x": -560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Dodge Chance. +3% Bow Damage while moving per point.", "tags": ["DODGE", "BOW", "MOVEMENT"] }] },
+          { "id": "marksman-passive-marksman-mastery", "name": "Marksman Mastery", "x": 840, "y": 0, "size": "large", "maxPoints": 8, "effects": [{ "description": "+4% Bow Damage. +3% Crit Chance. +15% Crit Multiplier per point.", "tags": ["BOW", "DAMAGE", "CRIT", "MASTERY"] }] }
+        ],
+        "edges": [
+          { "fromId": "marksman-passive-entry", "toId": "marksman-passive-eagle-eye" },
+          { "fromId": "marksman-passive-entry", "toId": "marksman-passive-barrage" },
+          { "fromId": "marksman-passive-entry", "toId": "marksman-passive-poison-arrow" },
+          { "fromId": "marksman-passive-entry", "toId": "marksman-passive-steady-aim" },
+          { "fromId": "marksman-passive-eagle-eye", "toId": "marksman-passive-rain-of-arrows" },
+          { "fromId": "marksman-passive-barrage", "toId": "marksman-passive-kiting-mastery" },
+          { "fromId": "marksman-passive-rain-of-arrows", "toId": "marksman-passive-marksman-mastery" },
+          { "fromId": "marksman-passive-kiting-mastery", "toId": "marksman-passive-marksman-mastery" }
+        ]
+      }
+    },
+    {
+      "id": "falconer",
+      "name": "Falconer",
+      "passiveTree": {
+        "nodes": [
+          { "id": "falconer-passive-entry", "name": "Falconer", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Become a Falconer — hunt with your loyal raptor companion", "tags": ["MASTERY"] }] },
+          { "id": "falconer-passive-raptor-bond", "name": "Raptor Bond", "x": 280, "y": 0, "size": "large", "maxPoints": 6, "effects": [{ "description": "+5% Raptor Damage per point. Raptor has +4% Attack Speed.", "tags": ["MINION", "RAPTOR", "DAMAGE"] }] },
+          { "id": "falconer-passive-aerial-assault", "name": "Aerial Assault", "x": -280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Dive Bomb Damage. Dive Bomb cooldown -0.2s per point.", "tags": ["RAPTOR", "DAMAGE", "COOLDOWN"] }] },
+          { "id": "falconer-passive-prey-marked", "name": "Prey Marked", "x": 0, "y": 280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "Marked enemies take +5% increased Raptor Damage per point", "tags": ["RAPTOR", "DEBUFF", "DAMAGE"] }] },
+          { "id": "falconer-passive-swift-wings", "name": "Swift Wings", "x": 0, "y": -280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Movement Speed. Falconer and Raptor both gain +4% Dodge per point.", "tags": ["MOVEMENT", "DODGE", "DEFENCE"] }] },
+          { "id": "falconer-passive-synchronized-strike", "name": "Synchronized Strike", "x": 560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "When you Crit, Raptor immediately attacks. +4% Crit Chance per point.", "tags": ["RAPTOR", "CRIT", "COMBO"] }] },
+          { "id": "falconer-passive-hunter-instinct", "name": "Hunter Instinct", "x": -560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Raptor Damage. Raptor gains +6% Health per point.", "tags": ["RAPTOR", "DAMAGE", "HEALTH"] }] },
+          { "id": "falconer-passive-falconer-mastery", "name": "Falconer Mastery", "x": 840, "y": 0, "size": "large", "maxPoints": 8, "effects": [{ "description": "+5% Raptor Damage. +4% Raptor Health. +2% Crit Chance per point.", "tags": ["RAPTOR", "DAMAGE", "HEALTH", "MASTERY"] }] }
+        ],
+        "edges": [
+          { "fromId": "falconer-passive-entry", "toId": "falconer-passive-raptor-bond" },
+          { "fromId": "falconer-passive-entry", "toId": "falconer-passive-aerial-assault" },
+          { "fromId": "falconer-passive-entry", "toId": "falconer-passive-prey-marked" },
+          { "fromId": "falconer-passive-entry", "toId": "falconer-passive-swift-wings" },
+          { "fromId": "falconer-passive-raptor-bond", "toId": "falconer-passive-synchronized-strike" },
+          { "fromId": "falconer-passive-aerial-assault", "toId": "falconer-passive-hunter-instinct" },
+          { "fromId": "falconer-passive-synchronized-strike", "toId": "falconer-passive-falconer-mastery" },
+          { "fromId": "falconer-passive-hunter-instinct", "toId": "falconer-passive-falconer-mastery" }
+        ]
+      }
+    }
+  ]
+}

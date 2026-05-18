@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LEBOv2 Phase 2 — UX Design Directions</title>
+<style>
+  :root {
+    --color-bg-base: #0d0d0f;
+    --color-bg-surface: #141416;
+    --color-bg-elevated: #1e1e22;
+    --color-bg-hover: #252529;
+    --color-accent-gold: #c8a84b;
+    --color-accent-gold-soft: #8a7535;
+    --color-accent-gold-dim: #4a3f1e;
+    --color-data-damage: #e05a3a;
+    --color-data-surv: #4a8fc4;
+    --color-data-speed: #9dc44a;
+    --color-node-allocated: #c8a84b;
+    --color-node-available: #5a6a8a;
+    --color-node-locked: #2a2a32;
+    --color-node-suggested: #d4a840;
+    --color-text-primary: #e8e8ea;
+    --color-text-secondary: #9494a0;
+    --color-text-muted: #5a5a68;
+    --color-slider-glass-cannon: #c0392b;
+    --color-slider-juggernaut: #2980b9;
+    --color-tier-pip-active: #c8a84b;
+    --color-tier-pip-inactive: #2a2a38;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--color-bg-base);
+    color: var(--color-text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .page-header {
+    background: var(--color-bg-surface);
+    border-bottom: 1px solid var(--color-accent-gold-dim);
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .page-header h1 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-accent-gold);
+    letter-spacing: 0.04em;
+  }
+
+  .page-header .subtitle {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+  }
+
+  .badge {
+    background: var(--color-accent-gold-dim);
+    color: var(--color-accent-gold);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 3px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 20px 24px 8px;
+    border-top: 1px solid #1e1e22;
+    margin-top: 16px;
+  }
+
+  .section-title:first-of-type { border-top: none; margin-top: 0; }
+
+  /* === APP SHELL MOCKUP === */
+  .app-shell {
+    display: flex;
+    height: 680px;
+    border: 1px solid var(--color-accent-gold-dim);
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 16px 24px;
+  }
+
+  /* Left Panel */
+  .panel-left {
+    width: 260px;
+    min-width: 260px;
+    background: var(--color-bg-surface);
+    border-right: 1px solid #1e1e22;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-header {
+    padding: 10px 12px;
+    border-bottom: 1px solid #1e1e22;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .build-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+  }
+
+  .build-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-left: 2px solid transparent;
+  }
+
+  .build-item.active {
+    background: var(--color-bg-hover);
+    border-left-color: var(--color-accent-gold);
+  }
+
+  .build-item:hover:not(.active) {
+    background: var(--color-bg-elevated);
+  }
+
+  .build-class-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 3px;
+    background: var(--color-accent-gold-dim);
+    border: 1px solid var(--color-accent-gold-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--color-accent-gold);
+    flex-shrink: 0;
+  }
+
+  .build-info { flex: 1; min-width: 0; }
+  .build-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .build-meta {
+    font-size: 11px;
+    color: var(--color-text-muted);
+  }
+
+  /* Center Panel */
+  .panel-center {
+    flex: 1;
+    background: var(--color-bg-base);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .tab-bar {
+    background: var(--color-bg-surface);
+    border-bottom: 1px solid #1e1e22;
+    display: flex;
+    height: 40px;
+    align-items: stretch;
+  }
+
+  .tab {
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+  }
+
+  .tab.active {
+    color: var(--color-text-primary);
+    border-bottom-color: var(--color-accent-gold);
+    background: var(--color-bg-hover);
+  }
+
+  .tab-icon {
+    width: 16px;
+    height: 16px;
+    background: var(--color-node-available);
+    clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+    flex-shrink: 0;
+  }
+
+  .tab.active .tab-icon {
+    background: var(--color-accent-gold);
+  }
+
+  .tree-toolbar {
+    background: var(--color-bg-surface);
+    border-bottom: 1px solid #1e1e22;
+    padding: 4px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+  }
+
+  .unspent-counter {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .unspent-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-accent-gold);
+    line-height: 1;
+  }
+
+  .unspent-label {
+    font-size: 11px;
+    color: var(--color-text-muted);
+  }
+
+  .btn-reset {
+    padding: 3px 10px;
+    border: 1px solid var(--color-accent-gold-soft);
+    background: transparent;
+    color: var(--color-accent-gold);
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .search-input {
+    margin-left: auto;
+    background: var(--color-bg-elevated);
+    border: 1px solid #2a2a36;
+    border-radius: 4px;
+    padding: 3px 8px;
+    color: var(--color-text-primary);
+    font-size: 12px;
+    width: 180px;
+    height: 26px;
+  }
+
+  .search-input::placeholder { color: var(--color-text-muted); }
+
+  /* Canvas Area */
+  .canvas-area {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: radial-gradient(ellipse at center, #141418 0%, #0d0d0f 70%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .canvas-placeholder {
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 12px;
+  }
+
+  .canvas-note {
+    font-size: 10px;
+    color: var(--color-text-muted);
+    margin-top: 4px;
+  }
+
+  /* Skill Tree Mock */
+  .skill-tree-mock {
+    position: relative;
+    width: 440px;
+    height: 400px;
+  }
+
+  .skill-edge {
+    position: absolute;
+    background: #2a2a3a;
+    transform-origin: left center;
+  }
+
+  .skill-node {
+    position: absolute;
+    width: 52px;
+    height: 52px;
+    background: var(--color-node-available);
+    clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: filter 0.15s;
+  }
+
+  .skill-node:hover { filter: brightness(1.3); }
+
+  .skill-node.allocated { background: var(--color-node-allocated); }
+  .skill-node.locked { background: var(--color-node-locked); opacity: 0.5; }
+  .skill-node.suggested { background: var(--color-node-suggested); box-shadow: 0 0 12px rgba(200, 168, 75, 0.4); }
+
+  .node-icon {
+    width: 28px;
+    height: 28px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  .node-counter {
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    color: #0d0d0f;
+    white-space: nowrap;
+  }
+
+  /* Right Panel */
+  .panel-right {
+    width: 320px;
+    min-width: 320px;
+    background: var(--color-bg-surface);
+    border-left: 1px solid #1e1e22;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .right-section {
+    flex: 1;
+    overflow-y: auto;
+    border-bottom: 1px solid #1e1e22;
+    min-height: 0;
+  }
+
+  .right-section-header {
+    padding: 8px 12px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    background: var(--color-bg-base);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  /* Gear Slots */
+  .gear-slot {
+    padding: 8px 12px;
+    border-bottom: 1px solid #1a1a1e;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .slot-icon {
+    width: 28px;
+    height: 28px;
+    background: var(--color-bg-elevated);
+    border: 1px solid #2a2a36;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
+
+  .slot-content { flex: 1; min-width: 0; }
+  .slot-name { font-size: 10px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
+  .slot-item-name { font-size: 13px; font-weight: 600; color: var(--color-text-primary); }
+  .slot-affixes { margin-top: 4px; }
+
+  .affix-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 3px;
+  }
+
+  .affix-name { font-size: 11px; color: var(--color-text-secondary); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .tier-pips {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+  }
+
+  .pip {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid #3a3a4a;
+    background: var(--color-tier-pip-inactive);
+  }
+
+  .pip.active {
+    background: var(--color-tier-pip-active);
+    border-color: var(--color-accent-gold);
+  }
+
+  .tier-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--color-accent-gold);
+    width: 24px;
+    text-align: right;
+  }
+
+  .slot-search {
+    background: var(--color-bg-elevated);
+    border: 1px solid #2a2a36;
+    border-radius: 4px;
+    padding: 4px 8px;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    width: 100%;
+    height: 26px;
+  }
+
+  /* Optimization Section */
+  .opt-section {
+    padding: 12px;
+    flex-shrink: 0;
+  }
+
+  .opt-slider-container { margin-bottom: 12px; }
+  .opt-slider-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .opt-slider-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-secondary);
+  }
+  .opt-slider-label.juggernaut { color: var(--color-data-surv); }
+  .opt-slider-label.glass-cannon { color: var(--color-data-damage); }
+
+  .opt-slider-track {
+    position: relative;
+    height: 8px;
+    background: linear-gradient(to right, var(--color-slider-juggernaut), #888, var(--color-slider-glass-cannon));
+    border-radius: 4px;
+    margin-bottom: 2px;
+  }
+
+  .opt-slider-thumb {
+    position: absolute;
+    top: 50%;
+    left: 30%;
+    transform: translate(-50%, -50%);
+    width: 18px;
+    height: 18px;
+    background: var(--color-text-primary);
+    border-radius: 50%;
+    border: 2px solid var(--color-accent-gold);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    cursor: pointer;
+  }
+
+  .opt-weight-display {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--color-text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .fine-tune-trigger {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-text-secondary);
+    font-size: 11px;
+    cursor: pointer;
+    padding: 6px 0;
+    border: none;
+    background: none;
+    width: 100%;
+  }
+
+  .fine-tune-trigger:hover { color: var(--color-text-primary); }
+  .fine-tune-chevron { font-size: 9px; color: var(--color-text-muted); transition: transform 0.2s; }
+  .fine-tune-trigger.open .fine-tune-chevron { transform: rotate(180deg); }
+
+  .fine-tune-panel {
+    padding: 8px 0;
+    border-top: 1px solid #1e1e22;
+    display: none;
+  }
+
+  .fine-tune-panel.open { display: block; }
+
+  .sub-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .sub-slider-label {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    width: 90px;
+    flex-shrink: 0;
+  }
+
+  .sub-slider-track {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-bg-elevated);
+    position: relative;
+  }
+
+  .sub-slider-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--color-accent-gold-soft);
+  }
+
+  .sub-slider-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--color-accent-gold);
+    width: 28px;
+    text-align: right;
+  }
+
+  .sub-slider-fill.damage { background: var(--color-data-damage); }
+  .sub-slider-fill.surv { background: var(--color-data-surv); }
+  .sub-slider-fill.speed { background: var(--color-data-speed); }
+
+  .btn-optimize {
+    width: 100%;
+    padding: 9px;
+    background: var(--color-accent-gold);
+    color: #0d0d0f;
+    font-size: 13px;
+    font-weight: 700;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    margin-top: 8px;
+  }
+
+  .btn-optimize:hover { filter: brightness(1.1); }
+
+  /* Staleness Bar */
+  .staleness-bar {
+    background: #1a1a10;
+    border-bottom: 1px solid #3a3a1a;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #9a9a70;
+  }
+
+  .staleness-bar .update-btn {
+    padding: 2px 8px;
+    border: 1px solid #9a9a70;
+    background: transparent;
+    color: #9a9a70;
+    border-radius: 3px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .staleness-bar .dismiss-link {
+    margin-left: auto;
+    color: var(--color-text-muted);
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 11px;
+  }
+
+  /* Skill Picker Grid */
+  .skill-picker {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-accent-gold-dim);
+    border-radius: 6px;
+    padding: 12px;
+    margin: 16px 24px;
+  }
+
+  .picker-section-header {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+    margin-top: 12px;
+  }
+
+  .picker-section-header:first-child { margin-top: 0; }
+
+  .picker-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .picker-cell {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 4px;
+    position: relative;
+  }
+
+  .picker-cell:hover { background: var(--color-bg-hover); }
+
+  .picker-hex {
+    width: 36px;
+    height: 36px;
+    background: var(--color-node-available);
+    clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .picker-hex.allocated { background: var(--color-node-allocated); }
+  .picker-hex.locked { background: var(--color-node-locked); opacity: 0.5; }
+
+  .picker-hex-icon {
+    font-size: 16px;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8));
+  }
+
+  .mastery-badge {
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(13,13,15,0.9);
+    border: 1px solid var(--color-accent-gold-soft);
+    border-radius: 2px;
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--color-accent-gold);
+    padding: 0 3px;
+    white-space: nowrap;
+  }
+
+  .picker-skill-name {
+    font-size: 9px;
+    color: var(--color-text-muted);
+    text-align: center;
+    max-width: 52px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Component Callouts */
+  .component-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 24px;
+  }
+
+  .component-card {
+    background: var(--color-bg-surface);
+    border: 1px solid #1e1e22;
+    border-radius: 6px;
+    padding: 16px;
+  }
+
+  .component-card h3 {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-accent-gold);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+  }
+
+  .color-swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin: 16px 24px;
+  }
+
+  .color-swatch {
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .swatch-fill { height: 40px; }
+  .swatch-label {
+    padding: 4px 6px;
+    background: var(--color-bg-surface);
+    font-size: 9px;
+    color: var(--color-text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Legend */
+  .node-legend {
+    display: flex;
+    gap: 16px;
+    padding: 8px 12px;
+    background: var(--color-bg-elevated);
+    border-top: 1px solid #1e1e22;
+    align-items: center;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: var(--color-text-muted);
+  }
+
+  .legend-hex {
+    width: 14px;
+    height: 14px;
+    clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+  }
+
+  .budget-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .toggle-switch {
+    width: 32px;
+    height: 18px;
+    background: var(--color-bg-elevated);
+    border: 1px solid #3a3a4a;
+    border-radius: 9px;
+    position: relative;
+    cursor: pointer;
+  }
+
+  .toggle-switch.on {
+    background: var(--color-accent-gold-dim);
+    border-color: var(--color-accent-gold-soft);
+  }
+
+  .toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    background: var(--color-text-muted);
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+
+  .toggle-switch.on .toggle-thumb {
+    transform: translateX(14px);
+    background: var(--color-accent-gold);
+  }
+
+  .toggle-label { font-size: 11px; color: var(--color-text-secondary); }
+
+  .level-input {
+    background: var(--color-bg-elevated);
+    border: 1px solid #2a2a36;
+    border-radius: 3px;
+    padding: 2px 6px;
+    color: var(--color-text-primary);
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    width: 44px;
+    text-align: center;
+  }
+
+  .info-note {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-accent-gold-dim);
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    margin: 8px 24px;
+    line-height: 1.6;
+  }
+
+  .info-note strong { color: var(--color-accent-gold); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div>
+    <h1>LEBOv2 Phase 2 — UX Design Directions</h1>
+    <div class="subtitle">Direction 1: "Focused Instrument" — Extend Phase 1 dark-gold vocabulary with Phase 2 capabilities</div>
+  </div>
+  <span class="badge">Selected Direction</span>
+</div>
+
+<div class="info-note">
+  <strong>Design direction chosen:</strong> Extend the Phase 1 dark-gold aesthetic. Phase 2 adds three new surface types (item slot cards with tier pips, optimization master slider with gradient track, skill picker grid) using the same visual vocabulary. The Glass Cannon ↔ Juggernaut gradient slider is the single bold visual innovation of Phase 2 — everything else is invisible infrastructure.
+</div>
+
+<!-- === MAIN APP SHELL === -->
+<div class="section-title">Full App Shell — Three-Panel Layout with Phase 2 Features Active</div>
+
+<!-- Staleness Bar -->
+<div class="staleness-bar" style="margin: 0 24px; border-radius: 4px 4px 0 0; border: 1px solid #3a3a1a; border-bottom: none;">
+  <span>⚠</span>
+  <span>Game data 1.5.0 available (current: 1.4.4)</span>
+  <button class="update-btn">Update Now</button>
+  <span class="dismiss-link">Dismiss</span>
+</div>
+
+<div class="app-shell">
+
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+    <div class="panel-header">
+      Builds
+      <span style="cursor:pointer; color: var(--color-text-muted); font-size:14px;">+</span>
+    </div>
+    <div class="build-list">
+      <div class="build-item active">
+        <div class="build-class-badge">VK</div>
+        <div class="build-info">
+          <div class="build-name">Void Knight Rive</div>
+          <div class="build-meta">Lvl 80 · Sentinel</div>
+        </div>
+      </div>
+      <div class="build-item">
+        <div class="build-class-badge">BC</div>
+        <div class="build-info">
+          <div class="build-name">Bone Curse Minion</div>
+          <div class="build-meta">Lvl 65 · Acolyte</div>
+        </div>
+      </div>
+      <div class="build-item">
+        <div class="build-class-badge">FW</div>
+        <div class="build-info">
+          <div class="build-name">Fireball Wizzard</div>
+          <div class="build-meta">Lvl 40 · Mage</div>
+        </div>
+      </div>
+    </div>
+    <div style="padding: 8px 12px; border-top: 1px solid #1e1e22;">
+      <div class="budget-toggle-row">
+        <div class="toggle-switch on">
+          <div class="toggle-thumb"></div>
+        </div>
+        <span class="toggle-label">Enforce Level Budget</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;">
+        <span style="font-size:11px; color: var(--color-text-muted);">Character Lvl</span>
+        <input class="level-input" value="80" readonly>
+        <span style="font-size:11px; color: var(--color-text-muted);">Skill Lvl</span>
+        <input class="level-input" style="width:36px;" value="20" readonly>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER PANEL -->
+  <div class="panel-center">
+    <div class="tab-bar">
+      <div class="tab">Passive</div>
+      <div class="tab active">
+        <div class="tab-icon"></div>
+        Rive
+      </div>
+      <div class="tab">
+        <div class="tab-icon"></div>
+        Void Cleave
+      </div>
+      <div class="tab">
+        <div class="tab-icon" style="background: var(--color-node-locked); opacity: 0.5;"></div>
+        — Slot 3
+      </div>
+      <div class="tab" style="margin-left: auto; color: var(--color-text-muted); font-size:11px; padding: 0 10px;">Weaver ›</div>
+    </div>
+    <div class="tree-toolbar">
+      <div class="unspent-counter">
+        <span class="unspent-value">3</span>
+        <span class="unspent-label">pts remaining</span>
+      </div>
+      <button class="btn-reset">Reset</button>
+      <input class="search-input" placeholder="Search nodes…">
+    </div>
+    <!-- Skill Tree Canvas Mockup -->
+    <div class="canvas-area">
+      <div>
+        <div class="skill-tree-mock">
+          <!-- Simplified radial skill tree mockup for Rive -->
+          <!-- Center node -->
+          <div class="skill-node allocated" style="left:194px; top:174px;">
+            <div class="node-icon">⚔</div>
+            <div class="node-counter">3/5</div>
+          </div>
+          <!-- Ring 1 nodes -->
+          <div class="skill-node allocated" style="left:124px; top:130px;">
+            <div class="node-icon">🛡</div>
+            <div class="node-counter">2/3</div>
+          </div>
+          <div class="skill-node suggested" style="left:264px; top:130px;">
+            <div class="node-icon">💀</div>
+            <div class="node-counter">0/4</div>
+          </div>
+          <div class="skill-node allocated" style="left:90px; top:200px;">
+            <div class="node-icon">⚡</div>
+            <div class="node-counter">1/2</div>
+          </div>
+          <div class="skill-node available" style="left:300px; top:200px;">
+            <div class="node-icon">🔥</div>
+            <div class="node-counter">0/3</div>
+          </div>
+          <div class="skill-node available" style="left:124px; top:270px;">
+            <div class="node-icon">❄</div>
+            <div class="node-counter">0/2</div>
+          </div>
+          <div class="skill-node locked" style="left:264px; top:270px;">
+            <div class="node-icon">☠</div>
+            <div class="node-counter">0/3</div>
+          </div>
+          <!-- Ring 2 -->
+          <div class="skill-node available" style="left:64px; top:90px;">
+            <div class="node-icon">✨</div>
+            <div class="node-counter">0/4</div>
+          </div>
+          <div class="skill-node locked" style="left:330px; top:90px;">
+            <div class="node-icon">🌀</div>
+            <div class="node-counter">0/2</div>
+          </div>
+          <div class="skill-node locked" style="left:30px; top:200px;">
+            <div class="node-icon">⚗</div>
+            <div class="node-counter">0/3</div>
+          </div>
+          <div class="skill-node locked" style="left:360px; top:200px;">
+            <div class="node-icon">💠</div>
+            <div class="node-counter">0/1</div>
+          </div>
+          <div class="skill-node locked" style="left:64px; top:310px;">
+            <div class="node-icon">🔮</div>
+            <div class="node-counter">0/3</div>
+          </div>
+          <div class="skill-node locked" style="left:330px; top:310px;">
+            <div class="node-icon">⚜</div>
+            <div class="node-counter">0/2</div>
+          </div>
+        </div>
+        <div class="node-legend">
+          <div class="legend-item">
+            <div class="legend-hex" style="background: var(--color-node-allocated);"></div>
+            Allocated
+          </div>
+          <div class="legend-item">
+            <div class="legend-hex" style="background: var(--color-node-available);"></div>
+            Available
+          </div>
+          <div class="legend-item">
+            <div class="legend-hex" style="background: var(--color-node-locked); opacity: 0.5;"></div>
+            Locked
+          </div>
+          <div class="legend-item">
+            <div class="legend-hex" style="background: var(--color-node-suggested);"></div>
+            AI Suggested
+          </div>
+        </div>
+        <div class="canvas-note" style="text-align: center; padding: 4px;">Left-click to allocate · Right-click to deallocate · Icons auto-detected from Steam or CDN</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel-right">
+    <div class="panel-header">Gear Context</div>
+    <div class="right-section" style="flex: 0 0 55%; max-height: 55%;">
+      <div class="right-section-header">Equipped Items</div>
+
+      <!-- Populated slot example -->
+      <div class="gear-slot">
+        <div class="slot-icon">🪖</div>
+        <div class="slot-content">
+          <div class="slot-name">Helm</div>
+          <div class="slot-item-name">Helmet of the Sage</div>
+          <div class="slot-affixes">
+            <div class="affix-row">
+              <span class="affix-name">Health</span>
+              <div class="tier-pips">
+                <div class="pip active"></div><div class="pip active"></div><div class="pip active"></div><div class="pip active"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+              </div>
+              <span class="tier-value">T4</span>
+            </div>
+            <div class="affix-row">
+              <span class="affix-name">Ward on Kill</span>
+              <div class="tier-pips">
+                <div class="pip active"></div><div class="pip active"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+              </div>
+              <span class="tier-value">T2</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Another populated slot -->
+      <div class="gear-slot">
+        <div class="slot-icon">🦺</div>
+        <div class="slot-content">
+          <div class="slot-name">Body Armor</div>
+          <div class="slot-item-name">Juggernaut Plate</div>
+          <div class="slot-affixes">
+            <div class="affix-row">
+              <span class="affix-name">Health</span>
+              <div class="tier-pips">
+                <div class="pip active"></div><div class="pip active"></div><div class="pip active"></div><div class="pip active"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+              </div>
+              <span class="tier-value">T4</span>
+            </div>
+            <div class="affix-row">
+              <span class="affix-name">Armor</span>
+              <div class="tier-pips">
+                <div class="pip active"></div><div class="pip active"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+              </div>
+              <span class="tier-value">T2</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty slot with typeahead -->
+      <div class="gear-slot">
+        <div class="slot-icon" style="opacity:0.4;">🧤</div>
+        <div class="slot-content">
+          <div class="slot-name">Gloves</div>
+          <input class="slot-search" placeholder="Search items…">
+        </div>
+      </div>
+
+      <!-- Empty slot -->
+      <div class="gear-slot">
+        <div class="slot-icon" style="opacity:0.4;">👢</div>
+        <div class="slot-content">
+          <div class="slot-name">Boots</div>
+          <input class="slot-search" placeholder="Search items…">
+        </div>
+      </div>
+
+      <!-- Empty slot -->
+      <div class="gear-slot">
+        <div class="slot-icon" style="opacity:0.4;">💍</div>
+        <div class="slot-content">
+          <div class="slot-name">Ring 1</div>
+          <input class="slot-search" placeholder="Search items…">
+        </div>
+      </div>
+    </div>
+
+    <!-- Optimization Section (pinned) -->
+    <div style="flex-shrink: 0;">
+      <div class="panel-header">Optimization</div>
+      <div class="opt-section">
+        <div class="opt-slider-container">
+          <div class="opt-slider-labels">
+            <span class="opt-slider-label juggernaut">⚔ Juggernaut</span>
+            <span class="opt-slider-label glass-cannon">Glass Cannon 🔥</span>
+          </div>
+          <div class="opt-slider-track">
+            <div class="opt-slider-thumb"></div>
+          </div>
+          <div class="opt-weight-display">
+            <span style="color: var(--color-data-surv);">70% Surv</span>
+            <span>30% Dmg</span>
+          </div>
+        </div>
+
+        <button class="fine-tune-trigger" onclick="this.classList.toggle('open'); document.getElementById('ft').classList.toggle('open')">
+          <span class="fine-tune-chevron">▼</span>
+          Fine Tune
+        </button>
+
+        <div class="fine-tune-panel" id="ft">
+          <div class="sub-slider-row">
+            <span class="sub-slider-label">Damage</span>
+            <div class="sub-slider-track">
+              <div class="sub-slider-fill damage" style="width:30%;"></div>
+            </div>
+            <span class="sub-slider-value" style="color: var(--color-data-damage);">30</span>
+          </div>
+          <div class="sub-slider-row">
+            <span class="sub-slider-label">Survivability</span>
+            <div class="sub-slider-track">
+              <div class="sub-slider-fill surv" style="width:70%;"></div>
+            </div>
+            <span class="sub-slider-value" style="color: var(--color-data-surv);">70</span>
+          </div>
+          <div class="sub-slider-row">
+            <span class="sub-slider-label">Speed</span>
+            <div class="sub-slider-track">
+              <div class="sub-slider-fill speed" style="width:0%;"></div>
+            </div>
+            <span class="sub-slider-value" style="color: var(--color-data-speed);">0</span>
+          </div>
+        </div>
+
+        <button class="btn-optimize">Optimize Build</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- === SKILL PICKER GRID === -->
+<div class="section-title">Skill Picker Grid — Class/Mastery Organized with Mastery-Gate Badges</div>
+
+<div class="info-note">
+  <strong>Context:</strong> Opens inline when clicking an unassigned skill tab. Organized by base class section then each mastery's locked skills. Mastery-gate badges show point thresholds. Same hexagonal clip-path shape as PixiJS canvas nodes for visual continuity.
+</div>
+
+<div class="skill-picker">
+  <div class="picker-section-header">Sentinel Skills (Base Class)</div>
+  <div class="picker-grid">
+    <div class="picker-cell">
+      <div class="picker-hex allocated"><div class="picker-hex-icon">⚔</div></div>
+      <div class="picker-skill-name">Rive</div>
+    </div>
+    <div class="picker-cell">
+      <div class="picker-hex allocated"><div class="picker-hex-icon">🛡</div></div>
+      <div class="picker-skill-name">Shield Bash</div>
+    </div>
+    <div class="picker-cell">
+      <div class="picker-hex"><div class="picker-hex-icon">🏹</div></div>
+      <div class="picker-skill-name">Javelin</div>
+    </div>
+    <div class="picker-cell">
+      <div class="picker-hex"><div class="picker-hex-icon">⚡</div></div>
+      <div class="picker-skill-name">Lunge</div>
+    </div>
+    <div class="picker-cell">
+      <div class="picker-hex"><div class="picker-hex-icon">💥</div></div>
+      <div class="picker-skill-name">Warpath</div>
+    </div>
+    <div class="picker-cell">
+      <div class="picker-hex"><div class="picker-hex-icon">🔰</div></div>
+      <div class="picker-skill-name">Ring of Shields</div>
+    </div>
+  </div>
+
+  <div class="picker-section-header">Void Knight Mastery Skills</div>
+  <div class="picker-grid">
+    <div class="picker-cell">
+      <div class="picker-hex" style="position:relative;">
+        <div class="picker-hex-icon">💀</div>
+        <div class="mastery-badge">5 pts</div>
+      </div>
+      <div class="picker-skill-name">Void Cleave</div>
+    </div>
+    <div class="picker-cell">
+      <div class="picker-hex" style="position:relative;">
+        <div class="picker-hex-icon">🌀</div>
+        <div class="mastery-badge">10 pts</div>
+      </div>
+      <div class="picker-skill-name">Anomaly</div>
+    </div>
+    <div class="picker-cell">
+      <div class="picker-hex locked" style="position:relative;">
+        <div class="picker-hex-icon">☠</div>
+        <div class="mastery-badge">15 pts</div>
+      </div>
+      <div class="picker-skill-name">Volatile Reversal</div>
+    </div>
+    <div class="picker-cell">
+      <div class="picker-hex locked" style="position:relative;">
+        <div class="picker-hex-icon">⚜</div>
+        <div class="mastery-badge">20 pts</div>
+      </div>
+      <div class="picker-skill-name">Erasing Strike</div>
+    </div>
+    <div class="picker-cell">
+      <div class="picker-hex locked" style="position:relative;">
+        <div class="picker-hex-icon">🔮</div>
+        <div class="mastery-badge">25 pts</div>
+      </div>
+      <div class="picker-skill-name">Abyssal Echoes</div>
+    </div>
+    <div class="picker-cell">
+      <div class="picker-hex locked" style="position:relative;">
+        <div class="picker-hex-icon">💠</div>
+        <div class="mastery-badge">35 pts</div>
+      </div>
+      <div class="picker-skill-name">Time Rot</div>
+    </div>
+  </div>
+</div>
+
+<!-- === COLOR SYSTEM === -->
+<div class="section-title">Color Token System — Phase 1 Extended with Phase 2 Additions</div>
+
+<div class="color-swatch-grid">
+  <div class="color-swatch">
+    <div class="swatch-fill" style="background: #0d0d0f;"></div>
+    <div class="swatch-label">--color-bg-base</div>
+  </div>
+  <div class="color-swatch">
+    <div class="swatch-fill" style="background: #141416;"></div>
+    <div class="swatch-label">--color-bg-surface</div>
+  </div>
+  <div class="color-swatch">
+    <div class="swatch-fill" style="background: #1e1e22;"></div>
+    <div class="swatch-label">--color-bg-elevated</div>
+  </div>
+  <div class="color-swatch">
+    <div class="swatch-fill" style="background: #252529;"></div>
+    <div class="swatch-label">--color-bg-hover</div>
+  </div>
+  <div class="color-swatch">
+    <div class="swatch-fill" style="background: #c8a84b;"></div>
+    <div class="swatch-label">--color-accent-gold</div>
+  </div>
+  <div class="color-swatch">
+    <div class="swatch-fill" style="background: #8a7535;"></div>
+    <div class="swatch-label">--color-accent-gold-soft</div>
+  </div>
+  <div class="color-swatch">
+    <div class="swatch-fill" style="background: #e05a3a;"></div>
+    <div class="swatch-label">--color-data-damage</div>
+  </div>
+  <div class="color-swatch">
+    <div class="swatch-fill" style="background: #4a8fc4;"></div>
+    <div class="swatch-label">--color-data-surv</div>
+  </div>
+  <div class="color-swatch">
+    <div class="swatch-fill" style="background: #9dc44a;"></div>
+    <div class="swatch-label">--color-data-speed</div>
+  </div>
+  <div class="color-swatch">
+    <div class="swatch-fill" style="background: linear-gradient(to right, #2980b9, #888, #c0392b);"></div>
+    <div class="swatch-label">Slider Gradient (New)</div>
+  </div>
+  <div class="color-swatch">
+    <div class="swatch-fill" style="background: #c8a84b;"></div>
+    <div class="swatch-label">--color-tier-pip-active (New)</div>
+  </div>
+  <div class="color-swatch">
+    <div class="swatch-fill" style="background: #2a2a38; border: 1px solid #3a3a4a;"></div>
+    <div class="swatch-label">--color-tier-pip-inactive (New)</div>
+  </div>
+</div>
+
+<!-- === COMPONENT CALLOUTS === -->
+<div class="section-title">Key Phase 2 Components — Isolated Views</div>
+
+<div class="component-grid">
+  <!-- Optimization Slider Full -->
+  <div class="component-card">
+    <h3>OptimizationSlider — All States</h3>
+    <!-- Default (centered) -->
+    <div style="margin-bottom: 16px;">
+      <div style="font-size:10px; color: var(--color-text-muted); margin-bottom:6px;">Default (Balanced)</div>
+      <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+        <span style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color: var(--color-data-surv);">⚔ Juggernaut</span>
+        <span style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color: var(--color-data-damage);">Glass Cannon 🔥</span>
+      </div>
+      <div style="position:relative; height:8px; background: linear-gradient(to right, #2980b9, #888, #c0392b); border-radius:4px;">
+        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:18px; height:18px; background:#e8e8ea; border-radius:50%; border:2px solid #c8a84b;"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:9px; color:var(--color-text-muted); font-family:monospace; margin-top:2px;">
+        <span>50% Surv</span><span>50% Dmg</span>
+      </div>
+    </div>
+    <!-- Juggernaut max -->
+    <div style="margin-bottom: 16px;">
+      <div style="font-size:10px; color: var(--color-text-muted); margin-bottom:6px;">Max Juggernaut</div>
+      <div style="position:relative; height:8px; background: linear-gradient(to right, #2980b9, #888, #c0392b); border-radius:4px;">
+        <div style="position:absolute; top:50%; left:4px; transform:translateY(-50%); width:18px; height:18px; background:#e8e8ea; border-radius:50%; border:2px solid #4a8fc4;"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:9px; font-family:monospace; margin-top:2px;">
+        <span style="color:var(--color-data-surv);">100% Surv</span><span style="color:var(--color-text-muted);">0% Dmg</span>
+      </div>
+    </div>
+    <!-- Glass Cannon max -->
+    <div>
+      <div style="font-size:10px; color: var(--color-text-muted); margin-bottom:6px;">Max Glass Cannon</div>
+      <div style="position:relative; height:8px; background: linear-gradient(to right, #2980b9, #888, #c0392b); border-radius:4px;">
+        <div style="position:absolute; top:50%; right:4px; transform:translateY(-50%); width:18px; height:18px; background:#e8e8ea; border-radius:50%; border:2px solid #c0392b;"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:9px; font-family:monospace; margin-top:2px;">
+        <span style="color:var(--color-text-muted);">0% Surv</span><span style="color:var(--color-data-damage);">100% Dmg</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- AffixTierControl -->
+  <div class="component-card">
+    <h3>AffixTierControl — Tier Pip States</h3>
+    <div style="font-size:10px; color: var(--color-text-muted); margin-bottom:8px;">T4 (4 of 7 pips active)</div>
+    <div class="affix-row" style="margin-bottom:12px;">
+      <span class="affix-name" style="font-size:13px;">Health</span>
+      <div class="tier-pips">
+        <div class="pip active"></div><div class="pip active"></div><div class="pip active"></div><div class="pip active"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+      </div>
+      <span class="tier-value" style="font-size:12px;">T4</span>
+    </div>
+
+    <div style="font-size:10px; color: var(--color-text-muted); margin-bottom:8px;">T1 (1 of 7 pips active)</div>
+    <div class="affix-row" style="margin-bottom:12px;">
+      <span class="affix-name" style="font-size:13px;">Critical Strike</span>
+      <div class="tier-pips">
+        <div class="pip active"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+      </div>
+      <span class="tier-value" style="font-size:12px;">T1</span>
+    </div>
+
+    <div style="font-size:10px; color: var(--color-text-muted); margin-bottom:8px;">T7 Max (7 of 7 pips active)</div>
+    <div class="affix-row">
+      <span class="affix-name" style="font-size:13px;">Void Penetration</span>
+      <div class="tier-pips">
+        <div class="pip active"></div><div class="pip active"></div><div class="pip active"></div><div class="pip active"></div><div class="pip active"></div><div class="pip active"></div><div class="pip active"></div>
+      </div>
+      <span class="tier-value" style="font-size:12px; color: var(--color-node-suggested);">T7</span>
+    </div>
+  </div>
+
+  <!-- Staleness Bar states -->
+  <div class="component-card">
+    <h3>StalenessBar — All States</h3>
+    <div style="background:#1a1a10; border:1px solid #3a3a1a; border-radius:4px; padding:6px 10px; margin-bottom:6px; display:flex; align-items:center; gap:8px; font-size:11px; color:#9a9a70;">
+      <span>⚠</span><span>Game data 1.5.0 available</span>
+      <button style="padding:2px 6px; border:1px solid #9a9a70; background:transparent; color:#9a9a70; border-radius:3px; font-size:10px; cursor:pointer;">Update</button>
+      <span style="margin-left:auto; color:#5a5a5a; text-decoration:underline; cursor:pointer; font-size:10px;">Dismiss</span>
+    </div>
+    <div style="background:#1a1a10; border:1px solid #3a3a1a; border-radius:4px; padding:6px 10px; margin-bottom:6px; display:flex; align-items:center; gap:8px; font-size:11px; color:#9a9a70;">
+      <span>⟳</span><span>Updating game data…</span>
+      <span style="margin-left:auto; font-size:10px; color:#5a5a5a;">45%</span>
+    </div>
+    <div style="background:#0d1a10; border:1px solid #1a3a1a; border-radius:4px; padding:6px 10px; margin-bottom:6px; display:flex; align-items:center; gap:8px; font-size:11px; color:#4a9a4a;">
+      <span>✓</span><span>Game data updated to 1.5.0</span>
+    </div>
+    <div style="background:#1a1010; border:1px solid #3a1a1a; border-radius:4px; padding:6px 10px; display:flex; align-items:center; gap:8px; font-size:11px; color:#9a4a4a;">
+      <span>⚠</span><span>Item database unavailable — free text mode</span>
+    </div>
+  </div>
+
+  <!-- Budget Toggle + Counter -->
+  <div class="component-card">
+    <h3>BudgetToggle + UnspentCounter States</h3>
+
+    <div style="margin-bottom:12px;">
+      <div style="font-size:10px; color:var(--color-text-muted); margin-bottom:6px;">Budget ON — points remaining</div>
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+        <div class="toggle-switch on"><div class="toggle-thumb"></div></div>
+        <span style="font-size:11px; color:var(--color-text-secondary);">Enforce Level Budget</span>
+        <input class="level-input" value="80" readonly style="margin-left:auto;">
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="font-family:monospace; font-size:22px; font-weight:700; color:var(--color-accent-gold); line-height:1;">3</span>
+        <span style="font-size:11px; color:var(--color-text-muted);">passive points remaining</span>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px;">
+      <div style="font-size:10px; color:var(--color-text-muted); margin-bottom:6px;">Budget ON — zero points (build complete)</div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="font-family:monospace; font-size:22px; font-weight:700; color:var(--color-text-muted); line-height:1;">0</span>
+        <span style="font-size:11px; color:var(--color-text-muted);">passive points remaining</span>
+      </div>
+    </div>
+
+    <div>
+      <div style="font-size:10px; color:var(--color-text-muted); margin-bottom:6px;">Budget OFF — free theory-craft</div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div class="toggle-switch"><div class="toggle-thumb"></div></div>
+        <span style="font-size:11px; color:var(--color-text-muted);">Enforce Level Budget</span>
+      </div>
+      <div style="margin-top:4px; font-size:10px; color:var(--color-text-muted); font-style:italic;">Budget off — free allocation</div>
+    </div>
+  </div>
+</div>
+
+<div style="padding: 24px; text-align: center; color: var(--color-text-muted); font-size: 11px; border-top: 1px solid #1e1e22; margin-top: 16px;">
+  LEBOv2 Phase 2 UX Design Directions · Direction 1: "Focused Instrument" · Generated 2026-05-06
+  <br>See <code>ux-design-specification.md</code> for full component specs and interaction patterns
+</div>
+
+</body>
+</html>

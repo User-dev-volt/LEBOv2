@@ -1,0 +1,513 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e5]:
+      - link "Last Epoch Info" [ref=e7] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - generic: Search the site…
+          - combobox [ref=e12]
+        - img "down" [ref=e14]:
+          - img [ref=e15]
+    - generic [ref=e17]:
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - link "Home" [ref=e20] [cursor=pointer]:
+            - /url: /
+          - text: ">"
+        - text: Woven Echoes
+      - generic [ref=e21]:
+        - textbox "Search..." [ref=e24]
+        - radiogroup [ref=e27]:
+          - generic [ref=e28] [cursor=pointer]:
+            - generic [ref=e29]:
+              - radio "All" [checked]
+            - text: All
+          - generic [ref=e30] [cursor=pointer]:
+            - generic [ref=e31]:
+              - radio "Boss Fight"
+            - text: Boss Fight
+          - generic [ref=e32] [cursor=pointer]:
+            - generic [ref=e33]:
+              - radio "Crafting"
+            - text: Crafting
+        - generic [ref=e34]:
+          - switch [ref=e35] [cursor=pointer]
+          - generic [ref=e38]: Advanced
+      - generic [ref=e42]:
+        - generic [ref=e44]: 43 Woven Echoes
+        - table [ref=e47]:
+          - rowgroup [ref=e52]:
+            - row "Name Type Description Purchaseable (amber cost) Vendor Rank Weaver Points" [ref=e53]:
+              - columnheader "Name" [ref=e54] [cursor=pointer]:
+                - generic [ref=e55]:
+                  - generic [ref=e56]: Name
+                  - generic [ref=e58]:
+                    - img [ref=e59]:
+                      - img [ref=e60]
+                    - img [ref=e62]:
+                      - img [ref=e63]
+              - columnheader "Type" [ref=e65]
+              - columnheader "Description" [ref=e66]
+              - columnheader "Purchaseable (amber cost)" [ref=e67] [cursor=pointer]:
+                - generic [ref=e68]:
+                  - generic [ref=e70]:
+                    - generic [ref=e71]: Purchaseable
+                    - generic [ref=e72]: (amber cost)
+                  - generic [ref=e74]:
+                    - img [ref=e75]:
+                      - img [ref=e76]
+                    - img [ref=e78]:
+                      - img [ref=e79]
+              - columnheader "Vendor Rank" [ref=e81] [cursor=pointer]:
+                - generic [ref=e82]:
+                  - generic [ref=e83]: Vendor Rank
+                  - generic [ref=e85]:
+                    - img [ref=e86]:
+                      - img [ref=e87]
+                    - img [ref=e89]:
+                      - img [ref=e90]
+              - columnheader "Weaver Points" [ref=e92] [cursor=pointer]:
+                - generic [ref=e93]:
+                  - generic [ref=e94]: Weaver Points
+                  - generic [ref=e96]:
+                    - img [ref=e97]:
+                      - img [ref=e98]
+                    - img [ref=e100]:
+                      - img [ref=e101]
+          - rowgroup [ref=e103]:
+            - row "False Temple A temple from a forgotten timeline, filled with shrines. 750 Rank 1 1" [ref=e104]:
+              - cell "False Temple" [ref=e105]:
+                - link "False Temple" [ref=e106] [cursor=pointer]:
+                  - /url: /echo/false_temple
+              - cell [ref=e107]
+              - cell "A temple from a forgotten timeline, filled with shrines." [ref=e108]:
+                - generic [ref=e109]: A temple from a forgotten timeline, filled with shrines.
+              - cell "750" [ref=e110]
+              - cell "Rank 1" [ref=e111]
+              - cell "1" [ref=e112]
+            - row "Unclaimed Trove Lost caches abound in this graveyard of wrecked vessels. 3500 Rank 8 1" [ref=e113]:
+              - cell "Unclaimed Trove" [ref=e114]:
+                - link "Unclaimed Trove" [ref=e115] [cursor=pointer]:
+                  - /url: /echo/unclaimed_trove
+              - cell [ref=e116]
+              - cell "Lost caches abound in this graveyard of wrecked vessels." [ref=e117]:
+                - generic [ref=e118]: Lost caches abound in this graveyard of wrecked vessels.
+              - cell "3500" [ref=e119]
+              - cell "Rank 8" [ref=e120]
+              - cell "1" [ref=e121]
+            - row "Conquered Tower Confront multiple Nemeses to scale the tower. 2000 Rank 4 1" [ref=e122]:
+              - cell "Conquered Tower" [ref=e123]:
+                - link "Conquered Tower" [ref=e124] [cursor=pointer]:
+                  - /url: /echo/conquered_tower
+              - cell [ref=e125]
+              - cell "Confront multiple Nemeses to scale the tower." [ref=e126]:
+                - generic [ref=e127]: Confront multiple Nemeses to scale the tower.
+              - cell "2000" [ref=e128]
+              - cell "Rank 4" [ref=e129]
+              - cell "1" [ref=e130]
+            - row "Tomb of Vessels Boss Confront Majasa among the testaments to her avarice. Quell her rage and claim her riches. Always drops a unique piece of jewelry. 4000 Rank 10 2" [ref=e131]:
+              - cell "Tomb of Vessels" [ref=e132]:
+                - link "Tomb of Vessels" [ref=e133] [cursor=pointer]:
+                  - /url: /echo/tomb_of_vessels
+              - cell "Boss" [ref=e134]
+              - cell "Confront Majasa among the testaments to her avarice. Quell her rage and claim her riches. Always drops a unique piece of jewelry." [ref=e135]:
+                - generic [ref=e136]: Confront Majasa among the testaments to her avarice. Quell her rage and claim her riches. Always drops a unique piece of jewelry.
+              - cell "4000" [ref=e137]
+              - cell "Rank 10" [ref=e138]
+              - cell "2" [ref=e139]
+            - row "Gauntlet of Strife Crafting Duel a sequence of empowered bosses and their champions. Once the last enemy has fallen, it will drop two copies of the same random unique item, and you will gain access to the Sacrificial Altar. Here you can sacrifice one copy of a unique item to reroll the properties of another copy of the same unique item. 3000 Rank 9 1" [ref=e140]:
+              - cell "Gauntlet of Strife" [ref=e141]:
+                - link "Gauntlet of Strife" [ref=e142] [cursor=pointer]:
+                  - /url: /echo/gauntlet_of_strife
+              - cell "Crafting" [ref=e143]
+              - cell "Duel a sequence of empowered bosses and their champions. Once the last enemy has fallen, it will drop two copies of the same random unique item, and you will gain access to the Sacrificial Altar. Here you can sacrifice one copy of a unique item to reroll the properties of another copy of the same unique item." [ref=e144]:
+                - generic [ref=e145]: Duel a sequence of empowered bosses and their champions. Once the last enemy has fallen, it will drop two copies of the same random unique item, and you will gain access to the Sacrificial Altar. Here you can sacrifice one copy of a unique item to reroll the properties of another copy of the same unique item.
+              - cell "3000" [ref=e146]
+              - cell "Rank 9" [ref=e147]
+              - cell "1" [ref=e148]
+            - row "Champions' Colosseum A free for all between champions of the arena. 2800 Rank 8 1" [ref=e149]:
+              - cell "Champions' Colosseum" [ref=e150]:
+                - link "Champions' Colosseum" [ref=e151] [cursor=pointer]:
+                  - /url: /echo/champions_colosseum
+              - cell [ref=e152]
+              - cell "A free for all between champions of the arena." [ref=e153]:
+                - generic [ref=e154]: A free for all between champions of the arena.
+              - cell "2800" [ref=e155]
+              - cell "Rank 8" [ref=e156]
+              - cell "1" [ref=e157]
+            - row "Pillar of Skulls The Pillar of Skulls rises high above the Soulfire Bastion. It is here that the Lich Cremorus used soul embers to resurrect champions of ages past and ages yet to come. Stand atop the pillar and slay all champions that would rise to oppose you. 2000 Rank 6 1" [ref=e158]:
+              - cell "Pillar of Skulls" [ref=e159]:
+                - link "Pillar of Skulls" [ref=e160] [cursor=pointer]:
+                  - /url: /echo/pillar_of_skulls
+              - cell [ref=e161]
+              - cell "The Pillar of Skulls rises high above the Soulfire Bastion. It is here that the Lich Cremorus used soul embers to resurrect champions of ages past and ages yet to come. Stand atop the pillar and slay all champions that would rise to oppose you." [ref=e162]:
+                - generic [ref=e163]: The Pillar of Skulls rises high above the Soulfire Bastion. It is here that the Lich Cremorus used soul embers to resurrect champions of ages past and ages yet to come. Stand atop the pillar and slay all champions that would rise to oppose you.
+              - cell "2000" [ref=e164]
+              - cell "Rank 6" [ref=e165]
+              - cell "1" [ref=e166]
+            - row "The Seeker's Summit Boss Slay Haruspex Orian, Seeker of the Shards, upon the summit of his warcamp. Always drops a unique melee weapon. 1000 Rank 3 1" [ref=e167]:
+              - cell "The Seeker's Summit" [ref=e168]:
+                - link "The Seeker's Summit" [ref=e169] [cursor=pointer]:
+                  - /url: /echo/the_seekers_summit
+              - cell "Boss" [ref=e170]
+              - cell "Slay Haruspex Orian, Seeker of the Shards, upon the summit of his warcamp. Always drops a unique melee weapon." [ref=e171]:
+                - generic [ref=e172]: Slay Haruspex Orian, Seeker of the Shards, upon the summit of his warcamp. Always drops a unique melee weapon.
+              - cell "1000" [ref=e173]
+              - cell "Rank 3" [ref=e174]
+              - cell "1" [ref=e175]
+            - row "Soul Foundry Slay enemies to collect as many soul embers as you can before the time runs out. Then spend soul embers at the Soul Gambler. The first item purchased is always a unique. 800 Rank 2 1" [ref=e176]:
+              - cell "Soul Foundry" [ref=e177]:
+                - link "Soul Foundry" [ref=e178] [cursor=pointer]:
+                  - /url: /echo/soul_foundry
+              - cell [ref=e179]
+              - cell "Slay enemies to collect as many soul embers as you can before the time runs out. Then spend soul embers at the Soul Gambler. The first item purchased is always a unique." [ref=e180]:
+                - generic [ref=e181]: Slay enemies to collect as many soul embers as you can before the time runs out. Then spend soul embers at the Soul Gambler. The first item purchased is always a unique.
+              - cell "800" [ref=e182]
+              - cell "Rank 2" [ref=e183]
+              - cell "1" [ref=e184]
+            - row "Antipode Rift Boss Travel back to the ancient era and destroy whatever created the antipode rift. Always drops a unique piece of armor. 750 Rank 1 1" [ref=e185]:
+              - cell "Antipode Rift" [ref=e186]:
+                - link "Antipode Rift" [ref=e187] [cursor=pointer]:
+                  - /url: /echo/antipode_rift
+              - cell "Boss" [ref=e188]
+              - cell "Travel back to the ancient era and destroy whatever created the antipode rift. Always drops a unique piece of armor." [ref=e189]:
+                - generic [ref=e190]: Travel back to the ancient era and destroy whatever created the antipode rift. Always drops a unique piece of armor.
+              - cell "750" [ref=e191]
+              - cell "Rank 1" [ref=e192]
+              - cell "1" [ref=e193]
+            - row "Heart of the Hive Boss Destroy the Draal Queen deep beneath the Stonefall Mountains. Always drops a unique ranged or caster weapon. 2500 Rank 7 1" [ref=e194]:
+              - cell "Heart of the Hive" [ref=e195]:
+                - link "Heart of the Hive" [ref=e196] [cursor=pointer]:
+                  - /url: /echo/heart_of_the_hive
+              - cell "Boss" [ref=e197]
+              - cell "Destroy the Draal Queen deep beneath the Stonefall Mountains. Always drops a unique ranged or caster weapon." [ref=e198]:
+                - generic [ref=e199]: Destroy the Draal Queen deep beneath the Stonefall Mountains. Always drops a unique ranged or caster weapon.
+              - cell "2500" [ref=e200]
+              - cell "Rank 7" [ref=e201]
+              - cell "1" [ref=e202]
+            - row "Lostwood Folly Slay the roaming Fateweavers among the trails and woven halls to scatter The Weaver's followers across the surrounding echoes. Packs of The Weaver's followers in those echoes are more powerful, but drop large amounts of memory amber. 1000 Rank 3 1" [ref=e203]:
+              - cell "Lostwood Folly" [ref=e204]:
+                - link "Lostwood Folly" [ref=e205] [cursor=pointer]:
+                  - /url: /echo/lostwood_folly
+              - cell [ref=e206]
+              - cell "Slay the roaming Fateweavers among the trails and woven halls to scatter The Weaver's followers across the surrounding echoes. Packs of The Weaver's followers in those echoes are more powerful, but drop large amounts of memory amber." [ref=e207]:
+                - generic [ref=e208]: Slay the roaming Fateweavers among the trails and woven halls to scatter The Weaver's followers across the surrounding echoes. Packs of The Weaver's followers in those echoes are more powerful, but drop large amounts of memory amber.
+              - cell "1000" [ref=e209]
+              - cell "Rank 3" [ref=e210]
+              - cell "1" [ref=e211]
+            - row "The Great Bridge Crafting Break through the fortifications along the great bridge to gain access to the Forge of Fates where you can shatter your set items to reforge them. 1400 Rank 4 1" [ref=e212]:
+              - cell "The Great Bridge" [ref=e213]:
+                - link "The Great Bridge" [ref=e214] [cursor=pointer]:
+                  - /url: /echo/the_great_bridge
+              - cell "Crafting" [ref=e215]
+              - cell "Break through the fortifications along the great bridge to gain access to the Forge of Fates where you can shatter your set items to reforge them." [ref=e216]:
+                - generic [ref=e217]: Break through the fortifications along the great bridge to gain access to the Forge of Fates where you can shatter your set items to reforge them.
+              - cell "1400" [ref=e218]
+              - cell "Rank 4" [ref=e219]
+              - cell "1" [ref=e220]
+            - row "Overgrown Graveyard Help the denizens of the graveyard repel the invasive plants. 2500 Rank 7 1" [ref=e221]:
+              - cell "Overgrown Graveyard" [ref=e222]:
+                - link "Overgrown Graveyard" [ref=e223] [cursor=pointer]:
+                  - /url: /echo/overgrown_graveyard
+              - cell [ref=e224]
+              - cell "Help the denizens of the graveyard repel the invasive plants." [ref=e225]:
+                - generic [ref=e226]: Help the denizens of the graveyard repel the invasive plants.
+              - cell "2500" [ref=e227]
+              - cell "Rank 7" [ref=e228]
+              - cell "1" [ref=e229]
+            - row "Confluence of Oblivion Boss Defeat a Shade of Orobyss of each type to reset this timeline's web of echoes and gain corruption based on the highest corruption reached in any timeline by any character with access to the same stash as this one. 3500 Rank 10 1" [ref=e230]:
+              - cell "Confluence of Oblivion" [ref=e231]:
+                - link "Confluence of Oblivion" [ref=e232] [cursor=pointer]:
+                  - /url: /echo/confluence_of_oblivion
+              - cell "Boss" [ref=e233]
+              - cell "Defeat a Shade of Orobyss of each type to reset this timeline's web of echoes and gain corruption based on the highest corruption reached in any timeline by any character with access to the same stash as this one." [ref=e234]:
+                - generic [ref=e235]: Defeat a Shade of Orobyss of each type to reset this timeline's web of echoes and gain corruption based on the highest corruption reached in any timeline by any character with access to the same stash as this one.
+              - cell "3500" [ref=e236]
+              - cell "Rank 10" [ref=e237]
+              - cell "1" [ref=e238]
+            - row "Threshold of Eternity Boss Upon the threshold Aberroth awaits. 0" [ref=e239]:
+              - cell "Threshold of Eternity" [ref=e240]:
+                - link "Threshold of Eternity" [ref=e241] [cursor=pointer]:
+                  - /url: /echo/threshold_of_eternity
+              - cell "Boss" [ref=e242]
+              - cell "Upon the threshold Aberroth awaits." [ref=e243]:
+                - generic [ref=e244]: Upon the threshold Aberroth awaits.
+              - cell [ref=e245]
+              - cell [ref=e246]
+              - cell "0" [ref=e247]
+            - row "The Forgotten Keep Wade through the bloodsoaked halls to confront the Baroness. 800 Rank 2 1" [ref=e248]:
+              - cell "The Forgotten Keep" [ref=e249]:
+                - link "The Forgotten Keep" [ref=e250] [cursor=pointer]:
+                  - /url: /echo/the_forgotten_keep
+              - cell [ref=e251]
+              - cell "Wade through the bloodsoaked halls to confront the Baroness." [ref=e252]:
+                - generic [ref=e253]: Wade through the bloodsoaked halls to confront the Baroness.
+              - cell "800" [ref=e254]
+              - cell "Rank 2" [ref=e255]
+              - cell "1" [ref=e256]
+            - row "The Grand Brewery Brawl with beer in the brewery and emerge victorious to claim the Brewmaster's Buckle. 2000 Rank 6 1" [ref=e257]:
+              - cell "The Grand Brewery" [ref=e258]:
+                - link "The Grand Brewery" [ref=e259] [cursor=pointer]:
+                  - /url: /echo/the_grand_brewery
+              - cell [ref=e260]
+              - cell "Brawl with beer in the brewery and emerge victorious to claim the Brewmaster's Buckle." [ref=e261]:
+                - generic [ref=e262]: Brawl with beer in the brewery and emerge victorious to claim the Brewmaster's Buckle.
+              - cell "2000" [ref=e263]
+              - cell "Rank 6" [ref=e264]
+              - cell "1" [ref=e265]
+            - row "Farsight Turtle Crafting Defend the turtle of enormous girth as it transports the Transmuting Gem. Once the attackers are defeated you can harness the gem's power to reweave the fate of your unique items that have legendary potential, either increasing it or decreasing it. The new legendary potential is rolled the same way as the legendary potential of a freshly dropped unique of that type. As such, for most uniques it is mostly likely to change the legendary potential to 0. 2500 Rank 7 1" [ref=e266]:
+              - cell "Farsight Turtle" [ref=e267]:
+                - link "Farsight Turtle" [ref=e268] [cursor=pointer]:
+                  - /url: /echo/farsight_turtle
+              - cell "Crafting" [ref=e269]
+              - cell "Defend the turtle of enormous girth as it transports the Transmuting Gem. Once the attackers are defeated you can harness the gem's power to reweave the fate of your unique items that have legendary potential, either increasing it or decreasing it. The new legendary potential is rolled the same way as the legendary potential of a freshly dropped unique of that type. As such, for most uniques it is mostly likely to change the legendary potential to 0." [ref=e270]:
+                - generic [ref=e271]: Defend the turtle of enormous girth as it transports the Transmuting Gem. Once the attackers are defeated you can harness the gem's power to reweave the fate of your unique items that have legendary potential, either increasing it or decreasing it. The new legendary potential is rolled the same way as the legendary potential of a freshly dropped unique of that type. As such, for most uniques it is mostly likely to change the legendary potential to 0.
+              - cell "2500" [ref=e272]
+              - cell "Rank 7" [ref=e273]
+              - cell "1" [ref=e274]
+            - row "Woven Vessel of Chaos Destroy the Vessel of Chaos in this echo to reroll the rewards of nearby uncompleted echoes. 2500 Rank 7 1" [ref=e275]:
+              - cell "Woven Vessel of Chaos" [ref=e276]:
+                - link "Woven Vessel of Chaos" [ref=e277] [cursor=pointer]:
+                  - /url: /echo/woven_vessel_of_chaos
+              - cell [ref=e278]
+              - cell "Destroy the Vessel of Chaos in this echo to reroll the rewards of nearby uncompleted echoes." [ref=e279]:
+                - generic [ref=e280]: Destroy the Vessel of Chaos in this echo to reroll the rewards of nearby uncompleted echoes.
+              - cell "2500" [ref=e281]
+              - cell "Rank 7" [ref=e282]
+              - cell "1" [ref=e283]
+            - row "Woven Vessel of Memory Destroy the Vessel of Memory in this echo to restore nearby completed echoes to their original states, allowing you to complete them again and claim their rewards for a second time. Woven Echoes and echoes containing Vessels of Memory or Vessels of Chaos are unaffected. 3000 Rank 8 1" [ref=e284]:
+              - cell "Woven Vessel of Memory" [ref=e285]:
+                - link "Woven Vessel of Memory" [ref=e286] [cursor=pointer]:
+                  - /url: /echo/woven_vessel_of_memory
+              - cell [ref=e287]
+              - cell "Destroy the Vessel of Memory in this echo to restore nearby completed echoes to their original states, allowing you to complete them again and claim their rewards for a second time. Woven Echoes and echoes containing Vessels of Memory or Vessels of Chaos are unaffected." [ref=e288]:
+                - generic [ref=e289]: Destroy the Vessel of Memory in this echo to restore nearby completed echoes to their original states, allowing you to complete them again and claim their rewards for a second time. Woven Echoes and echoes containing Vessels of Memory or Vessels of Chaos are unaffected.
+              - cell "3000" [ref=e290]
+              - cell "Rank 8" [ref=e291]
+              - cell "1" [ref=e292]
+            - row "Rune Prison Complex Crafting A runemaster fortress from which Rune Prisons are temporally displaced, and the arcane experiments they created are sealed away. Defeat the wardens to lower the barrier around the Thaumaturgy Device and craft your own experimental items. 1" [ref=e293]:
+              - cell "Rune Prison Complex" [ref=e294]:
+                - link "Rune Prison Complex" [ref=e295] [cursor=pointer]:
+                  - /url: /echo/rune_prison_complex
+              - cell "Crafting" [ref=e296]
+              - cell "A runemaster fortress from which Rune Prisons are temporally displaced, and the arcane experiments they created are sealed away. Defeat the wardens to lower the barrier around the Thaumaturgy Device and craft your own experimental items." [ref=e297]:
+                - generic [ref=e298]: A runemaster fortress from which Rune Prisons are temporally displaced, and the arcane experiments they created are sealed away. Defeat the wardens to lower the barrier around the Thaumaturgy Device and craft your own experimental items.
+              - cell [ref=e299]
+              - cell [ref=e300]
+              - cell "1" [ref=e301]
+            - row "Oerden's Watch Crafting Time travel between the abandoned tower in the Divine Era and the refortified Lich's abode in the Imperial Era. Defeat both the Osprix and Imperial forces to control the Relic of the Oberserver and alter the fate of your items. The Relic allows you to swap between strength, intelligence, dexterity, and attunement affixes on your items. 3500 Rank 10 1" [ref=e302]:
+              - cell "Oerden's Watch" [ref=e303]:
+                - link "Oerden's Watch" [ref=e304] [cursor=pointer]:
+                  - /url: /echo/oerdens_watch
+              - cell "Crafting" [ref=e305]
+              - cell "Time travel between the abandoned tower in the Divine Era and the refortified Lich's abode in the Imperial Era. Defeat both the Osprix and Imperial forces to control the Relic of the Oberserver and alter the fate of your items. The Relic allows you to swap between strength, intelligence, dexterity, and attunement affixes on your items." [ref=e306]:
+                - generic [ref=e307]: Time travel between the abandoned tower in the Divine Era and the refortified Lich's abode in the Imperial Era. Defeat both the Osprix and Imperial forces to control the Relic of the Oberserver and alter the fate of your items. The Relic allows you to swap between strength, intelligence, dexterity, and attunement affixes on your items.
+              - cell "3500" [ref=e308]
+              - cell "Rank 10" [ref=e309]
+              - cell "1" [ref=e310]
+            - row "Cemetery of Reweaving Crafting A Cemetery of the Erased where woven echoes can be exchanged for others, once the Woven Firstborn has been slain. 1000 Rank 2 1" [ref=e311]:
+              - cell "Cemetery of Reweaving" [ref=e312]:
+                - link "Cemetery of Reweaving" [ref=e313] [cursor=pointer]:
+                  - /url: /echo/cemetery_of_reweaving
+              - cell "Crafting" [ref=e314]
+              - cell "A Cemetery of the Erased where woven echoes can be exchanged for others, once the Woven Firstborn has been slain." [ref=e315]:
+                - generic [ref=e316]: A Cemetery of the Erased where woven echoes can be exchanged for others, once the Woven Firstborn has been slain.
+              - cell "1000" [ref=e317]
+              - cell "Rank 2" [ref=e318]
+              - cell "1" [ref=e319]
+            - row "Sepulchre of the Lost Delve into a vast Tomb of the Erased and defeat the Fateweavers to claim the echo specific rewards of all surrounding echoes. 1500 Rank 4 1" [ref=e320]:
+              - cell "Sepulchre of the Lost" [ref=e321]:
+                - link "Sepulchre of the Lost" [ref=e322] [cursor=pointer]:
+                  - /url: /echo/sepulchre_of_the_lost
+              - cell [ref=e323]
+              - cell "Delve into a vast Tomb of the Erased and defeat the Fateweavers to claim the echo specific rewards of all surrounding echoes." [ref=e324]:
+                - generic [ref=e325]: Delve into a vast Tomb of the Erased and defeat the Fateweavers to claim the echo specific rewards of all surrounding echoes.
+              - cell "1500" [ref=e326]
+              - cell "Rank 4" [ref=e327]
+              - cell "1" [ref=e328]
+            - row "Cenotaph of Worlds Descend into a labyrinthine Tomb of the Erased and defeat the Ascendant Firstborn to weave new Tombs of the Erased into all surrounding echoes. 3000 Rank 9 1" [ref=e329]:
+              - cell "Cenotaph of Worlds" [ref=e330]:
+                - link "Cenotaph of Worlds" [ref=e331] [cursor=pointer]:
+                  - /url: /echo/cenotaph_of_worlds
+              - cell [ref=e332]
+              - cell "Descend into a labyrinthine Tomb of the Erased and defeat the Ascendant Firstborn to weave new Tombs of the Erased into all surrounding echoes." [ref=e333]:
+                - generic [ref=e334]: Descend into a labyrinthine Tomb of the Erased and defeat the Ascendant Firstborn to weave new Tombs of the Erased into all surrounding echoes.
+              - cell "3000" [ref=e335]
+              - cell "Rank 9" [ref=e336]
+              - cell "1" [ref=e337]
+            - row "Collapsing Horizon Boss Duel a Harbinger that has already slain the boss of this timeline, and claim its spoils. It drops the same items as it would have had you slain it right after defeating the timeline boss. 1" [ref=e338]:
+              - cell "Collapsing Horizon" [ref=e339]:
+                - link "Collapsing Horizon" [ref=e340] [cursor=pointer]:
+                  - /url: /echo/collapsing_horizon
+              - cell "Boss" [ref=e341]
+              - cell "Duel a Harbinger that has already slain the boss of this timeline, and claim its spoils. It drops the same items as it would have had you slain it right after defeating the timeline boss." [ref=e342]:
+                - generic [ref=e343]: Duel a Harbinger that has already slain the boss of this timeline, and claim its spoils. It drops the same items as it would have had you slain it right after defeating the timeline boss.
+              - cell [ref=e344]
+              - cell [ref=e345]
+              - cell "1" [ref=e346]
+            - row "The Fading Brink Boss Travel to the brink of the black hole, to the end of all timelines that Orobyss has erased. There confront a sequence of Harbingers who have slain the bosses of those timelines and reclaim the treasures they stole. 2" [ref=e347]:
+              - cell "The Fading Brink" [ref=e348]:
+                - link "The Fading Brink" [ref=e349] [cursor=pointer]:
+                  - /url: /echo/the_fading_brink
+              - cell "Boss" [ref=e350]
+              - cell "Travel to the brink of the black hole, to the end of all timelines that Orobyss has erased. There confront a sequence of Harbingers who have slain the bosses of those timelines and reclaim the treasures they stole." [ref=e351]:
+                - generic [ref=e352]: Travel to the brink of the black hole, to the end of all timelines that Orobyss has erased. There confront a sequence of Harbingers who have slain the bosses of those timelines and reclaim the treasures they stole.
+              - cell [ref=e353]
+              - cell [ref=e354]
+              - cell "2" [ref=e355]
+            - row "Woven Beacon Charge the Great Beacon in this echo to reveal echoes in a large area around it. 750 Rank 1 1" [ref=e356]:
+              - cell "Woven Beacon" [ref=e357]:
+                - link "Woven Beacon" [ref=e358] [cursor=pointer]:
+                  - /url: /echo/woven_beacon
+              - cell [ref=e359]
+              - cell "Charge the Great Beacon in this echo to reveal echoes in a large area around it." [ref=e360]:
+                - generic [ref=e361]: Charge the Great Beacon in this echo to reveal echoes in a large area around it.
+              - cell "750" [ref=e362]
+              - cell "Rank 1" [ref=e363]
+              - cell "1" [ref=e364]
+            - row "Vault of the Barnacle King Before he vanished, the Barnacle King stashed his treasure in a hidden vault deep beneath the ground. Search for the lost vault within the caverns and altruistically free the overburdened lizards locked within the caches. 1" [ref=e365]:
+              - cell "Vault of the Barnacle King" [ref=e366]:
+                - link "Vault of the Barnacle King" [ref=e367] [cursor=pointer]:
+                  - /url: /echo/vault_of_the_barnacle_king
+              - cell [ref=e368]
+              - cell "Before he vanished, the Barnacle King stashed his treasure in a hidden vault deep beneath the ground. Search for the lost vault within the caverns and altruistically free the overburdened lizards locked within the caches." [ref=e369]:
+                - generic [ref=e370]: Before he vanished, the Barnacle King stashed his treasure in a hidden vault deep beneath the ground. Search for the lost vault within the caverns and altruistically free the overburdened lizards locked within the caches.
+              - cell [ref=e371]
+              - cell [ref=e372]
+              - cell "1" [ref=e373]
+            - row "Defiled Fortress Boss Venture into the eastern fortress long since broken and defiled by the Harbingers. Disturb the remains of its defenders to confront the Void Nemesis and destroy it. Completing this echo permanently adds the void nemesis to the pool of nemeses you may encounter and improves the chance for rare and exalted items' affixes to become exalted when empowering a nemesis. 1750 Rank 6 1" [ref=e374]:
+              - cell "Defiled Fortress" [ref=e375]:
+                - link "Defiled Fortress" [ref=e376] [cursor=pointer]:
+                  - /url: /echo/defiled_fortress
+              - cell "Boss" [ref=e377]
+              - cell "Venture into the eastern fortress long since broken and defiled by the Harbingers. Disturb the remains of its defenders to confront the Void Nemesis and destroy it. Completing this echo permanently adds the void nemesis to the pool of nemeses you may encounter and improves the chance for rare and exalted items' affixes to become exalted when empowering a nemesis." [ref=e378]:
+                - generic [ref=e379]: Venture into the eastern fortress long since broken and defiled by the Harbingers. Disturb the remains of its defenders to confront the Void Nemesis and destroy it. Completing this echo permanently adds the void nemesis to the pool of nemeses you may encounter and improves the chance for rare and exalted items' affixes to become exalted when empowering a nemesis.
+              - cell "1750" [ref=e380]
+              - cell "Rank 6" [ref=e381]
+              - cell "1" [ref=e382]
+            - row "Bountiful Wilds Complete the objective to claim loot fit for a great Primalist. 1500 Rank 5 1" [ref=e383]:
+              - cell "Bountiful Wilds" [ref=e384]:
+                - link "Bountiful Wilds" [ref=e385] [cursor=pointer]:
+                  - /url: /echo/bountiful_wilds
+              - cell [ref=e386]
+              - cell "Complete the objective to claim loot fit for a great Primalist." [ref=e387]:
+                - generic [ref=e388]: Complete the objective to claim loot fit for a great Primalist.
+              - cell "1500" [ref=e389]
+              - cell "Rank 5" [ref=e390]
+              - cell "1" [ref=e391]
+            - row "Frostfire Caverns Complete the objective to claim loot fit for a great Mage. 1500 Rank 5 1" [ref=e392]:
+              - cell "Frostfire Caverns" [ref=e393]:
+                - link "Frostfire Caverns" [ref=e394] [cursor=pointer]:
+                  - /url: /echo/frostfire_caverns
+              - cell [ref=e395]
+              - cell "Complete the objective to claim loot fit for a great Mage." [ref=e396]:
+                - generic [ref=e397]: Complete the objective to claim loot fit for a great Mage.
+              - cell "1500" [ref=e398]
+              - cell "Rank 5" [ref=e399]
+              - cell "1" [ref=e400]
+            - row "Besieged Gardens Complete the objective to claim loot fit for a great Sentinel. 1500 Rank 5 1" [ref=e401]:
+              - cell "Besieged Gardens" [ref=e402]:
+                - link "Besieged Gardens" [ref=e403] [cursor=pointer]:
+                  - /url: /echo/besieged_gardens
+              - cell [ref=e404]
+              - cell "Complete the objective to claim loot fit for a great Sentinel." [ref=e405]:
+                - generic [ref=e406]: Complete the objective to claim loot fit for a great Sentinel.
+              - cell "1500" [ref=e407]
+              - cell "Rank 5" [ref=e408]
+              - cell "1" [ref=e409]
+            - row "Dead Forest Complete the objective to claim loot fit for a great Acolyte. 1500 Rank 5 1" [ref=e410]:
+              - cell "Dead Forest" [ref=e411]:
+                - link "Dead Forest" [ref=e412] [cursor=pointer]:
+                  - /url: /echo/dead_forest
+              - cell [ref=e413]
+              - cell "Complete the objective to claim loot fit for a great Acolyte." [ref=e414]:
+                - generic [ref=e415]: Complete the objective to claim loot fit for a great Acolyte.
+              - cell "1500" [ref=e416]
+              - cell "Rank 5" [ref=e417]
+              - cell "1" [ref=e418]
+            - row "Cave of Shadows Complete the objective to claim loot fit for a great Rogue. 1500 Rank 5 1" [ref=e419]:
+              - cell "Cave of Shadows" [ref=e420]:
+                - link "Cave of Shadows" [ref=e421] [cursor=pointer]:
+                  - /url: /echo/cave_of_shadows
+              - cell [ref=e422]
+              - cell "Complete the objective to claim loot fit for a great Rogue." [ref=e423]:
+                - generic [ref=e424]: Complete the objective to claim loot fit for a great Rogue.
+              - cell "1500" [ref=e425]
+              - cell "Rank 5" [ref=e426]
+              - cell "1" [ref=e427]
+            - row "Bloodline Glade Slay a pack of randomly evolved Rift Beasts Champions to retrieve the Primordial Exalted Items they guard, each of which has a Primordial Champion Affix. 4000 Rank 3 1" [ref=e428]:
+              - cell "Bloodline Glade" [ref=e429]:
+                - link "Bloodline Glade" [ref=e430] [cursor=pointer]:
+                  - /url: /echo/bloodline_glade
+              - cell [ref=e431]
+              - cell "Slay a pack of randomly evolved Rift Beasts Champions to retrieve the Primordial Exalted Items they guard, each of which has a Primordial Champion Affix." [ref=e432]:
+                - generic [ref=e433]: Slay a pack of randomly evolved Rift Beasts Champions to retrieve the Primordial Exalted Items they guard, each of which has a Primordial Champion Affix.
+              - cell "4000" [ref=e434]
+              - cell "Rank 3" [ref=e435]
+              - cell "1" [ref=e436]
+            - row "Nesting Grove Protect the Rift Beast Nests to spread Rift Beast encounters to surrounding echoes. Cannot add Rift Beast Encounters to Arena Echoes, Woven Echoes, or Cemeteries of the Erased. Only applies to the first attempt at each echo. 2000 Rank 5 1" [ref=e437]:
+              - cell "Nesting Grove" [ref=e438]:
+                - link "Nesting Grove" [ref=e439] [cursor=pointer]:
+                  - /url: /echo/nesting_grove
+              - cell [ref=e440]
+              - cell "Protect the Rift Beast Nests to spread Rift Beast encounters to surrounding echoes. Cannot add Rift Beast Encounters to Arena Echoes, Woven Echoes, or Cemeteries of the Erased. Only applies to the first attempt at each echo." [ref=e441]:
+                - generic [ref=e442]: Protect the Rift Beast Nests to spread Rift Beast encounters to surrounding echoes. Cannot add Rift Beast Encounters to Arena Echoes, Woven Echoes, or Cemeteries of the Erased. Only applies to the first attempt at each echo.
+              - cell "2000" [ref=e443]
+              - cell "Rank 5" [ref=e444]
+              - cell "1" [ref=e445]
+            - row "Rampant Coast Boss Slay a rampantly evolved Rift Beast with a crystallised heart to unlock the ability to evolve your own rift beast Lineages beyond the normal limit. 7500 Rank 7 1" [ref=e446]:
+              - cell "Rampant Coast" [ref=e447]:
+                - link "Rampant Coast" [ref=e448] [cursor=pointer]:
+                  - /url: /echo/rampant_coast
+              - cell "Boss" [ref=e449]
+              - cell "Slay a rampantly evolved Rift Beast with a crystallised heart to unlock the ability to evolve your own rift beast Lineages beyond the normal limit." [ref=e450]:
+                - generic [ref=e451]: Slay a rampantly evolved Rift Beast with a crystallised heart to unlock the ability to evolve your own rift beast Lineages beyond the normal limit.
+              - cell "7500" [ref=e452]
+              - cell "Rank 7" [ref=e453]
+              - cell "1" [ref=e454]
+            - row "Omen's Veil Boss Travel to the veil between worlds, where Omens gather. Defeat them to seize control over their influence of the timeline, and attract Omens to surrounding echoes. Shatter their plans completely and you may ascend to the pinnacle of their power. 0" [ref=e455]:
+              - cell "Omen's Veil" [ref=e456]:
+                - link "Omen's Veil" [ref=e457] [cursor=pointer]:
+                  - /url: /echo/omens_veil
+              - cell "Boss" [ref=e458]
+              - cell "Travel to the veil between worlds, where Omens gather. Defeat them to seize control over their influence of the timeline, and attract Omens to surrounding echoes. Shatter their plans completely and you may ascend to the pinnacle of their power." [ref=e459]:
+                - generic [ref=e460]: Travel to the veil between worlds, where Omens gather. Defeat them to seize control over their influence of the timeline, and attract Omens to surrounding echoes. Shatter their plans completely and you may ascend to the pinnacle of their power.
+              - cell [ref=e461]
+              - cell [ref=e462]
+              - cell "0" [ref=e463]
+            - row "Fractured Prison Boss The Observer's vision of himself begins to coalesce. The Omens must be stopped. 0" [ref=e464]:
+              - cell "Fractured Prison" [ref=e465]:
+                - link "Fractured Prison" [ref=e466] [cursor=pointer]:
+                  - /url: /echo/fractured_prison
+              - cell "Boss" [ref=e467]
+              - cell "The Observer's vision of himself begins to coalesce. The Omens must be stopped." [ref=e468]:
+                - generic [ref=e469]: The Observer's vision of himself begins to coalesce. The Omens must be stopped.
+              - cell [ref=e470]
+              - cell [ref=e471]
+              - cell "0" [ref=e472]
+            - row "Primeval Cascade Discover the Rift within the ancient valley and slay the Rift Beast within. 0" [ref=e473]:
+              - cell "Primeval Cascade" [ref=e474]:
+                - link "Primeval Cascade" [ref=e475] [cursor=pointer]:
+                  - /url: /echo/primeval_cascade
+              - cell [ref=e476]
+              - cell "Discover the Rift within the ancient valley and slay the Rift Beast within." [ref=e477]:
+                - generic [ref=e478]: Discover the Rift within the ancient valley and slay the Rift Beast within.
+              - cell [ref=e479]
+              - cell [ref=e480]
+              - cell "0" [ref=e481]
+            - row "Pinnacle of Chaos Ascend to the pinnacle of the veil. Hold back the Omens' onslaught of champions and shatter their influence over the Monolith. 0" [ref=e482]:
+              - cell "Pinnacle of Chaos" [ref=e483]:
+                - link "Pinnacle of Chaos" [ref=e484] [cursor=pointer]:
+                  - /url: /echo/pinnacle_of_chaos
+              - cell [ref=e485]
+              - cell "Ascend to the pinnacle of the veil. Hold back the Omens' onslaught of champions and shatter their influence over the Monolith." [ref=e486]:
+                - generic [ref=e487]: Ascend to the pinnacle of the veil. Hold back the Omens' onslaught of champions and shatter their influence over the Monolith.
+              - cell [ref=e488]
+              - cell [ref=e489]
+              - cell "0" [ref=e490]
+    - generic [ref=e491]:
+      - text: Page slapped together by
+      - link "Tunk" [ref=e492] [cursor=pointer]:
+        - /url: https://forum.lastepoch.com/u/tunk
+  - alert [ref=e493]

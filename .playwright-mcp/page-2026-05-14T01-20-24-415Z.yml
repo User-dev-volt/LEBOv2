@@ -1,0 +1,82 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e5]:
+      - link "Last Epoch Info" [ref=e7] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - generic: Search the site…
+          - combobox [ref=e12]
+        - img "down" [ref=e14]:
+          - img [ref=e15]
+    - generic [ref=e17]:
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - link "Home" [ref=e20] [cursor=pointer]:
+            - /url: /
+          - text: ">"
+        - generic [ref=e21]: Factions>
+        - text: The Woven
+      - table [ref=e29]:
+        - rowgroup [ref=e30]:
+          - row "Rank Name Description Reputation" [ref=e31]:
+            - columnheader "Rank" [ref=e32]
+            - columnheader "Name" [ref=e33]
+            - columnheader "Description" [ref=e34]
+            - columnheader "Reputation" [ref=e35]
+        - rowgroup [ref=e36]:
+          - row "1 Rank 1 +1 Weaver Tree points 1" [ref=e37]:
+            - cell "1" [ref=e38]
+            - cell "Rank 1" [ref=e39]
+            - cell "+1 Weaver Tree points" [ref=e40]
+            - cell "1" [ref=e41]
+          - row "2 Rank 2 +1 Weaver Tree points 1,000" [ref=e42]:
+            - cell "2" [ref=e43]
+            - cell "Rank 2" [ref=e44]
+            - cell "+1 Weaver Tree points" [ref=e45]
+            - cell "1,000" [ref=e46]
+          - row "3 Rank 3 +1 Weaver Tree points, You can reforge class-specific idols at the Woven Enchanter 2,500" [ref=e47]:
+            - cell "3" [ref=e48]
+            - cell "Rank 3" [ref=e49]
+            - cell "+1 Weaver Tree points, You can reforge class-specific idols at the Woven Enchanter" [ref=e50]
+            - cell "2,500" [ref=e51]
+          - row "4 Rank 4 +1 Weaver Tree points, Enchanting class-specific idols is more likely to result in higher Weaver's Touch 5,000" [ref=e52]:
+            - cell "4" [ref=e53]
+            - cell "Rank 4" [ref=e54]
+            - cell "+1 Weaver Tree points, Enchanting class-specific idols is more likely to result in higher Weaver's Touch" [ref=e55]
+            - cell "5,000" [ref=e56]
+          - row "5 Rank 5 +1 Weaver Tree points, You can reforge Weaver idols at the Woven Enchanter 10,000" [ref=e57]:
+            - cell "5" [ref=e58]
+            - cell "Rank 5" [ref=e59]
+            - cell "+1 Weaver Tree points, You can reforge Weaver idols at the Woven Enchanter" [ref=e60]
+            - cell "10,000" [ref=e61]
+          - row "6 Rank 6 +1 Weaver Tree points 17,500" [ref=e62]:
+            - cell "6" [ref=e63]
+            - cell "Rank 6" [ref=e64]
+            - cell "+1 Weaver Tree points" [ref=e65]
+            - cell "17,500" [ref=e66]
+          - row "7 Rank 7 +1 Weaver Tree points, Reforging Weaver idols is 10% more likely to result in 2 Weaver affixes 30,000" [ref=e67]:
+            - cell "7" [ref=e68]
+            - cell "Rank 7" [ref=e69]
+            - cell "+1 Weaver Tree points, Reforging Weaver idols is 10% more likely to result in 2 Weaver affixes" [ref=e70]
+            - cell "30,000" [ref=e71]
+          - row "8 Rank 8 +1 Weaver Tree points 50,000" [ref=e72]:
+            - cell "8" [ref=e73]
+            - cell "Rank 8" [ref=e74]
+            - cell "+1 Weaver Tree points" [ref=e75]
+            - cell "50,000" [ref=e76]
+          - row "9 Rank 9 +2 Weaver Tree points, 10% more Memory Amber drops in your echoes 75,000" [ref=e77]:
+            - cell "9" [ref=e78]
+            - cell "Rank 9" [ref=e79]
+            - cell "+2 Weaver Tree points, 10% more Memory Amber drops in your echoes" [ref=e80]
+            - cell "75,000" [ref=e81]
+          - row "10 Rank 10 +3 Weaver Tree points 100,000" [ref=e82]:
+            - cell "10" [ref=e83]
+            - cell "Rank 10" [ref=e84]
+            - cell "+3 Weaver Tree points" [ref=e85]
+            - cell "100,000" [ref=e86]
+    - generic [ref=e87]:
+      - text: Page slapped together by
+      - link "Tunk" [ref=e88] [cursor=pointer]:
+        - /url: https://forum.lastepoch.com/u/tunk
+  - alert [ref=e89]

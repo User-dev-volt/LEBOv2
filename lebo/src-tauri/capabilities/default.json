@@ -1,0 +1,23 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default LEBOv2 capability",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "opener:default",
+    "sql:allow-execute",
+    "sql:allow-select",
+    "sql:allow-close",
+    "sql:allow-load",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://raw.githubusercontent.com/alec-vautherot/**" }
+      ]
+    },
+    "store:default",
+    "updater:default",
+    "stronghold:default"
+  ]
+}

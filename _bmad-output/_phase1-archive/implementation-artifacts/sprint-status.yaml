@@ -1,0 +1,198 @@
+# generated: 2026-04-18
+# last_updated: 2026-04-18
+
+# project: LEBOv2
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+#
+# DEPENDENCY CHAIN (2026-04-18 update):
+# =======================================
+# Story 1.3 was split into:
+#   - 1.3a: Game Data Source Research Spike (time-boxed 2-3 days, doc output only)
+#   - 1.3b: Game Data Pipeline — Implementation (gates all downstream data-dependent work)
+#
+# Critical path: 1.1 → 1.2 → 1.3a → 1.3b → [1.4, 1.5, 2.1, 3.1, 3.2, 4.1]
+#
+# Blocked on 1.3b completion:
+#   - 1.4 (Passive Skill Tree Rendering — needs real node data)
+#   - 1.5 (Interactive Tree Controls — needs real node data)
+#   - 2.1 (Build Code Import — needs node ID resolution from game data)
+#   - 3.1 (Scoring Engine — needs node tags/effect data for weighting)
+#   - 3.2 (Claude API Integration — needs scoring engine from 3.1, which needs 1.3b)
+#   - 4.1 (Context Panel — needs item/affix/idol data from game data)
+
+generated: 2026-04-18
+last_updated: 2026-05-05 # All epics marked done — full MVP implementation complete; all testing confirmed by user
+project: LEBOv2
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+
+  # ─────────────────────────────────────────────────────────────────
+  # EPIC 1: Foundation & Interactive Skill Tree
+  # Critical path: 1.1 → 1.2 → 1.3a → 1.3b → 1.4 → 1.5 → 1.6 → 1.7
+  # ─────────────────────────────────────────────────────────────────
+  epic-1: done
+
+  # Story 1.1: No dependencies — first story
+  1-1-app-foundation-tauri-react-design-system-scaffold: done
+
+  # Story 1.2: Gates all skill tree work — spike must hit 60fps before 1.3a begins
+  1-2-pixijs-webgl-renderer-spike-60fps-validation-gate: done
+
+  # Story 1.3a: SPIKE — research only, 2–3 days time-boxed. Begins after 1.2.
+  # Output: docs/game-data-source.md. Gates 1.3b.
+  1-3a-game-data-source-research-spike: done
+
+  # Story 1.3b: Implementation. HARD GATE: requires 1.3a complete + docs/game-data-source.md.
+  # Unblocks: 1.4, 1.5, 2.1, 3.1, 3.2, 4.1
+  1-3b-game-data-pipeline-implementation: done
+
+  # Story 1.4: BLOCKED ON 1.3b — needs real game data (node positions, IDs)
+  1-4-passive-skill-tree-rendering: done
+
+  # Story 1.5: BLOCKED ON 1.3b — needs real node data for allocation guards
+  1-5-interactive-tree-controls-allocation-pan-zoom-nodetooltip: done
+
+  # Story 1.6: Depends on 1.4 + 1.5 (tree rendering must exist first)
+  1-6-active-skill-tree-tab-navigation: done
+
+  # Story 1.7: Depends on 1.3b (game data pipeline must exist to version it)
+  1-7-game-data-versioning-update-ux: done
+
+  epic-1-retrospective: optional
+
+  # ─────────────────────────────────────────────────────────────────
+  # EPIC 2: Build Management
+  # ─────────────────────────────────────────────────────────────────
+  epic-2: done # 2.1 deferred post-MVP (no pasteable build code format in Last Epoch); 2.2 remains backlog (depends on 2.1)
+
+  # Story 2.1: DEFERRED POST-MVP — no pasteable build code format exists for Last Epoch.
+  # lastepochtools.com uses server-side URL hashes; save files use numeric IDs with no mapping.
+  # See lebo/docs/build-code-format.md for research findings.
+  2-1-build-code-import-happy-path: deferred
+
+  # Story 2.2: Depends on 2.1 (extends import happy path with error cases)
+  2-2-partial-build-import-error-handling: backlog
+
+  # Story 2.3: Depends on 1.4 (done). Primary build creation path for MVP (replaces 2.1).
+  2-3-new-build-creator-class-mastery-selector: done
+
+  # Story 2.4: Depends on 2.3 (done). 2.1 deferred — 2.4 proceeds with new-build path only.
+  2-4-build-persistence-save-load-rename-delete: done
+
+  epic-2-retrospective: optional
+
+  # ─────────────────────────────────────────────────────────────────
+  # EPIC 3: AI Optimization Engine
+  # Internal order: 3.1 (scoring) → 3.2 (streaming, needs 3.1) → 3.3 → 3.4 → 3.5 → 3.6
+  # ─────────────────────────────────────────────────────────────────
+  epic-3: done
+
+  # Story 3.1: BLOCKED ON 1.3b — scoring model needs node tag/effect data from game data pipeline
+  3-1-scoring-engine-research-implementation: done
+
+  # Story 3.2: BLOCKED ON 1.3b (transitively via 3.1). HARD PREREQUISITE: 3.1 must be done first.
+  3-2-claude-api-integration-streaming-foundation: done
+
+  # Story 3.3: Depends on 3.2 (trigger UI requires streaming backend to exist)
+  3-3-optimization-goal-selector-trigger: done
+
+  # Story 3.4: Depends on 3.2 + 3.3 (needs streaming suggestions + goal selector)
+  3-4-suggestion-list-display: done
+
+  # Story 3.5: Depends on 3.4 (extends suggestion cards with preview/apply/dismiss)
+  3-5-suggestion-interactions-preview-apply-dismiss: done
+
+  # Story 3.6: Depends on 3.5 (iterative workflow on top of full suggestion interaction layer)
+  3-6-re-run-optimization-iterative-workflow: done
+
+  epic-3-retrospective: optional
+
+  # ─────────────────────────────────────────────────────────────────
+  # EPIC 4: Context Panel
+  # ─────────────────────────────────────────────────────────────────
+  epic-4: done
+
+  # Story 4.1: Ready. Gear/affix data gap resolved via free-text input (see story dev notes).
+  4-1-context-panel-shell-gear-input: done
+
+  # Story 4.2: Depends on 4.1 (extends context panel with skill + idol inputs)
+  4-2-active-skill-idol-context-input: done
+
+  epic-4-retrospective: optional
+
+  # ─────────────────────────────────────────────────────────────────
+  # EPIC 5: Application Infrastructure & Reliability
+  # ─────────────────────────────────────────────────────────────────
+  epic-5: done
+
+  # Story 5.1: No hard data dependency — can begin once Tauri scaffold (1.1) is done
+  5-1-api-key-management-settings-view: done
+
+  # Story 5.2: Depends on 5.1 (offline state tied to API key / connectivity model)
+  5-2-connectivity-detection-offline-mode: done
+
+  # Story 5.3: Depends on 1.1 (Tauri scaffold + tauri-plugin-updater installed)
+  5-3-in-app-auto-update-system: done
+
+  # Story 5.4: Depends on all prior epics having error surface points to standardize
+  5-4-error-handling-infrastructure-reliability: done
+
+  # Story 5.6: Depends on 5.1 (api-key-management done). Extends settings to support OpenRouter
+  # as an alternative to Claude. Adds model picker with presets (free-first, always-use-model).
+  # Requires provider abstraction in Rust (trait or enum) + vault storing provider type + key.
+  # OpenRouter is OpenAI-compatible — base URL swap; no new streaming logic needed.
+  # Door left open for additional providers (Groq, Gemini) in future stories.
+  5-6-multi-provider-llm-openrouter-model-selection: done
+
+  # Story 5.5: Prerequisites: code signing certificates + Apple Dev enrollment must be purchased
+  # before this story can begin (see prerequisites section in story dev notes)
+  5-5-distribution-readiness-code-signing-release-pipeline: done
+
+  epic-5-retrospective: optional
+
+  # ─────────────────────────────────────────────────────────────────
+  # EPIC 6: Accessibility & Polish
+  # ─────────────────────────────────────────────────────────────────
+  epic-6: done
+
+  # Story 6.1: Depends on Epics 1–4 (keyboard nav covers all primary interactions)
+  6-1-keyboard-navigation-global-shortcuts: done
+
+  # Story 6.2: Depends on 6.1 + all view components existing (ARIA audit requires complete UI)
+  6-2-screen-reader-support-aria-infrastructure-accessibility-ci: done
+
+  epic-6-retrospective: done # full project retrospective — 2026-05-05
