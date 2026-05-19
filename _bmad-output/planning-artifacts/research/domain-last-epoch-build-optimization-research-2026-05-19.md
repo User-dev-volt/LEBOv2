@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4]
+stepsCompleted: [1, 2, 3, 4, 5]
 inputDocuments: []
 workflowType: 'research'
 lastStep: 1
@@ -564,3 +564,137 @@ This hybrid approach (deterministic scoring algorithm + LLM explanation) is what
 Total user-perceived latency: 2–5 seconds. The algorithm is not the bottleneck — the LLM is.
 
 _Source: [Optimal Skill Tree Growth — TommyOdland.com](https://tommyodland.com/articles/2020/optimal-skill-tree-growth/index.html), [Multi-Objective Optimization — Medium](https://medium.com/@chongjingting/multi-objective-optimization-moo-1b29ece5b64f), [Greedy vs DP — Educative.io](https://www.educative.io/blog/greedy-algorithm-vs-dynamic-programming)_
+
+---
+
+## Part 4 — Technical Trends and Future Outlook
+
+### 4.1 The Last Epoch Roadmap — What's Coming That LEBO Must Track
+
+Last Epoch is in rapid expansion. Every major release adds new game data that LEBO must keep current:
+
+**Season 4: Shattered Omens (March 26, 2026 — current season)**
+- **Omen Windows:** New random encounter type with multi-phase boss fights; rewards include **Runes of Corruption** (powerful item transformation that can empower or destroy items — new risk/reward crafting dimension)
+- **Echo Chains:** New endgame navigation layer in the echo web
+- **New Rogue skills + Spellblade updates:** New passive nodes, potentially new synergy chains for these classes
+- **New Uniques and Set Items:** LEBO's game data loader must ingest these to score them as build-enablers
+
+**Season 5: Rage of Morditas (Late 2026)**
+- New endgame boss: Morditas
+- Item faction improvements (could change how items are acquired and valued)
+- New Paladin skill + new items across classes
+- Build meta will shift around new mechanics
+
+**Orobyss Expansion (Post-Season 5, targeting ~late 2026)**
+- **Two new story chapters**
+- **New Pinnacle and endgame bosses** — new optimization targets
+- **Major skill expansion** — new skills mean new passive node synergies
+- **Monolith: Corruption Tiers and Etched Timestones** — new progression layer LEBO must model
+- **Paradox Classes (paid DLC)** — entirely new class mechanics with bespoke systems. Will require new scoring models in LEBO
+- **PS5 release** — new platform, new player influx, more demand for optimization tools
+- **Enhanced runes for modifying affixes** — deeper crafting system, new affix optimization paths
+
+**Implication for LEBO architecture:** The game data loading system (already built) must be the first-class citizen of the optimizer. Every season, the meta shifts. LEBO's power over static guides is that it is always current — but only if game data ingestion is fast and reliable.
+
+_Source: [Season 4 Roadmap — Maxroll.gg](https://maxroll.gg/last-epoch/news/last-epoch-season-4-first-look-and-updated-roadmap), [Season 4 and Beyond — LastEpochTools](https://www.lastepochtools.com/news/article/last-epoch-s-season-4-and-beyond-expansion-paradox-classes-and-roadmap-80152), [Paradox Classes — MMORPG.com](https://www.mmorpg.com/news/heres-why-last-epochs-orobyss-expansion-will-be-free-but-new-paradox-classes-will-be-paid-dlc-2000136722)_
+
+---
+
+### 4.2 Krafton / EHG AI Situation — What It Means for LEBO
+
+**The situation:**
+- **Krafton** (Last Epoch's publisher after acquisition) is investing $70M in becoming an "AI-first company"
+- **Eleventh Hour Games (EHG)** explicitly stated they are NOT changing their design workflow — Last Epoch continues to be made manually without AI tools
+
+**What this means for LEBO:**
+1. **EHG is not building an official AI build advisor** — the field is open
+2. **Krafton's AI-first stance may eventually lead to in-game AI features** — but EHG is currently resistant
+3. **LEBO is on the right side of this trend** — an AI-powered companion tool is exactly the product category Krafton might want to acquire or partner with if they change course
+4. **Risk:** If EHG eventually builds a first-party optimizer, it would have direct game data API access and could leapfrog community tools
+
+**Strategic implication:** Build LEBO fast while the first-party gap exists. The tool's defensibility comes from polish, user trust, and integration depth — not from being the only tool.
+
+_Source: [EHG Comments on Krafton AI — PC Gamer](https://www.pcgamer.com/games/rpg/as-krafton-evolves-into-an-ai-first-company-the-boss-of-the-recently-acquired-last-epoch-studio-says-he-doesnt-think-the-doom-and-gloom-is-warranted/), [Krafton $70M AI Strategy — Rolling Out](https://rollingout.com/2025/10/24/krafton-bold-70m-plan-to-lead-gamings-ai/)_
+
+---
+
+### 4.3 Emerging Technology Trends Relevant to LEBO
+
+**1. LLM-Powered Game Companions — The Space is Opening**
+
+A growing category of AI-powered game advisors is emerging, driven by LLMs becoming capable enough to reason about game mechanics. Key signals:
+- GitHub projects like LLM-AI-Companion (AI Advisor for game users)
+- ARPG-specific tools like POE Builder, POE2 AI Build Assistant emerging for Path of Exile 2
+- Solved Exile pursuing full constraint-optimization for PoE
+
+The trend: **players want conversational, smart advisors** — not just databases. "Why should I take this node?" is more valuable than "this node gives +15 damage." LEBO is positioned exactly here.
+
+**2. LLMs + Structured Data (Hybrid Approach) — Now Proven**
+
+Claude Code's emergence (2025) demonstrated that LLMs operating on structured, local data are now highly capable. The pattern:
+- Structured scoring engine produces precise data
+- LLM adds reasoning, explanation, and natural language
+- Result feels intelligent because it IS intelligent — not just retrieval
+
+This is exactly what LEBO should build. The algorithm engine (deterministic) + Claude (explanatory) = better than either alone.
+
+**3. RAG for Game Knowledge — Emerging Best Practice**
+
+Retrieval-Augmented Generation (RAG) is being used in gaming tools to give LLMs access to current game data without retraining. For LEBO:
+- The game data JSON files are LEBO's "knowledge base"
+- The passive tree, skill nodes, and affix database can be injected as context
+- Claude can then reason about the full game data in a single pass
+
+This enables suggestions like "there are 3 nodes within 5 points of your current tree that add 'More' fire damage to Fireball — here they are in priority order" — which requires reading the actual game data, not just training data.
+
+_Source: [LLM Game Companion — GitHub](https://github.com/The-Marquis-Gaming/LLM-AI-Companion), [LLM Game Agent Papers — GitHub](https://github.com/git-disl/awesome-LLM-game-agent-papers)_
+
+---
+
+### 4.4 Meta Evolution Patterns — How the Optimization Target Keeps Moving
+
+Every season, the optimization problem changes in predictable ways:
+
+**Pattern 1 — New unique items create new archetypes**
+Each season adds 20–30 new uniques, some of which enable entirely new build archetypes (like Exsanguinous did for Ward builds). LEBO must be able to detect when a new unique is a "build enabler" vs just a stat stick.
+
+**Pattern 2 — Class reworks shift the passive tree value map**
+Season 2 reworked 65+ Sentinel passives. After a rework, the per-point efficiency scores for every Sentinel build completely change. LEBO's scoring engine must recompute from live game data, not hard-coded values.
+
+**Pattern 3 — New endgame corruption tiers shift defensive minimums**
+As corruption ceilings rise (Orobyss expansion adds Corruption Tiers), the "defensive floor" threshold for viability goes up. The archetype weight vector needs a mechanism to adapt to the corruption target the player is pushing.
+
+**Pattern 4 — New crafting systems add new optimization dimensions**
+Season 2 added Set Shattering, Attribute Swapping, and Experimental Crafting. Season 4 adds Runes of Corruption. Each new crafting vector is a new variable in the gear scoring function.
+
+**Key resilience requirement for LEBO:** The scoring engine must treat all values as **data-driven, not hard-coded**. Any stat, any threshold, any affix weight must come from the game data files — never from a constant in the source code.
+
+---
+
+### 4.5 Recommendations for LEBO Development
+
+**Immediate priorities:**
+
+1. **Build the scoring engine first** (before improving the Claude prompt) — the algorithm is the asset, the LLM is the interface. A better prompt on a naïve score produces better-sounding bad advice. A great score with a simple prompt produces genuinely good advice.
+
+2. **Model the critical defense floor as a hard constraint** — before any suggestion is made, check resistances, crit avoidance, and sustain. This is non-negotiable for suggestions to feel credible.
+
+3. **Add "More vs Increased" classification to the game data** — this is the single most important distinction for damage scoring. The optimizer needs to know which modifiers are multiplicative.
+
+4. **Ship Season 4 data before shipping the optimizer** — Season 4 launched March 26, 2026. The optimizer using Season 3 data will produce wrong suggestions and damage trust. Game data currency is critical.
+
+**Medium-term roadmap:**
+
+5. **Add per-point efficiency overlay** (like PoB's Power Report) as a visual feature — show users which passive nodes are high-value with color coding. This builds trust and teaches users to think like the optimizer.
+
+6. **Add "zero-value detection"** — flag passive allocations and gear affixes that provide no value for the current build. Easy wins that feel magical.
+
+7. **Model unique item synergy thresholds** — detect when a build is "almost ready" for a paradigm-shifting unique (e.g., "You're one stat away from Exsanguinous being BiS for your build").
+
+**Long-term (Orobyss expansion readiness):**
+
+8. **Paradox Classes** will require entirely new scoring models — design the architecture to support pluggable class-specific scoring modules now.
+
+9. **Corruption Tiers** will require the defensive floor threshold to become dynamic — parameterize it now before it becomes a hard-coded assumption.
+
+_Source: [Season 4 Roadmap — Maxroll.gg](https://maxroll.gg/last-epoch/news/last-epoch-season-4-first-look-and-updated-roadmap), [Orobyss Expansion Details — U4GM](https://www.u4gm.com/last-epoch/blog-last-epoch-s-golden-era-dawns-free-orobyss-expansion-paradox-classes-and-a-roadmap-packed-with-promise)_
