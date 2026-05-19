@@ -1,11 +1,11 @@
 ---
 project_name: 'LEBOv2'
 user_name: 'Alec'
-date: '2026-05-05'
+date: '2026-05-18'
 sections_completed:
   ['technology_stack', 'language_rules', 'framework_rules', 'testing_rules', 'quality_rules', 'workflow_rules', 'anti_patterns']
 status: 'complete'
-rule_count: 47
+rule_count: 60
 optimized_for_llm: true
 ---
 
@@ -17,15 +17,15 @@ _Critical rules and patterns that AI agents must follow when implementing code i
 
 ## Technology Stack & Versions
 
-**Desktop Shell:** Tauri 2.x (tauri-cli ^2, @tauri-apps/api ^2)
-**Frontend:** React 19.1 + TypeScript ~5.8.3 (strict mode) + Vite 7 + Tailwind CSS v4
+**Desktop Shell:** Tauri 2.x (tauri-cli ^2, @tauri-apps/api ^2, tauri-plugin-opener 2)
+**Frontend:** React 19.1 + TypeScript ~5.8.3 (strict mode) + Vite 7.0.4 + Tailwind CSS v4.2.2
 **Canvas Rendering:** PixiJS 8.18.1 + @pixi/react 8.0.5
 **State Management:** Zustand 5.0.12 (4 domain stores)
 **UI Primitives:** @headlessui/react 2.2.10
 **Toasts:** react-hot-toast 2.6.0
-**Backend (Rust):** Tauri 2, serde/serde_json 1, rusqlite 0.32 (bundled), reqwest 0.12 (json+stream), tokio 1, argon2 0.5
-**Tauri Plugins:** tauri-plugin-sql 2.4.0 (sqlite), tauri-plugin-stronghold 2, tauri-plugin-http 2.5.8, tauri-plugin-updater 2.10.1, tauri-plugin-store 2.4.2
-**Testing:** Vitest 4.1.4 + @testing-library/react 16 + jsdom 29 + vitest-axe 0.1.0
+**Backend (Rust):** Tauri 2, serde/serde_json 1, rusqlite 0.32 (bundled), reqwest 0.12 (json+stream), tokio 1, argon2 0.5, futures-util 0.3
+**Tauri Plugins:** tauri-plugin-sql 2.4.0 (sqlite), tauri-plugin-stronghold 2, tauri-plugin-http 2.5.8, tauri-plugin-updater 2.10.1, tauri-plugin-store 2.4.2, tauri-plugin-opener 2
+**Testing:** Vitest 4.1.4 + @testing-library/react 16.3.2 + @testing-library/user-event 14.6.1 + jsdom 29 + vitest-axe 0.1.0
 **Build:** TypeScript bundler mode, Vite test config lives in `vite.config.ts` (no separate vitest.config)
 
 ---
@@ -39,6 +39,9 @@ _Critical rules and patterns that AI agents must follow when implementing code i
 - **No barrel files anywhere in `src/`** — never create `index.ts` re-export files. Import directly from the source file.
 - **All errors normalize to `AppError`** before reaching any component. The `AppError` type is `{ type: ErrorType; message: string; detail?: string }`. The `normalizeAppError()` utility in `src/shared/utils/errorNormalizer.ts` is the single normalization point.
 - **`ErrorType` enum values must match Rust error string prefixes** — `normalizeAppError` does a case-insensitive substring search. New error types require a matching prefix in Rust (e.g., `"STORAGE_ERROR: ..."`) and an entry in `ERROR_TYPE_MAP`.
+- **`BuildState.schemaVersion` is `1 | 2`** — new builds always use `schemaVersion: 2`. The `migrateBuildState` function in `buildPersistence.ts` upgrades v1 persisted builds on load. Never create a new build with `schemaVersion: 1`.
+- **Allocation records omit zero-value keys** — `nodeAllocations`, `skillNodeAllocations[slotId]`, and `weaverAllocations` delete keys when the value reaches 0 (they do NOT store `{ nodeId: 0 }`). All reads should use `?? 0` as the default.
+- **`GearItem` is deprecated** — all new code uses `GearItemV2` with `AffixEntryV2[]`. Never reference the old `GearItem` interface.
 
 ### Framework-Specific Rules
 
@@ -52,19 +55,55 @@ _Critical rules and patterns that AI agents must follow when implementing code i
 - **Four domain stores only:** `useBuildStore`, `useGameDataStore`, `useOptimizationStore`, `useAppStore`. Do not create new top-level stores; extend existing ones.
 - **No React Router** — view switching is `appStore.currentView: 'main' | 'settings'`. Never add a router.
 - Zustand stores use `create<Interface>()((set, get) => ...)` pattern with inline function bodies. Do not use `immer` middleware.
-- `useBuildStore.undoStack` caps at 10 snapshots (MAX_UNDO_STACK = 10). Undo only tracks `nodeAllocations` changes, not contextData changes.
-- **`SkillTreeCanvas` is props-only** — it receives `treeData`, `allocatedNodes`, and `highlightedNodes` via props. It does NOT access any Zustand store internally. The PixiJS render context has no React store access.
+- `useBuildStore.undoStack` caps at 10 snapshots (MAX_UNDO_STACK = 10). Undo snapshots the entire `BuildState`, tracking all three allocation namespaces.
+- **`SkillTreeCanvas` is props-only** — it receives `treeData`, `nodeAllocations`, `highlightedNodes`, `iconTextures`, and more via props. It does NOT access any Zustand store internally.
+
+**Multi-tree architecture:**
+- Three separate allocation namespaces in `BuildState`:
+  - `nodeAllocations` — passive tree (`Record<string, number>`)
+  - `skillNodeAllocations` — per-skill trees (`Record<slotId, Record<nodeId, number>>`)
+  - `weaverAllocations` — weaver tree (`Record<string, number>`)
+- Three corresponding store actions: `applyNodeChange`, `applySkillNodeChange`, `applyWeaverNodeChange`. Never mutate allocations directly with `set()`.
+- Three reset variants: `resetActiveTree('passive')`, `resetActiveTree('skill', slotId)`, `resetActiveTree('weaver')`.
+- **`assignSkillToSlot` auto-clears skill nodes** — when a skill changes on a slot, `skillNodeAllocations[slotId]` is reset to `{}`. Never manually clear it.
+
+**Budget system:**
+- All budget math lives in `src/shared/utils/budgetCalculator.ts`. Never inline these formulas:
+  - Passive: `level - 2` (0 at levels 1–2), max level 100
+  - Skill: `level` (1 point per level, max 20)
+  - Weaver: fixed `53` (`WEAVER_TOTAL_POINTS`) — not level-gated
+- `selectAvailablePassivePoints` is an exported Zustand selector from `buildStore.ts`. Use it instead of calling `calculatePassivePoints` in components.
+
+**SkillTreeTabBar (7 tabs, indices 0–6):**
+- Tab 0 = Passive Tree, Tabs 1–5 = Skill slots (`slot-0` through `slot-4`), Tab 6 = Weaver Tree.
+- `safeTabIndex` guards against out-of-range — any index > 6 falls back to 0. Always use `safeTabIndex` for routing tab logic, never raw `activeTabIndex`.
+- Skill tab click fires both `onChange` (sets active index) AND `onSkillTabClick` (opens SkillPickerGrid). These are separate concerns — never merge them.
+
+**SkillTreeCanvas props:**
+- Accepts `treeLayout?: 'weaver'` — pass this for the weaver tab. Omit for passive/skill trees.
+- Accepts `iconTextures: Map<string, Texture>` — always pass a stable module-level `EMPTY_TEXTURES` constant rather than creating `new Map()` inline.
+- Exposes `SkillTreeCanvasHandle` ref with `fitToTree()`. Use `useRef<SkillTreeCanvasHandle>`.
+
+**SkillPickerGrid:**
+- Opens as **full panel** when the slot has no assigned skill (`!isPopover`).
+- Opens as **popover** (fixed position from anchor rect) when the slot already has a skill (`isPopover: true`).
+- `filteredSkills` excludes skills assigned to other slots. Always filter before passing to `SkillPickerGrid`.
 
 **PixiJS:**
-- The **WebGL null info-log patch** is applied at module load time in `pixiRenderer.ts` (IIFE at top of file). Never re-inject it from tests or via Playwright. It patches `WebGLRenderingContext.prototype` and `WebGL2RenderingContext.prototype`.
+- The **WebGL null info-log patch** is applied at module load time in `pixiRenderer.ts` (IIFE at top of file). Never re-inject it from tests or via Playwright.
 - `SkillTreeCanvas` uses `initChainRef` to serialize PixiJS `Application.init()` calls — prevents React StrictMode double-mount from launching two concurrent WebGL inits.
-- All node drawing functions (`drawAllocated`, `drawAvailable`, `drawLocked`, `drawSuggested`) are pure PixiJS `Graphics` calls. Use hex colors from the design token list (see below).
+- All node drawing functions are pure PixiJS `Graphics` calls. Use hex colors from the design token list.
 - `reducedMotion` must be respected: `drawSuggested` skips the glow ring when `reducedMotion = true`.
+
+**Icon pipeline:**
+- `useIconTextures(skillIds: string[])` returns `Map<string, Texture>`. Call it once in `SkillTreeView` — never in individual canvas draw functions.
+- Icon loading is async; the map may be empty on first render. Canvas must gracefully fall back to placeholder rendering when a texture is missing.
+- Pass `EMPTY_TEXTURES` (module-level constant) to the Weaver canvas — icons are not used for weaver nodes.
 
 **Tauri Event Streaming (Claude API):**
 - Claude API streams via Tauri events — never via a direct return value from `invoke_claude_api`.
 - Three event names: `optimization:suggestion-received`, `optimization:complete`, `optimization:error`.
-- The `useOptimizationStream` hook (in `src/shared/stores/`) subscribes to these events and populates `optimizationStore`.
+- The `useOptimizationStream` hook subscribes to these events and populates `optimizationStore`.
 
 **Tailwind v4:**
 - CSS-first config — no `tailwind.config.js`. All custom tokens are CSS variables defined in the global stylesheet.
@@ -74,7 +113,7 @@ _Critical rules and patterns that AI agents must follow when implementing code i
 ### Testing Rules
 
 - **Vitest config lives in `vite.config.ts`** under the `test` key (`environment: 'jsdom'`, `globals: true`, `setupFiles: ['./src/test-setup.ts']`). Do not create a separate `vitest.config.ts`.
-- **`test-setup.ts` provides three stubs** that must not be duplicated in individual test files:
+- **`test-setup.ts` provides four stubs** that must not be duplicated in individual test files:
   1. `@testing-library/jest-dom` matchers
   2. `vitest-axe` `toHaveNoViolations` matcher
   3. `ResizeObserver` no-op stub (required for Headless UI)
@@ -83,14 +122,17 @@ _Critical rules and patterns that AI agents must follow when implementing code i
 - **Accessibility tests** use `vitest-axe`: `import { axe } from 'vitest-axe'` then `expect(await axe(container)).toHaveNoViolations()`.
 - Test files co-locate with source: `ComponentName.test.tsx` next to `ComponentName.tsx`, `store.test.ts` next to `store.ts`.
 - No snapshot tests — use explicit `expect` assertions.
+- **PixiJS components are not unit-testable** — `SkillTreeCanvas` and `pixiRenderer.ts` have separate test files that mock PixiJS internals. Do not attempt to render real WebGL in jsdom tests.
+- **Budget math tests** go in `budgetCalculator.test.ts` — keep formula verification there, not scattered in component tests.
+- **`buildSwitchSync`** has its own test file. Cross-store coordination logic must be tested there, not as side effects of store action tests.
 
 ### Code Quality & Style Rules
 
 **Naming conventions (strictly enforced):**
 - React components: `PascalCase.tsx`
-- Feature folders: `kebab-case/` (e.g., `skill-tree/`, `build-manager/`)
-- Utilities / hooks: `camelCase.ts` (e.g., `invokeCommand.ts`, `useReducedMotion.ts`)
-- Stores: `[domain]Store.ts` (e.g., `buildStore.ts`, `appStore.ts`)
+- Feature folders: `kebab-case/` (e.g., `skill-tree/`, `build-manager/`, `item-database/`, `icon-pipeline/`, `weaver-tree/`)
+- Utilities / hooks: `camelCase.ts` (e.g., `invokeCommand.ts`, `budgetCalculator.ts`, `useIconTextures.ts`)
+- Stores: `[domain]Store.ts` (e.g., `buildStore.ts`, `gameDataStore.ts`)
 - Rust commands: `snake_case` (matching Tauri invoke string)
 - Tauri events: `feature:action` (e.g., `optimization:suggestion-received`)
 
@@ -98,8 +140,11 @@ _Critical rules and patterns that AI agents must follow when implementing code i
 - Write no comments by default. Only add a comment when the WHY is non-obvious (hidden constraint, workaround, subtle invariant). Never describe what code does — only why it must be done that way.
 
 **Imports:**
-- No default exports in any module except `App.tsx` (which uses named export anyway). Always named exports.
+- No default exports in any module. Always named exports.
 - Group imports: external libs → internal shared → internal feature-local.
+
+**Constants:**
+- Stable empty values (`EMPTY_ALLOCATED`, `EMPTY_SET`, `EMPTY_TEXTURES`, `EMPTY_SKILLS`, `EMPTY_HIGHLIGHTED`) must be module-level constants, not created inline in render. This prevents unnecessary PixiJS re-renders from referential inequality.
 
 **SQLite schema** (build storage via tauri-plugin-sql):
 ```
@@ -110,26 +155,51 @@ data TEXT NOT NULL
 created_at TEXT
 updated_at TEXT
 ```
-All `BuildState` objects have `schemaVersion: 1`. The `migrateBuildState` function in `buildPersistence.ts` handles schema upgrades.
+All new `BuildState` objects have `schemaVersion: 2`. The `migrateBuildState` function in `buildPersistence.ts` handles schema upgrades from v1.
+
+**Feature folder structure:**
+Each feature folder is self-contained: component, hook, data file, and test co-located. Shared cross-feature types live in `src/shared/types/` only. Do not import from one feature folder into another — route through `src/shared/` instead.
 
 ### Development Workflow Rules
 
 - **Desktop-first Tauri** — never introduce Node.js/Electron patterns. All backend logic in Rust, never in a Node sidecar.
 - **No server** — the app calls Claude API directly from Rust. No proxy, no backend service.
-- **Game data** is versioned JSON files in the Tauri app data dir. `manifest.json` tracks `gameVersion`, `dataVersion`, `generatedAt`, `classes`. Class data files are `classes/{classId}.json`.
+- **Game data** is versioned JSON files in the Tauri app data dir. `manifest.json` tracks `gameVersion`, `dataVersion`, `generatedAt`, `classes`. Class data files are `classes/{classId}.json`. Item database is a separate data file tracked by its own staleness flags in `gameDataStore`.
 - **Two target platforms:** Windows 10/11 (`.msi`) and macOS 12+ (`.dmg`). CI uses `tauri-apps/tauri-action` on git tag push.
-- **Pre-release blocker:** Code signing certs required before first public release — Windows Authenticode EV cert + Apple Developer Program ($99/yr). See `deferred-work.md` for details.
+- **Pre-release blocker:** Code signing certs required before first public release — Windows Authenticode EV cert + Apple Developer Program ($99/yr).
+- **Commands run from `lebo/` (the Vite project root).** Package manager is `pnpm`. Never use `npm` or `yarn`.
+- **Phase boundary — CRITICAL:** This is Phase 2 (LEBOv2). Files outside the `LEBOv2/` directory (`../_bmad-output/`, `../lebo/`) are Phase 1 read-only artifacts. Never write, edit, or commit changes to them.
+- **When adding a Tauri command:** implement in Rust → register in `lib.rs` `invoke_handler!` → call via `invokeCommand<T>()` in TypeScript.
+- **When adding a new view:** add it to `appStore.currentView` union type and route in `App.tsx`. Never add React Router.
+- **When adding a new tree type:** requires new allocation field in `BuildState`, new store action (`apply*NodeChange`), new reset variant in `resetActiveTree`, new tab entry in `SkillTreeTabBar`, and migration in `migrateBuildState`.
 
 ### Critical Don't-Miss Rules
 
 **Security:**
 - **API key NEVER crosses to frontend JS.** The key is stored in Stronghold (AES-256), retrieved by Rust on API call, injected into the HTTP header. Any code that reads an API key in TypeScript is wrong.
-- `VAULT_PASSWORD` in `keychain_service.rs` is a static constant (known deferred). This is acceptable for MVP; do not replace with per-device secret without a full migration plan.
-- `#[cfg(debug_assertions)] let api_key = std::env::var("ANTHROPIC_API_KEY")...` in `claude_commands.rs` — **must be removed before public release build.**
+- `VAULT_PASSWORD` in `keychain_service.rs` is a static constant (acceptable for MVP; do not replace without a full migration plan).
+- `#[cfg(debug_assertions)] let api_key = std::env::var("ANTHROPIC_API_KEY")...` in `claude_commands.rs` — **must be removed before public release.**
 
 **PixiJS / Canvas:**
 - This app is canvas-based. `browser_snapshot` (accessibility tree) is useless for visual inspection — always use `browser_take_screenshot`.
 - Never call `page.goto()` inside Playwright `browser_run_code` — it orphans the page context and hangs. Navigation must be a separate `browser_navigate` call.
+- The WebGL null info-log patch is already in `pixiRenderer.ts` at module load. Never re-inject it.
+
+**Store action rules:**
+- `applyNodeChange` / `applySkillNodeChange` / `applyWeaverNodeChange` validate prerequisites and budget before allocating. **Never bypass with direct `set()`.**
+- `applyNodeChange` auto-creates a build when `activeBuild` is null (if class and mastery are selected). `applySkillNodeChange` and `applyWeaverNodeChange` do NOT — they return `{ success: false }` if `activeBuild` is null.
+- `useOptimizationStore.clearSuggestions()` must be called before starting a new optimization run (handled in `useOptimizationStream` — do not call again).
+- `useAppStore.isOnlineChecked` starts `false` — AI optimization must check both `isOnline` AND `isOnlineChecked` before enabling.
+
+**Skill/tab rules:**
+- Tab index 6 is the Weaver tab — `isWeaverTab = safeTabIndex === 6`. The weaver branch returns early with its own full JSX tree. Any logic before `if (isWeaverTab)` runs for all tabs including weaver — all hooks must be called unconditionally before any early return.
+- `weaverTreeData` in `gameDataStore` may be `null` — the weaver tab shows `WeaverTreePlaceholder` until real data loads. Never assume it's populated.
+- `skillNodeAllocations[slotId]` may be `undefined` for slots that have never been used. Always default with `?? {}` or `?? EMPTY_ALLOCATED`.
+
+**Optimization flow:**
+- `invoke_claude_api` emits events AND may return `Err()` — this double-emit pattern is pre-existing. Do not "fix" it by removing the event emit.
+- Suggestions are streamed incrementally via `optimization:suggestion-received`. The suggestion list must handle partial state (items arriving one by one).
+- `previewSuggestionRank` in `optimizationStore` drives the preview overlay on the passive tree. A non-null rank means `previewAllocatedNodes` replaces `baseAllocatedNodes` for the canvas render.
 
 **Accessibility:**
 - All interactive elements must have a `2px solid accent-gold` focus ring — never `outline: none` without a replacement.
@@ -138,18 +208,14 @@ All `BuildState` objects have `schemaVersion: 1`. The `migrateBuildState` functi
 - `prefers-reduced-motion` must gate all animated transitions. Use `useReducedMotion()` hook.
 - axe-core CI: any new `axe` violation fails CI. Run `vitest-axe` checks on all new views/components.
 
-**State management gotchas:**
-- `useBuildStore.applyNodeChange` validates prerequisites before allocating and dependents before deallocating. Do not bypass this with direct `set()` calls.
-- `useOptimizationStore.clearSuggestions()` must be called before starting a new optimization run (handled in `useOptimizationStream`).
-- `useAppStore.isOnlineChecked` starts `false` — AI optimization must check both `isOnline` AND `isOnlineChecked` before enabling.
-
 **Panel system:**
 - Left panel = 260px (collapsible to 48px icon rail). Right panel = 320px (collapsible to 48px). Center = flex-grow.
 - `SkillTreeCanvas` uses `ResizeObserver` to re-fit the PixiJS viewport on container resize — do not trigger resize via direct dimension props.
+- `SkillTreeCanvasHandle.fitToTree()` is the only external resize trigger. Call it after tab switches or panel expand/collapse.
 
-**Optimization flow:**
-- `invoke_claude_api` emits events AND may return `Err()` — this double-emit pattern is pre-existing. Do not "fix" it by removing the event emit.
-- Suggestions are streamed and rendered incrementally as `optimization:suggestion-received` fires. The suggestion list must handle partial state (items arriving one by one).
+**Item database:**
+- `itemDatabase` in `gameDataStore` is separate from game data — it has its own staleness flags (`isItemDataStale`, `itemDataStaleAcknowledged`, `isItemDataUpdating`). Do not conflate with the game data staleness flags.
+- `GearItemV2.affixes` uses `AffixEntryV2` (with optional `affixId`, `tier`, `value`). The old `GearItem` with `affixes: string[]` is deprecated and must not be used in new code.
 
 ---
 
@@ -157,14 +223,15 @@ All `BuildState` objects have `schemaVersion: 1`. The `migrateBuildState` functi
 
 **For AI Agents:**
 - Read this file before implementing any code in this project.
-- Follow ALL rules exactly — especially: no barrel files, no raw `invoke()`, WebGL patch is already present, props-only SkillTreeCanvas.
+- Follow ALL rules exactly — especially: no barrel files, no raw `invoke()`, WebGL patch is already present, props-only SkillTreeCanvas, module-level empty constants.
 - When adding a Tauri command: implement in Rust → register in `lib.rs` invoke_handler → call via `invokeCommand<T>()` in TypeScript.
 - When adding a new view: add it to `appStore.currentView` union type and route in `App.tsx`. Never add React Router.
-- **PHASE BOUNDARY — NEVER MODIFY Phase 1 files.** This is Phase 2 (LEBOv2). Files outside the `LEBOv2/` directory (e.g., `../_bmad-output/`, `../lebo/`) are Phase 1 artifacts. Read them for context only — never write, edit, or commit changes to them.
+- When working with trees: use the correct allocation namespace and store action for the tree type (passive/skill/weaver).
+- **PHASE BOUNDARY — NEVER MODIFY Phase 1 files.** This is Phase 2 (LEBOv2). Files outside the `LEBOv2/` directory are Phase 1 artifacts. Read them for context only — never write, edit, or commit changes to them.
 
 **For Humans:**
 - Update the Technology Stack section when upgrading major dependencies.
 - Add to Critical Don't-Miss Rules when a new non-obvious constraint is discovered.
 - Review after each epic completion for stale rules.
 
-Last Updated: 2026-05-05
+Last Updated: 2026-05-18
