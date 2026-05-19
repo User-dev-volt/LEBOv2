@@ -213,7 +213,89 @@ Scoring engine unit tests should verify these rank at or near top weight for the
 
 ---
 
-## E. Season 4 Data Notes
+## E. Idol Grid Spec (Default Layout)
+
+The Last Epoch idol grid is a 5×5 space. The Phase 3 default layout has the following cells blocked (0-indexed, row×col):
+- Four corners: (0,0), (0,4), (4,0), (4,4)
+- Center: (2,2)
+- Total active cells: ~20 (exact count depends on current season data — verify against lastepochtools.com/guide/section/idols)
+
+**Idol size types (Phase 3 scope):**
+| Type | Grid footprint | Notes |
+|------|---------------|-------|
+| Minor (1×1) | 1 cell | Universal — any class |
+| Stout (1×2) | 1 col × 2 rows | Universal |
+| Humble (2×1) | 2 cols × 1 row | Universal |
+| Ornate (2×2) | 2 cols × 2 rows | Class-specific variants |
+| Grand (1×3) | 1 col × 3 rows | Class-specific |
+| Huge (3×1) | 3 cols × 1 row | Class-specific |
+| Adorned (1×4) | 1 col × 4 rows | Class-specific, season-dependent |
+| Large (4×1) | 4 cols × 1 row | Class-specific, season-dependent |
+
+**Data file structure (proposed schema for `idol-grid.json`):**
+```json
+{
+  "version": "1",
+  "defaultGrid": {
+    "rows": 5,
+    "cols": 5,
+    "blockedCells": [[0,0],[0,4],[4,0],[4,4],[2,2]]
+  },
+  "altarVariants": []  // empty in Phase 3; Phase 4 populates this array
+}
+```
+
+Placement validation rules:
+1. All cells the idol occupies must be within grid bounds
+2. No cell may overlap another placed idol
+3. All cells must be active (not in `blockedCells`)
+4. For class-specific idol types, the equipped character class must match
+
+**Deferred (Phase 4):** Idol Altar system — 13 altar subtypes each with a different cell layout and Refracted Slots (purple cells that amplify affix values). The `altarVariants` array in the data file is the extension point.
+
+---
+
+## F. Tree Background Implementation Notes
+
+The current `pixiRenderer.ts` uses `background: 0x0a0a0b` in `app.init()` — a flat solid color. The Phase 3 implementation changes this to:
+
+```typescript
+// In initRenderer(), replace background: 0x0a0a0b with:
+await app.init({
+  canvas,
+  background: 0x000000,  // transparent — TilingSprite handles the background
+  backgroundAlpha: 0,
+  antialias: true,
+  autoDensity: true,
+  resolution: window.devicePixelRatio || 1,
+})
+
+// Load the appropriate texture (cached at module level, loaded once)
+const bgTexture = await Assets.load(
+  config.treeLayout === 'weaver' ? 'bg_weaver_tile.webp' : 'bg_stone_tile.webp'
+)
+const background = new TilingSprite({ texture: bgTexture, width: app.screen.width, height: app.screen.height })
+worldContainer.addChildAt(background, 0)  // insert before edgeGraphics
+
+// Add damage-type tint overlay for skill trees (from RendererConfig.damageTint)
+if (config.damageTint) {
+  const tintOverlay = new Graphics()
+  const [r, g, b, a] = config.damageTint  // rgba from FR-F5 palette
+  tintOverlay.rect(0, 0, app.screen.width, app.screen.height).fill({ color: (r<<16)|(g<<8)|b, alpha: a })
+  worldContainer.addChildAt(tintOverlay, 1)  // after background, before edges
+}
+```
+
+**Asset sourcing decision tree:**
+1. Check if game file extraction (via `icon_commands.rs`) can produce a stone tile (look for UI background textures in game asset paths)
+2. If not available: generate `bg_stone_tile.webp` using a one-time Rust script with a Perlin noise crate → export as 256×256 WebP → commit to `src-tauri/resources/backgrounds/`
+3. `bg_weaver_tile.webp`: same approach but with a high-frequency, high-contrast crystalline noise pattern tinted purple at generation time
+
+Both textures should be committed as static resources, not generated at runtime.
+
+---
+
+## G. Season 4 Data Notes (formerly §E)
 
 Season 4 (Shattered Omens) launched 2026-03-26. Key additions requiring game data update:
 
