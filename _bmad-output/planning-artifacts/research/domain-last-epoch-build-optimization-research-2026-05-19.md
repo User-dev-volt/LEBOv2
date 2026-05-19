@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5]
+stepsCompleted: [1, 2, 3, 4, 5, 6]
 inputDocuments: []
 workflowType: 'research'
 lastStep: 1
@@ -22,7 +22,11 @@ source_verification: true
 
 ## Research Overview
 
-[Research overview and methodology will be appended here]
+This research document answers one question: **what does "optimal" actually mean in Last Epoch, and how do we build an AI that reasons about it?**
+
+Conducted via live web research against Maxroll.gg, LastEpochTools, the official Last Epoch wiki, academic algorithm papers, and competitive tool analysis, this report covers four domains: (1) the mechanical ground truth of how Last Epoch builds actually scale damage and survive — including the damage formula, crit math, defense layer system, and S-tier affixes; (2) the competitive tool landscape — confirming that no AI optimizer for Last Epoch currently exists; (3) a concrete algorithm design for a per-point efficiency scoring engine, budget-constrained knapsack solver, and cross-domain synergy detector; and (4) the game's roadmap and the broader LLM-in-gaming trend that validates this product.
+
+**Key finding:** LEBO's upgrade path is clear — build a deterministic scoring engine first, then use Claude to explain what the math found. That combination is what makes suggestions feel like magic instead of a spreadsheet. See the Executive Summary and Part 3 for the full algorithm blueprint.
 
 ---
 
@@ -698,3 +702,152 @@ Season 2 added Set Shattering, Attribute Swapping, and Experimental Crafting. Se
 9. **Corruption Tiers** will require the defensive floor threshold to become dynamic — parameterize it now before it becomes a hard-coded assumption.
 
 _Source: [Season 4 Roadmap — Maxroll.gg](https://maxroll.gg/last-epoch/news/last-epoch-season-4-first-look-and-updated-roadmap), [Orobyss Expansion Details — U4GM](https://www.u4gm.com/last-epoch/blog-last-epoch-s-golden-era-dawns-free-orobyss-expansion-paradox-classes-and-a-roadmap-packed-with-promise)_
+
+---
+
+## Research Synthesis — Executive Summary and Strategic Recommendations
+
+### Executive Summary
+
+Last Epoch build optimization is a solved problem in theory — the mechanics are fully documented, the damage formulas are public, and top builders on Maxroll understand exactly what makes a build strong. The unsolved problem is **making that knowledge accessible instantly, personalized to any build, updated to the current season, and explained in plain English**. That is LEBO's entire value proposition.
+
+This research confirms three things that matter for development:
+
+**1. The mechanical ground truth is learnable.** Last Epoch's damage formula (`Base × (1 + Σ Increased%) × Π More%`), crit math (`(5% + flat) × (100% + Σ Increased%)`, cap 100%, multiplier = 200% + additions), and defense layer system (8+ stackable layers, minimum 3 required for serious endgame) are fully understood by the top builder community. These formulas are deterministic — they can be encoded into a scoring engine that produces exact, not approximate, results.
+
+**2. The competitive field is completely open.** No AI optimizer exists for Last Epoch. LastEpochTools and LastEpochPlanner are manual planning tools. Maxroll provides expert guides and rule-based loot filters. The closest analogue — Path of Building for PoE — is a manual tool with per-point scoring but no AI suggestions. Solved Exile (PoE-only) is the ceiling of what exists, and nothing like it exists for Last Epoch. LEBO has no direct competitors.
+
+**3. The scoring engine is the differentiating asset.** An improved Claude prompt without a scoring engine produces better-sounding bad advice. A scoring engine with a simple prompt produces genuinely good advice. The architectural priority is unambiguous: build the deterministic math layer first; let Claude explain what it finds.
+
+---
+
+### Key Findings
+
+| # | Finding | Confidence |
+|---|---------|-----------|
+| 1 | Damage = `Base × (1 + Σ Increased%) × Π More%` — "More" modifiers are always higher value than "Increased" when the build already stacks Increased | High |
+| 2 | Crit is the premier damage multiplier; T7 Crit Multi on weapon is the most valuable single affix slot in endgame | High |
+| 3 | All viable endgame builds stack ≥3 defensive layers; capping resistances and crit avoidance is mandatory before offensive investment | High |
+| 4 | Exsanguinous + Last Steps of the Living is the most build-defining unique combo; it inverts the entire HP priority for ward-based builds | High |
+| 5 | No AI optimizer for Last Epoch exists; LEBO is the only product in this space | High |
+| 6 | Path of Building's per-point efficiency score (`ΔDamage / PointCost`) is the proven pattern for passive tree optimization | High |
+| 7 | Season 4 (current) + Season 5 + Orobyss expansion = rapid game growth through 2026; data currency is LEBO's core advantage over guides | High |
+| 8 | EHG is not building AI tools internally; Krafton's AI-first push explicitly excluded from EHG's workflow | Medium-High |
+
+---
+
+### The Algorithm Blueprint (Summary)
+
+**Stage 1 — Build Score Function**
+```
+Score = w_dmg × DamageScore + w_surv × SurvivabilityScore + w_speed × SpeedScore
+```
+Archetype weights shift based on player goal (Glass Cannon: 85/10/5 → Juggernaut: 20/75/5).
+
+**Stage 2 — Passive Tree Efficiency Scan**
+For every unallocated node:
+```
+Efficiency = ΔScore / EffectivePointCost
+EffectivePointCost = node_cost + cost_of_unallocated_prerequisites_on_path
+```
+Run as modified Dijkstra: O(N log N). Produces ranked list of highest-value paths.
+
+**Stage 3 — Budget Knapsack Solver**
+For N points to spend: greedy shortlist (top 20 paths) → DP knapsack for globally optimal allocation within budget. Finds the combination, not just the best individual node.
+
+**Stage 4 — Gear Affix Scoring**
+Dynamic affix weights: `Weight(affix) = ΔScore when affix present`. Identifies the gap between current gear and ideal gear per slot.
+
+**Stage 5 — Cross-Domain Synergy Detection**
+Flag: zero-value allocations, mismatched affix types (melee crit on ranged build), synergy enablers not yet triggered (Exsanguinous with insufficient HP).
+
+**Stage 6 — Claude Narrative Layer**
+Feed structured scoring output to Claude. Claude explains the WHY in natural language. Result: "Your Crit Mastery keystone is 4 points away and would double your average damage" — not "allocate node 847."
+
+**Estimated latency:** ~80ms for all algorithm stages, 2–5s for Claude. The LLM is the bottleneck, not the math.
+
+---
+
+### Strategic Recommendations
+
+**Immediate (Next Sprint):**
+
+1. **Build the damage scoring engine** — encode `Base × (1 + Σ Increased%) × Π More%` + crit average damage formula as a TypeScript module in `shared/utils/`. This is the foundation everything else depends on.
+
+2. **Add modifier type classification to game data** — tag each passive node and affix with `"modifierType": "increased" | "more" | "flat"`. This single field makes the scoring engine possible.
+
+3. **Implement the defensive floor check** — before generating any suggestion, verify: resistances capped, crit avoidance ≥80%, ≥1 sustain layer. Failures = Critical priority suggestions. This immediately makes outputs feel credible to experienced players.
+
+4. **Update game data to Season 4** — Season 4 launched March 26, 2026. Suggestions based on Season 3 data will be wrong for the current meta and damage trust.
+
+**Short-Term (1–2 Sprints):**
+
+5. **Passive tree per-point efficiency scan** — implement the Dijkstra-based path scorer. Feed top 5–10 results to Claude with the build context. This is the "magic" moment.
+
+6. **Zero-value allocation detector** — scan allocated nodes and equipped affixes for ones whose bonuses never apply to the active build. These are "free" suggestion wins with high player impact.
+
+7. **Unique item synergy flag** — detect when a build-enabling unique (Exsanguinous, Bleeding Heart, etc.) would produce a step-change in the build score. Surface these as special "game-changer" suggestion category.
+
+**Medium-Term (3–6 Months):**
+
+8. **Archetype weight slider** — let players adjust the Glass Cannon ↔ Juggernaut continuum rather than picking a fixed archetype. The weight vector becomes a UI control.
+
+9. **Season 4 loot filter integration** — use the affix scoring engine to generate build-aware loot filter suggestions (similar to Maxroll's filters but AI-derived, not expert-curated).
+
+10. **Orobyss / Paradox Classes readiness** — design class-specific scoring modules as pluggable components now. When Paradox Classes ship, adding a new scoring module should be straightforward.
+
+---
+
+### Risk Assessment
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| Game data falls out of date after a season patch | High | High | Automate game data staleness detection (already partially built); flag prominently when data is stale |
+| Scoring engine produces wrong suggestions due to formula error | Medium | High | Write unit tests for damage formula and crit math against known-good examples from Maxroll guides |
+| EHG builds first-party optimizer | Low | High | Ship fast; focus on UX polish and trust that a 3rd-party tool won't replicate |
+| Claude API rate limits slow the experience | Medium | Medium | Pre-compute scoring algorithm client-side; only call Claude for narrative generation |
+| Paradox Classes introduce mechanics the scoring engine can't model | Medium (2026) | Medium | Build pluggable class modules; document the interface now |
+
+---
+
+### Source Documentation
+
+**Game Mechanics:**
+- [Damage Calculations — Maxroll.gg](https://maxroll.gg/last-epoch/resources/damage-explained)
+- [Critical Strike — LE Wiki](https://lastepoch.fandom.com/wiki/Critical_Strike)
+- [Defenses Explained — Maxroll.gg](https://maxroll.gg/last-epoch/resources/defenses-explained)
+- [Endurance Guide — DVing.net](https://dving.net/guides/last-epoch/defenses-for-beginners)
+
+**Affixes & Items:**
+- [Affix Tier List 1.0 — AOEAH](https://www.aoeah.com/news/3172--last-epoch-10-affix-tier-list--ranking-best-endgame-affixes-in-le-10)
+- [Valuable Uniques — Maxroll.gg](https://maxroll.gg/last-epoch/resources/valuable-uniques)
+- [Item Prefixes DB — LastEpochTools](https://www.lastepochtools.com/db/prefixes)
+- [Crafting Guide — Icy Veins](https://www.icy-veins.com/last-epoch/crafting-guide)
+
+**Build Meta:**
+- [Season 4 Build Guides — Maxroll.gg](https://maxroll.gg/last-epoch/build-guides)
+- [Endgame Tier List S4 — Maxroll.gg](https://maxroll.gg/last-epoch/tierlists/corruption-tier-list)
+- [Passives & Skills — Maxroll.gg](https://maxroll.gg/last-epoch/resources/passives-and-skills)
+- [Corruption Guide — LastEpoch.wiki](https://www.lastepoch.wiki/guide/last-epoch-corruption-monolith)
+
+**Algorithm & Tools:**
+- [Optimal Skill Tree Growth — TommyOdland](https://tommyodland.com/articles/2020/optimal-skill-tree-growth/)
+- [PathofBuilding Community Fork](https://pathofbuilding.community/)
+- [Solved Exile](https://solvedexile.com/)
+- [LastEpochPlanner — GitHub](https://github.com/Musholic/PathOfBuildingForLastEpoch)
+- [Constrained DP — arXiv](https://arxiv.org/pdf/2105.06085)
+
+**Roadmap & Industry:**
+- [Season 4 Roadmap — Maxroll.gg](https://maxroll.gg/last-epoch/news/last-epoch-season-4-first-look-and-updated-roadmap)
+- [Paradox Classes — MMORPG.com](https://www.mmorpg.com/news/heres-why-last-epochs-orobyss-expansion-will-be-free-but-new-paradox-classes-will-be-paid-dlc-2000136722)
+- [EHG on Krafton AI — PC Gamer](https://www.pcgamer.com/games/rpg/as-krafton-evolves-into-an-ai-first-company-the-boss-of-the-recently-acquired-last-epoch-studio-says-he-doesnt-think-the-doom-and-gloom-is-warranted/)
+- [LLM Game Agents — GitHub](https://github.com/git-disl/awesome-LLM-game-agent-papers)
+
+---
+
+**Research Completion Date:** 2026-05-19
+**Research Period:** Live web research, current season (Season 4)
+**Source Verification:** All factual claims cited with live sources
+**Confidence Level:** High — based on multiple authoritative sources across all sections
+
+_This research document serves as the authoritative design reference for LEBO's AI optimizer upgrade. The algorithm blueprint in Part 3 should be treated as the specification for the next development epic._
