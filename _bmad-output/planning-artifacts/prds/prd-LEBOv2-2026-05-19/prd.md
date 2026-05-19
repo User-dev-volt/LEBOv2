@@ -5,6 +5,7 @@ created: 2026-05-19
 updated: 2026-05-19
 phase: "3 of 3"
 supersedes: "Phase 2 PRD (archived at _bmad-output/_phase2-archive/planning-artifacts/prd.md)"
+status: final
 ---
 
 # Product Requirements Document — LEBOv2 Phase 3
@@ -98,6 +99,8 @@ David has never used LEBO's idol grid before. In Phase 3 he finds the full idol 
 
 ### A — Deterministic Scoring Engine
 
+> **Implementation language:** The scoring engine runs in the Rust backend as a Tauri command, consistent with the existing architecture constraint that all backend logic lives in Rust. TypeScript calls it via `invokeCommand<T>()`. The engine's output (ranked suggestion list with delta values) is returned to the frontend for display and passed to the Claude API call.
+
 **A.1 — Build Score Function**
 
 FR-A1: The app computes a `DamageScore` using the Last Epoch damage formula: `Base × (1 + Σ Increased%) × Π More%` where Increased modifiers are summed additively and More modifiers are applied multiplicatively in sequence.
@@ -151,27 +154,27 @@ FR-A19: The affix scorer recognizes skill damage delivery types (melee / ranged 
 
 **A.6 — Cross-Domain Synergy Detector**
 
-FR-A19: The app detects zero-value passive allocations: nodes that are allocated but whose bonuses never apply to the build's active skills (e.g., melee damage nodes on a caster build, mana nodes on a build with no mana costs). These are flagged as Medium-priority reallocation suggestions.
+FR-A20: The app detects zero-value passive allocations: nodes that are allocated but whose bonuses never apply to the build's active skills (e.g., melee damage nodes on a caster build, mana nodes on a build with no mana costs). These are flagged as Medium-priority reallocation suggestions.
 
-FR-A20: The app detects mismatched affix types: gear affixes whose scope doesn't match the active skill's damage delivery type (e.g., "Melee Critical Strike Chance" on a ranged attack build). These are flagged as High-priority replacement suggestions with the correct affix scope identified.
+FR-A21: The app detects mismatched affix types: gear affixes whose scope doesn't match the active skill's damage delivery type (e.g., "Melee Critical Strike Chance" on a ranged attack build). These are flagged as High-priority replacement suggestions with the correct affix scope identified.
 
-FR-A21: The app detects synergy enabler thresholds: cases where a build-enabling unique item (Exsanguinous, Bleeding Heart, Omnividence, etc.) would change the archetype score by >30% if certain stat thresholds were met. These are surfaced as a special "Game-Changer" suggestion tier explaining what threshold is needed and how close the build is.
+FR-A22: The app detects synergy enabler thresholds: cases where a build-enabling unique item (Exsanguinous, Bleeding Heart, Omnividence, etc.) would change the archetype score by >30% if certain stat thresholds were met. These are surfaced as a special "Game-Changer" suggestion tier explaining what threshold is needed and how close the build is.
 
 **A.7 — Claude Narrative Layer**
 
-FR-A22: The optimization payload sent to Claude includes: the full ranked suggestion list with `ΔBuildScore`, `EffectivePointCost`, synergy flags, and the specific numerical context for each suggestion (e.g., current crit chance, exact resistance gap, node ID and path).
+FR-A23: The optimization payload sent to Claude includes: the full ranked suggestion list with `ΔBuildScore`, `EffectivePointCost`, synergy flags, and the specific numerical context for each suggestion (e.g., current crit chance, exact resistance gap, node ID and path).
 
-FR-A23: Claude's output is a natural-language explanation for each suggestion that references the specific delta values and explains the mechanical reason behind the priority (e.g., "Your crit chance is already 82% — the Crit Mastery keystone's multiplier lands on nearly every hit, making those 4 path points worth 190% average damage gain").
+FR-A24: Claude's output is a natural-language explanation for each suggestion that references the specific delta values and explains the mechanical reason behind the priority (e.g., "Your crit chance is already 82% — the Crit Mastery keystone's multiplier lands on nearly every hit, making those 4 path points worth 190% average damage gain").
 
-FR-A24: Claude's role is narrative generation only — the suggestion list, priority order, and delta values are produced deterministically by the engine. Claude does not reorder or invent suggestions.
+FR-A25: Claude's role is narrative generation only — the suggestion list, priority order, and delta values are produced deterministically by the engine. Claude does not reorder or invent suggestions.
 
 **A.8 — Node Efficiency Overlay**
 
-FR-A25: After an optimization run, the passive tree canvas displays a color-coded overlay on every unallocated node indicating its per-point efficiency tier: gold = top quartile (highest value), silver = second quartile, dim = third/fourth quartile (low value or unreachable within budget).
+FR-A26: After an optimization run, the passive tree canvas displays a color-coded overlay on every unallocated node indicating its per-point efficiency tier: gold = top quartile (highest value), silver = second quartile, dim = third/fourth quartile (low value or unreachable within budget).
 
-FR-A26: Nodes already at the suggestion cap (no remaining unspent points) show no overlay.
+FR-A27: Nodes already at the suggestion cap (no remaining unspent points) show no overlay.
 
-FR-A27: The overlay is toggleable via a button in the tree controls area; it defaults to on when suggestions are present.
+FR-A28: The overlay is toggleable via a button in the tree controls area; it defaults to on when suggestions are present.
 
 ---
 
@@ -275,7 +278,7 @@ FR-F3: All stat sheet values and tooltips that reference damage or resistance va
 
 FR-F4: The passive tree canvas renders a dark stone/obsidian-textured background (deep charcoal gradient or tiled texture) that matches the LE in-game passive tree aesthetic. The background is a static asset — it does not rerender on every frame.
 
-FR-F5: Each active skill tree canvas renders a distinct background appropriate to that skill's damage archetype or class (e.g., fire skills use a warm ember-toned background, cold skills use a cool crystalline tone). If a generic skill-tree background is used where archetype detection is unavailable, a neutral dark fallback applies.
+FR-F5: Each active skill tree canvas renders a background tinted by the skill's primary damage type tag from the game data. The tint palette is: FIRE → warm amber overlay (`rgba(180, 80, 20, 0.18)`), COLD → cool blue overlay (`rgba(40, 100, 180, 0.18)`), LIGHTNING → pale yellow overlay (`rgba(180, 160, 20, 0.18)`), VOID → deep purple overlay (`rgba(80, 20, 140, 0.18)`), POISON → green overlay (`rgba(30, 120, 40, 0.18)`), PHYSICAL / MELEE / UNKNOWN → neutral dark (no tint, same as passive tree background). The base layer in all cases is the same dark stone texture as the passive tree (FR-F4); the tint is a semi-transparent color layer on top.
 
 FR-F6: The Weaver Tree canvas renders a distinctive background with a purple/void aesthetic, visually distinct from the passive and skill tree backgrounds.
 
@@ -295,7 +298,7 @@ FR-F10: `Shift+click` on a passive tree node allocates multiple points in one ac
 
 FR-G1: The bundled game data is updated to Last Epoch Season 4 (Shattered Omens, released 2026-03-26). This includes: all new and updated passive tree nodes, new unique items and set items, updated affix tables (including Rune of Corruption affix entries), new and updated skill specialization tree nodes.
 
-FR-G2: Every passive node effect and affix entry in the Season 4 data includes the `modifierType: "increased" | "more" | "flat"` annotation required by the scoring engine (FR-A6). This annotation work is a prerequisite for scoring engine accuracy.
+FR-G2: The Season 4 data ingestion pipeline ensures every passive node effect and affix entry includes the `modifierType` and `scope` fields required by the scoring engine (see FR-A6 for the full field spec). This is the same data augmentation task as FR-A6 — it must be complete before any scoring engine development begins. The source for these fields is the lastepochtools.com build planner and database.
 
 FR-G3: The game data version string in `manifest.json` reflects Season 4. The existing staleness check system surfaces an update prompt to players running older data.
 
@@ -412,7 +415,7 @@ The following are explicitly deferred to post-Phase 3:
 
 ~~OQ-1: **Modifier type annotation source**~~ — **RESOLVED:** Modifier type data is available via lastepochtools.com and their build planner database. This is a data ingestion task (sourcing from the community DB), not a manual annotation task. FR-A6 / FR-G2 implementation should pull from this source.
 
-OQ-2: **Skill-specific damage type detection** — The scoring engine needs to know each active skill's damage delivery type (melee/ranged/spell) and damage types (fire/cold/void/etc.) to detect mismatched affixes (FR-A20) and to drive skill-role-aware affix weighting (FR-A17, FR-A19). Is this data present in the game data JSON already, or does it need to be modeled in a skills metadata layer? [Owner: Alec, resolve before Epic A implementation]
+~~OQ-2: **Skill-specific damage type detection**~~ — **RESOLVED (partial):** `SkillEntry.type: 'spell' | 'melee' | 'ranged' | 'unknown'` already exists in gameData.ts — delivery type is covered. Node damage element types (PHYSICAL, POISON, BLEED, etc.) are already present in node effect `tags[]` in all class JSON files. **Gap:** `modifierType` (increased/more/flat) is absent from both nodes and affixes; affix scope/delivery type is also absent from the affixes schema. Both gaps are resolved by the same data ingestion task as OQ-1 — sourcing from lastepochtools DB and augmenting the existing affix and node records. One data engineering task covers FR-A6, FR-A19, FR-G2.
 
 OQ-3: **Idol grid layout data** — Does the current bundled data include the idol grid layout (valid positions per size type)? The community planner (lastepochtools.com) models this. Need to verify the data source before Epic C implementation. [Owner: Alec, resolve before Epic C implementation]
 

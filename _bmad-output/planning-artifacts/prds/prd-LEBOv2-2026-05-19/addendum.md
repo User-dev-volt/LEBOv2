@@ -223,4 +223,4 @@ Season 4 (Shattered Omens) launched 2026-03-26. Key additions requiring game dat
 - **Echo Chains** — new endgame navigation layer; no direct impact on scoring engine but blessings database may include new entries
 - **Omen Windows** — new encounter type; no passive tree impact
 
-The `modifierType` annotation (FR-A6, FR-G2) is not present in current community data sources — this is a LEBO-maintained annotation layer required before the scoring engine can produce accurate results. This should be treated as a data engineering task in Epic A/G, not a data-sourcing task.
+The `modifierType` annotation (FR-A6, FR-G2) **is available** via the lastepochtools.com build planner and database (confirmed by Alec, OQ-1 resolution). This is a data ingestion task, not a manual annotation task: Epic G/A should source this field from the community DB and add it to the LEBO game data files. Similarly, affix `scope` / delivery type fields are expected to be present in the same source. Verify at ingestion time; if any affixes are missing scope data, fall back to the affix name heuristic (e.g., "Melee" in the name → `scope: "melee"`) rather than blocking.
