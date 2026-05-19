@@ -21,11 +21,13 @@ supersedes: "Phase 2 PRD (archived at _bmad-output/_phase2-archive/planning-arti
 
 LEBOv2 Phase 3 is the final evolutionary step that turns LEBO from a polished companion app into the definitive Last Epoch build tool. Phase 2 delivered the bones — full skill trees, item database, structured gear input, the optimization slider, and a working Claude API integration. Phase 3 makes that foundation feel like magic.
 
-Two transformations define this phase:
+Three transformations define this phase:
 
 **Transformation 1 — The Optimizer Gets a Brain.** The current optimization flow sends build context to Claude and hopes for good advice. Phase 3 replaces this with a deterministic scoring engine that encodes Last Epoch's actual damage formula, crit math, and survivability model. The engine runs a per-point efficiency scan on every passive node (Dijkstra-based path scoring), a budget knapsack solver for multi-point allocation, a gear affix scorer, and a cross-domain synergy detector. Claude's role shifts from "guess what's good" to "explain what the math found." The result: suggestions that are verifiably correct, not plausibly worded — and that feel like advice from a world-class theorycrafting partner.
 
-**Transformation 2 — The App Looks Like the Game.** Phase 3 completes the visual and data surface that an endgame player expects. Full idol grid builder. Blessings panel. Conditions/buffs simulation context. A live stat sheet (General / Offense / Defense / Minion / Other) that updates in real time on every node allocation, gear change, or idol placement. Tree backgrounds matching the LE aesthetic. Item rarity and damage-type color systems applied canonically throughout. Keyboard shortcuts that match lastepochtools.com conventions. When a player drops into Phase 3 LEBO while theorycrafting, it should feel continuous with the game itself.
+**Transformation 2 — Gear Gets Its Own Intelligence.** A dedicated Gear Optimization screen gives players a full per-slot analysis of their current gear against what their build actually needs. The player designates their skill roles (primary offense, secondary, defensive) so the engine understands damage type context — a Poison build gets Poison-damage affix recommendations, not generic crit suggestions. Every slot is ranked by upgrade priority. Claude produces a plain-English gear wishlist per slot: what affixes to look for, why they matter for this specific build, and which item is the weakest link. This is the "Maxroll loot filter, but generated for your exact build in real time."
+
+**Transformation 3 — The App Looks Like the Game.** Phase 3 completes the visual and data surface that an endgame player expects. Full idol grid builder. Blessings panel. Conditions/buffs simulation context. A live stat sheet (General / Offense / Defense / Minion / Other) that updates in real time on every node allocation, gear change, or idol placement. Tree backgrounds matching the LE aesthetic. Item rarity and damage-type color systems applied canonically throughout. Keyboard shortcuts that match lastepochtools.com conventions. When a player drops into Phase 3 LEBO while theorycrafting, it should feel continuous with the game itself.
 
 **Target users:** Advanced Last Epoch players and theory-crafters who know the game deeply and will immediately notice if suggestions are wrong or visual conventions are off. Phase 3 earns trust from this audience.
 
@@ -139,11 +141,13 @@ FR-A15: The solver output is an ordered list of node allocations (cheapest-first
 
 **A.5 — Gear Affix Scorer**
 
-FR-A16: The app computes a dynamic affix weight: `Weight(affix, build) = ΔBuildScore when this affix is present at T5` — injecting each affix into the current build and measuring the score delta. Weights are cached per build state and invalidated on class, mastery, or active skill change.
+FR-A16: The app computes a dynamic affix weight: `Weight(affix, build) = ΔBuildScore when this affix is present at T5` — injecting each affix into the current build and measuring the score delta. Weights are cached per build state and invalidated on class, mastery, skill assignment, or skill role designation change.
 
-FR-A17: For each gear slot, the app ranks all possible affixes by `Weight × TierValue` and identifies the 2 best prefix + 2 best suffix combinations as the "ideal" configuration for that slot.
+FR-A17: For each gear slot, the app ranks all possible affixes by `Weight × TierValue` and identifies the 2 best prefix + 2 best suffix combinations as the "ideal" configuration for that slot. Rankings are skill-context-aware: affix weights account for the build's active skill damage types (e.g., a Poison build's affix scorer weights Poison-damage affixes and ailment-scaling prefixes highly regardless of generic damage score contributions).
 
-FR-A18: The gap between a slot's current affix configuration and its ideal configuration produces an `UpgradeScore` per slot, surfaced as upgrade suggestions ranked by UpgradeScore.
+FR-A18: The gap between a slot's current affix configuration and its ideal configuration produces an `UpgradeScore` per slot. Slots are ranked by UpgradeScore to identify upgrade priority order.
+
+FR-A19: The affix scorer recognizes skill damage delivery types (melee / ranged / spell / minion) and damage element types (fire / cold / lightning / void / physical / poison / bleed) from the active skill configuration. Affixes that do not apply to the build's delivery type or damage element receive a zero weight (e.g., "Melee Critical Strike Chance" on a spell-only build scores 0, not some fraction of generic crit value).
 
 **A.6 — Cross-Domain Synergy Detector**
 
@@ -301,6 +305,58 @@ FR-G5: Season 4 blessings (any new monolith timelines or blessing updates in S4)
 
 ---
 
+### H — Gear Optimization Screen
+
+The Gear Optimization screen is a dedicated view (accessible via the app header, alongside the main build view and settings) that surfaces the full gear analysis in a format built for decision-making — separate from the main build view so it doesn't interrupt the tree-allocation workflow.
+
+**H.1 — Skill Role Designation**
+
+FR-H1: Before the gear analysis can run, the player designates roles for their active skill slots: **Primary Offense** (the main damage skill), **Secondary Offense** (supporting damage skill, optional), **Defensive** (the survival skill, optional), and **Utility** (movement/buff/debuff, optional). At minimum, one skill must be designated Primary Offense.
+
+FR-H2: Skill role designations are saved with the build and persist across sessions. They do not affect passive tree optimization or the main optimization flow — they are context only for the Gear Optimization screen.
+
+FR-H3: The Gear Optimization screen prompts for skill role designations if none are set. Once set, roles are displayed and editable at the top of the screen.
+
+**H.2 — Full Build Snapshot**
+
+FR-H4: When the player opens the Gear Optimization screen (or clicks "Analyze Gear"), the app captures a full build snapshot: active skills with their role designations, passive tree allocations, current gear (all 12 slots including weapons and rings), idols, blessings, active conditions, character level, and slider position.
+
+FR-H5: The snapshot is passed to the scoring engine to compute per-slot `UpgradeScore` (from FR-A18) and per-affix `Weight` (from FR-A16) using the skill-role-aware affix scorer.
+
+**H.3 — Weakest Slot Detection**
+
+FR-H6: The app ranks all equipped gear slots by `UpgradeScore` (highest gap between current configuration and ideal). The slot with the highest UpgradeScore is flagged as the **Priority Upgrade** slot with a visual indicator.
+
+FR-H7: The upgrade priority ranking is displayed as an ordered list of all 12 gear slots, showing each slot's current score efficiency (e.g., "Weapon: 73% of ideal", "Boots: 41% of ideal") so players can see at a glance where to focus crafting or trading effort.
+
+FR-H8: Unique and set items that are correct for the build (their special effects contribute positively to BuildScore) are flagged as "correct — keep" regardless of affix scores, since their unique effects are not replaceable by stat sticks.
+
+**H.4 — Per-Slot Gear Wishlist**
+
+FR-H9: For each gear slot, the app displays the ideal affix wishlist: the top 2 prefix and top 2 suffix recommendations ranked by weight, with each affix labeled by its tier target (e.g., "T5+ Added Critical Strike Multiplier", "T4+ Hybrid Health").
+
+FR-H10: Each recommended affix includes a brief mechanical reason drawn from the scoring context — why this affix specifically matters for this build. This context is passed to Claude alongside the structured affix data.
+
+FR-H11: When the current gear item already has a recommended affix, the slot shows that affix as satisfied (e.g., checked off) and highlights which recommended affixes are still missing or below target tier.
+
+FR-H12: The wishlist distinguishes between prefix and suffix recommendations per slot, matching LE's crafting system (2 prefix + 2 suffix per item).
+
+**H.5 — Claude Gear Narrative**
+
+FR-H13: Claude generates a gear analysis narrative for the full build — not slot-by-slot boilerplate, but a prioritized story: "Your weakest item is your Amulet (42% of ideal). You're a Poison Bladedancer — the Amulet should be your primary Crit Chance source, but yours has zero crit. A T5 Critical Strike Chance prefix alone would increase your average damage by 22%. Your boots are correctly slotted with movement speed; the only upgrade there is Tier on the secondary affix."
+
+FR-H14: Claude's narrative references the player's designated Primary Offense skill by name throughout — "your Poison Eruption build" or "with Shadow Rend as your primary" — so the output feels personalized to the actual build, not generic.
+
+FR-H15: Claude identifies any build-enabling unique items that would be upgrades given the current build state (from FR-A21's synergy enabler detection), surfaced in the narrative as "Game-Changer" recommendations with a brief explanation of what they enable.
+
+**H.6 — Slider-Aware Output**
+
+FR-H16: All gear recommendations are weighted by the current Glass Cannon ↔ Juggernaut slider position. A player at full Glass Cannon sees offensive affix recommendations prioritized in the wishlist; a player at full Juggernaut sees defensive affixes (Hybrid Health, Endurance Threshold, Resistances) move to the top of every slot's ranking.
+
+FR-H17: The gear narrative explicitly calls out the archetype context: "Since you're optimizing toward Glass Cannon, I've prioritized offensive affixes. If you shift toward Juggernaut, Hybrid Health and Endurance Threshold would move to the top of every slot."
+
+---
+
 ## Non-Functional Requirements
 
 **Performance**
@@ -341,9 +397,9 @@ NFR-12: All Phase 3 features must function fully offline. No network calls are r
 
 The following are explicitly deferred to post-Phase 3:
 
-- **Full item optimization by AI** — the scoring engine scores current gear and flags upgrade opportunities, but AI does not suggest full item replacement ("equip X instead of Y"). That requires a full item search across the item database and is a separate phase.
-- **Idol optimization by AI** — the Phase 3 idol grid passes idol context to AI but the engine does not run a knapsack solver on idol combinations. Idol suggestions are descriptive (e.g., "upgrade T2 to T5") not prescriptive ("use this specific idol type").
-- **Loot filter generation** — Phase 3 lays the algorithmic groundwork for affix scoring but does not generate Maxroll-style build-aware loot filters.
+- **Specific item replacement recommendations** — the Gear Optimization screen tells players what affixes and affix tiers to look for per slot, but does not traverse the item database to name a specific item ("equip Exsanguinous instead of your current chest"). Named item recommendations require a full item search that is a Phase 4 capability.
+- **Idol combinatoric optimization by AI** — the idol grid (Epic C) gives the scoring engine idol context, but the AI does not run a knapsack solver over idol grid combinations to recommend ideal idol placement. Idol optimization is Phase 4.
+- **Loot filter export** — Phase 3's affix scorer provides the groundwork, but generating downloadable Maxroll-style loot filter files is out of scope.
 - **Build sharing / import from URL** — import from lastepochtools.com, pastebin, or live API is not in scope.
 - **Compare Trees** — named tree variants and side-by-side comparison is not in scope.
 - **Full Calcs tab (derivation chains)** — the stat sheet shows derived totals, not the full computation chain (PoB-style "red text for unsupported mods").
@@ -354,12 +410,12 @@ The following are explicitly deferred to post-Phase 3:
 
 ## Open Questions
 
-OQ-1: **Modifier type annotation source** — Does the community game data source (prowner/last-epoch-data or similar) already include modifier type information, or does this require LEBO-maintained annotations? This determines whether FR-A6 / FR-G2 is a data-sourcing task or a manual annotation task. [Owner: Alec, resolve before Epic A implementation]
+~~OQ-1: **Modifier type annotation source**~~ — **RESOLVED:** Modifier type data is available via lastepochtools.com and their build planner database. This is a data ingestion task (sourcing from the community DB), not a manual annotation task. FR-A6 / FR-G2 implementation should pull from this source.
 
-OQ-2: **Skill-specific damage type detection** — The scoring engine needs to know each active skill's damage delivery type (melee/ranged/spell) and damage types (fire/cold/void/etc.) to detect mismatched affixes (FR-A20). Is this data present in the game data JSON, or does it need to be modeled separately? [Owner: Alec, resolve before Epic A implementation]
+OQ-2: **Skill-specific damage type detection** — The scoring engine needs to know each active skill's damage delivery type (melee/ranged/spell) and damage types (fire/cold/void/etc.) to detect mismatched affixes (FR-A20) and to drive skill-role-aware affix weighting (FR-A17, FR-A19). Is this data present in the game data JSON already, or does it need to be modeled in a skills metadata layer? [Owner: Alec, resolve before Epic A implementation]
 
 OQ-3: **Idol grid layout data** — Does the current bundled data include the idol grid layout (valid positions per size type)? The community planner (lastepochtools.com) models this. Need to verify the data source before Epic C implementation. [Owner: Alec, resolve before Epic C implementation]
 
-OQ-4: **Tree background assets** — Will tree backgrounds be generated as CSS gradients/patterns or as image assets? Image assets have higher fidelity but require a sourcing decision (original art vs. community assets vs. in-game texture extraction). [Owner: Alec, design decision]
+OQ-4: **Tree background assets** — Will tree backgrounds be CSS gradients/patterns or image assets? Image assets have higher fidelity but require a sourcing decision (original art vs. community assets vs. in-game texture extraction via the existing icon pipeline). [Owner: Alec, design decision before Epic F]
 
-OQ-5: **Weaver Tree data status** — Phase 2's Story 4.3 (Weaver Tree renderer) was conditional on a research spike confirming data availability. Is the Weaver Tree data available for Phase 3, or is the Weaver Tree background (FR-F6) applied to a placeholder renderer? [Owner: Alec, verify before Epic F implementation]
+OQ-5: **Weaver Tree data status** — Phase 2's Story 4.3 (Weaver Tree renderer) was conditional on a research spike. Is the Weaver Tree fully rendered in the current codebase, or is FR-F6 (Weaver background) applied to a placeholder? [Owner: Alec, verify before Epic F]

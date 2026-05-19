@@ -71,7 +71,15 @@ Phase 2 (DP knapsack):
 
 ### Stage 4 — Gear Affix Scorer
 ```
+// Skill-role context used to zero out inapplicable affixes
+primary_skill = build.skill_roles["primary_offense"]
+primary_damage_types = primary_skill.damage_types  // e.g., ["poison", "physical"]
+primary_delivery = primary_skill.delivery_type     // e.g., "spell", "melee", "ranged"
+
 For each affix a in the full affix database:
+  if a.scope != primary_delivery AND a.scope != "generic":
+    weight[a] = 0  // zero out affixes that don't apply (melee crit on spell build = 0)
+    continue
   temp_build = current_build + affix_a at T5
   weight[a] = BuildScore(temp_build) - BuildScore(current_build)
 
@@ -80,7 +88,20 @@ For each gear slot s:
   ideal_suffixes = top 2 affixes with highest weight that are valid suffixes for slot s
   upgrade_score[s] = Σ(weight[ideal] - weight[current]) for all affix positions in s
 
-Cache weight[] per build state; invalidate on class/mastery/skill change.
+Cache weight[] per build state; invalidate on class/mastery/skill/role-designation change.
+```
+
+**Gear Optimization Screen — Weakest Slot:**
+```
+slots_ranked = sort(all_gear_slots, key=upgrade_score, descending=true)
+priority_slot = slots_ranked[0]  // highest gap = weakest for this build
+
+wishlist[s] = {
+  prefixes: [(affix_name, tier_target, mechanical_reason), ...],  // top 2
+  suffixes: [(affix_name, tier_target, mechanical_reason), ...],  // top 2
+  current_efficiency: current_score / ideal_score,  // 0–100%
+  upgrade_priority_rank: rank in slots_ranked
+}
 ```
 
 ### Stage 5 — Cross-Domain Synergy Detection
