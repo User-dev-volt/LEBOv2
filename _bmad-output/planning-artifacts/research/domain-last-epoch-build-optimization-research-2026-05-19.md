@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2]
+stepsCompleted: [1, 2, 3, 4]
 inputDocuments: []
 workflowType: 'research'
 lastStep: 1
@@ -256,3 +256,311 @@ _Source: [Build Guides — Maxroll.gg](https://maxroll.gg/last-epoch/build-guide
 **Key insight for the optimizer:** Most players target 300–500 corruption. The optimizer should model this as the default endgame target. Builds that sacrifice too much defense for damage fail in this range — the enemy damage scaling outpaces the time saved by killing faster. The sweet spot is builds that can kill fast enough to minimize time in danger.
 
 _Source: [Empowered Monolith Guide — Maxroll.gg](https://maxroll.gg/last-epoch/monolith/empowered-guide), [Corruption Monolith Guide — LastEpoch.wiki](https://www.lastepoch.wiki/guide/last-epoch-corruption-monolith)_
+
+---
+
+## Part 2 — Competitive Landscape: The Build Tool Ecosystem
+
+### 2.1 Key Players in the Last Epoch Build Optimization Space
+
+| Tool | Type | Capabilities | Limitations |
+|------|------|-------------|-------------|
+| **LastEpochTools.com** | Web build planner | Passive tree, skills, items, affix explorer, community build database | Manual only — no scoring, no optimization engine, no AI |
+| **LastEpochPlanner.com** | PoB-fork for LE | Stat calculations (Health, Armor, Ward, Resistances, DPS for some skills), character import | Limited skill coverage, no suggestion engine, still manual planning |
+| **Maxroll.gg** | Guide + loot filter platform | Expert build guides, tier lists, build-aware loot filters (color-coded by value), filter strictness levels | No optimizer — guides are static; loot filters are rule-based, not dynamic |
+| **Path of Building (PoE)** | Offline full optimizer | **Per-point power scoring on every passive node**, Power Report ranking all nodes, full damage simulation, gear comparison | PoE only — but is the template LEBO should learn from |
+| **Solved Exile (PoE)** | AI constraint optimizer | Import build → get upgrade recommendations across tree + gems + gear + flasks simultaneously; constraint-based ("describe what you want"); combinatoric exploration | PoE only, early-stage; but represents the ceiling of what's possible |
+| **LEBO (our product)** | AI optimizer for LE | Currently: AI suggestion generation from build context | The only AI-powered Last Epoch optimizer that exists |
+
+**Competitive gap confirmed:** There is **no AI-powered build optimizer for Last Epoch** in the market. The entire field is manual planning tools. LEBO operates in an uncontested space.
+
+_Source: [LastEpochTools — Build Planner](https://www.lastepochtools.com/planner/), [LastEpochPlanner — GitHub](https://github.com/Musholic/PathOfBuildingForLastEpoch), [Maxroll Loot Filters](https://maxroll.gg/last-epoch/resources/understanding-maxroll-loot-filters), [Solved Exile](https://solvedexile.com/)_
+
+---
+
+### 2.2 What Path of Building Actually Does (The Gold Standard to Emulate)
+
+Path of Building is the most technically sophisticated build optimizer in any ARPG. Its approach is the blueprint for what LEBO's algorithm should do:
+
+**Per-Point Power Scoring:**
+- For every unallocated passive node on the tree, PoB calculates the **marginal DPS increase** (or defensive increase) of allocating that node
+- Nodes are highlighted on the tree with a color/intensity proportional to their per-point value
+- The "Power Report" ranks every node in the entire tree and all cluster jewels by per-point efficiency
+- This lets players answer "where should my next 3 points go?" in seconds
+
+**Full Damage Simulation Engine:**
+- PoB calculates full DPS including: base damage, all modifiers (additive + multiplicative), crit math, ailment application, skill-specific multipliers
+- Gear swapping shows exact DPS delta before equipping
+- Passive tree pathing shows actual point cost to reach any node (including mandatory intermediate nodes)
+
+**Key algorithm insight from PoB's architecture:**
+> Efficiency = `(DPS_with_node - DPS_without_node) / points_cost_to_reach_node`
+
+Where `points_cost_to_reach_node` accounts for the full path cost, not just the node's own point cost. A T2 keystone requiring 3 filler nodes to reach has an effective cost of 4 points, not 1.
+
+_Source: [Path of Building Community Fork](https://pathofbuilding.community/), [Power Report Issue — GitHub](https://github.com/PathOfBuildingCommunity/PathOfBuilding/issues/3704)_
+
+---
+
+### 2.3 What Solved Exile Does (The Ceiling to Aspire To)
+
+Solved Exile represents the next evolution — what LEBO should eventually become:
+
+**Core approach:**
+1. **Import current build state** (passive tree, gear, skills)
+2. **Specify optimization constraints** ("I want 50k+ DPS and 5k EHP")
+3. **Engine explores combinatoric space** — tries combinations of passive reallocations, gear swaps, skill gem changes
+4. **Returns ranked upgrade suggestions** — "allocate these 3 nodes," "swap this ring affix," "this gem does 40% more damage"
+
+**What makes it feel like magic:**
+- It reasons about the **interaction space** between passives + items + skills together, not in isolation
+- A suggestion might be: "Swap your boots to Exsanguinous-combo, respec 5 passive points from Health to Crit, and allocate the Crit Mastery node — net result: +280% DPS, -30% EHP but Ward generation now exceeds current EHP"
+- The optimizer understands **build archetypes implicitly** — it finds the coherent build that maximizes the constraint, not just the locally optimal next node
+
+_Source: [Solved Exile](https://solvedexile.com/)_
+
+---
+
+### 2.4 How Maxroll Loot Filters Work (Affix Scoring in Practice)
+
+Maxroll's loot filter system reveals how professional build optimizers think about gear scoring:
+
+**The scoring model:**
+1. Each build guide defines a **priority affix list** per slot
+2. Filters use **color coding** to communicate value: gold = perfect roll, blue = acceptable, hidden = worthless
+3. Filter strictness levels correspond to gear targets: Leveling → Empowered start → High-end endgame → BiS farming
+4. Build-aware filtering: affixes from the build's planner are highlighted; everything else is hidden
+
+**The key insight:** Maxroll's experts are essentially hand-coding a **weighted affix scoring function** per build. This is exactly what LEBO's AI should compute dynamically — instead of a human expert hand-specifying weights, the AI derives them from the build context.
+
+_Source: [Understanding Maxroll Loot Filters](https://maxroll.gg/last-epoch/resources/understanding-maxroll-loot-filters), [Loot Filter Guide — Maxroll.gg](https://maxroll.gg/last-epoch/resources/loot-filter-guide)_
+
+---
+
+### 2.5 Competitive Positioning: Where LEBO Fits
+
+**The gap LEBO fills:**
+
+| Capability | LastEpochTools | Maxroll | PoB (PoE) | Solved Exile (PoE) | **LEBO** |
+|-----------|---------------|---------|-----------|-------------------|---------|
+| Passive tree planning | ✅ Manual | ✅ Guide | ✅ Manual+Score | ✅ Automated | ✅ Needs per-point scoring |
+| Gear comparison | ✅ Manual | ✅ Loot filter | ✅ DPS delta | ✅ Automated | ✅ Needs affix scoring |
+| Skill tree planning | ✅ Manual | ✅ Guide | ✅ Manual | ✅ Automated | ✅ Needs per-point scoring |
+| AI suggestions | ❌ | ❌ | ❌ | ⚠️ PoE only | ✅ **Only LE tool with this** |
+| Archetype-aware | ❌ | ✅ via guides | ⚠️ Implicit | ✅ | ✅ Needs explicit modeling |
+| Natural language goals | ❌ | ❌ | ❌ | ✅ (experimental) | ✅ **Core differentiator** |
+
+**LEBO's strongest differentiators:**
+1. **AI-powered** — no other Last Epoch tool offers automated suggestions
+2. **Natural language goals** — "glass cannon" / "juggernaut" / "speed farmer" is a human-first interface no other LE tool has
+3. **Desktop native** — not a web tool; fast, private, offline-capable
+4. **Integrated build context** — skills + passives + gear all read at once, enabling cross-domain suggestions
+
+---
+
+## Part 3 — Algorithm Design: Making the Optimizer Feel Like Magic
+
+### 3.1 The Core Problem Statement
+
+**Input:** Current build state (passive allocations, skill specializations, gear, player level, goal archetype)
+**Output:** Ranked list of concrete changes — "allocate node X," "swap affix Y on slot Z," "reroute 3 points from A to B" — each with an estimated impact score
+
+**Goal:** Feel like a world-class theorycrafting partner who instantly knows what matters and why.
+
+---
+
+### 3.2 The Build Score Function — The Heart of Everything
+
+Before anything can be suggested, the optimizer needs to **score the current build** in a way that reflects the player's stated goal. This is a multi-dimensional scoring problem.
+
+**Proposed composite score:**
+
+```
+BuildScore = w_dmg × DamageScore + w_surv × SurvivabilityScore + w_speed × SpeedScore
+```
+
+Where weights are derived from the player's stated archetype goal:
+
+| Archetype | w_dmg | w_surv | w_speed |
+|-----------|-------|--------|---------|
+| Glass Cannon | 0.85 | 0.10 | 0.05 |
+| Balanced | 0.55 | 0.35 | 0.10 |
+| Juggernaut | 0.20 | 0.75 | 0.05 |
+| Speed Farmer | 0.50 | 0.20 | 0.30 |
+
+**DamageScore components:**
+- Base damage pool × additive modifiers (Increased%)
+- Multiplicative modifiers (More%)
+- Crit contribution: `(Crit_Multi × Crit_Chance) + (1 - Crit_Chance)` — the average damage multiplier
+- Skill-specific modifiers
+
+**SurvivabilityScore components:**
+- Effective HP = HP × (1 + Ward_ratio) × Endurance_reduction
+- Defense layer count (reward for stacking multiple layers)
+- Resistance coverage (penalize uncapped resistances heavily)
+- Crit avoidance (binary bonus: 0 or 1 at cap)
+
+**SpeedScore components:**
+- Movement speed %
+- Attack/cast speed
+- Area of Effect coverage
+
+_The AI's job is to evaluate each potential change as a **delta on this score** — `Δscore = score_after - score_before`._
+
+---
+
+### 3.3 Passive Tree Node Scoring Algorithm
+
+**The per-point efficiency problem:**
+
+For passive tree optimization, the key challenge is that nodes have a **path cost** — you can't take node X at depth 5 without first spending points on nodes 1–4 along the path.
+
+**Recommended approach: Marginal Efficiency Scoring**
+
+```
+Efficiency(node) = ΔBuildScore(node) / EffectivePointCost(node)
+
+EffectivePointCost(node) = points_in_node + points_in_unallocated_prerequisites
+```
+
+For each unallocated node in the tree:
+1. Calculate the minimum-point path from current allocation to the node (BFS/Dijkstra on the tree graph)
+2. Compute the `ΔBuildScore` of having the node allocated vs not
+3. Sum the score contributions of ALL nodes on that path (not just the target)
+4. Divide total path ΔBuildScore by total path cost in points
+
+This finds routes where the **whole path** has high average value, not just the target node.
+
+**Pruning rules for efficiency:**
+- Skip nodes already allocated
+- Skip nodes where path cost exceeds remaining budget
+- Heavily weight "More" damage modifier nodes — these are worth ~3–5× an equivalent "Increased" node when the build already stacks Increased%
+- Apply mastery depth bonus: nodes at depth 7–10 in the mastery tree get a 1.2× multiplier (game data shows highest-value nodes are deep)
+
+**Algorithm type:** Modified Dijkstra on the tree graph, optimizing for ΔScore/cost rather than distance. O(N log N) where N = unallocated nodes.
+
+_Source: [Optimal Skill Tree Growth — TommyOdland.com](https://tommyodland.com/articles/2020/optimal-skill-tree-growth/index.html), [Power Report — PoB GitHub](https://github.com/PathOfBuildingCommunity/PathOfBuilding/issues/3704)_
+
+---
+
+### 3.4 Budget-Constrained Multi-Point Optimization (N Points to Spend)
+
+When a player has N points to allocate (not just 1), greedy per-point selection is **suboptimal** because:
+- Early greedy choices may block higher-value paths
+- Some paths have front-loaded costs and back-loaded rewards
+
+**Recommended approach: Two-Phase Algorithm**
+
+**Phase 1 — Greedy Shortlist:**
+Run the per-point efficiency scoring to produce a ranked shortlist of top-20 candidate paths. This is fast (O(N log N)) and eliminates clearly suboptimal choices.
+
+**Phase 2 — DP Budget Allocation:**
+For the shortlisted paths, apply a bounded knapsack formulation:
+- Items = path bundles (each path is a bundle of 1–8 nodes)
+- Weights = total point cost of each bundle
+- Values = cumulative ΔBuildScore of each bundle
+- Capacity = remaining point budget
+
+DP finds the **globally optimal combination** of path bundles within budget. State space is `paths × budget_levels` — manageable with a 20-item shortlist and typical budgets of 5–20 points.
+
+**Output:** The specific set of node allocations that maximizes BuildScore for the given budget, in allocation order (cheapest-first to reach the destinations).
+
+_Source: [Constrained Discrete Optimization DP — arXiv](https://arxiv.org/pdf/2105.06085), [Greedy vs DP — Educative.io](https://www.educative.io/blog/greedy-algorithm-vs-dynamic-programming)_
+
+---
+
+### 3.5 Gear Scoring Algorithm — Affix Weight Computation
+
+Rather than hard-coding affix weights (like Maxroll's experts do manually), LEBO should **derive weights dynamically from the build context**:
+
+**Affix Weight Formula:**
+```
+Weight(affix, build) = ΔBuildScore when this affix is present at T5 / baseline
+```
+
+Computed by temporarily injecting each affix into the build and measuring the score delta. Expensive to compute naively, but cacheable per build state.
+
+**Practical optimization:**
+- Pre-compute weight tables per archetype (Glass Cannon, Juggernaut, Balanced, Speed)
+- Only recompute when the build changes materially (new class, mastery, or skill assignment)
+- Sort affixes by weight × tier_value to rank upgrade opportunities
+
+**Gear slot scoring:**
+For each gear slot, rank all possible affixes by their weight × expected tier value. The top 2 prefix + top 2 suffix combinations define the "ideal" item for that slot. The gap between what the player currently has and this ideal = the opportunity score for that slot.
+
+**Unique item detection:**
+Flag when a build-enabling unique (Exsanguinous, Bleeding Heart, etc.) would change the archetype score significantly. These deserve special treatment — not just "better stats" but "different build strategy unlocked."
+
+---
+
+### 3.6 Archetype-Aware Suggestion Ranking
+
+Not all improvements are equal. The AI should rank suggestions by how directly they serve the player's stated goal:
+
+**Suggestion priority tiers:**
+
+| Tier | Condition | Example |
+|------|-----------|---------|
+| **Critical** | Defensive floor not met | "Cap resistances before any damage investment" |
+| **High** | Major efficiency gap | "3 points to Crit Mastery keystone: +180% avg damage" |
+| **Medium** | Incremental improvement | "Upgrade ring affix from T3 to T5: +12% damage" |
+| **Low** | Minor optimization | "Reorder skill tree allocation for same result cheaper" |
+
+**The "defensive floor" rule** — modeled after how top builders actually play:
+Before suggesting any offensive improvement, verify:
+1. All resistances are capped ✅
+2. Crit avoidance is at or near 100% ✅
+3. At least one sustain layer is in place (leech / Ward / life regen) ✅
+
+If any of these fail, they are **Critical** suggestions that rank above all damage improvements, regardless of archetype (even Glass Cannon needs defensive floors to clear 300+ corruption).
+
+---
+
+### 3.7 The "Magic" Factor — Cross-Domain Synergy Detection
+
+What makes LEBO feel like magic is **detecting cross-domain synergies** that a manual tool would never surface:
+
+**Examples of magic suggestions:**
+1. "Your build uses Crit extensively but your passive tree has 0 Crit nodes — 4 points to the Crit Mastery cluster would increase your avg damage by 240%"
+2. "You have Exsanguinous in your gear but your HP pool is only 800 — with Ward-from-HP mechanics, going to 2000 HP via hybrid health affixes would give you 4× more effective Ward"
+3. "Your Marksman build is using melee crit chance affixes — these do nothing for ranged attacks. Swapping to Bow Critical Strike Chance would add 18% actual crit chance"
+4. "You have 6 points allocated in the Mana tree but your build uses zero Mana abilities — those points are worth 0. Reallocating to Vitality gives you 240 HP"
+
+**How to detect these:**
+- Cross-reference affix types against the active skill damage types (melee/ranged/spell/etc.)
+- Detect "zero-value" allocations: nodes allocated but whose bonuses never apply to the active skills
+- Detect "synergy enablers": changes that unlock a secondary mechanic (e.g., getting enough Int to enable Ward Retention scaling with Exsanguinous)
+
+---
+
+### 3.8 Implementation Architecture for LEBO
+
+Based on all research, here is the recommended algorithm pipeline:
+
+```
+[Build State] → [Score Engine] → [Passive Tree Scorer] → [Gear Scorer] → [Synergy Detector]
+                                         ↓                       ↓                ↓
+                              [Path Efficiency Rankings] [Affix Gap Rankings] [Zero-value / enabler flags]
+                                                        ↓
+                                         [Budget Knapsack Solver]
+                                                        ↓
+                                    [Prioritized Suggestion List]
+                                                        ↓
+                                  [Claude API: Narrative Generation]
+```
+
+**The Claude API's role in this pipeline:**
+The algorithmic engine produces **ranked, scored, structured suggestions with data**. Claude then takes those structured suggestions and converts them into **natural language explanations** that feel like a knowledgeable friend explaining why something matters — not just "allocate node X" but "You're only 4 points away from the Crit Mastery keystone, and once you hit it your average damage nearly doubles because your crit chance is already at 85%."
+
+This hybrid approach (deterministic scoring algorithm + LLM explanation) is what makes suggestions feel like magic rather than a spreadsheet.
+
+**Estimated computation budget per suggestion run:**
+- Score engine: <10ms (simple math, precomputed stat totals)
+- Passive tree scan (150–200 nodes): <50ms with Dijkstra
+- Gear affix scoring (4 affixes × 10 slots): <20ms with cache
+- Knapsack solver (top 20 paths, 20-point budget): <5ms
+- Claude API call for narrative: 2–5 seconds (the only slow part)
+
+Total user-perceived latency: 2–5 seconds. The algorithm is not the bottleneck — the LLM is.
+
+_Source: [Optimal Skill Tree Growth — TommyOdland.com](https://tommyodland.com/articles/2020/optimal-skill-tree-growth/index.html), [Multi-Objective Optimization — Medium](https://medium.com/@chongjingting/multi-objective-optimization-moo-1b29ece5b64f), [Greedy vs DP — Educative.io](https://www.educative.io/blog/greedy-algorithm-vs-dynamic-programming)_
