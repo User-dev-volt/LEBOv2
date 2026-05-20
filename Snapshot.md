@@ -22,14 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-
-```
-New session: run /bmad-create-architecture
-Tell it: "Brownfield project — existing architecture stays. Focus only on:
-(1) new Rust scoring engine module structure inside src-tauri/,
-(2) TypeScript ↔ Rust IPC surface (command names, parameter types, response shapes),
-(3) data ingestion pipeline for modifierType + affix scope from lastepochtools.com."
-```
+Proceed to "project context analysis" step per user checkpoint prompt
 
 ---
 
