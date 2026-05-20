@@ -230,6 +230,13 @@ None.
 - Pre-existing build failures (4 issues in Phase 2 deferred work) were fixed as a prerequisite for AC5 to pass: (1) `AffixTierControl.test.tsx` — added explicit vitest imports (`describe`, `test`, `expect`, `vi`) to match project convention; (2) `buildPersistence.test.ts:495` — replaced `Array.at(-1)` (ES2022) with `arr[arr.length - 1]` to match the ES2020 tsconfig lib target; (3) `useOptimizationStream.ts:64` — added `?.` null guard on `itemDatabase` access (itemDatabase is `ItemDatabase | null` in gameDataStore); (4) `useOptimizationStream.test.ts` — changed 4 type casts from `as ReturnType<...>` to `as unknown as ReturnType<...>` for partial mock objects.
 - 8 test failures remain in `SkillTreeCanvas`, `ProviderSelector`, `Settings`, and `TreeControls` — all confirmed pre-existing from Phase 2 (unrelated to this story: canvas WebGL jsdom limitations and missing testid on ProviderSelector component). These are not regressions introduced by story 1.1.
 
+### Review Findings
+
+- [ ] [Review][Patch] `IdolAffixSlot` interface missing from committed `idolData.ts` — spec Dev Notes require it [`lebo/src/shared/types/idolData.ts`]
+- [ ] [Review][Patch] `altarVariants: []` types field as immutable empty tuple — prevents Phase 4 extension [`lebo/src/shared/types/idolData.ts:23`]
+- [ ] [Review][Patch] `.at(-1)` → index access loses non-null assertion intent [`lebo/src/features/build-manager/buildPersistence.test.ts:495`]
+- [x] [Review][Defer] `as unknown as ReturnType<...>` double-cast weakens test mock type coverage [`lebo/src/shared/stores/useOptimizationStream.test.ts:315,353,381,417`] — deferred, pre-existing: root cause is partial mock objects not fully satisfying store return types; fix requires dedicated test cleanup
+
 ### File List
 
 - `lebo/src/shared/types/gameData.ts` — MODIFIED: added `modifierType?: 'increased' | 'more' | 'flat'` to `GameNode`
