@@ -1,0 +1,90 @@
+# LEBOv2 — Snapshot
+
+> All state for this project lives here. Game_Save only holds a pointer to this file.
+> Update this on every Wrap Up and Quick Save.
+
+---
+
+## Status
+
+**Phase:** `Planning`
+**Health:** `On Track`
+**Last Touched:** `2026-05-19`
+
+---
+
+## Current Focus
+
+```
+Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
+```
+
+---
+
+## Next Action
+
+```
+New session: run /bmad-create-architecture
+Tell it: "Brownfield project — existing architecture stays. Focus only on:
+(1) new Rust scoring engine module structure inside src-tauri/,
+(2) TypeScript ↔ Rust IPC surface (command names, parameter types, response shapes),
+(3) data ingestion pipeline for modifierType + affix scope from lastepochtools.com."
+```
+
+---
+
+## Mental RAM
+
+- PRD is at `_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/prd.md` — status: final
+- All 5 OQs from PRD are resolved (see `.decision-log.md`)
+- Epic A (Rust scoring engine) is the most complex — 6-stage pipeline. Architecture doc should nail the module structure before stories are written
+- Data ingestion prerequisite: `modifierType` annotation + affix `scope` field — NOT in current `affixes.json`. Must be sourced from lastepochtools.com DB. This is a blocking prerequisite for Epic A
+- Weaver Tree is a placeholder panel (`WeaverTreePlaceholder.tsx`) — Phase 3 applies void background as CSS only. No PixiJS canvas for Weaver in Phase 3
+- Claude's role in the optimizer = narrative-only. Scoring engine is 100% deterministic Rust. Claude only writes 1–3 sentence explanations of the suggestions the engine produces
+- Skill role designation (Primary Offense / Secondary / Defensive / Utility) is player-set input, saved with build — feeds Gear Optimization Screen
+
+---
+
+## Open Loops
+
+- [ ] Architecture session: Rust scoring engine module, IPC surface, data ingestion pipeline
+- [ ] Epic C (idol grid): needs idol grid layout data authored from lastepochtools.com/guide/section/idols
+- [ ] Epic F (tree backgrounds): needs `bg_stone_tile.webp` + `bg_weaver_tile.webp` assets — check icon pipeline first, Perlin noise fallback
+- [ ] Epic G (Season 4 data): `modifierType` + affix `scope` ingestion from lastepochtools.com (prerequisite for Epic A)
+
+---
+
+## Decision Log
+
+| Date | Decision | Reasoning |
+|------|----------|-----------|
+| 2026-05-19 | Phase 3 scope = Optimizer Brain + Gear Optimization Screen + Visual/UX Polish | Alec: "AI optimization bones are there, it just needs more magic" + "everything gets entered in" |
+| 2026-05-19 | Scoring engine is Rust-side | <100ms requirement; naturally co-locates with Claude API call |
+| 2026-05-19 | Claude is narrative-only; suggestions are 100% deterministic | Research: better prompt on naive score = better-sounding bad advice. Algorithm is the magic |
+| 2026-05-19 | Architecture before Epics for Epic A | Rust module structure + IPC surface too vague to story without it |
+
+---
+
+## Session History
+
+| Date | What I Did | Where I Left Off |
+|------|------------|------------------|
+| 2026-05-19 | Full Phase 3 PRD via /bmad-prd — research, discovery, all 5 OQs resolved, rubric review, finalized | PRD final; architecture next |
+
+---
+
+## Project Links
+
+- **PRD:** `_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/prd.md`
+- **Addendum (algorithm blueprint):** `_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/addendum.md`
+- **Decision Log:** `_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/.decision-log.md`
+- **Codebase:** `lebo/` (Vite project root — pnpm)
+
+---
+
+## Completion Criteria
+
+- [ ] Deterministic scoring engine live (Epic A) — passive tree efficiency overlay, build score, knapsack solver
+- [ ] Gear Optimization Screen live (Epic H) — skill roles, per-slot wishlists, weakest slot, Claude narrative
+- [ ] Full visual/UX polish shipped (Epics B–F) — idol grid, blessings, conditions, stat sheet, tree backgrounds
+- [ ] Season 4 game data updated (Epic G)
