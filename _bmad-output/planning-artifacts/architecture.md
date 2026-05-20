@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3]
+stepsCompleted: [1, 2, 3, 4]
 inputDocuments:
   - '_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/prd.md'
   - '_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/addendum.md'
@@ -365,3 +365,91 @@ async fn run_optimization(
 **Rejected: `tokio::spawn_blocking` loops per node** — tokio is I/O-bound async infrastructure, not a CPU parallelism primitive. 150 `spawn_blocking` calls per scan = excessive task scheduling overhead.
 
 **Rejected: sequential scan** — acceptable for Phase 3 but leaves no headroom. As `compute_stats` grows more complex in Phase 4, sequential cost multiplies directly into the NFR-1 budget.
+
+---
+
+## Core Architectural Decisions
+
+### Decision Priority Analysis
+
+**Critical (block implementation):**
+- D1: `StatSheet` store placement — must be decided before any frontend stat display work
+- D2: Debounce hook location — must be decided before `compute_stats` IPC wiring
+- D3: IPC command surface — must be decided before Rust command registration
+- D4: `StatSheet` TypeScript type file — must be decided before any type imports
+
+**Deferred (post-Phase 3):**
+- `scores: BuildScore | null` removal from `optimizationStore` — deprecated once Rust engine live, removed in a follow-up story to avoid a big-bang migration
+- `scoringEngine.ts` deletion — same follow-up story
+
+### D1 — StatSheet Store Placement
+
+**Decision:** `useOptimizationStore`
+
+`optimizationStore` gains two new fields alongside the existing `scores: BuildScore | null`:
+
+```ts
+statSheet: StatSheet | null      // null until first compute_stats returns
+isComputingStats: boolean        // true during debounce + IPC window
+setStatSheet: (s: StatSheet | null) => void
+setIsComputingStats: (v: boolean) => void
+```
+
+**Rationale:** Project rule is firm — four stores only. `useOptimizationStore` already owns `scores`, `suggestions`, and the optimization lifecycle. `StatSheet` is the Phase 3 replacement for `BuildScore` — same conceptual home, richer type.
+
+### D2 — Debounce Hook Location
+
+**Decision:** New named hook `shared/stores/useStatSheet.ts`, following the `useOptimizationStream` pattern exactly.
+
+Called from `App.tsx` as one line: `useStatSheet()`. The existing inline `useBuildStore.subscribe` score recalculation blocks in `App.tsx` (lines 74–88 and 100–111, currently calling `calculateScore()`) are replaced by this hook.
+
+**Hook responsibilities:**
+1. Subscribe to `buildStore` and `gameDataStore` (full object references — any change triggers recompute)
+2. Debounce via `requestAnimationFrame` — one IPC call per frame maximum, latest state always wins
+3. Call `invokeCommand<StatSheet>('compute_stats', snapshot)`
+4. Write result to `optimizationStore.setStatSheet()` and clear `isComputingStats`
+
+**Pattern rationale:** The existing code distinguishes synchronous store reactions (inline `useEffect` + `subscribe` in App.tsx) from async Tauri operations (named hook in `shared/stores/`). The new `compute_stats` call is async IPC — it belongs in the named hook pattern, not inline.
+
+**Migration:** `scoringEngine.ts` and its `calculateScore()` usages are deprecated in place once `useStatSheet` is live. Deleted in a follow-up story, not in the same PR as the hook addition.
+
+### D3 — IPC Command Surface
+
+**Decision:** Three commands — clean separation by trigger and scope.
+
+| Command | Sync/Async | Trigger | Stages | Returns |
+|---|---|---|---|---|
+| `compute_stats` | Sync | Every state change (via `useStatSheet` debounce) | Stage 1 only | `StatSheet` |
+| `run_optimization` | Async | Explicit "Optimize" button click | Stages 1–3 + 5–6 (passive tree + synergy + Claude) | `OptimizationResult` |
+| `run_gear_scoring` | Async | Gear Optimization screen open / "Analyze Gear" | Stages 1 + 4 + 6 (gear affix + Claude narrative) | `GearAnalysis` |
+
+All three registered in `lib.rs invoke_handler!`. All called via `invokeCommand<T>()` on the TypeScript side — never raw `invoke()`.
+
+**Rejected: two-command surface with `mode` flag** — a `mode: 'passive' | 'gear' | 'full'` parameter on `run_optimization` couples the passive tree and gear optimization concerns into one handler. Three discrete commands match the three discrete user triggers and make each handler independently testable.
+
+### D4 — StatSheet TypeScript Type File
+
+**Decision:** New `shared/types/statSheet.ts`
+
+Contains: `StatSheet`, `OffenseStats`, `DefenseStats`, `ScoreComponents`, `AilmentStats` (Phase 4 placeholder interface), `MinionStats` (Phase 4 placeholder interface), `StatWarning`, `NodeEfficiency`, `GearAnalysis`, `SynergyFlag`.
+
+`shared/types/optimization.ts` remains unchanged — `OptimizationScore`, `OptimizationSuggestion`, `SuggestionResult` stay there.
+
+**Rationale:** `optimization.ts` already has sufficient surface area. The new stat types are a distinct domain (derived stat display) from the existing optimization types (suggestion lifecycle). A dedicated file keeps both manageable.
+
+### Cross-Component Dependencies
+
+```
+Epic G (data ingestion)
+  ↓ blocks
+scoring-core crate (ADR-001–003)
+  ↓ enables
+compute_stats Tauri command
+  ↓ enables
+useStatSheet hook  →  optimizationStore.statSheet  →  StatSheet display (FR-B1–B6)
+  
+run_optimization command  →  existing suggestion pipeline (unchanged)
+run_gear_scoring command  →  Gear Optimization screen (Epic H)
+```
+
+Epic G is the sole critical-path gate. All other work can proceed in parallel once the game data schema is defined (even before ingestion is complete — mock data suffices for engine development).
