@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2]
+stepsCompleted: [1, 2, 3]
 inputDocuments:
   - '_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/prd.md'
   - '_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/addendum.md'
@@ -246,3 +246,122 @@ Following the existing staleness-check pattern (manifest.json tracks version, st
 | Conditions metadata | `conditions.json` | sourced from game data — not network-stale |
 
 `conditions.json` defines available simulation conditions and their display labels. It is bundled with the app and updated on app releases, not via the network staleness pipeline — conditions change with patches, not player-initiated updates.
+
+---
+
+## Foundation — Brownfield Stack & Crate Structure
+
+Existing stack unchanged: Tauri 2 / React 19 / TypeScript 5.8 / Vite 7 / Zustand 5 / PixiJS 8. All patterns from `project-context.md` apply. No new frontend dependencies. One new Rust dependency: `rayon`.
+
+### ADR-001: Cargo Workspace Layout
+
+**Decision: Separate workspace crate (`src-tauri/scoring-core/`)**
+
+`src-tauri/Cargo.toml` becomes a workspace root with two members: `.` (the existing Tauri crate, unchanged) and `scoring-core` (new pure Rust crate).
+
+```
+src-tauri/
+  Cargo.toml              ← workspace root: members = [".", "scoring-core"]
+  src/                    ← Tauri crate (unchanged)
+    lib.rs
+    scoring_commands.rs   ← new: Tauri command handlers only
+    game_data_loader.rs   ← new: disk → GameData construction
+    ...existing modules...
+  scoring-core/
+    Cargo.toml            ← deps: serde, serde_json, rayon only — NO tauri, NO tokio
+    src/
+      lib.rs
+      modifier.rs
+      build_snapshot.rs
+      stat_sheet.rs
+      game_data.rs
+      compute.rs
+      scan.rs
+      gear.rs
+      synergy.rs
+      class_module.rs
+      classes/
+        sentinel.rs
+        mage.rs
+        primalist.rs
+        rogue.rs
+        acolyte.rs
+```
+
+**Rejected: inline module** (`src-tauri/src/scoring/`) — purity is convention-only; compiler does not enforce it. Silent drift under deadline pressure breaks the WASM and unit-test guarantees.
+
+**Rejected: top-level workspace** — adds complexity without benefit; Vite and Cargo toolchains are independent.
+
+### ADR-002: Module Boundaries
+
+**`scoring-core` owns — pure computation, no Tauri:**
+
+| Module | Responsibility |
+|---|---|
+| `modifier.rs` | `Modifier`, `ModifierType`, `Condition`, `ModifierRegistry` |
+| `build_snapshot.rs` | `BuildSnapshot` — player state as IDs only (node IDs, affix IDs, tiers, idol placements, blessings, active conditions, level, class, mastery, slider) |
+| `game_data.rs` | `GameData` — read-only reference tables (node effects, affix value-per-tier tables, tree graph, class definitions) |
+| `stat_sheet.rs` | `StatSheet` and all sub-types (`OffenseStats`, `DefenseStats`, `ScoreComponents`, `Option<AilmentStats>`, `Option<MinionStats>`, `Vec<StatWarning>`) |
+| `compute.rs` | `compute_stats(snapshot, game_data, options) -> StatSheet` — Stage 1 only, fast path |
+| `scan.rs` | `run_efficiency_scan(snapshot, game_data) -> Vec<NodeEfficiency>` — Stages 2–3, uses rayon internally |
+| `gear.rs` | `run_gear_scoring(snapshot, game_data) -> GearAnalysis` — Stage 4 |
+| `synergy.rs` | `run_synergy_detection(snapshot, game_data) -> Vec<SynergyFlag>` — Stage 5 |
+| `class_module.rs` | `ClassModule` trait definition |
+| `classes/` | Five class module implementations |
+
+**Tauri crate owns — IPC wiring only:**
+
+| Module | Responsibility |
+|---|---|
+| `scoring_commands.rs` | `#[tauri::command]` handlers that call `scoring_core::*` |
+| `game_data_loader.rs` | Reads JSON from disk → constructs `scoring_core::GameData`; held in `AppState`, loaded once at startup |
+
+**Key boundary rule:** `BuildSnapshot` contains IDs only — not resolved data. `GameData` is the resolution table. `compute_stats` resolves IDs internally. `GameData` is loaded once at startup, held in Tauri `AppState`, passed by reference — zero per-call disk I/O.
+
+### ADR-003: Parallelism Primitive
+
+**Decision: `rayon` inside `scoring-core`; `spawn_blocking` at the Tauri command boundary for the full optimization run**
+
+The Stage 3 efficiency scan is embarrassingly parallel: each node's path computation is fully independent. Sequential estimate on a 150-node tree: ~52ms — within NFR-1 (100ms) but with no headroom as computation grows in Phase 4. `rayon` provides ~4× speedup on a 4-core machine (~13ms) with zero async overhead.
+
+```rust
+// scan.rs — pure sync, rayon parallelism
+let efficiencies: Vec<NodeEfficiency> = unallocated_nodes
+    .par_iter()
+    .map(|node| compute_node_efficiency(node, &snapshot, &game_data))
+    .collect();
+```
+
+Two Tauri command shapes:
+
+```rust
+// Fast path — stat sheet only (~2ms total). Sync: no spawn_blocking needed.
+#[tauri::command]
+fn compute_stats(
+    snapshot: BuildSnapshot,
+    state: tauri::State<'_, AppState>,
+) -> Result<StatSheet, String> {
+    let game_data = state.game_data.read().unwrap();
+    Ok(scoring_core::compute_stats(&snapshot, &game_data, ComputeOptions::default()))
+}
+
+// Full optimization — all 6 stages (~15–50ms). Async: spawn_blocking keeps tokio event loop free.
+#[tauri::command]
+async fn run_optimization(
+    snapshot: BuildSnapshot,
+    state: tauri::State<'_, AppState>,
+) -> Result<OptimizationResult, String> {
+    let game_data = state.game_data.read().unwrap().clone();
+    tokio::task::spawn_blocking(move || {
+        scoring_core::run_full_optimization(&snapshot, &game_data)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+```
+
+`scoring-core` is entirely synchronous — no async primitives inside the crate. The async boundary lives only in `scoring_commands.rs`. `rayon` and `spawn_blocking` compose cleanly: `spawn_blocking` moves computation off the tokio thread; `rayon` handles internal CPU parallelism.
+
+**Rejected: `tokio::spawn_blocking` loops per node** — tokio is I/O-bound async infrastructure, not a CPU parallelism primitive. 150 `spawn_blocking` calls per scan = excessive task scheduling overhead.
+
+**Rejected: sequential scan** — acceptable for Phase 3 but leaves no headroom. As `compute_stats` grows more complex in Phase 4, sequential cost multiplies directly into the NFR-1 budget.
