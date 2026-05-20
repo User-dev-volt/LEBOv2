@@ -1,5 +1,7 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6]
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
+status: 'complete'
+completedAt: '2026-05-20'
 inputDocuments:
   - '_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/prd.md'
   - '_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/addendum.md'
@@ -757,3 +759,111 @@ GearOptimizationView mounts / "Analyze Gear" click
 ```
 
 **Hard boundary:** `scoring-core` receives data, returns data. All Tauri IPC wiring, event emission, and Claude payload assembly lives in `scoring_commands.rs`. The crate boundary is the enforcement mechanism — `scoring-core/Cargo.toml` has no Tauri dependency.
+
+---
+
+## Architecture Validation Results
+
+### Coherence Validation ✅
+
+**Decision compatibility:** All decisions work together without conflict.
+- `scoring-core` pure crate (ADR-001) + sync `compute_stats` + rAF debounce (Path C) → compatible. Sync Tauri commands work with TypeScript-side debouncing.
+- `rayon` inside `scoring-core` + `spawn_blocking` at Tauri boundary (ADR-003) → compatible and well-documented Rust pattern.
+- Four-store rule preserved: `useStatSheet` writes to `optimizationStore`, no new store created.
+- `#[serde(rename_all = "camelCase")]` on input structs + snake_case outputs → consistent with existing `useOptimizationStream` payload field names (`from_node_id` etc.).
+- `gear:*` event namespace → no collision with existing `optimization:*` events.
+
+**Pattern consistency:** All 7 patterns are consistent with existing `project-context.md` rules and with each other. Generation token pattern is standard React; `SCORING_ERROR:` prefix follows the established `normalizeAppError` convention.
+
+**Structure alignment:** All new files land in locations matching existing project conventions. `scoring-core/` in `src-tauri/` respects the "all backend logic in Rust" rule. `useStatSheet.ts` in `shared/stores/` mirrors `useOptimizationStream.ts` placement.
+
+### Requirements Coverage Validation
+
+**NFR coverage:**
+
+| NFR | Requirement | Architectural Coverage | Status |
+|---|---|---|---|
+| NFR-1 | <100ms full pipeline | `rayon` reduces scan to ~13ms; full pipeline ~50ms with parallelism | ✅ |
+| NFR-2 | <16ms stat sheet | Path C: ~1 frame lag (~18ms worst-case) — documented trade-off | ⚠️ addressed |
+| NFR-4 | Data-driven values | `GameData` from JSON; `ModifierRegistry` from data; conditions from `conditions.json` | ✅ |
+| NFR-5 | Pluggable class modules | `ClassModule` trait defined | ✅ |
+| NFR-8/9 | Formula unit tests | `cargo test -p scoring-core` isolated; pure fn enables no-mock tests | ✅ |
+
+**FR coverage:** All FR-A, FR-B7, FR-G, and FR-H groups have architectural homes. ✅
+
+### Gap Analysis
+
+**Important gaps — address before relevant stories begin:**
+
+**Gap 1 — Node efficiency overlay wiring (FR-A26–A28)**
+
+`scan.rs` returns `Vec<NodeEfficiency>` but the wiring to the canvas was not specified. Resolution:
+
+`optimizationStore` gains `nodeEfficiencies: NodeEfficiency[] | null`. `run_optimization` populates it when the scan completes (alongside suggestions). `SkillTreeView` reads `nodeEfficiencies` from the store and passes it as a prop to `SkillTreeCanvas`. `pixiRenderer.ts` receives it and draws the efficiency tier overlay. This follows the existing props-only `SkillTreeCanvas` rule — no direct store access inside the canvas.
+
+**Gap 2 — `AppState` extension location**
+
+Agents implementing `game_data_loader.rs` must know where to add `game_data: Arc<RwLock<scoring_core::GameData>>`. Resolution:
+
+Locate the existing `AppState` struct in `src-tauri/src/lib.rs` and add the field. If no `AppState` struct exists, create one and pass it to `.manage()` in the Tauri builder chain. This is standard Tauri managed state — identical pattern to how `tauri-plugin-stronghold` manages its state.
+
+**Minor gaps — note in story acceptance criteria:**
+- `conditions.json` schema (condition ID, display label, applicable class filter) — specify before Epic E conditions panel story
+- `run_optimization` relationship to existing `invoke_claude_api` — clarify before Epic A Claude narrative story (whether it internally calls `invoke_claude_api` or replaces it)
+
+### Architecture Completeness Checklist
+
+**Requirements Analysis**
+- [x] Project context thoroughly analyzed
+- [x] Scale and complexity assessed
+- [x] Technical constraints identified
+- [x] Cross-cutting concerns mapped
+
+**Architectural Decisions**
+- [x] Critical decisions documented with rationale (ADR-001–003, D1–D4)
+- [x] Technology stack fully specified (Rust workspace, rayon, serde, tokio boundary)
+- [x] Integration patterns defined (three IPC commands, event namespaces, data flows)
+- [x] Performance considerations addressed (NFR-1 ✅, NFR-2 trade-off documented)
+
+**Implementation Patterns**
+- [x] Naming conventions established (serde direction, event namespaces)
+- [x] Structure patterns defined (BuildSnapshot serializer, GameData locking)
+- [x] Communication patterns specified (generation token, gear:* namespace)
+- [x] Process patterns documented (error prefix, null sub-sheet handling)
+
+**Project Structure**
+- [x] Complete directory structure defined (new + modified files explicit)
+- [x] Component boundaries established (scoring-core Cargo.toml enforces boundary)
+- [x] Integration points mapped (three data flow diagrams)
+- [x] Requirements-to-structure mapping complete
+
+### Architecture Readiness Assessment
+
+**Overall Status: READY WITH MINOR GAPS**
+
+Two important gaps (node overlay wiring, AppState location) are resolved above and should be captured in the relevant story acceptance criteria. They do not block the majority of implementation work.
+
+**Confidence Level: High**
+
+**Key Strengths:**
+- Modifier Registry design is genuinely future-proof — Phase 4 complexity additions require no engine rewrites
+- Pure `scoring-core` crate boundary is compiler-enforced, not convention-enforced
+- Three distinct IPC commands cleanly separate three distinct user triggers
+- Generation token cancellation prevents a common class of React async bugs
+- Epic G identified as the sole critical-path gate — all other implementation work can proceed in parallel with mock game data
+
+**Areas for Future Enhancement:**
+- `conditions.json` schema (before Epic E story)
+- `invoke_claude_api` vs `run_optimization` relationship (before Epic A Claude narrative story)
+- Node efficiency overlay prop chain detail (before Epic A FR-A26 story)
+
+### Implementation Handoff
+
+**AI Agent Guidelines:**
+- Read `project-context.md` (60 rules) before any code — this architecture document is additive, not a replacement
+- The `scoring-core` crate boundary is the primary consistency enforcement mechanism — never add Tauri types to it
+- Use `toBuildSnapshot()` from `buildSnapshotSerializer.ts` for every `compute_stats` / `run_optimization` / `run_gear_scoring` call — never pass `BuildState` directly
+- Add `SCORING_ERROR` to `ErrorType` and `errorNormalizer.ts` as the first story (setup prerequisite)
+
+**First Implementation Priority:**
+Epic G data ingestion — this is the sole gate blocking all scoring engine work. Begin there, in parallel with `scoring-core` crate scaffolding using mock game data.
