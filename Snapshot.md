@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Proceed to "project context analysis" step per user checkpoint prompt
+Integrate epics.md into backlog management system (Jira/Linear/GitHub Projects) and begin sprint planning for Epic 1 (Season 4 Data Foundation) as the dependency gate for all parallel scoring work.
 
 ---
 
