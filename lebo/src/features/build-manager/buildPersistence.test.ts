@@ -492,7 +492,7 @@ describe('saveBuild', () => {
     expect(mockInvoke).toHaveBeenCalledWith('save_build', expect.objectContaining({
       schemaVersion: 2,
     }))
-    const callArgs = mockInvoke.mock.calls[mockInvoke.mock.calls.length - 1][1] as Record<string, unknown>
+    const callArgs = mockInvoke.mock.calls[mockInvoke.mock.calls.length - 1]![1] as Record<string, unknown>
     const parsed = JSON.parse(callArgs.data as string) as Record<string, unknown>
     expect(parsed.sliderPosition).toBe(50)
     expect(parsed.fineTuneWeights).toBeNull()

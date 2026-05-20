@@ -1,6 +1,6 @@
 # Story 1.1: Game Data Type Extension & Schema Definition
 
-Status: review
+Status: done
 
 ## Story
 
@@ -232,9 +232,9 @@ None.
 
 ### Review Findings
 
-- [ ] [Review][Patch] `IdolAffixSlot` interface missing from committed `idolData.ts` — spec Dev Notes require it [`lebo/src/shared/types/idolData.ts`]
-- [ ] [Review][Patch] `altarVariants: []` types field as immutable empty tuple — prevents Phase 4 extension [`lebo/src/shared/types/idolData.ts:23`]
-- [ ] [Review][Patch] `.at(-1)` → index access loses non-null assertion intent [`lebo/src/features/build-manager/buildPersistence.test.ts:495`]
+- [x] [Review][Patch] `IdolAffixSlot` interface missing from committed `idolData.ts` — spec Dev Notes require it [`lebo/src/shared/types/idolData.ts`]
+- [x] [Review][Patch] `altarVariants: []` types field as immutable empty tuple — prevents Phase 4 extension [`lebo/src/shared/types/idolData.ts:23`]
+- [x] [Review][Patch] `.at(-1)` → index access loses non-null assertion intent [`lebo/src/features/build-manager/buildPersistence.test.ts:495`]
 - [x] [Review][Defer] `as unknown as ReturnType<...>` double-cast weakens test mock type coverage [`lebo/src/shared/stores/useOptimizationStream.test.ts:315,353,381,417`] — deferred, pre-existing: root cause is partial mock objects not fully satisfying store return types; fix requires dedicated test cleanup
 
 ### File List
