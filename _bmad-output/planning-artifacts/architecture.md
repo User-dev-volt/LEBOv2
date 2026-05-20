@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5]
+stepsCompleted: [1, 2, 3, 4, 5, 6]
 inputDocuments:
   - '_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/prd.md'
   - '_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/addendum.md'
@@ -625,3 +625,135 @@ A dedicated `useGearStream.ts` hook in `shared/stores/` subscribes to these even
 5. Prefix all scoring Rust errors with `SCORING_ERROR:` — add to `ErrorType` before any scoring story
 6. Use `gear:*` events for gear analysis — never reuse `optimization:*`
 7. Treat null `StatSheet` sub-sheets as hidden sections — never as errors
+
+---
+
+## Project Structure & Boundaries
+
+New additions and modifications only. The existing `lebo/src/` feature structure is unchanged unless marked EXTENDED or MODIFIED.
+
+### New File Tree
+
+```
+lebo/
+├── src/
+│   ├── shared/
+│   │   ├── types/
+│   │   │   ├── statSheet.ts                    ← NEW
+│   │   │   │     StatSheet, OffenseStats, DefenseStats, ScoreComponents,
+│   │   │   │     AilmentStats, MinionStats, StatWarning, NodeEfficiency, GearAnalysis
+│   │   │   └── errors.ts                       ← EXTENDED (add SCORING_ERROR to ErrorType)
+│   │   ├── utils/
+│   │   │   ├── buildSnapshotSerializer.ts      ← NEW (BuildState → BuildSnapshot)
+│   │   │   └── errorNormalizer.ts              ← EXTENDED (add SCORING_ERROR to ERROR_TYPE_MAP)
+│   │   └── stores/
+│   │       ├── optimizationStore.ts            ← EXTENDED (statSheet, isComputingStats fields)
+│   │       ├── useStatSheet.ts                 ← NEW (debounced compute_stats hook)
+│   │       └── useGearStream.ts                ← NEW (gear:* event listener hook)
+│   ├── features/
+│   │   ├── optimization/
+│   │   │   └── scoringEngine.ts                ← DEPRECATED (deleted in follow-up story)
+│   │   └── gear-optimization/                  ← NEW feature folder (Epic H)
+│   │       ├── GearOptimizationView.tsx
+│   │       ├── GearSlotRankList.tsx
+│   │       ├── GearWishlist.tsx
+│   │       ├── SkillRoleDesignator.tsx
+│   │       ├── useGearOptimization.ts
+│   │       └── GearOptimizationView.test.tsx
+│   └── App.tsx                                 ← MODIFIED
+│         add useStatSheet()
+│         remove inline calculateScore subscribe blocks (lines 74–88, 100–111)
+│
+src-tauri/
+├── Cargo.toml                                  ← MODIFIED (workspace root)
+│     members = [".", "scoring-core"]
+├── src/
+│   ├── lib.rs                                  ← MODIFIED
+│   │     register: compute_stats, run_optimization, run_gear_scoring
+│   ├── scoring_commands.rs                     ← NEW (3 Tauri command handlers)
+│   └── game_data_loader.rs                     ← NEW
+│         disk → scoring_core::GameData construction
+│         held in AppState as Arc<RwLock<GameData>>, loaded once at startup
+└── scoring-core/                               ← NEW CRATE
+    ├── Cargo.toml
+    │     deps: serde, serde_json, rayon
+    │     NO tauri, NO tokio
+    └── src/
+        ├── lib.rs                  pub use re-exports
+        ├── modifier.rs             Modifier, ModifierType, Condition, ModifierRegistry
+        ├── build_snapshot.rs       BuildSnapshot (engine input, IDs only)
+        ├── game_data.rs            GameData (read-only reference tables)
+        ├── stat_sheet.rs           StatSheet + all sub-types + StatWarning
+        ├── compute.rs              compute_stats() — Stage 1 fast path
+        ├── scan.rs                 run_efficiency_scan() — Stages 2–3, rayon parallel
+        ├── gear.rs                 run_gear_scoring() — Stage 4
+        ├── synergy.rs              run_synergy_detection() — Stage 5
+        ├── class_module.rs         ClassModule trait
+        └── classes/
+            ├── mod.rs
+            ├── sentinel.rs
+            ├── mage.rs
+            ├── primalist.rs
+            ├── rogue.rs
+            └── acolyte.rs
+```
+
+### Epic-to-Structure Mapping
+
+| Epic | FR Group | Primary Files |
+|---|---|---|
+| A — Build Score Function | FR-A1–A6 | `scoring-core/compute.rs`, `modifier.rs`, `build_snapshot.rs`, `stat_sheet.rs` |
+| A — Defensive Floor Check | FR-A7–A8 | `scoring-core/compute.rs` (pre-computation pass) |
+| A — Efficiency Scan | FR-A9–A13 | `scoring-core/scan.rs` |
+| A — Knapsack Solver | FR-A14–A15 | `scoring-core/scan.rs` (Phase 2 of scan) |
+| A — Gear Affix Scorer | FR-A16–A19 | `scoring-core/gear.rs` |
+| A — Synergy Detector | FR-A20–A22 | `scoring-core/synergy.rs` |
+| A — Claude Narrative | FR-A23–A25 | `scoring_commands.rs` (assembles payload → existing `claude_commands.rs`) |
+| A — Node Efficiency Overlay | FR-A26–A28 | `scan.rs` returns `Vec<NodeEfficiency>`; overlay in `pixiRenderer.ts` (EXTENDED) |
+| B — Live Stat Sheet | FR-B1–B7 | `useStatSheet.ts`, `optimizationStore.ts`, stat display components |
+| G — Data Ingestion | FR-G1–G5 | External pipeline (not in `lebo/`); outputs: updated class JSONs + `idol-data.json`, `blessings.json`, `conditions.json` in Tauri resources |
+| H — Gear Optimization | FR-H1–H17 | `features/gear-optimization/`, `useGearStream.ts`, `run_gear_scoring` command |
+
+### Integration Boundaries & Data Flow
+
+**Stat sheet (every state change):**
+```
+buildStore / gameDataStore change
+  → useStatSheet (rAF debounce + generation token)
+    → toBuildSnapshot()                         [buildSnapshotSerializer.ts]
+      → invokeCommand<StatSheet>('compute_stats', { snapshot })
+        → [Rust sync] scoring_commands::compute_stats
+          → scoring_core::compute_stats(&snapshot, &game_data)
+            → ModifierRegistry → StatSheet
+          → StatSheet (snake_case JSON)
+        → optimizationStore.setStatSheet()
+          → stat sheet display components
+```
+
+**Full optimization run (explicit trigger):**
+```
+OptimizeButton click
+  → startOptimization()                         [useOptimizationStream.ts — extended]
+    → invokeCommand('run_optimization', { snapshot })
+      → [Rust async] run_optimization
+        → spawn_blocking → scoring_core::run_full_optimization()
+          → Stages 1–3: score + efficiency scan + knapsack → OptimizationResult
+          → Stage 5: synergy detection → Vec<SynergyFlag>
+        → assembles payload → claude_commands.rs
+          → streams via optimization:suggestion-received  [unchanged]
+```
+
+**Gear optimization (Gear Optimization screen):**
+```
+GearOptimizationView mounts / "Analyze Gear" click
+  → invokeCommand('run_gear_scoring', { snapshot })
+    → [Rust async] run_gear_scoring
+      → spawn_blocking → scoring_core::run_gear_scoring()
+        → Stage 1 (BuildScore) + Stage 4 (GearAnalysis)
+      → assembles gear payload → claude_commands.rs
+        → emits gear:analysis-complete           [new event namespace]
+          → useGearStream                        [new hook]
+            → GearOptimizationView
+```
+
+**Hard boundary:** `scoring-core` receives data, returns data. All Tauri IPC wiring, event emission, and Claude payload assembly lives in `scoring_commands.rs`. The crate boundary is the enforcement mechanism — `scoring-core/Cargo.toml` has no Tauri dependency.
