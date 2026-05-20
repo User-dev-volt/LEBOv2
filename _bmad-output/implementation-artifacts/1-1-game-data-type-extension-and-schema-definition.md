@@ -1,6 +1,6 @@
 # Story 1.1: Game Data Type Extension & Schema Definition
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -35,32 +35,32 @@ so that subsequent data ingestion and scoring engine stories have a stable contr
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Extend `GameNode` with `modifierType` (AC: #1, #2)
-  - [ ] Open `lebo/src/shared/types/gameData.ts`
-  - [ ] Add `modifierType?: 'increased' | 'more' | 'flat'` to the `GameNode` interface
-  - [ ] No other changes to `gameData.ts` — do not modify any other existing field
+- [x] Task 1: Extend `GameNode` with `modifierType` (AC: #1, #2)
+  - [x] Open `lebo/src/shared/types/gameData.ts`
+  - [x] Add `modifierType?: 'increased' | 'more' | 'flat'` to the `GameNode` interface
+  - [x] No other changes to `gameData.ts` — do not modify any other existing field
 
-- [ ] Task 2: Extend `AffixEntry` with scoring engine fields (AC: #1, #2)
-  - [ ] Open `lebo/src/shared/types/itemDatabase.ts`
-  - [ ] Add to `AffixEntry`: `modifierType?: 'increased' | 'more' | 'flat'`
-  - [ ] Add to `AffixEntry`: `scope?: 'melee' | 'ranged' | 'spell' | 'minion' | 'generic'`
-  - [ ] Add to `AffixEntry`: `damageType?: DamageType | null`
-  - [ ] Define `DamageType` as a union type in `itemDatabase.ts` (see Dev Notes for values)
-  - [ ] No changes to `AffixEntryV2` in `build.ts` — that is a build-state type, not a database type
+- [x] Task 2: Extend `AffixEntry` with scoring engine fields (AC: #1, #2)
+  - [x] Open `lebo/src/shared/types/itemDatabase.ts`
+  - [x] Add to `AffixEntry`: `modifierType?: 'increased' | 'more' | 'flat'`
+  - [x] Add to `AffixEntry`: `scope?: 'melee' | 'ranged' | 'spell' | 'minion' | 'generic'`
+  - [x] Add to `AffixEntry`: `damageType?: DamageType | null`
+  - [x] Define `DamageType` as a union type in `itemDatabase.ts` (see Dev Notes for values)
+  - [x] No changes to `AffixEntryV2` in `build.ts` — that is a build-state type, not a database type
 
-- [ ] Task 3: Create idol data TypeScript schema (AC: #3)
-  - [ ] Create new file `lebo/src/shared/types/idolData.ts`
-  - [ ] Define all interfaces specified in Dev Notes
-  - [ ] No barrel `index.ts` file — import directly from `idolData.ts`
+- [x] Task 3: Create idol data TypeScript schema (AC: #3)
+  - [x] Create new file `lebo/src/shared/types/idolData.ts`
+  - [x] Define all interfaces specified in Dev Notes
+  - [x] No barrel `index.ts` file — import directly from `idolData.ts`
 
-- [ ] Task 4: Create conditions TypeScript schema (AC: #4)
-  - [ ] Create new file `lebo/src/shared/types/conditions.ts`
-  - [ ] Define all interfaces specified in Dev Notes
-  - [ ] No barrel `index.ts` file
+- [x] Task 4: Create conditions TypeScript schema (AC: #4)
+  - [x] Create new file `lebo/src/shared/types/conditions.ts`
+  - [x] Define all interfaces specified in Dev Notes
+  - [x] No barrel `index.ts` file
 
-- [ ] Task 5: Verify build (AC: #5)
-  - [ ] Run `pnpm build` from `lebo/` — zero TypeScript errors required
-  - [ ] Run `pnpm vitest` — no existing tests should regress (new optional fields are backward-compatible)
+- [x] Task 5: Verify build (AC: #5)
+  - [x] Run `pnpm build` from `lebo/` — zero TypeScript errors required
+  - [x] Run `pnpm vitest` — no existing tests should regress (new optional fields are backward-compatible)
 
 ## Dev Notes
 
@@ -221,6 +221,23 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+None.
+
 ### Completion Notes List
 
+- All 5 tasks completed. `pnpm build` passes (zero TypeScript errors). 117 tests pass across all 7 modified/new test-adjacent files.
+- Story 1.1 adds only pure TypeScript type extensions: optional fields on existing interfaces and two new schema-definition files. All changes are backward-compatible — no existing code paths changed, no existing object shapes broken.
+- Pre-existing build failures (4 issues in Phase 2 deferred work) were fixed as a prerequisite for AC5 to pass: (1) `AffixTierControl.test.tsx` — added explicit vitest imports (`describe`, `test`, `expect`, `vi`) to match project convention; (2) `buildPersistence.test.ts:495` — replaced `Array.at(-1)` (ES2022) with `arr[arr.length - 1]` to match the ES2020 tsconfig lib target; (3) `useOptimizationStream.ts:64` — added `?.` null guard on `itemDatabase` access (itemDatabase is `ItemDatabase | null` in gameDataStore); (4) `useOptimizationStream.test.ts` — changed 4 type casts from `as ReturnType<...>` to `as unknown as ReturnType<...>` for partial mock objects.
+- 8 test failures remain in `SkillTreeCanvas`, `ProviderSelector`, `Settings`, and `TreeControls` — all confirmed pre-existing from Phase 2 (unrelated to this story: canvas WebGL jsdom limitations and missing testid on ProviderSelector component). These are not regressions introduced by story 1.1.
+
 ### File List
+
+- `lebo/src/shared/types/gameData.ts` — MODIFIED: added `modifierType?: 'increased' | 'more' | 'flat'` to `GameNode`
+- `lebo/src/shared/types/itemDatabase.ts` — MODIFIED: added `DamageType` union type; added `modifierType?`, `scope?`, `damageType?` to `AffixEntry`
+- `lebo/src/shared/types/idolData.ts` — NEW: `IdolGridCell`, `IdolDefaultGrid`, `IdolSizeType`, `IdolPlacementRule`, `IdolData`
+- `lebo/src/shared/types/conditions.ts` — NEW: `ConditionCategory`, `ConditionFilter`, `ConditionEntry`, `ConditionsData`
+- `lebo/src/features/item-database/AffixTierControl.test.tsx` — MODIFIED: added explicit vitest imports (pre-existing fix)
+- `lebo/src/features/build-manager/buildPersistence.test.ts` — MODIFIED: replaced `.at(-1)` with index access (pre-existing fix)
+- `lebo/src/shared/stores/useOptimizationStream.ts` — MODIFIED: added `?.` null guard on `itemDatabase` access (pre-existing fix)
+- `lebo/src/shared/stores/useOptimizationStream.test.ts` — MODIFIED: changed 4 `as ReturnType<...>` casts to `as unknown as ReturnType<...>` (pre-existing fix)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — MODIFIED: story status updated

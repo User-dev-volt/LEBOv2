@@ -61,7 +61,7 @@ export async function startOptimization() {
           return { slot: g.slotId, itemName: g.itemName, affixes: [] }
         }
         const affixes: StructuredGearAffix[] = dbAffixes.map((a) => {
-          const entry = itemDatabase.affixes.find((e) => e.id === a.affixId)
+          const entry = itemDatabase?.affixes.find((e) => e.id === a.affixId)
           const tierEntry = entry?.tiers.find((t) => t.tier === a.tier)
           const value = tierEntry
             ? Math.round((tierEntry.minValue + tierEntry.maxValue) / 2)

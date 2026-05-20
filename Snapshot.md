@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Integrate epics.md into backlog management system (Jira/Linear/GitHub Projects) and begin sprint planning for Epic 1 (Season 4 Data Foundation) as the dependency gate for all parallel scoring work.
+- Developer should run `pnpm build` and implement the 5 type changes in story 1.1, targeting zero TypeScript errors before merging
 
 ---
 

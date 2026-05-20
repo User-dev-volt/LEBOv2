@@ -8,6 +8,7 @@ export interface GameNode {
   tags: string[]
   position: { x: number; y: number }
   size: 'small' | 'medium' | 'large'
+  modifierType?: 'increased' | 'more' | 'flat'
 }
 
 export interface MasteryData {

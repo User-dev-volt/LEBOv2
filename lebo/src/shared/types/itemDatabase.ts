@@ -1,3 +1,12 @@
+export type DamageType =
+  | 'fire'
+  | 'cold'
+  | 'lightning'
+  | 'void'
+  | 'poison'
+  | 'physical'
+  | 'bleed'
+
 export interface AffixTier {
   tier: number
   minValue: number
@@ -10,6 +19,9 @@ export interface AffixEntry {
   type: 'prefix' | 'suffix' | 'implicit'
   itemSlots: string[]
   tiers: AffixTier[]
+  modifierType?: 'increased' | 'more' | 'flat'
+  scope?: 'melee' | 'ranged' | 'spell' | 'minion' | 'generic'
+  damageType?: DamageType | null
 }
 
 export interface BaseItem {

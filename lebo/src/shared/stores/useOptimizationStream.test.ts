@@ -312,7 +312,7 @@ describe('useOptimizationStream', () => {
         createdAt: '2026-01-01T00:00:00Z',
         updatedAt: '2026-01-01T00:00:00Z',
       },
-    } as ReturnType<typeof useBuildStore.getState>)
+    } as unknown as ReturnType<typeof useBuildStore.getState>)
 
     await act(async () => { await startOptimization() })
 
@@ -350,7 +350,7 @@ describe('useOptimizationStream', () => {
         baseItems: [],
         uniqueItems: [],
       },
-    } as ReturnType<typeof useGameDataStore.getState>)
+    } as unknown as ReturnType<typeof useGameDataStore.getState>)
 
     vi.mocked(useBuildStore.getState).mockReturnValueOnce({
       activeBuild: {
@@ -378,7 +378,7 @@ describe('useOptimizationStream', () => {
         createdAt: '2026-01-01T00:00:00Z',
         updatedAt: '2026-01-01T00:00:00Z',
       },
-    } as ReturnType<typeof useBuildStore.getState>)
+    } as unknown as ReturnType<typeof useBuildStore.getState>)
 
     await act(async () => { await startOptimization() })
 
@@ -414,7 +414,7 @@ describe('useOptimizationStream', () => {
         createdAt: '2026-01-01T00:00:00Z',
         updatedAt: '2026-01-01T00:00:00Z',
       },
-    } as ReturnType<typeof useBuildStore.getState>)
+    } as unknown as ReturnType<typeof useBuildStore.getState>)
 
     await act(async () => { await startOptimization() })
 
