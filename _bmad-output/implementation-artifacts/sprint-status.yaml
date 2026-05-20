@@ -1,0 +1,84 @@
+# generated: 2026-05-20
+# last_updated: 2026-05-20
+# project: LEBOv2 Phase 3
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic G (Season 4 data ingestion) is the CRITICAL PATH gate blocking all scoring engine work
+# - All scoring engine stories (Epic 2+) can develop against mock data until Epic 1 is done
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+
+generated: 2026-05-20
+last_updated: 2026-05-20
+project: LEBOv2 Phase 3
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Season 4 Game Data Foundation (CRITICAL PATH GATE for all scoring engine work)
+  epic-1: in-progress
+  1-1-game-data-type-extension-and-schema-definition: ready-for-dev
+  1-2-season-4-node-and-class-data-ingestion: backlog
+  1-3-season-4-affix-and-item-data-ingestion: backlog
+  1-4-new-game-database-files-and-staleness-integration: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Scoring Engine & Live Stat Sheet
+  epic-2: backlog
+  2-1-scoring-engine-foundation-crate-setup-and-type-system: backlog
+  2-2-stage-1-build-score-function-implementation: backlog
+  2-3-defensive-floor-check: backlog
+  2-4-tauri-ipc-wiring-compute-stats-command: backlog
+  2-5-typescript-integration-serializer-hook-and-store: backlog
+  2-6-stat-sheet-ui-five-tab-display: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Build Context — Idols, Blessings & Conditions
+  epic-3: backlog
+  3-1-idol-grid-builder-layout-and-placement: backlog
+  3-2-idol-affix-selection-and-stat-contribution: backlog
+  3-3-blessings-panel: backlog
+  3-4-conditions-panel: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Passive Tree Intelligence & Optimization
+  epic-4: backlog
+  4-1-passive-tree-efficiency-scan-dijkstra-knapsack-solver: backlog
+  4-2-cross-domain-synergy-detection: backlog
+  4-3-run-optimization-tauri-command-and-claude-narrative: backlog
+  4-4-node-efficiency-overlay-on-passive-tree: backlog
+  4-5-stat-sheet-suggestion-preview-hover-deltas: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Gear Optimization Screen
+  epic-5: backlog
+  5-1-skill-role-designation: backlog
+  5-2-gear-affix-scorer-rust-implementation: backlog
+  5-3-run-gear-scoring-tauri-command-and-typescript-wiring: backlog
+  5-4-gear-optimization-view-priority-ranking-and-wishlists: backlog
+  5-5-claude-gear-narrative-integration: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Visual Fidelity & UX Polish
+  epic-6: backlog
+  6-1-item-rarity-and-damage-type-color-systems: backlog
+  6-2-tree-background-textures: backlog
+  6-3-keyboard-shortcuts-and-undo-redo-controls: backlog
+  6-4-tooltip-polish-and-multi-point-allocation: backlog
+  epic-6-retrospective: optional
