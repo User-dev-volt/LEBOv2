@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4]
+stepsCompleted: [1, 2, 3, 4, 5]
 inputDocuments:
   - '_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/prd.md'
   - '_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/addendum.md'
@@ -453,3 +453,175 @@ run_gear_scoring command  →  Gear Optimization screen (Epic H)
 ```
 
 Epic G is the sole critical-path gate. All other work can proceed in parallel once the game data schema is defined (even before ingestion is complete — mock data suffices for engine development).
+
+---
+
+## Implementation Patterns & Consistency Rules
+
+These patterns cover only the three new subsystems. All existing patterns from `project-context.md` remain in force and are not repeated here.
+
+### Pattern 1 — `BuildSnapshot` Serialization Boundary
+
+**Conflict:** An agent implementing `compute_stats` might serialize `BuildState` directly over IPC. `BuildState` contains UI-specific fields (`schemaVersion`, undo metadata, `contextData` shape) that are not part of the engine's contract.
+
+**Rule:** A dedicated `shared/utils/buildSnapshotSerializer.ts` utility is the single point of responsibility for converting `BuildState` → `BuildSnapshot`. No hook, component, or store calls `invokeCommand('compute_stats', ...)` with a raw `BuildState`. The serializer is always the intermediary.
+
+```ts
+// shared/utils/buildSnapshotSerializer.ts
+export function toBuildSnapshot(build: BuildState, gameData: GameData): BuildSnapshot { ... }
+
+// useStatSheet.ts — correct usage
+const snapshot = toBuildSnapshot(activeBuild, gameData)
+const result = await invokeCommand<StatSheet>('compute_stats', { snapshot })
+```
+
+**Anti-pattern:**
+```ts
+// Wrong — sends full BuildState including schemaVersion, undo history, etc.
+await invokeCommand<StatSheet>('compute_stats', { buildState: activeBuild })
+```
+
+### Pattern 2 — Serde Field Naming Direction
+
+**Rule:** Follows the established project convention confirmed by existing code (`useOptimizationStream.ts` receiving `from_node_id`, `startOptimization` sending `sliderPosition`):
+
+- **TypeScript → Rust (input structs):** `#[serde(rename_all = "camelCase")]` on all new Rust input structs (`BuildSnapshot`, `ComputeOptions`). TypeScript sends camelCase property names.
+- **Rust → TypeScript (output / events):** Default serde snake_case. TypeScript interface field names mirror Rust struct field names exactly.
+
+```rust
+// Rust input struct — camelCase from TypeScript
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BuildSnapshot {
+    pub node_allocations: HashMap<String, u32>,  // received as "nodeAllocations"
+    pub character_level: u32,                     // received as "characterLevel"
+}
+
+// Rust output struct — snake_case to TypeScript
+#[derive(Serialize)]
+pub struct StatSheet {
+    pub offense: OffenseStats,
+    pub defense: DefenseStats,
+    pub build_score: f64,           // TypeScript receives as "build_score"
+}
+```
+
+```ts
+// TypeScript interface — mirrors Rust snake_case exactly
+interface StatSheet {
+  offense: OffenseStats
+  defense: DefenseStats
+  build_score: number              // snake_case, matches Rust output
+}
+```
+
+### Pattern 3 — `GameData` Locking in AppState
+
+**Conflict:** An agent might reload game data JSON on every call (catastrophic), or hold a read lock across an `await` boundary (deadlock risk with `spawn_blocking`).
+
+**Rule:**
+- `compute_stats` (sync command): `.read().unwrap()` — take lock, compute, return. Lock drops at end of function. No clone.
+- `run_optimization` / `run_gear_scoring` (async commands): `.read().unwrap().clone()` — clone while holding the lock, then release immediately. Pass the clone into `spawn_blocking`. Lock is never held across an `await`.
+
+```rust
+// Sync — no clone needed
+#[tauri::command]
+fn compute_stats(snapshot: BuildSnapshot, state: tauri::State<'_, AppState>) -> Result<StatSheet, String> {
+    let game_data = state.game_data.read().unwrap();   // lock held for duration of call
+    Ok(scoring_core::compute_stats(&snapshot, &game_data, ComputeOptions::default()))
+}
+
+// Async — clone before spawn_blocking, release lock immediately
+#[tauri::command]
+async fn run_optimization(snapshot: BuildSnapshot, state: tauri::State<'_, AppState>) -> Result<OptimizationResult, String> {
+    let game_data = state.game_data.read().unwrap().clone();  // lock released after clone
+    tokio::task::spawn_blocking(move || scoring_core::run_full_optimization(&snapshot, &game_data))
+        .await.map_err(|e| e.to_string())?
+}
+```
+
+### Pattern 4 — `useStatSheet` Generation-Based Cancellation
+
+**Conflict:** An agent might fire IPC calls without cancellation, leaving stale results overwriting newer state (e.g., rapid allocation then undo — older call resolves last).
+
+**Rule:** Token-based generation counter in `useStatSheet`. A `useRef` holds the current generation number, incremented on each state change before the IPC call. The result is discarded if the generation has moved on.
+
+```ts
+const generationRef = useRef(0)
+
+// On each state change:
+const generation = ++generationRef.current
+setIsComputingStats(true)
+
+invokeCommand<StatSheet>('compute_stats', { snapshot })
+  .then((result) => {
+    if (generationRef.current !== generation) return  // stale — discard
+    useOptimizationStore.getState().setStatSheet(result)
+    useOptimizationStore.getState().setIsComputingStats(false)
+  })
+  .catch(() => {
+    if (generationRef.current !== generation) return  // stale — discard
+    useOptimizationStore.getState().setIsComputingStats(false)
+  })
+```
+
+### Pattern 5 — `SCORING_ERROR` Error Type Prefix
+
+**Conflict:** An agent might emit raw Rust error strings from the scoring engine that don't match any `ErrorType`, silently falling through to `UNKNOWN_ERROR` in `normalizeAppError`.
+
+**Rule:** All scoring engine Rust errors are prefixed `SCORING_ERROR: {detail}`. This prefix must be added to `ErrorType` enum in `shared/types/errors.ts` and `ERROR_TYPE_MAP` in `shared/utils/errorNormalizer.ts` **before any scoring IPC story begins** — it is a Story 0 / setup task, not an implementation detail.
+
+```rust
+// In scoring_commands.rs
+fn compute_stats(...) -> Result<StatSheet, String> {
+    scoring_core::compute_stats(...)
+        .map_err(|e| format!("SCORING_ERROR: {e}"))
+}
+```
+
+```ts
+// errors.ts — add alongside existing ErrorType values
+export const ErrorType = {
+  // ...existing...
+  SCORING_ERROR: 'SCORING_ERROR',
+} as const
+```
+
+### Pattern 6 — `gear:*` Event Namespace
+
+**Conflict:** An agent might emit gear analysis results on `optimization:suggestion-received`, coupling the Gear Optimization screen to the main optimization event channel.
+
+**Rule:** Gear analysis streaming uses its own Tauri event namespace, never `optimization:*`:
+
+| Event | Trigger |
+|---|---|
+| `gear:analysis-complete` | `run_gear_scoring` finishes — full `GearAnalysis` in payload |
+| `gear:error` | `run_gear_scoring` fails |
+
+A dedicated `useGearStream.ts` hook in `shared/stores/` subscribes to these events. The `useOptimizationStream` hook is not modified for gear analysis.
+
+### Pattern 7 — `StatSheet` Null Sub-Sheets = Hidden, Not Errored
+
+**Conflict:** An agent might treat `statSheet.ailment === null` as an error state or show an empty panel.
+
+**Rule:** Null sub-sheets mean the section is **not applicable** — hide the tab/section entirely. Never render a loading spinner, error message, or empty container for a null sub-sheet. The Minion tab (FR-B5) is already the precedent: hidden when no minion skills are active.
+
+```ts
+// Correct — hide when null
+{statSheet.minion !== null && <MinionTab data={statSheet.minion} />}
+
+// Wrong — renders empty or errors
+<MinionTab data={statSheet.minion!} />
+```
+
+### Enforcement Summary
+
+**All agents implementing scoring subsystem work MUST:**
+
+1. Use `toBuildSnapshot()` from `buildSnapshotSerializer.ts` — never serialize `BuildState` directly
+2. Apply `#[serde(rename_all = "camelCase")]` to Rust input structs; leave output structs as default snake_case
+3. Never hold a `RwLock` read guard across an `await` boundary — clone before `spawn_blocking`
+4. Include generation cancellation in `useStatSheet` — never fire-and-forget IPC calls that mutate store state
+5. Prefix all scoring Rust errors with `SCORING_ERROR:` — add to `ErrorType` before any scoring story
+6. Use `gear:*` events for gear analysis — never reuse `optimization:*`
+7. Treat null `StatSheet` sub-sheets as hidden sections — never as errors
