@@ -76,6 +76,7 @@ export function transformNode(raw: RawGameNode, prereqIds: string[]): GameNode {
     tags,
     position: { x: raw.x, y: raw.y },
     size: raw.size,
+    modifierType: raw.modifierType,
   }
 }
 

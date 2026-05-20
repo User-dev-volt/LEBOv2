@@ -16,6 +16,8 @@ pub struct RawGameNode {
     pub size: String,
     pub max_points: u32,
     pub effects: Vec<NodeEffect>,
+    #[serde(default)]
+    pub modifier_type: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

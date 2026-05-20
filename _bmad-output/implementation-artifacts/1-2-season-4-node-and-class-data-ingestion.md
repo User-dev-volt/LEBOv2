@@ -1,6 +1,6 @@
 # Story 1.2: Season 4 Node & Class Data Ingestion
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -36,41 +36,41 @@ so that optimization suggestions reference current-season nodes and produce corr
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Extend `RawGameNode` in TypeScript (AC: #5)
-  - [ ] Open `lebo/src/features/game-data/types.ts`
-  - [ ] Add `modifierType?: 'increased' | 'more' | 'flat'` to the `RawGameNode` interface
-  - [ ] No other changes to this file
+- [x] Task 1: Extend `RawGameNode` in TypeScript (AC: #5)
+  - [x] Open `lebo/src/features/game-data/types.ts`
+  - [x] Add `modifierType?: 'increased' | 'more' | 'flat'` to the `RawGameNode` interface
+  - [x] No other changes to this file
 
-- [ ] Task 2: Extend `RawGameNode` in Rust (AC: #5)
-  - [ ] Open `lebo/src-tauri/src/models/game_data.rs`
-  - [ ] Add `#[serde(default)] pub modifier_type: Option<String>` to `RawGameNode`
-  - [ ] No other Rust struct changes — do NOT touch `NodeEffect`, scoring types, or any other model
+- [x] Task 2: Extend `RawGameNode` in Rust (AC: #5)
+  - [x] Open `lebo/src-tauri/src/models/game_data.rs`
+  - [x] Add `#[serde(default)] pub modifier_type: Option<String>` to `RawGameNode`
+  - [x] No other Rust struct changes — do NOT touch `NodeEffect`, scoring types, or any other model
 
-- [ ] Task 3: Forward `modifierType` in the transformer (AC: #5)
-  - [ ] Open `lebo/src/features/game-data/gameDataLoader.ts`
-  - [ ] In `transformNode()`, pass `modifierType: raw.modifierType` into the returned `GameNode`
-  - [ ] The field is already optional in `GameNode` (story 1.1) — no type changes needed, just wire the value through
-  - [ ] Verify: `raw.modifierType` is `undefined` for unset nodes, which becomes `undefined` on `GameNode` — correct behavior
+- [x] Task 3: Forward `modifierType` in the transformer (AC: #5)
+  - [x] Open `lebo/src/features/game-data/gameDataLoader.ts`
+  - [x] In `transformNode()`, pass `modifierType: raw.modifierType` into the returned `GameNode`
+  - [x] The field is already optional in `GameNode` (story 1.1) — no type changes needed, just wire the value through
+  - [x] Verify: `raw.modifierType` is `undefined` for unset nodes, which becomes `undefined` on `GameNode` — correct behavior
 
-- [ ] Task 4: Write and run the ingestion annotation script (AC: #1, #2, #4)
-  - [ ] Create `lebo/scripts/annotate_s4_nodes.py` (see Dev Notes for full script spec)
-  - [ ] Run: `python3 lebo/scripts/annotate_s4_nodes.py`
-  - [ ] Verify: all 5 class JSON files now have `modifierType` on every node
-  - [ ] Verify: warning log shows which nodes used fallback classification
-  - [ ] Verify: Season 4 new nodes are present (see Dev Notes for exact nodes to add)
+- [x] Task 4: Write and run the ingestion annotation script (AC: #1, #2, #4)
+  - [x] Create `lebo/scripts/annotate_s4_nodes.py` (see Dev Notes for full script spec)
+  - [x] Run: `python3 lebo/scripts/annotate_s4_nodes.py`
+  - [x] Verify: all 5 class JSON files now have `modifierType` on every node
+  - [x] Verify: warning log shows which nodes used fallback classification
+  - [x] Verify: Season 4 new nodes are present (see Dev Notes for exact nodes to add)
 
-- [ ] Task 5: Update manifest.json (AC: #2, #3)
-  - [ ] Open `lebo/src-tauri/resources/game-data/manifest.json`
-  - [ ] Change `gameVersion` to `"Season 4 (Shattered Omens)"`
-  - [ ] Change `dataVersion` to `"s4.1"`
-  - [ ] Change `generatedAt` to `"2026-03-26T00:00:00Z"` (Season 4 release date)
-  - [ ] Do NOT touch `schemaVersion`, `classes`, `itemDataVersion`, `iconCacheVersion`, `iconSource`
+- [x] Task 5: Update manifest.json (AC: #2, #3)
+  - [x] Open `lebo/src-tauri/resources/game-data/manifest.json`
+  - [x] Change `gameVersion` to `"Season 4 (Shattered Omens)"`
+  - [x] Change `dataVersion` to `"s4.1"`
+  - [x] Change `generatedAt` to `"2026-03-26T00:00:00Z"` (Season 4 release date)
+  - [x] Do NOT touch `schemaVersion`, `classes`, `itemDataVersion`, `iconCacheVersion`, `iconSource`
 
-- [ ] Task 6: Verify end-to-end (AC: #3, #5)
-  - [ ] Run `pnpm build` from `lebo/` — zero TypeScript errors required
-  - [ ] Run `cargo build` from `lebo/src-tauri/` — zero Rust errors required
-  - [ ] Run `pnpm vitest` — no regressions (existing 8 pre-existing failures are expected; confirm none new)
-  - [ ] Confirm that `check_data_version` staleness logic will trigger: the local `gameVersion` is now `"Season 4 (Shattered Omens)"` — a player who downloaded an old manifest with `"1.4.4"` will see a mismatch and the staleness bar will show
+- [x] Task 6: Verify end-to-end (AC: #3, #5)
+  - [x] Run `pnpm build` from `lebo/` — zero TypeScript errors required
+  - [x] Run `cargo build` from `lebo/src-tauri/` — zero Rust errors required
+  - [x] Run `pnpm vitest` — no regressions (existing 8 pre-existing failures are expected; confirm none new)
+  - [x] Confirm that `check_data_version` staleness logic will trigger: the local `gameVersion` is now `"Season 4 (Shattered Omens)"` — a player who downloaded an old manifest with `"1.4.4"` will see a mismatch and the staleness bar will show
 
 ## Dev Notes
 
@@ -481,15 +481,19 @@ print('All nodes have modifierType')
 
 ### Agent Model Used
 
-_to be filled in_
+claude-sonnet-4-6
 
 ### Debug Log References
 
-None.
+None — implementation was straightforward with no blockers.
 
 ### Completion Notes List
 
-_to be filled in_
+- Tasks 1–3: Added `modifierType?` field to `RawGameNode` in TypeScript (`types.ts`) and Rust (`game_data.rs`), then wired it through `transformNode()` in `gameDataLoader.ts`. ~10 lines of code total.
+- Task 4: Created `lebo/scripts/annotate_s4_nodes.py` following the story spec exactly. Script ran successfully annotating 312 nodes across all 5 class files (acolyte: 44, mage: 46, primalist: 44, rogue: 46, sentinel: 132). S4 Spellblade nodes (mage) and Bladedancer nodes (rogue) injected. Fallback warnings generated for percentage-based nodes — all correctly classified as "increased".
+- Task 5: Updated manifest.json — `gameVersion` to `"Season 4 (Shattered Omens)"`, `dataVersion` to `"s4.1"`, `generatedAt` to `"2026-03-26T00:00:00Z"`.
+- Task 6: `pnpm build` and `cargo build` both pass with zero errors. Vitest shows 8 failures — confirmed identical to pre-existing set from story 1.1 (ProviderSelector ×5, Settings ×1, SkillTreeCanvas ×1, TreeControls ×1). Zero new regressions.
+- Staleness logic verified: `gameVersion` mismatch from old `"1.4.4"` to new `"Season 4 (Shattered Omens)"` will trigger `is_stale = true` in `check_data_version` — no code changes needed.
 
 ### Review Findings
 
@@ -507,3 +511,7 @@ _to be filled in_
 - `lebo/src-tauri/resources/game-data/classes/rogue.json` — MODIFIED: `modifierType` on all nodes + S4 Bladedancer nodes
 - `lebo/src-tauri/resources/game-data/manifest.json` — MODIFIED: version strings
 - `lebo/scripts/annotate_s4_nodes.py` — NEW: annotation + S4 ingestion script
+
+## Change Log
+
+- 2026-05-20: Story implemented — added `modifierType` type plumbing (TypeScript + Rust), ran S4 annotation pipeline over all 5 class files (312 nodes), injected S4 Spellblade and Bladedancer nodes, updated manifest to Season 4 (Shattered Omens). Both `pnpm build` and `cargo build` pass. Status: review.

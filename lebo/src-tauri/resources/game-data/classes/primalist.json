@@ -3,23 +3,177 @@
   "name": "Primalist",
   "baseTree": {
     "nodes": [
-      { "id": "primalist-base-primal-force", "name": "Primal Force", "x": 0, "y": 0, "size": "large", "maxPoints": 8, "effects": [{ "description": "+4% Physical and Nature Damage per point", "tags": ["PHYSICAL", "NATURE", "DAMAGE"] }] },
-      { "id": "primalist-base-strength", "name": "Strength", "x": 280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4 Strength per point", "tags": ["STRENGTH"] }] },
-      { "id": "primalist-base-attunement", "name": "Attunement", "x": -280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4 Attunement per point", "tags": ["ATTUNEMENT"] }] },
-      { "id": "primalist-base-natural-resilience", "name": "Natural Resilience", "x": 0, "y": -280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+15 Health. +3% Nature Resistance per point.", "tags": ["HEALTH", "RESISTANCE"] }] },
-      { "id": "primalist-base-ferocity", "name": "Ferocity", "x": 560, "y": 0, "size": "small", "maxPoints": 4, "effects": [{ "description": "+4% Melee Crit Chance per point", "tags": ["MELEE", "CRIT"] }] },
-      { "id": "primalist-base-wild-strikes", "name": "Wild Strikes", "x": -560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+3% Attack Speed per point", "tags": ["ATTACK_SPEED"] }] },
-      { "id": "primalist-base-enduring-presence", "name": "Enduring Presence", "x": 0, "y": -560, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Endurance Threshold per point", "tags": ["ENDURANCE"] }] },
-      { "id": "primalist-base-apex-predator", "name": "Apex Predator", "x": 840, "y": 0, "size": "small", "maxPoints": 4, "effects": [{ "description": "+20% Melee Crit Multiplier per point", "tags": ["MELEE", "CRIT"] }] }
+      {
+        "id": "primalist-base-primal-force",
+        "name": "Primal Force",
+        "x": 0,
+        "y": 0,
+        "size": "large",
+        "maxPoints": 8,
+        "effects": [
+          {
+            "description": "+4% Physical and Nature Damage per point",
+            "tags": [
+              "PHYSICAL",
+              "NATURE",
+              "DAMAGE"
+            ]
+          }
+        ],
+        "modifierType": "increased"
+      },
+      {
+        "id": "primalist-base-strength",
+        "name": "Strength",
+        "x": 280,
+        "y": 0,
+        "size": "medium",
+        "maxPoints": 5,
+        "effects": [
+          {
+            "description": "+4 Strength per point",
+            "tags": [
+              "STRENGTH"
+            ]
+          }
+        ],
+        "modifierType": "flat"
+      },
+      {
+        "id": "primalist-base-attunement",
+        "name": "Attunement",
+        "x": -280,
+        "y": 0,
+        "size": "medium",
+        "maxPoints": 5,
+        "effects": [
+          {
+            "description": "+4 Attunement per point",
+            "tags": [
+              "ATTUNEMENT"
+            ]
+          }
+        ],
+        "modifierType": "flat"
+      },
+      {
+        "id": "primalist-base-natural-resilience",
+        "name": "Natural Resilience",
+        "x": 0,
+        "y": -280,
+        "size": "medium",
+        "maxPoints": 5,
+        "effects": [
+          {
+            "description": "+15 Health. +3% Nature Resistance per point.",
+            "tags": [
+              "HEALTH",
+              "RESISTANCE"
+            ]
+          }
+        ],
+        "modifierType": "flat"
+      },
+      {
+        "id": "primalist-base-ferocity",
+        "name": "Ferocity",
+        "x": 560,
+        "y": 0,
+        "size": "small",
+        "maxPoints": 4,
+        "effects": [
+          {
+            "description": "+4% Melee Crit Chance per point",
+            "tags": [
+              "MELEE",
+              "CRIT"
+            ]
+          }
+        ],
+        "modifierType": "increased"
+      },
+      {
+        "id": "primalist-base-wild-strikes",
+        "name": "Wild Strikes",
+        "x": -560,
+        "y": 0,
+        "size": "medium",
+        "maxPoints": 5,
+        "effects": [
+          {
+            "description": "+3% Attack Speed per point",
+            "tags": [
+              "ATTACK_SPEED"
+            ]
+          }
+        ],
+        "modifierType": "increased"
+      },
+      {
+        "id": "primalist-base-enduring-presence",
+        "name": "Enduring Presence",
+        "x": 0,
+        "y": -560,
+        "size": "medium",
+        "maxPoints": 5,
+        "effects": [
+          {
+            "description": "+4% Endurance Threshold per point",
+            "tags": [
+              "ENDURANCE"
+            ]
+          }
+        ],
+        "modifierType": "increased"
+      },
+      {
+        "id": "primalist-base-apex-predator",
+        "name": "Apex Predator",
+        "x": 840,
+        "y": 0,
+        "size": "small",
+        "maxPoints": 4,
+        "effects": [
+          {
+            "description": "+20% Melee Crit Multiplier per point",
+            "tags": [
+              "MELEE",
+              "CRIT"
+            ]
+          }
+        ],
+        "modifierType": "increased"
+      }
     ],
     "edges": [
-      { "fromId": "primalist-base-primal-force", "toId": "primalist-base-strength" },
-      { "fromId": "primalist-base-primal-force", "toId": "primalist-base-attunement" },
-      { "fromId": "primalist-base-primal-force", "toId": "primalist-base-natural-resilience" },
-      { "fromId": "primalist-base-strength", "toId": "primalist-base-ferocity" },
-      { "fromId": "primalist-base-attunement", "toId": "primalist-base-wild-strikes" },
-      { "fromId": "primalist-base-natural-resilience", "toId": "primalist-base-enduring-presence" },
-      { "fromId": "primalist-base-ferocity", "toId": "primalist-base-apex-predator" }
+      {
+        "fromId": "primalist-base-primal-force",
+        "toId": "primalist-base-strength"
+      },
+      {
+        "fromId": "primalist-base-primal-force",
+        "toId": "primalist-base-attunement"
+      },
+      {
+        "fromId": "primalist-base-primal-force",
+        "toId": "primalist-base-natural-resilience"
+      },
+      {
+        "fromId": "primalist-base-strength",
+        "toId": "primalist-base-ferocity"
+      },
+      {
+        "fromId": "primalist-base-attunement",
+        "toId": "primalist-base-wild-strikes"
+      },
+      {
+        "fromId": "primalist-base-natural-resilience",
+        "toId": "primalist-base-enduring-presence"
+      },
+      {
+        "fromId": "primalist-base-ferocity",
+        "toId": "primalist-base-apex-predator"
+      }
     ]
   },
   "skills": [
@@ -30,19 +184,139 @@
       "masteryGatePoints": null,
       "skillTree": {
         "nodes": [
-          { "id": "primalist-fury-leap-core", "name": "Fury Leap", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Leap to a target location dealing physical damage on landing.", "tags": ["PHYSICAL", "MOVEMENT", "MELEE"] }] },
-          { "id": "primalist-fury-leap-impact", "name": "Crushing Impact", "x": 280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+10% Physical Damage on landing per point.", "tags": ["PHYSICAL", "AREA", "DAMAGE"] }] },
-          { "id": "primalist-fury-leap-range", "name": "Extended Leap", "x": 0, "y": 280, "size": "medium", "maxPoints": 4, "effects": [{ "description": "+15% Leap range per point.", "tags": ["PHYSICAL", "MOVEMENT"] }] },
-          { "id": "primalist-fury-leap-shockwave", "name": "Tremor", "x": 280, "y": 280, "size": "small", "maxPoints": 4, "effects": [{ "description": "Landing creates a shockwave dealing +8% Nature Damage per point.", "tags": ["PHYSICAL", "NATURE", "AREA"] }] },
-          { "id": "primalist-fury-leap-frenzy", "name": "Frenzy", "x": 560, "y": 0, "size": "medium", "maxPoints": 4, "effects": [{ "description": "+5% Attack Speed after Fury Leap for 3 seconds per point.", "tags": ["ATTACK_SPEED", "BUFF"] }] },
-          { "id": "primalist-fury-leap-cooldown", "name": "Quick Recovery", "x": -280, "y": 0, "size": "small", "maxPoints": 4, "effects": [{ "description": "-0.3 seconds cooldown per point.", "tags": ["COOLDOWN", "MOVEMENT"] }] }
+          {
+            "id": "primalist-fury-leap-core",
+            "name": "Fury Leap",
+            "x": 0,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 1,
+            "effects": [
+              {
+                "description": "Leap to a target location dealing physical damage on landing.",
+                "tags": [
+                  "PHYSICAL",
+                  "MOVEMENT",
+                  "MELEE"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "primalist-fury-leap-impact",
+            "name": "Crushing Impact",
+            "x": 280,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+10% Physical Damage on landing per point.",
+                "tags": [
+                  "PHYSICAL",
+                  "AREA",
+                  "DAMAGE"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "primalist-fury-leap-range",
+            "name": "Extended Leap",
+            "x": 0,
+            "y": 280,
+            "size": "medium",
+            "maxPoints": 4,
+            "effects": [
+              {
+                "description": "+15% Leap range per point.",
+                "tags": [
+                  "PHYSICAL",
+                  "MOVEMENT"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "primalist-fury-leap-shockwave",
+            "name": "Tremor",
+            "x": 280,
+            "y": 280,
+            "size": "small",
+            "maxPoints": 4,
+            "effects": [
+              {
+                "description": "Landing creates a shockwave dealing +8% Nature Damage per point.",
+                "tags": [
+                  "PHYSICAL",
+                  "NATURE",
+                  "AREA"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "primalist-fury-leap-frenzy",
+            "name": "Frenzy",
+            "x": 560,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 4,
+            "effects": [
+              {
+                "description": "+5% Attack Speed after Fury Leap for 3 seconds per point.",
+                "tags": [
+                  "ATTACK_SPEED",
+                  "BUFF"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "primalist-fury-leap-cooldown",
+            "name": "Quick Recovery",
+            "x": -280,
+            "y": 0,
+            "size": "small",
+            "maxPoints": 4,
+            "effects": [
+              {
+                "description": "-0.3 seconds cooldown per point.",
+                "tags": [
+                  "COOLDOWN",
+                  "MOVEMENT"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          }
         ],
         "edges": [
-          { "fromId": "primalist-fury-leap-core", "toId": "primalist-fury-leap-impact" },
-          { "fromId": "primalist-fury-leap-core", "toId": "primalist-fury-leap-range" },
-          { "fromId": "primalist-fury-leap-core", "toId": "primalist-fury-leap-cooldown" },
-          { "fromId": "primalist-fury-leap-impact", "toId": "primalist-fury-leap-shockwave" },
-          { "fromId": "primalist-fury-leap-impact", "toId": "primalist-fury-leap-frenzy" }
+          {
+            "fromId": "primalist-fury-leap-core",
+            "toId": "primalist-fury-leap-impact"
+          },
+          {
+            "fromId": "primalist-fury-leap-core",
+            "toId": "primalist-fury-leap-range"
+          },
+          {
+            "fromId": "primalist-fury-leap-core",
+            "toId": "primalist-fury-leap-cooldown"
+          },
+          {
+            "fromId": "primalist-fury-leap-impact",
+            "toId": "primalist-fury-leap-shockwave"
+          },
+          {
+            "fromId": "primalist-fury-leap-impact",
+            "toId": "primalist-fury-leap-frenzy"
+          }
         ]
       }
     },
@@ -53,19 +327,137 @@
       "masteryGatePoints": 20,
       "skillTree": {
         "nodes": [
-          { "id": "primalist-storm-totem-core", "name": "Storm Totem", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Place a totem that casts lightning bolts at nearby enemies.", "tags": ["LIGHTNING", "TOTEM", "SPELL"] }] },
-          { "id": "primalist-storm-totem-bolt", "name": "Forked Lightning", "x": 280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+1 fork target per point.", "tags": ["LIGHTNING", "CHAIN"] }] },
-          { "id": "primalist-storm-totem-duration", "name": "Enduring Storm", "x": 0, "y": 280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+1 second totem duration per point.", "tags": ["LIGHTNING", "DURATION"] }] },
-          { "id": "primalist-storm-totem-damage", "name": "Tempest", "x": 280, "y": 280, "size": "small", "maxPoints": 4, "effects": [{ "description": "+10% Lightning Damage per point.", "tags": ["LIGHTNING", "DAMAGE"] }] },
-          { "id": "primalist-storm-totem-count", "name": "Twin Totems", "x": 560, "y": 0, "size": "medium", "maxPoints": 2, "effects": [{ "description": "+1 maximum totem count per point.", "tags": ["LIGHTNING", "TOTEM"] }] },
-          { "id": "primalist-storm-totem-shock", "name": "Static Field", "x": -280, "y": 0, "size": "small", "maxPoints": 4, "effects": [{ "description": "+8% Shock chance per point.", "tags": ["LIGHTNING", "AILMENT"] }] }
+          {
+            "id": "primalist-storm-totem-core",
+            "name": "Storm Totem",
+            "x": 0,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 1,
+            "effects": [
+              {
+                "description": "Place a totem that casts lightning bolts at nearby enemies.",
+                "tags": [
+                  "LIGHTNING",
+                  "TOTEM",
+                  "SPELL"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "primalist-storm-totem-bolt",
+            "name": "Forked Lightning",
+            "x": 280,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+1 fork target per point.",
+                "tags": [
+                  "LIGHTNING",
+                  "CHAIN"
+                ]
+              }
+            ],
+            "modifierType": "flat"
+          },
+          {
+            "id": "primalist-storm-totem-duration",
+            "name": "Enduring Storm",
+            "x": 0,
+            "y": 280,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+1 second totem duration per point.",
+                "tags": [
+                  "LIGHTNING",
+                  "DURATION"
+                ]
+              }
+            ],
+            "modifierType": "flat"
+          },
+          {
+            "id": "primalist-storm-totem-damage",
+            "name": "Tempest",
+            "x": 280,
+            "y": 280,
+            "size": "small",
+            "maxPoints": 4,
+            "effects": [
+              {
+                "description": "+10% Lightning Damage per point.",
+                "tags": [
+                  "LIGHTNING",
+                  "DAMAGE"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "primalist-storm-totem-count",
+            "name": "Twin Totems",
+            "x": 560,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 2,
+            "effects": [
+              {
+                "description": "+1 maximum totem count per point.",
+                "tags": [
+                  "LIGHTNING",
+                  "TOTEM"
+                ]
+              }
+            ],
+            "modifierType": "flat"
+          },
+          {
+            "id": "primalist-storm-totem-shock",
+            "name": "Static Field",
+            "x": -280,
+            "y": 0,
+            "size": "small",
+            "maxPoints": 4,
+            "effects": [
+              {
+                "description": "+8% Shock chance per point.",
+                "tags": [
+                  "LIGHTNING",
+                  "AILMENT"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          }
         ],
         "edges": [
-          { "fromId": "primalist-storm-totem-core", "toId": "primalist-storm-totem-bolt" },
-          { "fromId": "primalist-storm-totem-core", "toId": "primalist-storm-totem-duration" },
-          { "fromId": "primalist-storm-totem-core", "toId": "primalist-storm-totem-shock" },
-          { "fromId": "primalist-storm-totem-bolt", "toId": "primalist-storm-totem-damage" },
-          { "fromId": "primalist-storm-totem-bolt", "toId": "primalist-storm-totem-count" }
+          {
+            "fromId": "primalist-storm-totem-core",
+            "toId": "primalist-storm-totem-bolt"
+          },
+          {
+            "fromId": "primalist-storm-totem-core",
+            "toId": "primalist-storm-totem-duration"
+          },
+          {
+            "fromId": "primalist-storm-totem-core",
+            "toId": "primalist-storm-totem-shock"
+          },
+          {
+            "fromId": "primalist-storm-totem-bolt",
+            "toId": "primalist-storm-totem-damage"
+          },
+          {
+            "fromId": "primalist-storm-totem-bolt",
+            "toId": "primalist-storm-totem-count"
+          }
         ]
       }
     }
@@ -76,24 +468,190 @@
       "name": "Shaman",
       "passiveTree": {
         "nodes": [
-          { "id": "shaman-passive-entry", "name": "Shaman", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Become a Shaman — harness the power of storm and earth", "tags": ["MASTERY"] }] },
-          { "id": "shaman-passive-storm-call", "name": "Storm Call", "x": 280, "y": 0, "size": "large", "maxPoints": 6, "effects": [{ "description": "+5% Lightning Damage per point. Storm skills have +4% chance to Shock.", "tags": ["LIGHTNING", "SHOCK", "DAMAGE"] }] },
-          { "id": "shaman-passive-earthen-might", "name": "Earthen Might", "x": -280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Physical Damage. +4% Armour per point.", "tags": ["PHYSICAL", "ARMOUR"] }] },
-          { "id": "shaman-passive-totemic-bond", "name": "Totemic Bond", "x": 0, "y": 280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "Totems deal +6% increased damage per point", "tags": ["MINION", "TOTEM", "DAMAGE"] }] },
-          { "id": "shaman-passive-spirit-wolves", "name": "Spirit Wolves", "x": 0, "y": -280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Spirit Wolf Damage per point", "tags": ["MINION", "NATURE", "DAMAGE"] }] },
-          { "id": "shaman-passive-thunder-strike", "name": "Thunder Strike", "x": 560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Lightning Damage. Shocked enemies take +5% more damage per point.", "tags": ["LIGHTNING", "SHOCK", "DAMAGE"] }] },
-          { "id": "shaman-passive-ancestral-defence", "name": "Ancestral Defence", "x": -560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+8% Health. Spirit Wolves grant +4% Armour when nearby.", "tags": ["HEALTH", "ARMOUR", "MINION"] }] },
-          { "id": "shaman-passive-shaman-mastery", "name": "Shaman Mastery", "x": 840, "y": 0, "size": "large", "maxPoints": 8, "effects": [{ "description": "+4% Lightning Damage. +3% Shock Chance. Totems have +5% more Health per point.", "tags": ["LIGHTNING", "SHOCK", "TOTEM", "MASTERY"] }] }
+          {
+            "id": "shaman-passive-entry",
+            "name": "Shaman",
+            "x": 0,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 1,
+            "effects": [
+              {
+                "description": "Become a Shaman — harness the power of storm and earth",
+                "tags": [
+                  "MASTERY"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "shaman-passive-storm-call",
+            "name": "Storm Call",
+            "x": 280,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 6,
+            "effects": [
+              {
+                "description": "+5% Lightning Damage per point. Storm skills have +4% chance to Shock.",
+                "tags": [
+                  "LIGHTNING",
+                  "SHOCK",
+                  "DAMAGE"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "shaman-passive-earthen-might",
+            "name": "Earthen Might",
+            "x": -280,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+5% Physical Damage. +4% Armour per point.",
+                "tags": [
+                  "PHYSICAL",
+                  "ARMOUR"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "shaman-passive-totemic-bond",
+            "name": "Totemic Bond",
+            "x": 0,
+            "y": 280,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "Totems deal +6% increased damage per point",
+                "tags": [
+                  "MINION",
+                  "TOTEM",
+                  "DAMAGE"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "shaman-passive-spirit-wolves",
+            "name": "Spirit Wolves",
+            "x": 0,
+            "y": -280,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+5% Spirit Wolf Damage per point",
+                "tags": [
+                  "MINION",
+                  "NATURE",
+                  "DAMAGE"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "shaman-passive-thunder-strike",
+            "name": "Thunder Strike",
+            "x": 560,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+5% Lightning Damage. Shocked enemies take +5% more damage per point.",
+                "tags": [
+                  "LIGHTNING",
+                  "SHOCK",
+                  "DAMAGE"
+                ]
+              }
+            ],
+            "modifierType": "more"
+          },
+          {
+            "id": "shaman-passive-ancestral-defence",
+            "name": "Ancestral Defence",
+            "x": -560,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+8% Health. Spirit Wolves grant +4% Armour when nearby.",
+                "tags": [
+                  "HEALTH",
+                  "ARMOUR",
+                  "MINION"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "shaman-passive-shaman-mastery",
+            "name": "Shaman Mastery",
+            "x": 840,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 8,
+            "effects": [
+              {
+                "description": "+4% Lightning Damage. +3% Shock Chance. Totems have +5% more Health per point.",
+                "tags": [
+                  "LIGHTNING",
+                  "SHOCK",
+                  "TOTEM",
+                  "MASTERY"
+                ]
+              }
+            ],
+            "modifierType": "more"
+          }
         ],
         "edges": [
-          { "fromId": "shaman-passive-entry", "toId": "shaman-passive-storm-call" },
-          { "fromId": "shaman-passive-entry", "toId": "shaman-passive-earthen-might" },
-          { "fromId": "shaman-passive-entry", "toId": "shaman-passive-totemic-bond" },
-          { "fromId": "shaman-passive-entry", "toId": "shaman-passive-spirit-wolves" },
-          { "fromId": "shaman-passive-storm-call", "toId": "shaman-passive-thunder-strike" },
-          { "fromId": "shaman-passive-earthen-might", "toId": "shaman-passive-ancestral-defence" },
-          { "fromId": "shaman-passive-thunder-strike", "toId": "shaman-passive-shaman-mastery" },
-          { "fromId": "shaman-passive-ancestral-defence", "toId": "shaman-passive-shaman-mastery" }
+          {
+            "fromId": "shaman-passive-entry",
+            "toId": "shaman-passive-storm-call"
+          },
+          {
+            "fromId": "shaman-passive-entry",
+            "toId": "shaman-passive-earthen-might"
+          },
+          {
+            "fromId": "shaman-passive-entry",
+            "toId": "shaman-passive-totemic-bond"
+          },
+          {
+            "fromId": "shaman-passive-entry",
+            "toId": "shaman-passive-spirit-wolves"
+          },
+          {
+            "fromId": "shaman-passive-storm-call",
+            "toId": "shaman-passive-thunder-strike"
+          },
+          {
+            "fromId": "shaman-passive-earthen-might",
+            "toId": "shaman-passive-ancestral-defence"
+          },
+          {
+            "fromId": "shaman-passive-thunder-strike",
+            "toId": "shaman-passive-shaman-mastery"
+          },
+          {
+            "fromId": "shaman-passive-ancestral-defence",
+            "toId": "shaman-passive-shaman-mastery"
+          }
         ]
       }
     },
@@ -102,24 +660,190 @@
       "name": "Druid",
       "passiveTree": {
         "nodes": [
-          { "id": "druid-passive-entry", "name": "Druid", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Become a Druid — transform and channel nature's fury", "tags": ["MASTERY"] }] },
-          { "id": "druid-passive-natural-form", "name": "Natural Form", "x": 280, "y": 0, "size": "large", "maxPoints": 6, "effects": [{ "description": "+5% Nature Damage per point. Form durations +1s.", "tags": ["NATURE", "DAMAGE", "DURATION"] }] },
-          { "id": "druid-passive-regeneration", "name": "Regeneration", "x": -280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+3 Health Regeneration per second per point", "tags": ["HEALTH", "REGEN", "SUSTAIN"] }] },
-          { "id": "druid-passive-swipe", "name": "Swipe", "x": 0, "y": 280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Swipe Damage per point", "tags": ["MELEE", "NATURE", "DAMAGE"] }] },
-          { "id": "druid-passive-entangling-roots", "name": "Entangling Roots", "x": 0, "y": -280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "Roots last +0.5s longer and deal +4% Nature Damage per point.", "tags": ["NATURE", "CROWD_CONTROL", "DOT"] }] },
-          { "id": "druid-passive-werebear", "name": "Werebear Form", "x": 560, "y": 0, "size": "large", "maxPoints": 6, "effects": [{ "description": "+6% Health while in Werebear Form. +4% Melee Damage per point.", "tags": ["HEALTH", "MELEE", "TRANSFORMATION"] }] },
-          { "id": "druid-passive-verdant-spirit", "name": "Verdant Spirit", "x": -560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Healing Effectiveness. Nature damage heals you for 1% per point.", "tags": ["HEALING", "NATURE", "SUSTAIN"] }] },
-          { "id": "druid-passive-druid-mastery", "name": "Druid Mastery", "x": 840, "y": 0, "size": "large", "maxPoints": 8, "effects": [{ "description": "+4% Nature Damage. +5 Health Regen. +3% Form Damage per point.", "tags": ["NATURE", "HEALTH", "MASTERY"] }] }
+          {
+            "id": "druid-passive-entry",
+            "name": "Druid",
+            "x": 0,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 1,
+            "effects": [
+              {
+                "description": "Become a Druid — transform and channel nature's fury",
+                "tags": [
+                  "MASTERY"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "druid-passive-natural-form",
+            "name": "Natural Form",
+            "x": 280,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 6,
+            "effects": [
+              {
+                "description": "+5% Nature Damage per point. Form durations +1s.",
+                "tags": [
+                  "NATURE",
+                  "DAMAGE",
+                  "DURATION"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "druid-passive-regeneration",
+            "name": "Regeneration",
+            "x": -280,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+3 Health Regeneration per second per point",
+                "tags": [
+                  "HEALTH",
+                  "REGEN",
+                  "SUSTAIN"
+                ]
+              }
+            ],
+            "modifierType": "flat"
+          },
+          {
+            "id": "druid-passive-swipe",
+            "name": "Swipe",
+            "x": 0,
+            "y": 280,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+5% Swipe Damage per point",
+                "tags": [
+                  "MELEE",
+                  "NATURE",
+                  "DAMAGE"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "druid-passive-entangling-roots",
+            "name": "Entangling Roots",
+            "x": 0,
+            "y": -280,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "Roots last +0.5s longer and deal +4% Nature Damage per point.",
+                "tags": [
+                  "NATURE",
+                  "CROWD_CONTROL",
+                  "DOT"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "druid-passive-werebear",
+            "name": "Werebear Form",
+            "x": 560,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 6,
+            "effects": [
+              {
+                "description": "+6% Health while in Werebear Form. +4% Melee Damage per point.",
+                "tags": [
+                  "HEALTH",
+                  "MELEE",
+                  "TRANSFORMATION"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "druid-passive-verdant-spirit",
+            "name": "Verdant Spirit",
+            "x": -560,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+4% Healing Effectiveness. Nature damage heals you for 1% per point.",
+                "tags": [
+                  "HEALING",
+                  "NATURE",
+                  "SUSTAIN"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "druid-passive-druid-mastery",
+            "name": "Druid Mastery",
+            "x": 840,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 8,
+            "effects": [
+              {
+                "description": "+4% Nature Damage. +5 Health Regen. +3% Form Damage per point.",
+                "tags": [
+                  "NATURE",
+                  "HEALTH",
+                  "MASTERY"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          }
         ],
         "edges": [
-          { "fromId": "druid-passive-entry", "toId": "druid-passive-natural-form" },
-          { "fromId": "druid-passive-entry", "toId": "druid-passive-regeneration" },
-          { "fromId": "druid-passive-entry", "toId": "druid-passive-swipe" },
-          { "fromId": "druid-passive-entry", "toId": "druid-passive-entangling-roots" },
-          { "fromId": "druid-passive-natural-form", "toId": "druid-passive-werebear" },
-          { "fromId": "druid-passive-regeneration", "toId": "druid-passive-verdant-spirit" },
-          { "fromId": "druid-passive-werebear", "toId": "druid-passive-druid-mastery" },
-          { "fromId": "druid-passive-verdant-spirit", "toId": "druid-passive-druid-mastery" }
+          {
+            "fromId": "druid-passive-entry",
+            "toId": "druid-passive-natural-form"
+          },
+          {
+            "fromId": "druid-passive-entry",
+            "toId": "druid-passive-regeneration"
+          },
+          {
+            "fromId": "druid-passive-entry",
+            "toId": "druid-passive-swipe"
+          },
+          {
+            "fromId": "druid-passive-entry",
+            "toId": "druid-passive-entangling-roots"
+          },
+          {
+            "fromId": "druid-passive-natural-form",
+            "toId": "druid-passive-werebear"
+          },
+          {
+            "fromId": "druid-passive-regeneration",
+            "toId": "druid-passive-verdant-spirit"
+          },
+          {
+            "fromId": "druid-passive-werebear",
+            "toId": "druid-passive-druid-mastery"
+          },
+          {
+            "fromId": "druid-passive-verdant-spirit",
+            "toId": "druid-passive-druid-mastery"
+          }
         ]
       }
     },
@@ -128,24 +852,191 @@
       "name": "Beastmaster",
       "passiveTree": {
         "nodes": [
-          { "id": "beastmaster-passive-entry", "name": "Beastmaster", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Become a Beastmaster — command a pack of powerful beasts", "tags": ["MASTERY"] }] },
-          { "id": "beastmaster-passive-pack-leader", "name": "Pack Leader", "x": 280, "y": 0, "size": "large", "maxPoints": 6, "effects": [{ "description": "+5% Companion Damage per point. Companions gain +3% Attack Speed.", "tags": ["MINION", "DAMAGE", "ATTACK_SPEED"] }] },
-          { "id": "beastmaster-passive-bond-of-the-wild", "name": "Bond of the Wild", "x": -280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Companion Health. +3% Companion Damage Reduction per point.", "tags": ["MINION", "HEALTH", "DEFENCE"] }] },
-          { "id": "beastmaster-passive-predators-mark", "name": "Predator's Mark", "x": 0, "y": 280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "Companions apply Predator's Mark on hit, reducing enemy armour by 5% per point", "tags": ["MINION", "ARMOUR_SHRED", "DEBUFF"] }] },
-          { "id": "beastmaster-passive-alpha-howl", "name": "Alpha Howl", "x": 0, "y": -280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "Alpha Howl buffs companions for +8% Damage per point", "tags": ["MINION", "BUFF", "DAMAGE"] }] },
-          { "id": "beastmaster-passive-savage-frenzy", "name": "Savage Frenzy", "x": 560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "Companions enter Frenzy on kill — +15% Attack Speed for 3 seconds per point", "tags": ["MINION", "ATTACK_SPEED", "KILL"] }] },
-          { "id": "beastmaster-passive-iron-hide", "name": "Iron Hide", "x": -560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+8% Companion Armour per point", "tags": ["MINION", "ARMOUR", "DEFENCE"] }] },
-          { "id": "beastmaster-passive-beastmaster-mastery", "name": "Beastmaster Mastery", "x": 840, "y": 0, "size": "large", "maxPoints": 8, "effects": [{ "description": "+5% Companion Damage. +4% Companion Health. +1 Max Companion per point.", "tags": ["MINION", "DAMAGE", "HEALTH", "MASTERY"] }] }
+          {
+            "id": "beastmaster-passive-entry",
+            "name": "Beastmaster",
+            "x": 0,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 1,
+            "effects": [
+              {
+                "description": "Become a Beastmaster — command a pack of powerful beasts",
+                "tags": [
+                  "MASTERY"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "beastmaster-passive-pack-leader",
+            "name": "Pack Leader",
+            "x": 280,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 6,
+            "effects": [
+              {
+                "description": "+5% Companion Damage per point. Companions gain +3% Attack Speed.",
+                "tags": [
+                  "MINION",
+                  "DAMAGE",
+                  "ATTACK_SPEED"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "beastmaster-passive-bond-of-the-wild",
+            "name": "Bond of the Wild",
+            "x": -280,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+4% Companion Health. +3% Companion Damage Reduction per point.",
+                "tags": [
+                  "MINION",
+                  "HEALTH",
+                  "DEFENCE"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "beastmaster-passive-predators-mark",
+            "name": "Predator's Mark",
+            "x": 0,
+            "y": 280,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "Companions apply Predator's Mark on hit, reducing enemy armour by 5% per point",
+                "tags": [
+                  "MINION",
+                  "ARMOUR_SHRED",
+                  "DEBUFF"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "beastmaster-passive-alpha-howl",
+            "name": "Alpha Howl",
+            "x": 0,
+            "y": -280,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "Alpha Howl buffs companions for +8% Damage per point",
+                "tags": [
+                  "MINION",
+                  "BUFF",
+                  "DAMAGE"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "beastmaster-passive-savage-frenzy",
+            "name": "Savage Frenzy",
+            "x": 560,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "Companions enter Frenzy on kill — +15% Attack Speed for 3 seconds per point",
+                "tags": [
+                  "MINION",
+                  "ATTACK_SPEED",
+                  "KILL"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "beastmaster-passive-iron-hide",
+            "name": "Iron Hide",
+            "x": -560,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+8% Companion Armour per point",
+                "tags": [
+                  "MINION",
+                  "ARMOUR",
+                  "DEFENCE"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "beastmaster-passive-beastmaster-mastery",
+            "name": "Beastmaster Mastery",
+            "x": 840,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 8,
+            "effects": [
+              {
+                "description": "+5% Companion Damage. +4% Companion Health. +1 Max Companion per point.",
+                "tags": [
+                  "MINION",
+                  "DAMAGE",
+                  "HEALTH",
+                  "MASTERY"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          }
         ],
         "edges": [
-          { "fromId": "beastmaster-passive-entry", "toId": "beastmaster-passive-pack-leader" },
-          { "fromId": "beastmaster-passive-entry", "toId": "beastmaster-passive-bond-of-the-wild" },
-          { "fromId": "beastmaster-passive-entry", "toId": "beastmaster-passive-predators-mark" },
-          { "fromId": "beastmaster-passive-entry", "toId": "beastmaster-passive-alpha-howl" },
-          { "fromId": "beastmaster-passive-pack-leader", "toId": "beastmaster-passive-savage-frenzy" },
-          { "fromId": "beastmaster-passive-bond-of-the-wild", "toId": "beastmaster-passive-iron-hide" },
-          { "fromId": "beastmaster-passive-savage-frenzy", "toId": "beastmaster-passive-beastmaster-mastery" },
-          { "fromId": "beastmaster-passive-iron-hide", "toId": "beastmaster-passive-beastmaster-mastery" }
+          {
+            "fromId": "beastmaster-passive-entry",
+            "toId": "beastmaster-passive-pack-leader"
+          },
+          {
+            "fromId": "beastmaster-passive-entry",
+            "toId": "beastmaster-passive-bond-of-the-wild"
+          },
+          {
+            "fromId": "beastmaster-passive-entry",
+            "toId": "beastmaster-passive-predators-mark"
+          },
+          {
+            "fromId": "beastmaster-passive-entry",
+            "toId": "beastmaster-passive-alpha-howl"
+          },
+          {
+            "fromId": "beastmaster-passive-pack-leader",
+            "toId": "beastmaster-passive-savage-frenzy"
+          },
+          {
+            "fromId": "beastmaster-passive-bond-of-the-wild",
+            "toId": "beastmaster-passive-iron-hide"
+          },
+          {
+            "fromId": "beastmaster-passive-savage-frenzy",
+            "toId": "beastmaster-passive-beastmaster-mastery"
+          },
+          {
+            "fromId": "beastmaster-passive-iron-hide",
+            "toId": "beastmaster-passive-beastmaster-mastery"
+          }
         ]
       }
     }

@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-- Developer should run `pnpm build` and implement the 5 type changes in story 1.1, targeting zero TypeScript errors before merging
+Hand story 1.2 to dev agent for implementation; monitor for completion of the Python annotation script and confirmation of all 5 class files passing the verification one-liner before marking story complete.
 
 ---
 

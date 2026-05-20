@@ -3,23 +3,181 @@
   "name": "Acolyte",
   "baseTree": {
     "nodes": [
-      { "id": "acolyte-base-dark-ritual", "name": "Dark Ritual", "x": 0, "y": 0, "size": "large", "maxPoints": 8, "effects": [{ "description": "+4% Necrotic Damage per point", "tags": ["NECROTIC", "DAMAGE"] }] },
-      { "id": "acolyte-base-intelligence", "name": "Intelligence", "x": 280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4 Intelligence per point", "tags": ["INTELLIGENCE"] }] },
-      { "id": "acolyte-base-darkness", "name": "Darkness", "x": -280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Necrotic Damage per point", "tags": ["NECROTIC", "DAMAGE"] }] },
-      { "id": "acolyte-base-blood-offering", "name": "Blood Offering", "x": 0, "y": -280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+3% Damage per 5% missing Health per point (max 15%)", "tags": ["SACRIFICE", "DAMAGE", "CONDITIONAL"] }] },
-      { "id": "acolyte-base-minion-mastery", "name": "Minion Mastery", "x": 560, "y": 0, "size": "small", "maxPoints": 4, "effects": [{ "description": "+4% Minion Damage per point", "tags": ["MINION", "DAMAGE"] }] },
-      { "id": "acolyte-base-unholy-endurance", "name": "Unholy Endurance", "x": -560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Necrotic Resistance per point", "tags": ["NECROTIC", "RESISTANCE"] }] },
-      { "id": "acolyte-base-vitality-drain", "name": "Vitality Drain", "x": 0, "y": -560, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+2% Health Leech from Necrotic damage per point", "tags": ["NECROTIC", "LEECH", "SUSTAIN"] }] },
-      { "id": "acolyte-base-forbidden-knowledge", "name": "Forbidden Knowledge", "x": 840, "y": 0, "size": "small", "maxPoints": 4, "effects": [{ "description": "+3% Spell Crit Chance per point", "tags": ["SPELL", "CRIT"] }] }
+      {
+        "id": "acolyte-base-dark-ritual",
+        "name": "Dark Ritual",
+        "x": 0,
+        "y": 0,
+        "size": "large",
+        "maxPoints": 8,
+        "effects": [
+          {
+            "description": "+4% Necrotic Damage per point",
+            "tags": [
+              "NECROTIC",
+              "DAMAGE"
+            ]
+          }
+        ],
+        "modifierType": "increased"
+      },
+      {
+        "id": "acolyte-base-intelligence",
+        "name": "Intelligence",
+        "x": 280,
+        "y": 0,
+        "size": "medium",
+        "maxPoints": 5,
+        "effects": [
+          {
+            "description": "+4 Intelligence per point",
+            "tags": [
+              "INTELLIGENCE"
+            ]
+          }
+        ],
+        "modifierType": "flat"
+      },
+      {
+        "id": "acolyte-base-darkness",
+        "name": "Darkness",
+        "x": -280,
+        "y": 0,
+        "size": "medium",
+        "maxPoints": 5,
+        "effects": [
+          {
+            "description": "+5% Necrotic Damage per point",
+            "tags": [
+              "NECROTIC",
+              "DAMAGE"
+            ]
+          }
+        ],
+        "modifierType": "increased"
+      },
+      {
+        "id": "acolyte-base-blood-offering",
+        "name": "Blood Offering",
+        "x": 0,
+        "y": -280,
+        "size": "medium",
+        "maxPoints": 5,
+        "effects": [
+          {
+            "description": "+3% Damage per 5% missing Health per point (max 15%)",
+            "tags": [
+              "SACRIFICE",
+              "DAMAGE",
+              "CONDITIONAL"
+            ]
+          }
+        ],
+        "modifierType": "increased"
+      },
+      {
+        "id": "acolyte-base-minion-mastery",
+        "name": "Minion Mastery",
+        "x": 560,
+        "y": 0,
+        "size": "small",
+        "maxPoints": 4,
+        "effects": [
+          {
+            "description": "+4% Minion Damage per point",
+            "tags": [
+              "MINION",
+              "DAMAGE"
+            ]
+          }
+        ],
+        "modifierType": "increased"
+      },
+      {
+        "id": "acolyte-base-unholy-endurance",
+        "name": "Unholy Endurance",
+        "x": -560,
+        "y": 0,
+        "size": "medium",
+        "maxPoints": 5,
+        "effects": [
+          {
+            "description": "+4% Necrotic Resistance per point",
+            "tags": [
+              "NECROTIC",
+              "RESISTANCE"
+            ]
+          }
+        ],
+        "modifierType": "increased"
+      },
+      {
+        "id": "acolyte-base-vitality-drain",
+        "name": "Vitality Drain",
+        "x": 0,
+        "y": -560,
+        "size": "medium",
+        "maxPoints": 5,
+        "effects": [
+          {
+            "description": "+2% Health Leech from Necrotic damage per point",
+            "tags": [
+              "NECROTIC",
+              "LEECH",
+              "SUSTAIN"
+            ]
+          }
+        ],
+        "modifierType": "increased"
+      },
+      {
+        "id": "acolyte-base-forbidden-knowledge",
+        "name": "Forbidden Knowledge",
+        "x": 840,
+        "y": 0,
+        "size": "small",
+        "maxPoints": 4,
+        "effects": [
+          {
+            "description": "+3% Spell Crit Chance per point",
+            "tags": [
+              "SPELL",
+              "CRIT"
+            ]
+          }
+        ],
+        "modifierType": "increased"
+      }
     ],
     "edges": [
-      { "fromId": "acolyte-base-dark-ritual", "toId": "acolyte-base-intelligence" },
-      { "fromId": "acolyte-base-dark-ritual", "toId": "acolyte-base-darkness" },
-      { "fromId": "acolyte-base-dark-ritual", "toId": "acolyte-base-blood-offering" },
-      { "fromId": "acolyte-base-intelligence", "toId": "acolyte-base-minion-mastery" },
-      { "fromId": "acolyte-base-darkness", "toId": "acolyte-base-unholy-endurance" },
-      { "fromId": "acolyte-base-blood-offering", "toId": "acolyte-base-vitality-drain" },
-      { "fromId": "acolyte-base-minion-mastery", "toId": "acolyte-base-forbidden-knowledge" }
+      {
+        "fromId": "acolyte-base-dark-ritual",
+        "toId": "acolyte-base-intelligence"
+      },
+      {
+        "fromId": "acolyte-base-dark-ritual",
+        "toId": "acolyte-base-darkness"
+      },
+      {
+        "fromId": "acolyte-base-dark-ritual",
+        "toId": "acolyte-base-blood-offering"
+      },
+      {
+        "fromId": "acolyte-base-intelligence",
+        "toId": "acolyte-base-minion-mastery"
+      },
+      {
+        "fromId": "acolyte-base-darkness",
+        "toId": "acolyte-base-unholy-endurance"
+      },
+      {
+        "fromId": "acolyte-base-blood-offering",
+        "toId": "acolyte-base-vitality-drain"
+      },
+      {
+        "fromId": "acolyte-base-minion-mastery",
+        "toId": "acolyte-base-forbidden-knowledge"
+      }
     ]
   },
   "skills": [
@@ -30,19 +188,138 @@
       "masteryGatePoints": null,
       "skillTree": {
         "nodes": [
-          { "id": "acolyte-rip-blood-core", "name": "Rip Blood", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Rip blood from an enemy, dealing necrotic damage and life leeching.", "tags": ["NECROTIC", "LEECH"] }] },
-          { "id": "acolyte-rip-blood-rupture", "name": "Rupture", "x": 280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+10% Bleed chance on Rip Blood per point.", "tags": ["NECROTIC", "BLEED"] }] },
-          { "id": "acolyte-rip-blood-leech", "name": "Blood Feast", "x": 0, "y": 280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Life Leech from Rip Blood per point.", "tags": ["NECROTIC", "LEECH", "SUSTAIN"] }] },
-          { "id": "acolyte-rip-blood-piercing", "name": "Piercing", "x": 280, "y": 280, "size": "small", "maxPoints": 4, "effects": [{ "description": "+8% Necrotic Damage per point.", "tags": ["NECROTIC", "DAMAGE"] }] },
-          { "id": "acolyte-rip-blood-empowered", "name": "Empowered Strike", "x": 560, "y": 0, "size": "medium", "maxPoints": 4, "effects": [{ "description": "+12% Damage increase on consecutive hits per point.", "tags": ["NECROTIC", "DAMAGE", "BUFF"] }] },
-          { "id": "acolyte-rip-blood-explosive", "name": "Explosive Blood", "x": -280, "y": 0, "size": "small", "maxPoints": 4, "effects": [{ "description": "Blood projectiles explode on impact dealing +10% area damage per point.", "tags": ["NECROTIC", "AREA"] }] }
+          {
+            "id": "acolyte-rip-blood-core",
+            "name": "Rip Blood",
+            "x": 0,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 1,
+            "effects": [
+              {
+                "description": "Rip blood from an enemy, dealing necrotic damage and life leeching.",
+                "tags": [
+                  "NECROTIC",
+                  "LEECH"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "acolyte-rip-blood-rupture",
+            "name": "Rupture",
+            "x": 280,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+10% Bleed chance on Rip Blood per point.",
+                "tags": [
+                  "NECROTIC",
+                  "BLEED"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "acolyte-rip-blood-leech",
+            "name": "Blood Feast",
+            "x": 0,
+            "y": 280,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+4% Life Leech from Rip Blood per point.",
+                "tags": [
+                  "NECROTIC",
+                  "LEECH",
+                  "SUSTAIN"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "acolyte-rip-blood-piercing",
+            "name": "Piercing",
+            "x": 280,
+            "y": 280,
+            "size": "small",
+            "maxPoints": 4,
+            "effects": [
+              {
+                "description": "+8% Necrotic Damage per point.",
+                "tags": [
+                  "NECROTIC",
+                  "DAMAGE"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "acolyte-rip-blood-empowered",
+            "name": "Empowered Strike",
+            "x": 560,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 4,
+            "effects": [
+              {
+                "description": "+12% Damage increase on consecutive hits per point.",
+                "tags": [
+                  "NECROTIC",
+                  "DAMAGE",
+                  "BUFF"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "acolyte-rip-blood-explosive",
+            "name": "Explosive Blood",
+            "x": -280,
+            "y": 0,
+            "size": "small",
+            "maxPoints": 4,
+            "effects": [
+              {
+                "description": "Blood projectiles explode on impact dealing +10% area damage per point.",
+                "tags": [
+                  "NECROTIC",
+                  "AREA"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          }
         ],
         "edges": [
-          { "fromId": "acolyte-rip-blood-core", "toId": "acolyte-rip-blood-rupture" },
-          { "fromId": "acolyte-rip-blood-core", "toId": "acolyte-rip-blood-leech" },
-          { "fromId": "acolyte-rip-blood-core", "toId": "acolyte-rip-blood-explosive" },
-          { "fromId": "acolyte-rip-blood-rupture", "toId": "acolyte-rip-blood-piercing" },
-          { "fromId": "acolyte-rip-blood-rupture", "toId": "acolyte-rip-blood-empowered" }
+          {
+            "fromId": "acolyte-rip-blood-core",
+            "toId": "acolyte-rip-blood-rupture"
+          },
+          {
+            "fromId": "acolyte-rip-blood-core",
+            "toId": "acolyte-rip-blood-leech"
+          },
+          {
+            "fromId": "acolyte-rip-blood-core",
+            "toId": "acolyte-rip-blood-explosive"
+          },
+          {
+            "fromId": "acolyte-rip-blood-rupture",
+            "toId": "acolyte-rip-blood-piercing"
+          },
+          {
+            "fromId": "acolyte-rip-blood-rupture",
+            "toId": "acolyte-rip-blood-empowered"
+          }
         ]
       }
     },
@@ -53,19 +330,136 @@
       "masteryGatePoints": 20,
       "skillTree": {
         "nodes": [
-          { "id": "acolyte-harvest-core", "name": "Harvest", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Harvest necrotic energy from a target, dealing damage and restoring health.", "tags": ["NECROTIC", "LEECH"] }] },
-          { "id": "acolyte-harvest-radius", "name": "Reap", "x": 280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+10% Harvest area of effect per point.", "tags": ["NECROTIC", "AREA"] }] },
-          { "id": "acolyte-harvest-leech", "name": "Soul Siphon", "x": 0, "y": 280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Life Leech from Harvest per point.", "tags": ["NECROTIC", "LEECH"] }] },
-          { "id": "acolyte-harvest-minions", "name": "Reanimation", "x": 280, "y": 280, "size": "small", "maxPoints": 4, "effects": [{ "description": "+15% chance to reanimate killed enemies as temporary minions per point.", "tags": ["NECROTIC", "MINION"] }] },
-          { "id": "acolyte-harvest-speed", "name": "Rapid Harvest", "x": 560, "y": 0, "size": "small", "maxPoints": 4, "effects": [{ "description": "-0.1 seconds Harvest cooldown per point.", "tags": ["NECROTIC", "COOLDOWN"] }] },
-          { "id": "acolyte-harvest-ward", "name": "Ward Harvest", "x": -280, "y": 0, "size": "medium", "maxPoints": 4, "effects": [{ "description": "Harvest generates 10 Ward in addition to health per point.", "tags": ["NECROTIC", "WARD"] }] }
+          {
+            "id": "acolyte-harvest-core",
+            "name": "Harvest",
+            "x": 0,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 1,
+            "effects": [
+              {
+                "description": "Harvest necrotic energy from a target, dealing damage and restoring health.",
+                "tags": [
+                  "NECROTIC",
+                  "LEECH"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "acolyte-harvest-radius",
+            "name": "Reap",
+            "x": 280,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+10% Harvest area of effect per point.",
+                "tags": [
+                  "NECROTIC",
+                  "AREA"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "acolyte-harvest-leech",
+            "name": "Soul Siphon",
+            "x": 0,
+            "y": 280,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+5% Life Leech from Harvest per point.",
+                "tags": [
+                  "NECROTIC",
+                  "LEECH"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "acolyte-harvest-minions",
+            "name": "Reanimation",
+            "x": 280,
+            "y": 280,
+            "size": "small",
+            "maxPoints": 4,
+            "effects": [
+              {
+                "description": "+15% chance to reanimate killed enemies as temporary minions per point.",
+                "tags": [
+                  "NECROTIC",
+                  "MINION"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "acolyte-harvest-speed",
+            "name": "Rapid Harvest",
+            "x": 560,
+            "y": 0,
+            "size": "small",
+            "maxPoints": 4,
+            "effects": [
+              {
+                "description": "-0.1 seconds Harvest cooldown per point.",
+                "tags": [
+                  "NECROTIC",
+                  "COOLDOWN"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "acolyte-harvest-ward",
+            "name": "Ward Harvest",
+            "x": -280,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 4,
+            "effects": [
+              {
+                "description": "Harvest generates 10 Ward in addition to health per point.",
+                "tags": [
+                  "NECROTIC",
+                  "WARD"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          }
         ],
         "edges": [
-          { "fromId": "acolyte-harvest-core", "toId": "acolyte-harvest-radius" },
-          { "fromId": "acolyte-harvest-core", "toId": "acolyte-harvest-leech" },
-          { "fromId": "acolyte-harvest-core", "toId": "acolyte-harvest-ward" },
-          { "fromId": "acolyte-harvest-radius", "toId": "acolyte-harvest-minions" },
-          { "fromId": "acolyte-harvest-radius", "toId": "acolyte-harvest-speed" }
+          {
+            "fromId": "acolyte-harvest-core",
+            "toId": "acolyte-harvest-radius"
+          },
+          {
+            "fromId": "acolyte-harvest-core",
+            "toId": "acolyte-harvest-leech"
+          },
+          {
+            "fromId": "acolyte-harvest-core",
+            "toId": "acolyte-harvest-ward"
+          },
+          {
+            "fromId": "acolyte-harvest-radius",
+            "toId": "acolyte-harvest-minions"
+          },
+          {
+            "fromId": "acolyte-harvest-radius",
+            "toId": "acolyte-harvest-speed"
+          }
         ]
       }
     }
@@ -76,24 +470,191 @@
       "name": "Lich",
       "passiveTree": {
         "nodes": [
-          { "id": "lich-passive-entry", "name": "Lich", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Become a Lich — sacrifice life for ultimate dark power", "tags": ["MASTERY"] }] },
-          { "id": "lich-passive-reaper", "name": "Reaper Form", "x": 280, "y": 0, "size": "large", "maxPoints": 6, "effects": [{ "description": "+6% Necrotic Damage in Reaper Form per point. Reaper Form duration +1s.", "tags": ["NECROTIC", "TRANSFORMATION", "DAMAGE"] }] },
-          { "id": "lich-passive-death-seal", "name": "Death Seal", "x": -280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Damage. -4% Health per point (min 20% Health).", "tags": ["DAMAGE", "SACRIFICE", "HEALTH"] }] },
-          { "id": "lich-passive-marrow-shards", "name": "Marrow Shards", "x": 0, "y": 280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Bone and Necrotic Damage per point", "tags": ["NECROTIC", "DAMAGE"] }] },
-          { "id": "lich-passive-soul-feast", "name": "Soul Feast", "x": 0, "y": -280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "Killing enemies restores +4 Health and +1 Mana per point", "tags": ["HEALTH", "MANA", "LEECH", "KILL"] }] },
-          { "id": "lich-passive-death-chill", "name": "Death Chill", "x": 560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Cold and Necrotic Damage. Necrotic hits Chill per point.", "tags": ["COLD", "NECROTIC", "CHILL"] }] },
-          { "id": "lich-passive-unholy-communion", "name": "Unholy Communion", "x": -560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Necrotic Damage. Sacrificing Health boosts damage by 1% per 1% sacrificed.", "tags": ["NECROTIC", "SACRIFICE", "DAMAGE"] }] },
-          { "id": "lich-passive-lich-mastery", "name": "Lich Mastery", "x": 840, "y": 0, "size": "large", "maxPoints": 8, "effects": [{ "description": "+4% Necrotic Damage. +2% Necrotic Penetration. +3% Life Leech per point.", "tags": ["NECROTIC", "DAMAGE", "LEECH", "MASTERY"] }] }
+          {
+            "id": "lich-passive-entry",
+            "name": "Lich",
+            "x": 0,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 1,
+            "effects": [
+              {
+                "description": "Become a Lich — sacrifice life for ultimate dark power",
+                "tags": [
+                  "MASTERY"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "lich-passive-reaper",
+            "name": "Reaper Form",
+            "x": 280,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 6,
+            "effects": [
+              {
+                "description": "+6% Necrotic Damage in Reaper Form per point. Reaper Form duration +1s.",
+                "tags": [
+                  "NECROTIC",
+                  "TRANSFORMATION",
+                  "DAMAGE"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "lich-passive-death-seal",
+            "name": "Death Seal",
+            "x": -280,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+5% Damage. -4% Health per point (min 20% Health).",
+                "tags": [
+                  "DAMAGE",
+                  "SACRIFICE",
+                  "HEALTH"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "lich-passive-marrow-shards",
+            "name": "Marrow Shards",
+            "x": 0,
+            "y": 280,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+5% Bone and Necrotic Damage per point",
+                "tags": [
+                  "NECROTIC",
+                  "DAMAGE"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "lich-passive-soul-feast",
+            "name": "Soul Feast",
+            "x": 0,
+            "y": -280,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "Killing enemies restores +4 Health and +1 Mana per point",
+                "tags": [
+                  "HEALTH",
+                  "MANA",
+                  "LEECH",
+                  "KILL"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "lich-passive-death-chill",
+            "name": "Death Chill",
+            "x": 560,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+4% Cold and Necrotic Damage. Necrotic hits Chill per point.",
+                "tags": [
+                  "COLD",
+                  "NECROTIC",
+                  "CHILL"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "lich-passive-unholy-communion",
+            "name": "Unholy Communion",
+            "x": -560,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+5% Necrotic Damage. Sacrificing Health boosts damage by 1% per 1% sacrificed.",
+                "tags": [
+                  "NECROTIC",
+                  "SACRIFICE",
+                  "DAMAGE"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "lich-passive-lich-mastery",
+            "name": "Lich Mastery",
+            "x": 840,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 8,
+            "effects": [
+              {
+                "description": "+4% Necrotic Damage. +2% Necrotic Penetration. +3% Life Leech per point.",
+                "tags": [
+                  "NECROTIC",
+                  "DAMAGE",
+                  "LEECH",
+                  "MASTERY"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          }
         ],
         "edges": [
-          { "fromId": "lich-passive-entry", "toId": "lich-passive-reaper" },
-          { "fromId": "lich-passive-entry", "toId": "lich-passive-death-seal" },
-          { "fromId": "lich-passive-entry", "toId": "lich-passive-marrow-shards" },
-          { "fromId": "lich-passive-entry", "toId": "lich-passive-soul-feast" },
-          { "fromId": "lich-passive-reaper", "toId": "lich-passive-death-chill" },
-          { "fromId": "lich-passive-death-seal", "toId": "lich-passive-unholy-communion" },
-          { "fromId": "lich-passive-death-chill", "toId": "lich-passive-lich-mastery" },
-          { "fromId": "lich-passive-unholy-communion", "toId": "lich-passive-lich-mastery" }
+          {
+            "fromId": "lich-passive-entry",
+            "toId": "lich-passive-reaper"
+          },
+          {
+            "fromId": "lich-passive-entry",
+            "toId": "lich-passive-death-seal"
+          },
+          {
+            "fromId": "lich-passive-entry",
+            "toId": "lich-passive-marrow-shards"
+          },
+          {
+            "fromId": "lich-passive-entry",
+            "toId": "lich-passive-soul-feast"
+          },
+          {
+            "fromId": "lich-passive-reaper",
+            "toId": "lich-passive-death-chill"
+          },
+          {
+            "fromId": "lich-passive-death-seal",
+            "toId": "lich-passive-unholy-communion"
+          },
+          {
+            "fromId": "lich-passive-death-chill",
+            "toId": "lich-passive-lich-mastery"
+          },
+          {
+            "fromId": "lich-passive-unholy-communion",
+            "toId": "lich-passive-lich-mastery"
+          }
         ]
       }
     },
@@ -102,24 +663,189 @@
       "name": "Necromancer",
       "passiveTree": {
         "nodes": [
-          { "id": "necromancer-passive-entry", "name": "Necromancer", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Become a Necromancer — raise an undead army", "tags": ["MASTERY"] }] },
-          { "id": "necromancer-passive-grave-words", "name": "Grave Words", "x": 280, "y": 0, "size": "large", "maxPoints": 6, "effects": [{ "description": "+5% Minion Damage per point", "tags": ["MINION", "DAMAGE"] }] },
-          { "id": "necromancer-passive-skeletal-army", "name": "Skeletal Army", "x": -280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+1 Max Skeleton per point (max +3)", "tags": ["MINION", "SKELETON"] }] },
-          { "id": "necromancer-passive-bone-curse", "name": "Bone Curse", "x": 0, "y": 280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Bone Golem Damage. Bone Curse reduces enemy armour by 5% per point.", "tags": ["NECROTIC", "ARMOUR_SHRED", "DEBUFF"] }] },
-          { "id": "necromancer-passive-wraith-form", "name": "Wraith Form", "x": 0, "y": -280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Wraith Damage. Wraiths have +8% Attack Speed per point.", "tags": ["MINION", "ATTACK_SPEED"] }] },
-          { "id": "necromancer-passive-death-knight", "name": "Death Knight", "x": 560, "y": 0, "size": "large", "maxPoints": 6, "effects": [{ "description": "+6% Skeleton Knight Damage and Health per point", "tags": ["MINION", "SKELETON", "DAMAGE", "HEALTH"] }] },
-          { "id": "necromancer-passive-spectral-army", "name": "Spectral Army", "x": -560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Minion Health per point. Minions have +3% Damage Reduction.", "tags": ["MINION", "HEALTH", "DEFENCE"] }] },
-          { "id": "necromancer-passive-necromancer-mastery", "name": "Necromancer Mastery", "x": 840, "y": 0, "size": "large", "maxPoints": 8, "effects": [{ "description": "+4% Minion Damage. +4% Minion Health. +1 Max Minion per point.", "tags": ["MINION", "DAMAGE", "HEALTH", "MASTERY"] }] }
+          {
+            "id": "necromancer-passive-entry",
+            "name": "Necromancer",
+            "x": 0,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 1,
+            "effects": [
+              {
+                "description": "Become a Necromancer — raise an undead army",
+                "tags": [
+                  "MASTERY"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "necromancer-passive-grave-words",
+            "name": "Grave Words",
+            "x": 280,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 6,
+            "effects": [
+              {
+                "description": "+5% Minion Damage per point",
+                "tags": [
+                  "MINION",
+                  "DAMAGE"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "necromancer-passive-skeletal-army",
+            "name": "Skeletal Army",
+            "x": -280,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+1 Max Skeleton per point (max +3)",
+                "tags": [
+                  "MINION",
+                  "SKELETON"
+                ]
+              }
+            ],
+            "modifierType": "flat"
+          },
+          {
+            "id": "necromancer-passive-bone-curse",
+            "name": "Bone Curse",
+            "x": 0,
+            "y": 280,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+5% Bone Golem Damage. Bone Curse reduces enemy armour by 5% per point.",
+                "tags": [
+                  "NECROTIC",
+                  "ARMOUR_SHRED",
+                  "DEBUFF"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "necromancer-passive-wraith-form",
+            "name": "Wraith Form",
+            "x": 0,
+            "y": -280,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+4% Wraith Damage. Wraiths have +8% Attack Speed per point.",
+                "tags": [
+                  "MINION",
+                  "ATTACK_SPEED"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "necromancer-passive-death-knight",
+            "name": "Death Knight",
+            "x": 560,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 6,
+            "effects": [
+              {
+                "description": "+6% Skeleton Knight Damage and Health per point",
+                "tags": [
+                  "MINION",
+                  "SKELETON",
+                  "DAMAGE",
+                  "HEALTH"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "necromancer-passive-spectral-army",
+            "name": "Spectral Army",
+            "x": -560,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+5% Minion Health per point. Minions have +3% Damage Reduction.",
+                "tags": [
+                  "MINION",
+                  "HEALTH",
+                  "DEFENCE"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "necromancer-passive-necromancer-mastery",
+            "name": "Necromancer Mastery",
+            "x": 840,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 8,
+            "effects": [
+              {
+                "description": "+4% Minion Damage. +4% Minion Health. +1 Max Minion per point.",
+                "tags": [
+                  "MINION",
+                  "DAMAGE",
+                  "HEALTH",
+                  "MASTERY"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          }
         ],
         "edges": [
-          { "fromId": "necromancer-passive-entry", "toId": "necromancer-passive-grave-words" },
-          { "fromId": "necromancer-passive-entry", "toId": "necromancer-passive-skeletal-army" },
-          { "fromId": "necromancer-passive-entry", "toId": "necromancer-passive-bone-curse" },
-          { "fromId": "necromancer-passive-entry", "toId": "necromancer-passive-wraith-form" },
-          { "fromId": "necromancer-passive-grave-words", "toId": "necromancer-passive-death-knight" },
-          { "fromId": "necromancer-passive-skeletal-army", "toId": "necromancer-passive-spectral-army" },
-          { "fromId": "necromancer-passive-death-knight", "toId": "necromancer-passive-necromancer-mastery" },
-          { "fromId": "necromancer-passive-spectral-army", "toId": "necromancer-passive-necromancer-mastery" }
+          {
+            "fromId": "necromancer-passive-entry",
+            "toId": "necromancer-passive-grave-words"
+          },
+          {
+            "fromId": "necromancer-passive-entry",
+            "toId": "necromancer-passive-skeletal-army"
+          },
+          {
+            "fromId": "necromancer-passive-entry",
+            "toId": "necromancer-passive-bone-curse"
+          },
+          {
+            "fromId": "necromancer-passive-entry",
+            "toId": "necromancer-passive-wraith-form"
+          },
+          {
+            "fromId": "necromancer-passive-grave-words",
+            "toId": "necromancer-passive-death-knight"
+          },
+          {
+            "fromId": "necromancer-passive-skeletal-army",
+            "toId": "necromancer-passive-spectral-army"
+          },
+          {
+            "fromId": "necromancer-passive-death-knight",
+            "toId": "necromancer-passive-necromancer-mastery"
+          },
+          {
+            "fromId": "necromancer-passive-spectral-army",
+            "toId": "necromancer-passive-necromancer-mastery"
+          }
         ]
       }
     },
@@ -128,24 +854,192 @@
       "name": "Warlock",
       "passiveTree": {
         "nodes": [
-          { "id": "warlock-passive-entry", "name": "Warlock", "x": 0, "y": 0, "size": "large", "maxPoints": 1, "effects": [{ "description": "Become a Warlock — unleash chaos and curses", "tags": ["MASTERY"] }] },
-          { "id": "warlock-passive-chaos-curse", "name": "Chaos Curse", "x": 280, "y": 0, "size": "large", "maxPoints": 6, "effects": [{ "description": "+5% Chaos Damage per point. Curses last +0.5s.", "tags": ["CHAOS", "DAMAGE", "CURSE"] }] },
-          { "id": "warlock-passive-bleed-and-poison", "name": "Bleed and Poison", "x": -280, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Bleed and Poison Damage per point", "tags": ["BLEED", "POISON", "DOT"] }] },
-          { "id": "warlock-passive-doom-call", "name": "Doom Call", "x": 0, "y": 280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% DoT Damage. Cursed enemies take +5% more DoT damage per point.", "tags": ["DOT", "CURSE", "DAMAGE"] }] },
-          { "id": "warlock-passive-pact-of-pain", "name": "Pact of Pain", "x": 0, "y": -280, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% Chaos Damage per point. Taking damage empowers next spell by 5% per point.", "tags": ["CHAOS", "REACTIVE", "DAMAGE"] }] },
-          { "id": "warlock-passive-void-corruption", "name": "Void Corruption", "x": 560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+5% Necrotic and Chaos Damage. Curse skills apply Void Corruption DoT.", "tags": ["NECROTIC", "CHAOS", "CURSE", "DOT"] }] },
-          { "id": "warlock-passive-eldritch-presence", "name": "Eldritch Presence", "x": -560, "y": 0, "size": "medium", "maxPoints": 5, "effects": [{ "description": "+4% reduced Chaos Damage taken. Chaos skills have +5% area per point.", "tags": ["CHAOS", "AREA", "DEFENCE"] }] },
-          { "id": "warlock-passive-warlock-mastery", "name": "Warlock Mastery", "x": 840, "y": 0, "size": "large", "maxPoints": 8, "effects": [{ "description": "+4% Chaos Damage. +3% DoT Damage. +2% Chaos Penetration per point.", "tags": ["CHAOS", "DOT", "PENETRATION", "MASTERY"] }] }
+          {
+            "id": "warlock-passive-entry",
+            "name": "Warlock",
+            "x": 0,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 1,
+            "effects": [
+              {
+                "description": "Become a Warlock — unleash chaos and curses",
+                "tags": [
+                  "MASTERY"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "warlock-passive-chaos-curse",
+            "name": "Chaos Curse",
+            "x": 280,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 6,
+            "effects": [
+              {
+                "description": "+5% Chaos Damage per point. Curses last +0.5s.",
+                "tags": [
+                  "CHAOS",
+                  "DAMAGE",
+                  "CURSE"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "warlock-passive-bleed-and-poison",
+            "name": "Bleed and Poison",
+            "x": -280,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+4% Bleed and Poison Damage per point",
+                "tags": [
+                  "BLEED",
+                  "POISON",
+                  "DOT"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "warlock-passive-doom-call",
+            "name": "Doom Call",
+            "x": 0,
+            "y": 280,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+5% DoT Damage. Cursed enemies take +5% more DoT damage per point.",
+                "tags": [
+                  "DOT",
+                  "CURSE",
+                  "DAMAGE"
+                ]
+              }
+            ],
+            "modifierType": "more"
+          },
+          {
+            "id": "warlock-passive-pact-of-pain",
+            "name": "Pact of Pain",
+            "x": 0,
+            "y": -280,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+4% Chaos Damage per point. Taking damage empowers next spell by 5% per point.",
+                "tags": [
+                  "CHAOS",
+                  "REACTIVE",
+                  "DAMAGE"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "warlock-passive-void-corruption",
+            "name": "Void Corruption",
+            "x": 560,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+5% Necrotic and Chaos Damage. Curse skills apply Void Corruption DoT.",
+                "tags": [
+                  "NECROTIC",
+                  "CHAOS",
+                  "CURSE",
+                  "DOT"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "warlock-passive-eldritch-presence",
+            "name": "Eldritch Presence",
+            "x": -560,
+            "y": 0,
+            "size": "medium",
+            "maxPoints": 5,
+            "effects": [
+              {
+                "description": "+4% reduced Chaos Damage taken. Chaos skills have +5% area per point.",
+                "tags": [
+                  "CHAOS",
+                  "AREA",
+                  "DEFENCE"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          },
+          {
+            "id": "warlock-passive-warlock-mastery",
+            "name": "Warlock Mastery",
+            "x": 840,
+            "y": 0,
+            "size": "large",
+            "maxPoints": 8,
+            "effects": [
+              {
+                "description": "+4% Chaos Damage. +3% DoT Damage. +2% Chaos Penetration per point.",
+                "tags": [
+                  "CHAOS",
+                  "DOT",
+                  "PENETRATION",
+                  "MASTERY"
+                ]
+              }
+            ],
+            "modifierType": "increased"
+          }
         ],
         "edges": [
-          { "fromId": "warlock-passive-entry", "toId": "warlock-passive-chaos-curse" },
-          { "fromId": "warlock-passive-entry", "toId": "warlock-passive-bleed-and-poison" },
-          { "fromId": "warlock-passive-entry", "toId": "warlock-passive-doom-call" },
-          { "fromId": "warlock-passive-entry", "toId": "warlock-passive-pact-of-pain" },
-          { "fromId": "warlock-passive-chaos-curse", "toId": "warlock-passive-void-corruption" },
-          { "fromId": "warlock-passive-bleed-and-poison", "toId": "warlock-passive-eldritch-presence" },
-          { "fromId": "warlock-passive-void-corruption", "toId": "warlock-passive-warlock-mastery" },
-          { "fromId": "warlock-passive-eldritch-presence", "toId": "warlock-passive-warlock-mastery" }
+          {
+            "fromId": "warlock-passive-entry",
+            "toId": "warlock-passive-chaos-curse"
+          },
+          {
+            "fromId": "warlock-passive-entry",
+            "toId": "warlock-passive-bleed-and-poison"
+          },
+          {
+            "fromId": "warlock-passive-entry",
+            "toId": "warlock-passive-doom-call"
+          },
+          {
+            "fromId": "warlock-passive-entry",
+            "toId": "warlock-passive-pact-of-pain"
+          },
+          {
+            "fromId": "warlock-passive-chaos-curse",
+            "toId": "warlock-passive-void-corruption"
+          },
+          {
+            "fromId": "warlock-passive-bleed-and-poison",
+            "toId": "warlock-passive-eldritch-presence"
+          },
+          {
+            "fromId": "warlock-passive-void-corruption",
+            "toId": "warlock-passive-warlock-mastery"
+          },
+          {
+            "fromId": "warlock-passive-eldritch-presence",
+            "toId": "warlock-passive-warlock-mastery"
+          }
         ]
       }
     }

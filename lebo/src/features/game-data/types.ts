@@ -11,6 +11,7 @@ export interface RawGameNode {
   size: 'small' | 'medium' | 'large'
   maxPoints: number
   effects: RawNodeEffect[]
+  modifierType?: 'increased' | 'more' | 'flat'
 }
 
 export interface RawEdge {

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
-  "gameVersion": "1.4.4",
-  "dataVersion": "1.1.0",
-  "generatedAt": "2026-04-22T00:00:00Z",
+  "gameVersion": "Season 4 (Shattered Omens)",
+  "dataVersion": "s4.1",
+  "generatedAt": "2026-03-26T00:00:00Z",
   "classes": ["sentinel", "mage", "primalist", "acolyte", "rogue"],
   "itemDataVersion": "1.0.0",
   "iconCacheVersion": "1.0.0",
