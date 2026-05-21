@@ -1420,6 +1420,40 @@ None — implementation matched specs exactly. Rust compiled cleanly in first pa
 
 ### Review Findings
 
+#### Decision-Needed
+
+- [ ] [Review][Decision] **conditionsDatabase has no staleness tracking** — `idolData` and `blessingsDatabase` each have a 4-field staleness cluster (`isXStale`, `xStaleAcknowledged`, `setIsXStale`, `acknowledgeXStaleness`). `conditionsDatabase` has none, and `GameDataManifest` has no `conditions_data_version` field. Is this intentional (conditions data is static and doesn't need versioning) or an oversight? Options: A) intentional — dismiss; B) add flags preemptively now; C) defer to Epic 3.
+
+- [ ] [Review][Decision] **`sigil_of_hope_active` filter uses `classId: "sentinel"` but spec says "(Paladin)"** — Paladin is a Sentinel *mastery*, not the base class. If Epic 3 filters by mastery ID, the condition will never activate for Paladin builds. If it filters by base class (any Sentinel mastery), the current value is correct. Options: A) intended — all Sentinel masteries can use Sigil of Hope; B) bug — change to mastery-specific filter; C) defer until Epic 3 implements filtering logic. [`lebo/src-tauri/resources/context-data/conditions.json`]
+
+- [ ] [Review][Decision] **`isIdolDataUpdating`/`isBlessingsDataUpdating` flags missing vs. item pattern** — The item data has a 3-field cluster: `isStale`, `staleAcknowledged`, `isUpdating`. The new idol and blessings entries have only 2 fields each. AC#2 says flags must follow the "identical initialization pattern as `isItemDataStale`." No `update_idol_data` or `update_blessings_data` command exists yet (intentionally deferred). Options: A) add updating flags preemptively now; B) defer — add when update commands exist; C) dismiss — "identical pattern" refers to initialization values, not the full field set. [`lebo/src/shared/stores/gameDataStore.ts`]
+
+- [ ] [Review][Decision] **No tests for new store fields or loaders** — `itemDatabaseLoader.test.ts` covers all item loader paths (success, throw, staleness). `gameDataStore.test.ts` covers all store initial state. This diff adds 8 new store fields and 5 new loader functions with zero corresponding test coverage. Options: A) add tests now (following `itemDatabaseLoader.test.ts` and `gameDataStore.test.ts` as pattern); B) defer to a dedicated test-coverage story.
+
+#### Patch
+
+- [ ] [Review][Patch] **Race condition in `copy_bundled_context_resources` on first cold install** — App.tsx fires `loadIdolData`, `loadBlessingsData`, `loadConditionsData` concurrently (no await). Each Tauri command calls `copy_bundled_context_resources`, which checks `files.iter().all(exists)` — all three pass the check simultaneously on a fresh install, then race to `fs::copy` the same destination files. On Windows this yields `ERROR_SHARING_VIOLATION` (OS error 32), causing one or two loaders to fail on first launch. Fix: replace the all-or-nothing guard with per-file existence checks so only missing files are copied, and use `fs::copy` which atomically replaces the destination. [`lebo/src-tauri/src/services/context_data_service.rs:19-35`]
+
+- [ ] [Review][Patch] **Freshness commands propagate `NETWORK_ERROR`/`STORAGE_ERROR` prefixes instead of `CONTEXT_DATA_ERROR`** — `check_idol_data_freshness` and `check_blessings_data_freshness` call `game_data_service::fetch_remote_manifest` and `load_manifest`, which return errors prefixed with `NETWORK_ERROR:` and `STORAGE_ERROR:`. The spec constraint requires all errors from context data commands use `CONTEXT_DATA_ERROR:` prefix. Fix: add `.map_err(|e| format!("CONTEXT_DATA_ERROR: {}", e))` wrapping both inner service calls in each freshness command. [`lebo/src-tauri/src/commands/context_data_commands.rs:28-44, 47-64`]
+
+- [ ] [Review][Patch] **`options?: ConditionOption[]` in TypeScript misleads consumers** — The Rust model uses `#[serde(default)]` on `Vec<ConditionOption>`, which always serializes as `[]` (empty array) when the JSON field is absent — never as missing/undefined. The TypeScript type `options?: ConditionOption[]` implies `undefined` is possible, but over IPC consumers always receive `[]`. Any guard using `if (!condition.options)` will fail. Fix: change to `options: ConditionOption[]` (non-optional, always an array). [`lebo/src/shared/types/contextDatabase.ts:70`]
+
+- [ ] [Review][Patch] **`display_label` non-optional in Rust without `#[serde(default)]`** — `pub display_label: String` in `ConditionEntry` has no `#[serde(default)]`. If any future `conditions.json` entry omits `displayLabel`, serde will return a deserialization error at runtime. All current entries are correct, but the model is unnecessarily fragile. Fix: add `#[serde(default)]` (gives empty string on missing field, making the model forward-compatible). [`lebo/src-tauri/src/models/context_data.rs:98`]
+
+#### Defer
+
+- [x] [Review][Defer] **Double remote manifest fetch when both freshness checks are called together** [`context_data_commands.rs`] — deferred, pre-existing. `check_idol_data_freshness` and `check_blessings_data_freshness` each independently call `fetch_remote_manifest`, resulting in two network requests to the same URL. Not wired up yet; fix by sharing a single fetch when both are called in Epic 3.
+
+- [x] [Review][Defer] **`acknowledgeIdolDataStaleness` doesn't reset `idolDataStaleAcknowledged` when stale is re-set** [`gameDataStore.ts`] — deferred, pre-existing. `setIsIdolDataStale(true)` after acknowledgment leaves `idolDataStaleAcknowledged: true`, hiding the re-appeared indicator. Same flaw exists for blessings. Pre-existing pattern from item data; fix when staleness UI is implemented.
+
+- [x] [Review][Defer] **Freshness loader functions have no error state on failure** [`contextDatabaseLoader.ts:34-42`] — deferred, pre-existing. `checkIdolDataFreshness`/`checkBlessingsDataFreshness` propagate errors without setting any store state. Consistent with `checkItemDataFreshness` pattern; add `.catch()` callsite guards when wired up in Epic 3.
+
+- [x] [Review][Defer] **Triple redundant `copy_bundled_context_resources` calls on every startup (beyond first)** [`context_data_service.rs`] — deferred, pre-existing. After first install, all three loaders fire the existence check separately (9 filesystem stat calls). Correct but wasteful; consistent with item data service pattern.
+
+- [x] [Review][Defer] **`versions_behind` hard-coded to 0 or 1, not a real version distance** [`context_data_commands.rs:37,57`] — deferred, pre-existing. Consistent with `item_data_service` convention; revisit if multi-version upgrade paths are ever needed.
+
+- [x] [Review][Defer] **TypeScript narrow union types (`'prefix' | 'suffix'`, `'increased' | 'more' | 'flat'`, etc.) not validated in Rust** [`context_data.rs`, `contextDatabase.ts`] — deferred, pre-existing. Project-wide pattern; Rust accepts any `String`, TypeScript narrows post-IPC. Low risk since data is controlled. No change warranted.
+
 ## Change Log
 
 - 2026-05-21: Story 1.4 created — new game database files and staleness integration
