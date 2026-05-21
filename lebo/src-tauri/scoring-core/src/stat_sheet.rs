@@ -32,7 +32,6 @@ pub struct DefenseStats {
     pub physical_resistance: f64,
     pub crit_avoidance: f64,
     pub dodge_chance: f64,
-    // Added in Story 2.3 — used by floor check and Defense/Other stat sheet tabs
     pub life_leech_percent: f64,
     pub hp_regen_per_sec: f64,
 }

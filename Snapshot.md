@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Run `/bmad-code-review` on story 2.3 with a fresh LLM instance before moving to story 2.4 (Tauri IPC wiring).
+Await user decision on patch application method (confirm, defer, or walk-through), then execute and close story 2.3 review.
 
 ---
 

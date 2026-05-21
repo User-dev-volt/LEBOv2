@@ -365,6 +365,7 @@ fn compute_speed(registry: &ModifierRegistry, active: &[String]) -> f64 {
 const RESISTANCE_CAP: f64 = 75.0;
 const CRIT_AVOIDANCE_FLOOR: f64 = 80.0;
 const HP_REGEN_SUSTAIN_THRESHOLD: f64 = 100.0;
+const MAX_SUFFIXES_PER_SLOT: usize = 2;
 
 fn run_floor_check(defense: &DefenseStats, snapshot: &BuildSnapshot) -> Vec<StatWarning> {
     let mut warnings = Vec::new();
@@ -417,7 +418,7 @@ fn run_floor_check(defense: &DefenseStats, snapshot: &BuildSnapshot) -> Vec<Stat
     warnings
 }
 
-/// Finds the first gear slot with an open suffix slot (< 2 suffixes).
+/// Finds the first gear slot with fewer than `MAX_SUFFIXES_PER_SLOT` suffixes.
 /// Preference order: helm → chest → gloves → boots → belt → amulet → ring_1 → ring_2.
 /// Falls back to "helm" if no snapshot gear data is present.
 fn find_slot_with_open_suffix(snapshot: &BuildSnapshot) -> Option<String> {
@@ -426,7 +427,7 @@ fn find_slot_with_open_suffix(snapshot: &BuildSnapshot) -> Option<String> {
     ];
     for slot_id in PRIORITY {
         match snapshot.gear_slots.get(*slot_id) {
-            Some(slot) if slot.suffixes.len() < 2 => return Some(slot_id.to_string()),
+            Some(slot) if slot.suffixes.len() < MAX_SUFFIXES_PER_SLOT => return Some(slot_id.to_string()),
             None => return Some(slot_id.to_string()),
             _ => {}
         }

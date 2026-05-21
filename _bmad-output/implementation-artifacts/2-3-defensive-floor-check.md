@@ -1,6 +1,6 @@
 # Story 2.3: Defensive Floor Check
 
-Status: review
+Status: done
 
 ## Story
 
@@ -75,8 +75,8 @@ so that I never receive offensive optimization suggestions while my build has su
 
 ### Review Findings
 
-- [ ] [Review][Patch] Remove story reference comment from `DefenseStats` [stat_sheet.rs:34]
-- [ ] [Review][Patch] Extract suffix-cap magic number to named constant in `find_slot_with_open_suffix` [compute.rs, `slot.suffixes.len() < 2`]
+- [x] [Review][Patch] Remove story reference comment from `DefenseStats` [stat_sheet.rs:34]
+- [x] [Review][Patch] Extract suffix-cap magic number to named constant in `find_slot_with_open_suffix` [compute.rs, `slot.suffixes.len() < 2`]
 - [x] [Review][Defer] `no_sustain_layer` warning uses `current_value: 0.0, gap: 0.0` — no semantic value; downstream renderer risk [compute.rs] — deferred, Story 2.5 defines warning rendering
 - [x] [Review][Defer] HP_REGEN sustain boundary (exactly 100.0 and 99.9) not covered by any test [compute.rs] — deferred, pre-existing test gap
 
