@@ -615,42 +615,6 @@
               }
             ],
             "modifierType": "increased"
-          },
-          {
-            "id": "bladedancer-s4-shadow-weave",
-            "name": "Shadow Weave",
-            "x": 560,
-            "y": -280,
-            "size": "medium",
-            "maxPoints": 5,
-            "effects": [
-              {
-                "description": "+6% Shadow Damage per point. Shades last 1 second longer.",
-                "tags": [
-                  "SHADOW",
-                  "DAMAGE"
-                ]
-              }
-            ],
-            "modifierType": "increased"
-          },
-          {
-            "id": "bladedancer-s4-echo-strike",
-            "name": "Echo Strike",
-            "x": 840,
-            "y": -280,
-            "size": "small",
-            "maxPoints": 4,
-            "effects": [
-              {
-                "description": "+12% chance to repeat the last melee hit per point",
-                "tags": [
-                  "MELEE",
-                  "PHYSICAL"
-                ]
-              }
-            ],
-            "modifierType": "increased"
           }
         ],
         "edges": [
@@ -685,10 +649,6 @@
           {
             "fromId": "bladedancer-passive-shadow-weave",
             "toId": "bladedancer-passive-bladedancer-mastery"
-          },
-          {
-            "fromId": "bladedancer-s4-shadow-weave",
-            "toId": "bladedancer-s4-echo-strike"
           }
         ]
       }

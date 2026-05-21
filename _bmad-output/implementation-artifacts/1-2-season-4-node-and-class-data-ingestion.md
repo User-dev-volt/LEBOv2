@@ -1,6 +1,6 @@
 # Story 1.2: Season 4 Node & Class Data Ingestion
 
-Status: review
+Status: done
 
 ## Story
 
@@ -497,8 +497,8 @@ None — implementation was straightforward with no blockers.
 
 ### Review Findings
 
-- [ ] [Review][Decision] S4 nodes are floating islands — `spellblade-s4-void-lance` and `bladedancer-s4-shadow-weave` have no anchor edge from any existing tree node; they appear as disconnected subgraphs. In the tree renderer, both root S4 nodes will have `prerequisiteNodeIds: []` (always `'available'`) but cannot be reached via normal allocation traversal. Decide: add an anchor edge to an existing node before shipping, or accept as intentional placeholder behavior.
-- [ ] [Review][Decision] Duplicate "Shadow Weave" display name — `bladedancer-s4-shadow-weave` (injected S4 node) shares the same `name: "Shadow Weave"` as the existing `bladedancer-passive-shadow-weave` node in the same mastery tree. Different IDs so no data corruption, but any name-based UI lookup or tooltip will surface two identically-named entries. Decide: rename the S4 node (e.g., "Shadow Weave (S4)") or keep as-is pending real data from lastepochtools.com.
+- [x] [Review][Decision] S4 nodes were placeholder data — RESOLVED: dev agent skipped the spec-required verification against lastepochtools.com. Researched real patch notes; replaced fake Spellblade nodes (Void Lance Mastery, Arcane Infusion) with actual S4 additions (Conjured Armor, Blade Conduit) anchored to `spellblade-passive-mana-shield`. Removed fake Bladedancer nodes entirely (Season 4 Bladedancer changes were node replacements, not additions). Updated `annotate_s4_nodes.py` S4_ADDITIONS to match.
+- [x] [Review][Decision] Duplicate "Shadow Weave" display name — RESOLVED: fake Bladedancer S4 nodes removed; the real S4 Bladedancer tree had no new injected nodes, so the name collision no longer exists.
 - [x] [Review][Defer] `MANIFEST_PATH` is declared and conditionally reassigned but never read by any function — dead variable in utility script [scripts/annotate_s4_nodes.py] — deferred, cosmetic dead code in one-time pipeline script
 - [x] [Review][Defer] `resolve_tree` hardcodes sub-tree field name instead of using `parts[2]` — fragile for future additions but correct for current S4_ADDITIONS keys [scripts/annotate_s4_nodes.py:resolve_tree] — deferred, pre-existing fragility in utility script
 - [x] [Review][Defer] `modifier_type: Option<String>` (Rust) accepts any string — loses type-safety vs the closed union on the TypeScript side [src-tauri/src/models/game_data.rs] — deferred, intentional per-spec; address when Epic 2 scoring consumes the field

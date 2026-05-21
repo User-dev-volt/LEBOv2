@@ -85,54 +85,36 @@ def resolve_tree(data: dict, tree_key: str) -> dict | None:
     return None
 
 # ── Season 4 additions ──────────────────────────────────────────────────────
+# Sources: Last Epoch 1.4 Shattered Omens patch notes (forum.lastepoch.com/t/80571)
+# and Maxroll.gg Season 4 hype-week article.
+#
+# Spellblade: two genuinely new nodes added in S4. Anchored off mana-shield.
+# Bladedancer: S4 changes were node replacements (Crimson Shroud->Grit, etc.),
+# not new additions — no injection needed for Bladedancer.
 S4_ADDITIONS = {
     "mage": {
         "masteries.spellblade.passiveTree": {
             "nodes": [
                 {
-                    "id": "spellblade-s4-void-lance",
-                    "name": "Void Lance Mastery",
+                    "id": "spellblade-s4-conjured-armor",
+                    "name": "Conjured Armor",
+                    "x": 280, "y": 280,
+                    "size": "medium",
+                    "maxPoints": 5,
+                    "effects": [{"description": "+10 Armour per point. +3 Ward per second per point. Threshold Bonus: Ward Retention equal to 10% of your Increased Armour.", "tags": ["ARMOUR", "WARD", "DEFENCE"]}]
+                },
+                {
+                    "id": "spellblade-s4-blade-conduit",
+                    "name": "Blade Conduit",
                     "x": 560, "y": 280,
-                    "size": "medium",
-                    "maxPoints": 5,
-                    "effects": [{"description": "+8% Void Spell Damage per point", "tags": ["VOID", "SPELL", "DAMAGE"]}]
-                },
-                {
-                    "id": "spellblade-s4-arcane-infusion",
-                    "name": "Arcane Infusion",
-                    "x": 840, "y": 280,
                     "size": "small",
                     "maxPoints": 4,
-                    "effects": [{"description": "Melee hits have 10% more damage for each active elemental aura per point", "tags": ["MELEE", "ELEMENTAL", "BUFF"]}]
+                    "effects": [{"description": "+12 Mana per point. 4% increased Mana Regeneration per Blade Conduit stack per point.", "tags": ["MANA"]}]
                 }
             ],
             "edges": [
-                {"fromId": "spellblade-s4-void-lance", "toId": "spellblade-s4-arcane-infusion"}
-            ]
-        }
-    },
-    "rogue": {
-        "masteries.bladedancer.passiveTree": {
-            "nodes": [
-                {
-                    "id": "bladedancer-s4-shadow-weave",
-                    "name": "Shadow Weave",
-                    "x": 560, "y": -280,
-                    "size": "medium",
-                    "maxPoints": 5,
-                    "effects": [{"description": "+6% Shadow Damage per point. Shades last 1 second longer.", "tags": ["SHADOW", "DAMAGE"]}]
-                },
-                {
-                    "id": "bladedancer-s4-echo-strike",
-                    "name": "Echo Strike",
-                    "x": 840, "y": -280,
-                    "size": "small",
-                    "maxPoints": 4,
-                    "effects": [{"description": "+12% chance to repeat the last melee hit per point", "tags": ["MELEE", "PHYSICAL"]}]
-                }
-            ],
-            "edges": [
-                {"fromId": "bladedancer-s4-shadow-weave", "toId": "bladedancer-s4-echo-strike"}
+                {"fromId": "spellblade-passive-mana-shield", "toId": "spellblade-s4-conjured-armor"},
+                {"fromId": "spellblade-s4-conjured-armor",   "toId": "spellblade-s4-blade-conduit"}
             ]
         }
     }

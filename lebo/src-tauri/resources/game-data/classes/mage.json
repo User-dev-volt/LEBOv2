@@ -812,42 +812,40 @@
             "modifierType": "increased"
           },
           {
-            "id": "spellblade-s4-void-lance",
-            "name": "Void Lance Mastery",
-            "x": 560,
+            "id": "spellblade-s4-conjured-armor",
+            "name": "Conjured Armor",
+            "x": 280,
             "y": 280,
             "size": "medium",
             "maxPoints": 5,
+            "modifierType": "flat",
             "effects": [
               {
-                "description": "+8% Void Spell Damage per point",
+                "description": "+10 Armour per point. +3 Ward per second per point. Threshold Bonus: Ward Retention equal to 10% of your Increased Armour.",
                 "tags": [
-                  "VOID",
-                  "SPELL",
-                  "DAMAGE"
+                  "ARMOUR",
+                  "WARD",
+                  "DEFENCE"
                 ]
               }
-            ],
-            "modifierType": "increased"
+            ]
           },
           {
-            "id": "spellblade-s4-arcane-infusion",
-            "name": "Arcane Infusion",
-            "x": 840,
+            "id": "spellblade-s4-blade-conduit",
+            "name": "Blade Conduit",
+            "x": 560,
             "y": 280,
             "size": "small",
             "maxPoints": 4,
+            "modifierType": "flat",
             "effects": [
               {
-                "description": "Melee hits have 10% more damage for each active elemental aura per point",
+                "description": "+12 Mana per point. 4% increased Mana Regeneration per Blade Conduit stack per point.",
                 "tags": [
-                  "MELEE",
-                  "ELEMENTAL",
-                  "BUFF"
+                  "MANA"
                 ]
               }
-            ],
-            "modifierType": "more"
+            ]
           }
         ],
         "edges": [
@@ -884,8 +882,12 @@
             "toId": "spellblade-passive-spellblade-mastery"
           },
           {
-            "fromId": "spellblade-s4-void-lance",
-            "toId": "spellblade-s4-arcane-infusion"
+            "fromId": "spellblade-passive-mana-shield",
+            "toId": "spellblade-s4-conjured-armor"
+          },
+          {
+            "fromId": "spellblade-s4-conjured-armor",
+            "toId": "spellblade-s4-blade-conduit"
           }
         ]
       }
