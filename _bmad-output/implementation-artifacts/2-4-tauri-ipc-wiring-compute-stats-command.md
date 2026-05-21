@@ -1,6 +1,6 @@
 # Story 2.4: Tauri IPC Wiring — `compute_stats` Command
 
-Status: review
+Status: done
 
 ## Story
 
@@ -570,6 +570,18 @@ Run in this exact order:
 - [Source: lebo/src-tauri/scoring-core/src/modifier.rs — StatKey enum variants]
 - [Source: lebo/src-tauri/scoring-core/src/compute.rs — resolve_archetype_weights fallback (empty table → 0.55/0.35/0.10)]
 - [Source: lebo/src-tauri/resources/game-data/classes/sentinel.json — disk format: description + tags + modifierType]
+
+### Review Findings
+
+- [x] [Review][Patch] Skill tree nodes double-processed — `class_data.skills` iterated inside mastery loop AND again at class level; inner loop is dead code doing redundant HashMap inserts [game_data_loader.rs ~line 44]
+- [x] [Review][Patch] `extract_value` silently inverts negative modifiers via `.abs()` — any node with a negative description value is corrupted to positive [game_data_loader.rs:extract_value]
+- [x] [Review][Patch] `extract_value` corrupts leading-dot floats — `"+.5"` parses as `5.0` not `0.5` because start is set to the digit index, skipping the leading dot [game_data_loader.rs:extract_value]
+- [x] [Review][Patch] WARD tag always maps to `WardPerSecond` regardless of `modifier_type` — flat ward nodes (e.g. "+50 ward") misclassified; HP branch correctly splits on modifier_type [game_data_loader.rs:tags_to_stat_key]
+- [x] [Review][Patch] Flat lightning melee damage maps to `FlatAddedColdDamage` — `has("COLD") || has("LIGHTNING")` flat branch silently assigns lightning to the wrong stat key [game_data_loader.rs:tags_to_stat_key]
+- [x] [Review][Defer] Startup `write().unwrap()` panics on poisoned RwLock [lib.rs:setup] — deferred, pre-existing pattern; poison in single-threaded setup is effectively impossible
+- [x] [Review][Defer] Fresh-install: `ensure_game_data_dir` returns before manifest exists, `load_manifest` fails, scoring silently falls back to base stats only [game_data_loader.rs] — deferred, pre-existing init-ordering issue; fallback acknowledged in code
+- [x] [Review][Defer] Bare CRIT catch-all in `tags_to_stat_key` — any unseen future crit tag silently classifies as `CriticalStrikeChance` [game_data_loader.rs:tags_to_stat_key] — deferred, future defensive concern
+- [x] [Review][Defer] Mastery-to-skill affinity context lost — skills inside mastery loop iterate all class skills, not mastery-scoped; `mastery_id` field ignored [game_data_loader.rs] — deferred, architectural limitation for future mastery-gated scoring in Epic 4
 
 ## Dev Agent Record
 

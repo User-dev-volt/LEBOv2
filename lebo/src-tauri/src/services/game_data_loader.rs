@@ -37,15 +37,6 @@ pub fn build_scoring_game_data(app_handle: &tauri::AppHandle) -> Result<GameData
                     node_effects.insert(node.id.clone(), effects);
                 }
             }
-            // Skill trees
-            for skill in &class_data.skills {
-                for node in &skill.skill_tree.nodes {
-                    let effects = parse_node_effects(&node.effects, &node.modifier_type);
-                    if !effects.is_empty() {
-                        node_effects.insert(node.id.clone(), effects);
-                    }
-                }
-            }
         }
 
         // Skills at class level
@@ -122,9 +113,8 @@ fn tags_to_stat_key(tags: &[String], modifier_type: &ModifierType) -> Option<Sta
         if has("MELEE") && *modifier_type == ModifierType::Flat {
             // "+N Melee Physical/Fire/etc. Damage" = flat added damage
             if has("FIRE") { return Some(StatKey::FlatAddedFireDamage); }
-            if has("COLD") || has("LIGHTNING") {
-                return Some(StatKey::FlatAddedColdDamage);
-            }
+            if has("COLD") { return Some(StatKey::FlatAddedColdDamage); }
+            if has("LIGHTNING") { return Some(StatKey::FlatAddedLightningDamage); }
             return Some(StatKey::FlatAddedPhysicalDamage);
         }
         if has("MELEE") { return Some(StatKey::IncreasedMeleeDamage); }
@@ -174,7 +164,14 @@ fn tags_to_stat_key(tags: &[String], modifier_type: &ModifierType) -> Option<Sta
 
     // Defense — Armor/Ward/Leech/Regen
     if has("ARMOUR") || has("ARMOR") { return Some(StatKey::Armor); }
-    if has("WARD") { return Some(StatKey::WardPerSecond); }
+    if has("WARD") {
+        // No FlatWard StatKey yet — flat ward nodes dropped (FR-A6) to avoid scoring flat
+        // values (50–200) as ward-per-second. Add a MaxWard/FlatWard key in Epic 4.
+        return match modifier_type {
+            ModifierType::Flat => None,
+            _ => Some(StatKey::WardPerSecond),
+        };
+    }
     if has("LEECH") { return Some(StatKey::LifeLeechPercent); }
     if has("REGEN") || has("REGENERATION") { return Some(StatKey::HpRegenPerSec); }
     if has("DODGE") { return Some(StatKey::DodgeRating); }
@@ -203,9 +200,10 @@ fn tags_to_stat_key(tags: &[String], modifier_type: &ModifierType) -> Option<Sta
 /// Extracts the first numeric value from a description string.
 /// "+4 Melee Physical Damage per point" → 4.0
 /// "+3% Melee Attack Speed per point" → 3.0
+/// "+.5% per point" → 0.5
 /// Returns None if no numeric value found (effect is dropped).
 fn extract_value(description: &str) -> Option<f64> {
-    // Find first sequence of digits (with optional leading +/- and decimal)
+    // Find first sequence of digits (with optional leading sign and/or dot)
     let mut start = None;
     let mut end = 0;
     let chars: Vec<char> = description.chars().collect();
@@ -213,9 +211,12 @@ fn extract_value(description: &str) -> Option<f64> {
     while i < chars.len() {
         if chars[i].is_ascii_digit() {
             if start.is_none() {
-                // Look back for optional sign
+                // Look back for optional leading dot and/or sign: handles "+5", ".5", "+.5"
                 start = Some(if i > 0 && (chars[i - 1] == '+' || chars[i - 1] == '-') {
                     i - 1
+                } else if i > 0 && chars[i - 1] == '.' {
+                    // leading-dot decimal; check for sign before the dot
+                    if i > 1 && (chars[i - 2] == '+' || chars[i - 2] == '-') { i - 2 } else { i - 1 }
                 } else {
                     i
                 });
@@ -228,7 +229,7 @@ fn extract_value(description: &str) -> Option<f64> {
         }
         i += 1;
     }
-    start.and_then(|s| description[s..end].parse::<f64>().ok().map(|v| v.abs()))
+    start.and_then(|s| description[s..end].parse::<f64>().ok())
 }
 
 /// Standard 5-band archetype weight table covering slider positions 0–100.
