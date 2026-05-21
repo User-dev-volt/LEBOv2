@@ -44,6 +44,7 @@ export interface UniqueItem {
   baseType: string
   slot: string
   affixes: UniqueItemAffix[]
+  description?: string
 }
 
 export interface ItemDatabase {

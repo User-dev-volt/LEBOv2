@@ -17,6 +17,12 @@ pub struct RawAffix {
     pub affix_type: String,
     pub item_slots: Vec<String>,
     pub tiers: Vec<AffixTier>,
+    #[serde(default)]
+    pub modifier_type: Option<String>,
+    #[serde(default)]
+    pub scope: Option<String>,
+    #[serde(default)]
+    pub damage_type: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -45,6 +51,8 @@ pub struct RawUniqueItem {
     pub base_type: String,
     pub slot: String,
     pub affixes: Vec<RawUniqueItemAffix>,
+    #[serde(default)]
+    pub description: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

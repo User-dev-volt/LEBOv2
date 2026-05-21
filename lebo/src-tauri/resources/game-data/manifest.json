@@ -4,7 +4,7 @@
   "dataVersion": "s4.1",
   "generatedAt": "2026-03-26T00:00:00Z",
   "classes": ["sentinel", "mage", "primalist", "acolyte", "rogue"],
-  "itemDataVersion": "1.0.0",
+  "itemDataVersion": "s4.1",
   "iconCacheVersion": "1.0.0",
   "iconSource": "placeholder"
 }

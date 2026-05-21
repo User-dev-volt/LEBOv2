@@ -1,6 +1,6 @@
 # Story 1.3: Season 4 Affix & Item Data Ingestion
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -32,45 +32,45 @@ so that the gear affix scorer can correctly weight affixes for any build's damag
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Extend `RawAffix` in Rust (AC: #4)
-  - [ ] Open `lebo/src-tauri/src/models/item_data.rs`
-  - [ ] Add `#[serde(default)] pub modifier_type: Option<String>` to `RawAffix`
-  - [ ] Add `#[serde(default)] pub scope: Option<String>` to `RawAffix`
-  - [ ] Add `#[serde(default)] pub damage_type: Option<String>` to `RawAffix`
-  - [ ] `#[serde(default)]` is required on all three — existing affixes.json without these fields must deserialize without error
+- [x] Task 1: Extend `RawAffix` in Rust (AC: #4)
+  - [x] Open `lebo/src-tauri/src/models/item_data.rs`
+  - [x] Add `#[serde(default)] pub modifier_type: Option<String>` to `RawAffix`
+  - [x] Add `#[serde(default)] pub scope: Option<String>` to `RawAffix`
+  - [x] Add `#[serde(default)] pub damage_type: Option<String>` to `RawAffix`
+  - [x] `#[serde(default)]` is required on all three — existing affixes.json without these fields must deserialize without error
 
-- [ ] Task 2: Extend `RawUniqueItem` in Rust for synergy descriptions (AC: #3)
-  - [ ] Open `lebo/src-tauri/src/models/item_data.rs`
-  - [ ] Add `#[serde(default)] pub description: Option<String>` to `RawUniqueItem`
-  - [ ] This field holds the unique's special effect summary for the synergy detector (Epic 4)
+- [x] Task 2: Extend `RawUniqueItem` in Rust for synergy descriptions (AC: #3)
+  - [x] Open `lebo/src-tauri/src/models/item_data.rs`
+  - [x] Add `#[serde(default)] pub description: Option<String>` to `RawUniqueItem`
+  - [x] This field holds the unique's special effect summary for the synergy detector (Epic 4)
 
-- [ ] Task 3: Extend `UniqueItem` TypeScript type (AC: #3)
-  - [ ] Open `lebo/src/shared/types/itemDatabase.ts`
-  - [ ] Add `description?: string` to the `UniqueItem` interface
-  - [ ] No other changes to this file — do NOT touch `AffixEntry` (already extended in story 1.1)
+- [x] Task 3: Extend `UniqueItem` TypeScript type (AC: #3)
+  - [x] Open `lebo/src/shared/types/itemDatabase.ts`
+  - [x] Add `description?: string` to the `UniqueItem` interface
+  - [x] No other changes to this file — do NOT touch `AffixEntry` (already extended in story 1.1)
 
-- [ ] Task 4: Write and run the affix annotation script (AC: #1, #2)
-  - [ ] Create `lebo/scripts/annotate_s4_affixes.py` (see Dev Notes for full script spec)
-  - [ ] Run: `python3 lebo/scripts/annotate_s4_affixes.py` from repo root
-  - [ ] Verify: all 4171+ affixes now have `modifierType`, `scope`, `damageType` fields
-  - [ ] Verify: fallback count logged for generic-classified entries
-  - [ ] Verify: Rune of Corruption affixes are present
+- [x] Task 4: Write and run the affix annotation script (AC: #1, #2)
+  - [x] Create `lebo/scripts/annotate_s4_affixes.py` (see Dev Notes for full script spec)
+  - [x] Run: `python3 lebo/scripts/annotate_s4_affixes.py` from repo root
+  - [x] Verify: all 4171+ affixes now have `modifierType`, `scope`, `damageType` fields
+  - [x] Verify: fallback count logged for generic-classified entries
+  - [x] Verify: Rune of Corruption affixes are present
 
-- [ ] Task 5: Update uniques.json with synergy descriptions (AC: #3)
-  - [ ] Open `lebo/src-tauri/resources/items/uniques.json`
-  - [ ] Add `"description"` field to Exsanguinous, Bleeding Heart, and Omnividence entries (see Dev Notes for exact values)
-  - [ ] Do NOT modify any other unique entries — only the three build-enabling synergy uniques
+- [x] Task 5: Update uniques.json with synergy descriptions (AC: #3)
+  - [x] Open `lebo/src-tauri/resources/items/uniques.json`
+  - [x] Add `"description"` field to Exsanguinous, Bleeding Heart, and Omnividence entries (see Dev Notes for exact values)
+  - [x] Do NOT modify any other unique entries — only the three build-enabling synergy uniques
 
-- [ ] Task 6: Update `manifest.json` item data version (AC: #4)
-  - [ ] Open `lebo/src-tauri/resources/game-data/manifest.json`
-  - [ ] Change `itemDataVersion` from `"1.0.0"` to `"s4.1"`
-  - [ ] Do NOT touch `schemaVersion`, `gameVersion`, `dataVersion`, `generatedAt`, `classes`, `iconCacheVersion`, `iconSource`
+- [x] Task 6: Update `manifest.json` item data version (AC: #4)
+  - [x] Open `lebo/src-tauri/resources/game-data/manifest.json`
+  - [x] Change `itemDataVersion` from `"1.0.0"` to `"s4.1"`
+  - [x] Do NOT touch `schemaVersion`, `gameVersion`, `dataVersion`, `generatedAt`, `classes`, `iconCacheVersion`, `iconSource`
 
-- [ ] Task 7: Verify end-to-end (AC: #4)
-  - [ ] Run `pnpm build` from `lebo/` — zero TypeScript errors required
-  - [ ] Run `cargo build` from `lebo/src-tauri/` — zero Rust errors required
-  - [ ] Run `pnpm vitest` — confirm no new regressions (8 pre-existing failures are expected from stories 1.1/1.2)
-  - [ ] Run verification script (see Dev Notes) to confirm all affixes have the three new fields
+- [x] Task 7: Verify end-to-end (AC: #4)
+  - [x] Run `pnpm build` from `lebo/` — zero TypeScript errors required
+  - [x] Run `cargo build` from `lebo/src-tauri/` — zero Rust errors required
+  - [x] Run `pnpm vitest` — confirm no new regressions (8 pre-existing failures are expected from stories 1.1/1.2)
+  - [x] Run verification script (see Dev Notes) to confirm all affixes have the three new fields
 
 ## Dev Notes
 
@@ -513,4 +513,22 @@ claude-sonnet-4-6
 
 ### Completion Notes List
 
+- Tasks 1–2: Extended `RawAffix` with `modifier_type`, `scope`, `damage_type` (all `Option<String>` with `#[serde(default)]`) and `RawUniqueItem` with `description: Option<String>`. All existing JSON without these fields deserializes cleanly.
+- Task 3: Added `description?: string` to `UniqueItem` TypeScript interface. `AffixEntry` already had the three affix annotation fields from story 1.1 — not touched.
+- Task 4: Created `lebo/scripts/annotate_s4_affixes.py`. Ran from repo root — annotated 4176 total entries (4171 original + 5 RoC injected). Scope fallback count: 4158 (expected — mostly unnamed-XXX entries). All verification assertions pass: 0 missing modifierType, 0 missing scope, 0 missing damageType, 5 RoC affixes present.
+- Task 5: Added `description` field to Exsanguinous, Bleeding Heart, and Omnividence in `uniques.json`. No other entries modified.
+- Task 6: Changed `itemDataVersion` from `"1.0.0"` to `"s4.1"` in `manifest.json`. No other fields touched.
+- Task 7: `pnpm build` — zero TypeScript errors. `cargo build` — zero Rust errors. `pnpm vitest` — exactly 8 pre-existing failures (ProviderSelector ×5, Settings ×1, SkillTreeCanvas ×1, TreeControls ×1). No new regressions.
+
 ### File List
+
+- `lebo/src-tauri/src/models/item_data.rs` — added `modifier_type`, `scope`, `damage_type` to `RawAffix`; added `description` to `RawUniqueItem`
+- `lebo/src/shared/types/itemDatabase.ts` — added `description?: string` to `UniqueItem`
+- `lebo/scripts/annotate_s4_affixes.py` — new file: S4 affix annotation pipeline
+- `lebo/src-tauri/resources/items/affixes.json` — all 4176 entries annotated with `modifierType`, `scope`, `damageType`; 5 RoC affixes injected
+- `lebo/src-tauri/resources/items/uniques.json` — `description` added to Exsanguinous, Bleeding Heart, Omnividence
+- `lebo/src-tauri/resources/game-data/manifest.json` — `itemDataVersion` bumped to `"s4.1"`
+
+## Change Log
+
+- 2026-05-21: Story 1.3 implemented — Season 4 affix annotation (4176 entries), Rune of Corruption affixes (5), synergy unique descriptions (3), Rust/TS type extensions, itemDataVersion bump to s4.1
