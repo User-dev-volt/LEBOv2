@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Submit for code review via `/bmad-code-review`; on approval, create story 1.3 (affix + item data ingestion) to continue Epic 1 critical path.
+- Await user [Y/N] on proceeding with parallel adversarial review layers, or indicate scope adjustments needed
 
 ---
 
