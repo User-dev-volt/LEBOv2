@@ -1,6 +1,6 @@
 # Story 2.2: Stage 1 — Build Score Function Implementation
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -40,58 +40,81 @@ so that every stat value I see in the app is mathematically correct rather than 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Expand `GameData` struct with node effect and scoring tables (AC: #1, #4, #5, #6)
-  - [ ] Add `NodeEffect` struct to `game_data.rs` (stat_key, modifier_type, value, condition)
-  - [ ] Add `ArchetypeWeights` struct to `game_data.rs` (w_dmg, w_surv, w_speed)
-  - [ ] Add `ArchetypeWeightsEntry` struct (slider_position upper bound + weights)
-  - [ ] Add `BaseClassStats` struct (base_hp, hp_per_level)
-  - [ ] Expand `GameData` with the four pub fields (see Dev Notes for exact definitions)
-  - [ ] Verify `GameData::default()` still compiles (all new fields are empty collections)
+- [x] Task 1: Expand `GameData` struct with node effect and scoring tables (AC: #1, #4, #5, #6)
+  - [x] Add `NodeEffect` struct to `game_data.rs` (stat_key, modifier_type, value, condition)
+  - [x] Add `ArchetypeWeights` struct to `game_data.rs` (w_dmg, w_surv, w_speed)
+  - [x] Add `ArchetypeWeightsEntry` struct (slider_position upper bound + weights)
+  - [x] Add `BaseClassStats` struct (base_hp, hp_per_level)
+  - [x] Expand `GameData` with the four pub fields (see Dev Notes for exact definitions)
+  - [x] Verify `GameData::default()` still compiles (all new fields are empty collections)
 
-- [ ] Task 2: Expand `BuildSnapshot` with gear, idol, and blessings fields (future IPC wiring)
-  - [ ] Add `GearSlotSnapshot` struct to `build_snapshot.rs` (slot_id, affix_entries — see Dev Notes)
-  - [ ] Add `AffixEntry` struct (affix_id, tier)
-  - [ ] Add `IdolPlacement` struct (row, col, idol_size, prefix_affix: Option<AffixEntry>, suffix_affix: Option<AffixEntry>)
-  - [ ] Add three new optional fields to `BuildSnapshot`: `gear_slots`, `idol_placements`, `blessings`
-  - [ ] All new fields use `#[serde(default)]` so existing serialized data deserializes without error
-  - [ ] Verify `BuildSnapshot::default()` still compiles
+- [x] Task 2: Expand `BuildSnapshot` with gear, idol, and blessings fields (future IPC wiring)
+  - [x] Add `GearSlotSnapshot` struct to `build_snapshot.rs` (slot_id, affix_entries — see Dev Notes)
+  - [x] Add `AffixEntry` struct (affix_id, tier)
+  - [x] Add `IdolPlacement` struct (row, col, idol_size, prefix_affix: Option<AffixEntry>, suffix_affix: Option<AffixEntry>)
+  - [x] Add three new optional fields to `BuildSnapshot`: `gear_slots`, `idol_placements`, `blessings`
+  - [x] All new fields use `#[serde(default)]` so existing serialized data deserializes without error
+  - [x] Verify `BuildSnapshot::default()` still compiles
 
-- [ ] Task 3: Create `scoring-core/src/compute.rs` with the `compute_stats` public function (AC: #1–#6)
-  - [ ] Implement `pub fn compute_stats(snapshot: &BuildSnapshot, game_data: &GameData, options: ComputeOptions) -> StatSheet`
-  - [ ] Implement `build_registry()` helper: iterate `snapshot.node_allocations`, look up each node's `NodeEffect`s in `game_data.node_effects`, add matching `Modifier`s to the registry (once per allocated point)
-  - [ ] Implement `compute_offense()`: sum Increased% modifiers, multiply More% modifiers, compute DamageScore; compute crit values (clamp crit chance to 1.0); compute crit-weighted average damage (see Dev Notes for exact formula)
-  - [ ] Implement `compute_defense()`: compute raw HP from class base + level scaling; compute Ward ratio; compute endurance multiplier; compute effective_hp = base_hp × (1 + ward_ratio) × (1 / (1 - endurance_pct)); count defensive layers; apply layer bonus
-  - [ ] Implement `compute_speed()`: sum MovementSpeed, AttackSpeed/CastSpeed, AoE modifiers; apply composite formula (see Dev Notes)
-  - [ ] Implement `resolve_archetype_weights()`: walk `game_data.archetype_weights` sorted by upper bound to find the entry covering `snapshot.slider_position`; fall back to balanced weights (0.55/0.35/0.10) if table is empty
-  - [ ] Compute `scores.build_score = w_dmg × scores.damage_score + w_surv × scores.survivability_score + w_speed × scores.speed_score`
-  - [ ] Return `StatSheet` with populated offense, defense, scores; `ailment: None`, `minion: None`, `warnings: vec![]` (warnings populated in Story 2.3)
+- [x] Task 3: Create `scoring-core/src/compute.rs` with the `compute_stats` public function (AC: #1–#6)
+  - [x] Implement `pub fn compute_stats(snapshot: &BuildSnapshot, game_data: &GameData, options: ComputeOptions) -> StatSheet`
+  - [x] Implement `build_registry()` helper: iterate `snapshot.node_allocations`, look up each node's `NodeEffect`s in `game_data.node_effects`, add matching `Modifier`s to the registry (once per allocated point)
+  - [x] Implement `compute_offense()`: sum Increased% modifiers, multiply More% modifiers, compute DamageScore; compute crit values (clamp crit chance to 1.0); compute crit-weighted average damage (see Dev Notes for exact formula)
+  - [x] Implement `compute_defense()`: compute raw HP from class base + level scaling; compute Ward ratio; compute endurance multiplier; compute effective_hp = base_hp × (1 + ward_ratio) × (1 / (1 - endurance_pct)); count defensive layers; apply layer bonus
+  - [x] Implement `compute_speed()`: sum MovementSpeed, AttackSpeed/CastSpeed, AoE modifiers; apply composite formula (see Dev Notes)
+  - [x] Implement `resolve_archetype_weights()`: walk `game_data.archetype_weights` sorted by upper bound to find the entry covering `snapshot.slider_position`; fall back to balanced weights (0.55/0.35/0.10) if table is empty
+  - [x] Compute `scores.build_score = w_dmg × scores.damage_score + w_surv × scores.survivability_score + w_speed × scores.speed_score`
+  - [x] Return `StatSheet` with populated offense, defense, scores; `ailment: None`, `minion: None`, `warnings: vec![]` (warnings populated in Story 2.3)
 
-- [ ] Task 4: Wire `compute_stats` into `lib.rs` (AC: #1–#6)
-  - [ ] Add `pub mod compute;` declaration to `lib.rs`
-  - [ ] Add `pub use compute::compute_stats;` to `lib.rs`
-  - [ ] Add `NodeEffect`, `ArchetypeWeights`, `ArchetypeWeightsEntry`, `BaseClassStats` to `lib.rs` re-exports from `game_data`
+- [x] Task 4: Wire `compute_stats` into `lib.rs` (AC: #1–#6)
+  - [x] Add `pub mod compute;` declaration to `lib.rs`
+  - [x] Add `pub use compute::compute_stats;` to `lib.rs`
+  - [x] Add `NodeEffect`, `ArchetypeWeights`, `ArchetypeWeightsEntry`, `BaseClassStats` to `lib.rs` re-exports from `game_data`
 
-- [ ] Task 5: Write unit tests in `scoring-core/src/compute.rs` (AC: #6)
-  - [ ] Test: damage formula — increased-only modifiers summing to 150% → damage_score = base × 2.5
-  - [ ] Test: damage formula — one more multiplier (1.40) with increased 0% → damage_score = base × 1.0 × 1.40
-  - [ ] Test: damage formula — increased 100% + more 1.40 → damage_score = base × 2.0 × 1.40
-  - [ ] Test: crit-weighted — crit_chance=0.82, crit_multi=350% → factor = 3.05 (within 0.001 tolerance)
-  - [ ] Test: crit-weighted — crit_chance=1.20 (above 100%) → clamped to 1.0, factor = crit_multi
-  - [ ] Test: EHP — HP=1500, Ward=300, Endurance=30% → effective_hp ≈ 2571 (within 1.0 tolerance)
-  - [ ] Test: EHP — no Ward, no Endurance → effective_hp = raw_hp
-  - [ ] Test: BuildScore at slider 0 (Glass Cannon weights from table)
-  - [ ] Test: BuildScore at slider 25
-  - [ ] Test: BuildScore at slider 50 → verified formula 0.55×D + 0.35×S + 0.10×Sp
-  - [ ] Test: BuildScore at slider 75
-  - [ ] Test: BuildScore at slider 100 (Juggernaut weights from table)
-  - [ ] Test: missing modifierType falls back to Increased (no panic)
+- [x] Task 5: Write unit tests in `scoring-core/src/compute.rs` (AC: #6)
+  - [x] Test: damage formula — increased-only modifiers summing to 150% → damage_score = base × 2.5
+  - [x] Test: damage formula — one more multiplier (1.40) with increased 0% → damage_score = base × 1.0 × 1.40
+  - [x] Test: damage formula — increased 100% + more 1.40 → damage_score = base × 2.0 × 1.40
+  - [x] Test: crit-weighted — crit_chance=0.82, crit_multi=350% → factor = 3.05 (within 0.001 tolerance)
+  - [x] Test: crit-weighted — crit_chance=1.20 (above 100%) → clamped to 1.0, factor = crit_multi
+  - [x] Test: EHP — HP=1500, Ward=300, Endurance=30% → effective_hp ≈ 2571 (within 1.0 tolerance)
+  - [x] Test: EHP — no Ward, no Endurance → effective_hp = raw_hp
+  - [x] Test: BuildScore at slider 0 (Glass Cannon weights from table)
+  - [x] Test: BuildScore at slider 25
+  - [x] Test: BuildScore at slider 50 → verified formula 0.55×D + 0.35×S + 0.10×Sp
+  - [x] Test: BuildScore at slider 75
+  - [x] Test: BuildScore at slider 100 (Juggernaut weights from table)
+  - [x] Test: missing modifierType falls back to Increased (no panic)
 
-- [ ] Task 6: Verify builds
-  - [ ] Run `cargo build -p scoring-core` from `lebo/src-tauri/` — zero errors required
-  - [ ] Run `cargo build` from `lebo/src-tauri/` — zero errors required (full workspace)
-  - [ ] Run `cargo test -p scoring-core` — all new tests pass, zero failures
-  - [ ] Run `pnpm build` from `lebo/` — zero TypeScript errors (BuildSnapshot type changes must reflect in `statSheet.ts` if needed)
-  - [ ] Run `pnpm vitest` — confirm no new regressions (8 pre-existing failures expected)
+- [x] Task 6: Verify builds
+  - [x] Run `cargo build -p scoring-core` from `lebo/src-tauri/` — zero errors required
+  - [x] Run `cargo build` from `lebo/src-tauri/` — zero errors required (full workspace)
+  - [x] Run `cargo test -p scoring-core` — all new tests pass, zero failures
+  - [x] Run `pnpm build` from `lebo/` — zero TypeScript errors (BuildSnapshot type changes must reflect in `statSheet.ts` if needed)
+  - [x] Run `pnpm vitest` — confirm no new regressions (8 pre-existing failures expected)
+
+---
+
+## Dev Agent Record
+
+### Completion Notes
+
+Implementation complete 2026-05-21. All 14 unit tests pass, zero regressions in frontend suite (8 pre-existing failures unchanged).
+
+**Key decision:** `WardPerSecond` is NOT double-counted in the sustain layer check. The ward defensive layer (layer 2) already fires when `ward > 0.0`. Including `WardPerSecond` in the sustain layer would triple-count ward-based builds and break AC #3 (EHP ≈ 2571 with Ward=300 + Endurance=30%). The sustain layer check is restricted to `LifeLeechPercent` and `HpRegenPerSec`.
+
+**More multiplier handling:** `Modifier::value` for `MoreDamage` is stored as the raw multiplier (e.g., 1.40), not as a percentage. The `product()` call on an empty iterator returns 1.0, so builds with no More modifiers correctly apply a 1.0 factor.
+
+### File List
+
+- `lebo/src-tauri/scoring-core/src/game_data.rs` — expanded with `NodeEffect`, `ArchetypeWeights`, `ArchetypeWeightsEntry`, `BaseClassStats`; `GameData` struct gained `node_effects`, `archetype_weights`, `class_base_stats` fields
+- `lebo/src-tauri/scoring-core/src/build_snapshot.rs` — expanded with `AffixEntry`, `GearSlotSnapshot`, `IdolPlacement`; `BuildSnapshot` gained `gear_slots`, `idol_placements`, `blessings` fields
+- `lebo/src-tauri/scoring-core/src/compute.rs` — new file: `compute_stats`, `build_registry`, `compute_offense`, `compute_defense`, `compute_speed`, `resolve_archetype_weights`, 14 unit tests
+- `lebo/src-tauri/scoring-core/src/lib.rs` — added `pub mod compute;` and re-exports for all new public symbols
+
+### Change Log
+
+- 2026-05-21: Implemented `compute_stats` Stage 1 — damage formula (Increased/More), crit-weighted average, EHP with ward/endurance/layer bonus, speed score, archetype weight lookup, all 5 slider positions tested. 14/14 unit tests pass.
 
 ---
 

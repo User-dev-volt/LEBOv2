@@ -1,7 +1,61 @@
+use std::collections::HashMap;
+
+use crate::modifier::{Condition, ModifierType, StatKey};
+
+/// A single stat effect contributed by one point allocated to a passive node.
+/// One node may have multiple effects (e.g., "+5% Fire Damage, +3% Crit Chance").
+#[derive(Debug, Clone)]
+pub struct NodeEffect {
+    pub stat_key: StatKey,
+    /// Missing modifier_type in source data → Increased (FR-A6 fallback)
+    pub modifier_type: ModifierType,
+    /// Raw numeric value (e.g., 5.0 for "+5%", 1.15 for "15% more")
+    pub value: f64,
+    pub condition: Condition,
+}
+
+/// Archetype scoring weights for one slider band.
+#[derive(Debug, Clone)]
+pub struct ArchetypeWeights {
+    pub w_dmg: f64,
+    pub w_surv: f64,
+    pub w_speed: f64,
+}
+
+/// One row in the archetype weight table.
+/// `slider_upper` is the inclusive upper bound for this band.
+/// Bands must be sorted ascending and cover 0–100 exhaustively.
+/// Example: [(24, glass_cannon), (49, lean_dps), (74, balanced), (89, lean_tank), (100, juggernaut)]
+#[derive(Debug, Clone)]
+pub struct ArchetypeWeightsEntry {
+    pub slider_upper: u32,
+    pub weights: ArchetypeWeights,
+}
+
+/// Base class stats for HP computation.
+#[derive(Debug, Clone)]
+pub struct BaseClassStats {
+    /// HP at level 1
+    pub base_hp: f64,
+    /// Additional HP gained per level above 1
+    pub hp_per_level: f64,
+}
+
 /// Read-only game reference data loaded once at startup.
-/// Holds resolved stat tables, tree graphs, affix value tables, class definitions.
-/// Populated in Story 2.4 (Tauri IPC wiring) from disk JSON files.
+/// Populated in Story 2.4 from disk JSON via `game_data_loader.rs`.
 #[derive(Debug, Clone, Default)]
 pub struct GameData {
-    // Story 2.4 adds: passive tree graph, affix value tables, class node data, etc.
+    /// Passive/skill node ID → list of stat effects per allocated point.
+    /// Key: node_id string matching keys in `BuildSnapshot.node_allocations`.
+    /// Story 2.4 populates this from class JSON files.
+    pub node_effects: HashMap<String, Vec<NodeEffect>>,
+
+    /// Archetype weight table — must be sorted by slider_upper ascending.
+    /// Empty table → compute_stats falls back to balanced weights (0.55/0.35/0.10).
+    pub archetype_weights: Vec<ArchetypeWeightsEntry>,
+
+    /// Base HP per class ID (e.g., "sentinel", "mage").
+    /// Story 2.4 populates from class definitions.
+    pub class_base_stats: HashMap<String, BaseClassStats>,
+    // Story 2.4 adds: affix value tables, tree graph, skill definitions, etc.
 }

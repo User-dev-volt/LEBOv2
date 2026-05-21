@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Apply the 4 targeted AC edits specified in the report (Story 3.2, BuildState schema, Story 4.3 Claude wiring, gear slot list) and add 2 NFR verification stories for platform builds and offline mode — then re-validate coverage before sprint kickoff.
+- Execute Story 2.2 dev task: expand `GameData` struct with `NodeEffect`, `ArchetypeWeights`, `ArchetypeWeightsEntry`, `BaseClassStats`
 
 ---
 
