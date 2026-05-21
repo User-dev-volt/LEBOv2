@@ -729,6 +729,8 @@ So that the stat sheet display in Story 2.6 has live data without any "Recalcula
 
 ### Story 2.6: Stat Sheet UI — Five-Tab Display
 
+> **Quick Dev candidate** — Pure React UI consuming `optimizationStore.statSheet`. Once 2-5 is done the data shape is fixed; this is component work only. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
+
 As a player,
 I want a five-tab stat sheet in the right panel showing General, Offense, Defense, Minion, and Other stats that update in real time on every state change,
 So that I can see my build's computed performance across all dimensions without any manual recalculation.
@@ -837,6 +839,8 @@ So that the scoring engine factors in my actual idol bonuses when computing stat
 
 ### Story 3.3: Blessings Panel
 
+> **Quick Dev candidate** — Searchable dropdown + stat contribution via `BuildSnapshot`. Follows the identical pattern as the existing gear slot component. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
+
 As a player,
 I want to assign monolith blessings from a searchable panel with one blessing per timeline, with blessing contributions flowing into the stat sheet in real time,
 So that my actual blessings are modeled in the scoring engine and included in optimization suggestions.
@@ -868,6 +872,8 @@ So that my actual blessings are modeled in the scoring engine and included in op
 **And** the blessing selection remains functional with current data while the update is pending
 
 ### Story 3.4: Conditions Panel
+
+> **Quick Dev candidate** — Toggle UI + build-specific filter logic. Pure React + state, no new Rust required. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
 
 As a player,
 I want a conditions panel where I can set combat context (enemy type, charges, build-specific toggles) that flows into the scoring engine and Claude's optimization payload,
@@ -1033,6 +1039,8 @@ So that I can visually identify the highest-value passive nodes at a glance with
 
 ### Story 4.5: Stat Sheet Suggestion Preview — Hover Deltas
 
+> **Quick Dev candidate** — Purely additive React UI: hover state on suggestion items drives delta display in the stat sheet. No Rust work, no new IPC. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
+
 As a player,
 I want to hover over any AI suggestion to see how applying it would change my stat sheet values — gains in green and losses in red — so I can evaluate the trade-off at a glance.
 
@@ -1064,6 +1072,8 @@ I want to hover over any AI suggestion to see how applying it would change my st
 Players can open a dedicated Gear Optimization screen that analyzes all 12 gear slots against their build's ideal affix configuration. The player designates skill roles, and the scoring engine computes skill-context-aware affix weights, ranks slots by upgrade priority, and generates per-slot wishlists. Claude produces a prioritized gear narrative referencing the player's specific Primary Offense skill.
 
 ### Story 5.1: Skill Role Designation
+
+> **Quick Dev candidate** — Role-tagging UI + persistence in `buildStore`. Self-contained React component with no Rust work. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
 
 As a player,
 I want to designate which of my active skills is my Primary Offense (required) and optionally tag others as Secondary Offense, Defensive, or Utility — with those designations saved with the build,
@@ -1216,6 +1226,8 @@ The app achieves Last Epoch's authentic visual language throughout: canonical ra
 
 ### Story 6.1: Item Rarity & Damage-Type Color Systems
 
+> **Quick Dev candidate** — CSS constants + applying color classes throughout. No logic, no Rust. Easiest story in the project. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
+
 As a player,
 I want all item names, tooltips, and affix headers to use Last Epoch's canonical rarity colors, and all damage/resistance values in the stat sheet to use LE's canonical damage-type colors,
 So that the app's visual language feels continuous with the game itself.
@@ -1243,6 +1255,8 @@ So that the app's visual language feels continuous with the game itself.
 **And** color is not the only differentiator — icons, labels, or text also distinguish rarity and damage type for color-blind accessibility
 
 ### Story 6.2: Tree Background Textures
+
+> **Quick Dev candidate** — One `TilingSprite` insertion in `pixiRenderer.ts` + a CSS background class on `WeaverTreePlaceholder`. Localized changes, no new IPC. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
 
 As a player,
 I want the passive tree and skill tree canvases to display a dark stone texture background with damage-type tint overlays on skill trees and a void/crystalline purple background on the Weaver tab,
@@ -1276,6 +1290,8 @@ So that the tree UI feels immersive and visually connected to the game.
 
 ### Story 6.3: Keyboard Shortcuts & Undo/Redo Controls
 
+> **Quick Dev candidate** — Global event listeners + two icon buttons in the tree controls bar. Self-contained, no cross-system dependencies. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
+
 As a player,
 I want Ctrl+Z/Y (Win) and Cmd+Z/Y (Mac) for undo/redo with visible ↩/↪ buttons in the tree controls bar, and global C/S/P shortcuts to focus context panel, skill tree, and passive tree respectively,
 So that keyboard-driven workflow matches the conventions I'm used to from other build planning tools.
@@ -1307,6 +1323,8 @@ So that keyboard-driven workflow matches the conventions I'm used to from other 
 **Then** the global panel shortcuts are NOT triggered — the character is entered into the text input normally
 
 ### Story 6.4: Tooltip Polish & Multi-Point Allocation
+
+> **Quick Dev candidate** — CSS `max-height` on the tooltip + click modifier handling in the PixiJS interaction layer. Two localized changes. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
 
 As a player,
 I want node tooltips that overflow the viewport to be scrollable in place via mouse wheel, and Shift+click to allocate multiple points at once up to my remaining budget — matching lastepochtools.com behavior,
