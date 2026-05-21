@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Run code review using a different LLM than the implementation LLM (prevents confirmation bias).
+- Await user confirmation [Y/N] to launch the three parallel adversarial review layers (acceptance criteria validation, architectural review, integration/edge-case review)
 
 ---
 
