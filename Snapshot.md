@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Dev agent can now implement story 2.3 directly from the generated artifact file without clarification or rework cycles.
+Run `/bmad-code-review` on story 2.3 with a fresh LLM instance before moving to story 2.4 (Tauri IPC wiring).
 
 ---
 

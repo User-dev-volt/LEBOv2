@@ -45,3 +45,8 @@
 ## Deferred from: code review of 2-2-stage-1-build-score-function-implementation (2026-05-21)
 
 - **`archetype_weights` lookup assumes sorted ascending** — `resolve_archetype_weights` does a first-match-wins scan; if the table is unsorted (e.g. wrong JSON object order from Story 2.4 loader), the wrong weight band is returned silently. Enforce sort or add a debug assertion in Story 2.4's game data loader when the table is constructed.
+
+## Deferred from: code review of 2-3-defensive-floor-check (2026-05-21)
+
+- **`no_sustain_layer` warning `gap: 0.0` has no semantic value** [`compute.rs`] — `current_value: 0.0, gap: 0.0` is uninformative for a boolean check; a renderer using `gap` uniformly (progress bar, percentage) will show 0/0. Deferred to Story 2.5 which defines how warnings are rendered.
+- **HP_REGEN sustain threshold boundary not tested** [`compute.rs`] — `floor_check_sustain_via_hp_regen` uses 120.0; the boundary case (exactly 100.0 should pass, 99.9 should warn) is not covered. Low-risk since the formula is simple (`>= 100.0`), but an off-by-one would go undetected. Add boundary tests when revisiting the test suite.
