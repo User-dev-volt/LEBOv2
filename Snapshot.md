@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Await your choice on the 3 patch handling options before proceeding to implementation.
+Dev agent can now implement story 2.3 directly from the generated artifact file without clarification or rework cycles.
 
 ---
 

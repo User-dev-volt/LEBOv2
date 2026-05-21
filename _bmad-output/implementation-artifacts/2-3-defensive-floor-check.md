@@ -1,6 +1,6 @@
 # Story 2.3: Defensive Floor Check
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -34,42 +34,42 @@ so that I never receive offensive optimization suggestions while my build has su
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Extend `DefenseStats` with sustain tracking fields (AC: #3, #5)
-  - [ ] Add `life_leech_percent: f64` field to `DefenseStats` in `stat_sheet.rs`
-  - [ ] Add `hp_regen_per_sec: f64` field to `DefenseStats` in `stat_sheet.rs`
-  - [ ] Populate both fields in `compute_defense()` in `compute.rs` (values are already computed locally — move them into the returned struct)
+- [x] Task 1: Extend `DefenseStats` with sustain tracking fields (AC: #3, #5)
+  - [x] Add `life_leech_percent: f64` field to `DefenseStats` in `stat_sheet.rs`
+  - [x] Add `hp_regen_per_sec: f64` field to `DefenseStats` in `stat_sheet.rs`
+  - [x] Populate both fields in `compute_defense()` in `compute.rs` (values are already computed locally — move them into the returned struct)
 
-- [ ] Task 2: Implement `run_floor_check()` in `compute.rs` (AC: #1–#4)
-  - [ ] Add `fn run_floor_check(defense: &DefenseStats, snapshot: &BuildSnapshot) -> Vec<StatWarning>` (private function)
-  - [ ] Check each resistance against 75.0 cap; produce a warning for each uncapped type
-  - [ ] Check crit avoidance against 80.0 threshold
-  - [ ] Check sustain layer: passes if `defense.ward > 0.0 || defense.life_leech_percent > 0.0 || defense.hp_regen_per_sec >= 100.0`
-  - [ ] Add `fn find_slot_with_open_suffix(snapshot: &BuildSnapshot) -> Option<String>` helper for resistance warnings' `suggested_fix`
+- [x] Task 2: Implement `run_floor_check()` in `compute.rs` (AC: #1–#4)
+  - [x] Add `fn run_floor_check(defense: &DefenseStats, snapshot: &BuildSnapshot) -> Vec<StatWarning>` (private function)
+  - [x] Check each resistance against 75.0 cap; produce a warning for each uncapped type
+  - [x] Check crit avoidance against 80.0 threshold
+  - [x] Check sustain layer: passes if `defense.ward > 0.0 || defense.life_leech_percent > 0.0 || defense.hp_regen_per_sec >= 100.0`
+  - [x] Add `fn find_slot_with_open_suffix(snapshot: &BuildSnapshot) -> Option<String>` helper for resistance warnings' `suggested_fix`
 
-- [ ] Task 3: Wire `run_floor_check()` into `compute_stats()` (AC: #1–#4)
-  - [ ] Replace `warnings: vec![]` stub with `warnings: run_floor_check(&defense, snapshot)`
-  - [ ] Ensure `run_floor_check` is called after `compute_defense()` (uses the fully-computed `DefenseStats`)
+- [x] Task 3: Wire `run_floor_check()` into `compute_stats()` (AC: #1–#4)
+  - [x] Replace `warnings: vec![]` stub with `warnings: run_floor_check(&defense, snapshot)`
+  - [x] Ensure `run_floor_check` is called after `compute_defense()` (uses the fully-computed `DefenseStats`)
 
-- [ ] Task 4: Write unit tests in `compute.rs` (AC: #5)
-  - [ ] Test: fire resistance uncapped (52%) → `fire_resistance_uncapped` warning with `current_value: 52.0`, `gap: 23.0`
-  - [ ] Test: cold resistance uncapped → `cold_resistance_uncapped` warning
-  - [ ] Test: lightning resistance uncapped → `lightning_resistance_uncapped` warning
-  - [ ] Test: void resistance uncapped → `void_resistance_uncapped` warning
-  - [ ] Test: poison resistance uncapped → `poison_resistance_uncapped` warning
-  - [ ] Test: physical resistance uncapped → `physical_resistance_uncapped` warning
-  - [ ] Test: crit avoidance low (62%) → `crit_avoidance_low` with `current_value: 62.0`, `gap: 18.0`
-  - [ ] Test: no sustain (no leech, no ward, regen < 100) → `no_sustain_layer` warning
-  - [ ] Test: sustain via ward → no `no_sustain_layer` warning
-  - [ ] Test: sustain via life leech → no `no_sustain_layer` warning
-  - [ ] Test: sustain via hp_regen ≥ 100 → no `no_sustain_layer` warning
-  - [ ] Test: all checks pass → `warnings.is_empty()`
+- [x] Task 4: Write unit tests in `compute.rs` (AC: #5)
+  - [x] Test: fire resistance uncapped (52%) → `fire_resistance_uncapped` warning with `current_value: 52.0`, `gap: 23.0`
+  - [x] Test: cold resistance uncapped → `cold_resistance_uncapped` warning
+  - [x] Test: lightning resistance uncapped → `lightning_resistance_uncapped` warning
+  - [x] Test: void resistance uncapped → `void_resistance_uncapped` warning
+  - [x] Test: poison resistance uncapped → `poison_resistance_uncapped` warning
+  - [x] Test: physical resistance uncapped → `physical_resistance_uncapped` warning
+  - [x] Test: crit avoidance low (62%) → `crit_avoidance_low` with `current_value: 62.0`, `gap: 18.0`
+  - [x] Test: no sustain (no leech, no ward, regen < 100) → `no_sustain_layer` warning
+  - [x] Test: sustain via ward → no `no_sustain_layer` warning
+  - [x] Test: sustain via life leech → no `no_sustain_layer` warning
+  - [x] Test: sustain via hp_regen ≥ 100 → no `no_sustain_layer` warning
+  - [x] Test: all checks pass → `warnings.is_empty()`
 
-- [ ] Task 5: Verify builds
-  - [ ] Run `cargo build -p scoring-core` — zero errors required
-  - [ ] Run `cargo build` from `lebo/src-tauri/` — zero errors (full workspace)
-  - [ ] Run `cargo test -p scoring-core` — all new tests pass, existing 14 tests still pass
-  - [ ] Run `pnpm build` from `lebo/` — zero TypeScript errors (no TS changes expected; verify `StatSheet` type still matches in `statSheet.ts` if needed)
-  - [ ] Run `pnpm vitest` — 8 pre-existing failures unchanged, no new regressions
+- [x] Task 5: Verify builds
+  - [x] Run `cargo build -p scoring-core` — zero errors required
+  - [x] Run `cargo build` from `lebo/src-tauri/` — zero errors (full workspace)
+  - [x] Run `cargo test -p scoring-core` — all new tests pass, existing 14 tests still pass
+  - [x] Run `pnpm build` from `lebo/` — zero TypeScript errors (no TS changes expected; verify `StatSheet` type still matches in `statSheet.ts` if needed)
+  - [x] Run `pnpm vitest` — 8 pre-existing failures unchanged, no new regressions
 
 ---
 
@@ -77,15 +77,16 @@ so that I never receive offensive optimization suggestions while my build has su
 
 ### Completion Notes
 
-<!-- Filled in after implementation -->
+All 5 tasks complete. Extended `DefenseStats` with `life_leech_percent` and `hp_regen_per_sec` fields (already computed in `compute_defense()`, just not exposed). Implemented `run_floor_check()` as a pure function over `DefenseStats` + `BuildSnapshot` — checks 6 resistance types against 75% cap, crit avoidance against 80%, and sustain layer (ward/leech/regen). `find_slot_with_open_suffix()` scans gear slots in priority order and falls back to "helm" when slots are empty (expected until Story 2.4 wires IPC). Wired into `compute_stats()` replacing the `vec![]` stub. All 26 Rust tests pass (14 from 2.2 + 12 new); full workspace builds clean; TypeScript build clean; frontend failures unchanged at 8 pre-existing.
 
 ### File List
 
-<!-- Filled in after implementation -->
+- `lebo/src-tauri/scoring-core/src/stat_sheet.rs` — added `life_leech_percent: f64` and `hp_regen_per_sec: f64` to `DefenseStats`
+- `lebo/src-tauri/scoring-core/src/compute.rs` — added `run_floor_check()`, `find_slot_with_open_suffix()`, `RESISTANCE_CAP`/`CRIT_AVOIDANCE_FLOOR`/`HP_REGEN_SUSTAIN_THRESHOLD` constants, populated new `DefenseStats` fields in `compute_defense()`, wired floor check into `compute_stats()`, added 12 new unit tests
 
 ### Change Log
 
-<!-- Filled in after implementation -->
+- 2026-05-21: Implemented defensive floor check (Story 2.3) — `DefenseStats` extended with sustain fields, `run_floor_check()` implemented and wired into `compute_stats()`, 12 unit tests added (26 total passing)
 
 ---
 

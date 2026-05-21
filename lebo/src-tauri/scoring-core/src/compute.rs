@@ -2,7 +2,7 @@ use crate::build_snapshot::BuildSnapshot;
 use crate::compute_options::ComputeOptions;
 use crate::game_data::{ArchetypeWeights, GameData};
 use crate::modifier::{Modifier, ModifierRegistry, ModifierType, StatKey};
-use crate::stat_sheet::{DefenseStats, OffenseStats, ScoreComponents, StatSheet};
+use crate::stat_sheet::{DefenseStats, OffenseStats, ScoreComponents, StatSheet, StatWarning};
 
 pub fn compute_stats(
     snapshot: &BuildSnapshot,
@@ -23,13 +23,14 @@ pub fn compute_stats(
             + weights.w_surv * defense.effective_hp
             + weights.w_speed * speed,
     };
+    let warnings = run_floor_check(&defense, snapshot);
     StatSheet {
         offense,
         defense,
         scores,
         ailment: None,
         minion: None,
-        warnings: vec![], // populated in Story 2.3
+        warnings,
     }
 }
 
@@ -331,6 +332,8 @@ fn compute_defense(
         physical_resistance: physical_res,
         crit_avoidance,
         dodge_chance,
+        life_leech_percent: life_leech,
+        hp_regen_per_sec: hp_regen,
     }
 }
 
@@ -357,6 +360,78 @@ fn compute_speed(registry: &ModifierRegistry, active: &[String]) -> f64 {
             .sum::<f64>()
             / 100.0;
     move_speed * atk_speed * aoe
+}
+
+const RESISTANCE_CAP: f64 = 75.0;
+const CRIT_AVOIDANCE_FLOOR: f64 = 80.0;
+const HP_REGEN_SUSTAIN_THRESHOLD: f64 = 100.0;
+
+fn run_floor_check(defense: &DefenseStats, snapshot: &BuildSnapshot) -> Vec<StatWarning> {
+    let mut warnings = Vec::new();
+
+    let resistance_checks = [
+        ("fire_resistance_uncapped", defense.fire_resistance),
+        ("cold_resistance_uncapped", defense.cold_resistance),
+        ("lightning_resistance_uncapped", defense.lightning_resistance),
+        ("void_resistance_uncapped", defense.void_resistance),
+        ("poison_resistance_uncapped", defense.poison_resistance),
+        ("physical_resistance_uncapped", defense.physical_resistance),
+    ];
+    for (warning_type, current_value) in resistance_checks {
+        if current_value < RESISTANCE_CAP {
+            let gap = RESISTANCE_CAP - current_value;
+            let suggested_fix = find_slot_with_open_suffix(snapshot)
+                .map(|slot| format!("{} has room for a Resistance suffix", slot));
+            warnings.push(StatWarning {
+                warning_type: warning_type.to_string(),
+                current_value,
+                gap,
+                suggested_fix,
+            });
+        }
+    }
+
+    if defense.crit_avoidance < CRIT_AVOIDANCE_FLOOR {
+        warnings.push(StatWarning {
+            warning_type: "crit_avoidance_low".to_string(),
+            current_value: defense.crit_avoidance,
+            gap: CRIT_AVOIDANCE_FLOOR - defense.crit_avoidance,
+            suggested_fix: None,
+        });
+    }
+
+    let has_sustain = defense.ward > 0.0
+        || defense.life_leech_percent > 0.0
+        || defense.hp_regen_per_sec >= HP_REGEN_SUSTAIN_THRESHOLD;
+    if !has_sustain {
+        warnings.push(StatWarning {
+            warning_type: "no_sustain_layer".to_string(),
+            current_value: 0.0,
+            gap: 0.0,
+            suggested_fix: Some(
+                "Add Life Leech, Ward generation, or Life Regeneration \u{2265} 100/s".to_string(),
+            ),
+        });
+    }
+
+    warnings
+}
+
+/// Finds the first gear slot with an open suffix slot (< 2 suffixes).
+/// Preference order: helm → chest → gloves → boots → belt → amulet → ring_1 → ring_2.
+/// Falls back to "helm" if no snapshot gear data is present.
+fn find_slot_with_open_suffix(snapshot: &BuildSnapshot) -> Option<String> {
+    const PRIORITY: &[&str] = &[
+        "helm", "chest", "gloves", "boots", "belt", "amulet", "ring_1", "ring_2",
+    ];
+    for slot_id in PRIORITY {
+        match snapshot.gear_slots.get(*slot_id) {
+            Some(slot) if slot.suffixes.len() < 2 => return Some(slot_id.to_string()),
+            None => return Some(slot_id.to_string()),
+            _ => {}
+        }
+    }
+    Some("helm".to_string())
 }
 
 fn resolve_archetype_weights(slider_position: u32, game_data: &GameData) -> ArchetypeWeights {
@@ -791,6 +866,296 @@ mod tests {
             (sheet.offense.damage_score - 150.0).abs() < 0.01,
             "expected 150 got {}",
             sheet.offense.damage_score
+        );
+    }
+
+    // --- Defensive floor check tests ---
+
+    fn make_defense_snapshot_with_res(
+        fire: f64,
+        cold: f64,
+        lightning: f64,
+        void_r: f64,
+        poison: f64,
+        physical: f64,
+    ) -> (GameData, BuildSnapshot) {
+        let mut node_effects = HashMap::new();
+        let mut nodes = vec![];
+        if fire != 0.0 {
+            nodes.push(NodeEffect {
+                stat_key: StatKey::FireResistance,
+                modifier_type: ModifierType::Flat,
+                value: fire,
+                condition: Condition::Always,
+            });
+        }
+        if cold != 0.0 {
+            nodes.push(NodeEffect {
+                stat_key: StatKey::ColdResistance,
+                modifier_type: ModifierType::Flat,
+                value: cold,
+                condition: Condition::Always,
+            });
+        }
+        if lightning != 0.0 {
+            nodes.push(NodeEffect {
+                stat_key: StatKey::LightningResistance,
+                modifier_type: ModifierType::Flat,
+                value: lightning,
+                condition: Condition::Always,
+            });
+        }
+        if void_r != 0.0 {
+            nodes.push(NodeEffect {
+                stat_key: StatKey::VoidResistance,
+                modifier_type: ModifierType::Flat,
+                value: void_r,
+                condition: Condition::Always,
+            });
+        }
+        if poison != 0.0 {
+            nodes.push(NodeEffect {
+                stat_key: StatKey::PoisonResistance,
+                modifier_type: ModifierType::Flat,
+                value: poison,
+                condition: Condition::Always,
+            });
+        }
+        if physical != 0.0 {
+            nodes.push(NodeEffect {
+                stat_key: StatKey::PhysicalResistance,
+                modifier_type: ModifierType::Flat,
+                value: physical,
+                condition: Condition::Always,
+            });
+        }
+        node_effects.insert("res_node".to_string(), nodes);
+        let game_data = make_game_data_with_effects(node_effects);
+        let mut snapshot = snapshot_at(50);
+        snapshot.node_allocations.insert("res_node".to_string(), 1);
+        (game_data, snapshot)
+    }
+
+    #[test]
+    fn floor_check_fire_resistance_uncapped() {
+        let (game_data, snapshot) =
+            make_defense_snapshot_with_res(52.0, 75.0, 75.0, 75.0, 75.0, 75.0);
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        let fire_warn = sheet
+            .warnings
+            .iter()
+            .find(|w| w.warning_type == "fire_resistance_uncapped");
+        assert!(fire_warn.is_some(), "expected fire_resistance_uncapped warning");
+        let w = fire_warn.unwrap();
+        assert!(
+            (w.current_value - 52.0).abs() < 0.1,
+            "current_value expected 52 got {}",
+            w.current_value
+        );
+        assert!((w.gap - 23.0).abs() < 0.1, "gap expected 23 got {}", w.gap);
+        assert!(w.suggested_fix.is_some(), "suggested_fix should be present");
+    }
+
+    #[test]
+    fn floor_check_cold_resistance_uncapped() {
+        let (game_data, snapshot) =
+            make_defense_snapshot_with_res(75.0, 50.0, 75.0, 75.0, 75.0, 75.0);
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        assert!(sheet
+            .warnings
+            .iter()
+            .any(|w| w.warning_type == "cold_resistance_uncapped"));
+    }
+
+    #[test]
+    fn floor_check_lightning_resistance_uncapped() {
+        let (game_data, snapshot) =
+            make_defense_snapshot_with_res(75.0, 75.0, 40.0, 75.0, 75.0, 75.0);
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        assert!(sheet
+            .warnings
+            .iter()
+            .any(|w| w.warning_type == "lightning_resistance_uncapped"));
+    }
+
+    #[test]
+    fn floor_check_void_resistance_uncapped() {
+        let (game_data, snapshot) =
+            make_defense_snapshot_with_res(75.0, 75.0, 75.0, 30.0, 75.0, 75.0);
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        assert!(sheet
+            .warnings
+            .iter()
+            .any(|w| w.warning_type == "void_resistance_uncapped"));
+    }
+
+    #[test]
+    fn floor_check_poison_resistance_uncapped() {
+        let (game_data, snapshot) =
+            make_defense_snapshot_with_res(75.0, 75.0, 75.0, 75.0, 0.0, 75.0);
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        assert!(sheet
+            .warnings
+            .iter()
+            .any(|w| w.warning_type == "poison_resistance_uncapped"));
+    }
+
+    #[test]
+    fn floor_check_physical_resistance_uncapped() {
+        let (game_data, snapshot) =
+            make_defense_snapshot_with_res(75.0, 75.0, 75.0, 75.0, 75.0, 0.0);
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        assert!(sheet
+            .warnings
+            .iter()
+            .any(|w| w.warning_type == "physical_resistance_uncapped"));
+    }
+
+    #[test]
+    fn floor_check_crit_avoidance_low() {
+        let mut node_effects = HashMap::new();
+        node_effects.insert(
+            "avoid_node".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::CriticalStrikeAvoidance,
+                modifier_type: ModifierType::Flat,
+                value: 62.0,
+                condition: Condition::Always,
+            }],
+        );
+        let game_data = make_game_data_with_effects(node_effects);
+        let mut snapshot = snapshot_at(50);
+        snapshot.node_allocations.insert("avoid_node".to_string(), 1);
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        let warn = sheet
+            .warnings
+            .iter()
+            .find(|w| w.warning_type == "crit_avoidance_low");
+        assert!(warn.is_some(), "expected crit_avoidance_low warning");
+        let w = warn.unwrap();
+        assert!((w.current_value - 62.0).abs() < 0.1);
+        assert!((w.gap - 18.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn floor_check_no_sustain_layer() {
+        let game_data =
+            GameData { archetype_weights: standard_weight_table(), ..Default::default() };
+        let snapshot = snapshot_at(50);
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        assert!(
+            sheet.warnings.iter().any(|w| w.warning_type == "no_sustain_layer"),
+            "expected no_sustain_layer, got: {:?}",
+            sheet.warnings.iter().map(|w| &w.warning_type).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn floor_check_sustain_via_ward() {
+        let mut node_effects = HashMap::new();
+        node_effects.insert(
+            "ward_node".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::WardPerSecond,
+                modifier_type: ModifierType::Flat,
+                value: 50.0,
+                condition: Condition::Always,
+            }],
+        );
+        let game_data = make_game_data_with_effects(node_effects);
+        let mut snapshot = snapshot_at(50);
+        snapshot.node_allocations.insert("ward_node".to_string(), 1);
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        assert!(
+            !sheet.warnings.iter().any(|w| w.warning_type == "no_sustain_layer"),
+            "ward should satisfy sustain layer"
+        );
+    }
+
+    #[test]
+    fn floor_check_sustain_via_life_leech() {
+        let mut node_effects = HashMap::new();
+        node_effects.insert(
+            "leech_node".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::LifeLeechPercent,
+                modifier_type: ModifierType::Flat,
+                value: 2.0,
+                condition: Condition::Always,
+            }],
+        );
+        let game_data = make_game_data_with_effects(node_effects);
+        let mut snapshot = snapshot_at(50);
+        snapshot.node_allocations.insert("leech_node".to_string(), 1);
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        assert!(
+            !sheet.warnings.iter().any(|w| w.warning_type == "no_sustain_layer"),
+            "life leech should satisfy sustain layer"
+        );
+    }
+
+    #[test]
+    fn floor_check_sustain_via_hp_regen() {
+        let mut node_effects = HashMap::new();
+        node_effects.insert(
+            "regen_node".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::HpRegenPerSec,
+                modifier_type: ModifierType::Flat,
+                value: 120.0,
+                condition: Condition::Always,
+            }],
+        );
+        let game_data = make_game_data_with_effects(node_effects);
+        let mut snapshot = snapshot_at(50);
+        snapshot.node_allocations.insert("regen_node".to_string(), 1);
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        assert!(
+            !sheet.warnings.iter().any(|w| w.warning_type == "no_sustain_layer"),
+            "hp_regen >= 100 should satisfy sustain layer"
+        );
+    }
+
+    #[test]
+    fn floor_check_happy_path_no_warnings() {
+        let mut node_effects = HashMap::new();
+        node_effects.insert(
+            "all_res_node".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::AllResistances,
+                modifier_type: ModifierType::Flat,
+                value: 75.0,
+                condition: Condition::Always,
+            }],
+        );
+        node_effects.insert(
+            "avoid_node".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::CriticalStrikeAvoidance,
+                modifier_type: ModifierType::Flat,
+                value: 80.0,
+                condition: Condition::Always,
+            }],
+        );
+        node_effects.insert(
+            "ward_node".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::WardPerSecond,
+                modifier_type: ModifierType::Flat,
+                value: 1.0,
+                condition: Condition::Always,
+            }],
+        );
+        let game_data = make_game_data_with_effects(node_effects);
+        let mut snapshot = snapshot_at(50);
+        snapshot.node_allocations.insert("all_res_node".to_string(), 1);
+        snapshot.node_allocations.insert("avoid_node".to_string(), 1);
+        snapshot.node_allocations.insert("ward_node".to_string(), 1);
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        assert!(
+            sheet.warnings.is_empty(),
+            "expected no warnings, got: {:?}",
+            sheet.warnings.iter().map(|w| &w.warning_type).collect::<Vec<_>>()
         );
     }
 }
