@@ -25,7 +25,7 @@
 # - Developer typically creates next story after previous one is 'done' to incorporate learnings
 
 generated: 2026-05-20
-last_updated: 2026-05-21 (story 2-3 done)
+last_updated: 2026-05-21 (story 2-4 ready-for-dev)
 project: LEBOv2 Phase 3
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
@@ -44,7 +44,7 @@ development_status:
   2-1-scoring-engine-foundation-crate-setup-and-type-system: done
   2-2-stage-1-build-score-function-implementation: done
   2-3-defensive-floor-check: done
-  2-4-tauri-ipc-wiring-compute-stats-command: backlog
+  2-4-tauri-ipc-wiring-compute-stats-command: ready-for-dev
   2-5-typescript-integration-serializer-hook-and-store: backlog
   2-6-stat-sheet-ui-five-tab-display: backlog
   epic-2-retrospective: optional
