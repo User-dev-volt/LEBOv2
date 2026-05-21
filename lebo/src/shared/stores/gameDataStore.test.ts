@@ -114,4 +114,70 @@ describe('gameDataStore', () => {
     useGameDataStore.getState().setVersionsBehind(2)
     expect(useGameDataStore.getState().versionsBehind).toBe(2)
   })
+
+  it('idolData starts null and staleness/updating flags start false', () => {
+    const s = useGameDataStore.getState()
+    expect(s.idolData).toBeNull()
+    expect(s.isIdolDataStale).toBe(false)
+    expect(s.idolDataStaleAcknowledged).toBe(false)
+    expect(s.isIdolDataUpdating).toBe(false)
+  })
+
+  it('setIsIdolDataStale and acknowledgeIdolDataStaleness work correctly', () => {
+    useGameDataStore.getState().setIsIdolDataStale(true)
+    expect(useGameDataStore.getState().isIdolDataStale).toBe(true)
+    useGameDataStore.getState().acknowledgeIdolDataStaleness()
+    expect(useGameDataStore.getState().idolDataStaleAcknowledged).toBe(true)
+  })
+
+  it('setIsIdolDataUpdating toggles the updating flag', () => {
+    useGameDataStore.getState().setIsIdolDataUpdating(true)
+    expect(useGameDataStore.getState().isIdolDataUpdating).toBe(true)
+    useGameDataStore.getState().setIsIdolDataUpdating(false)
+    expect(useGameDataStore.getState().isIdolDataUpdating).toBe(false)
+  })
+
+  it('blessingsDatabase starts null and staleness/updating flags start false', () => {
+    const s = useGameDataStore.getState()
+    expect(s.blessingsDatabase).toBeNull()
+    expect(s.isBlessingsDataStale).toBe(false)
+    expect(s.blessingsDataStaleAcknowledged).toBe(false)
+    expect(s.isBlessingsDataUpdating).toBe(false)
+  })
+
+  it('setIsBlessingsDataStale and acknowledgeBlessingsDataStaleness work correctly', () => {
+    useGameDataStore.getState().setIsBlessingsDataStale(true)
+    expect(useGameDataStore.getState().isBlessingsDataStale).toBe(true)
+    useGameDataStore.getState().acknowledgeBlessingsDataStaleness()
+    expect(useGameDataStore.getState().blessingsDataStaleAcknowledged).toBe(true)
+  })
+
+  it('setIsBlessingsDataUpdating toggles the updating flag', () => {
+    useGameDataStore.getState().setIsBlessingsDataUpdating(true)
+    expect(useGameDataStore.getState().isBlessingsDataUpdating).toBe(true)
+    useGameDataStore.getState().setIsBlessingsDataUpdating(false)
+    expect(useGameDataStore.getState().isBlessingsDataUpdating).toBe(false)
+  })
+
+  it('conditionsDatabase starts null and staleness/updating flags start false', () => {
+    const s = useGameDataStore.getState()
+    expect(s.conditionsDatabase).toBeNull()
+    expect(s.isConditionsDataStale).toBe(false)
+    expect(s.conditionsDataStaleAcknowledged).toBe(false)
+    expect(s.isConditionsDataUpdating).toBe(false)
+  })
+
+  it('setIsConditionsDataStale and acknowledgeConditionsDataStaleness work correctly', () => {
+    useGameDataStore.getState().setIsConditionsDataStale(true)
+    expect(useGameDataStore.getState().isConditionsDataStale).toBe(true)
+    useGameDataStore.getState().acknowledgeConditionsDataStaleness()
+    expect(useGameDataStore.getState().conditionsDataStaleAcknowledged).toBe(true)
+  })
+
+  it('setIsConditionsDataUpdating toggles the updating flag', () => {
+    useGameDataStore.getState().setIsConditionsDataUpdating(true)
+    expect(useGameDataStore.getState().isConditionsDataUpdating).toBe(true)
+    useGameDataStore.getState().setIsConditionsDataUpdating(false)
+    expect(useGameDataStore.getState().isConditionsDataUpdating).toBe(false)
+  })
 })

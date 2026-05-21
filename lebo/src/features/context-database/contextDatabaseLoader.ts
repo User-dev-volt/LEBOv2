@@ -42,3 +42,8 @@ export async function checkBlessingsDataFreshness(): Promise<void> {
   const result = await invokeCommand<DataVersionCheckResult>('check_blessings_data_freshness')
   useGameDataStore.getState().setIsBlessingsDataStale(result.isStale)
 }
+
+export async function checkConditionsDataFreshness(): Promise<void> {
+  const result = await invokeCommand<DataVersionCheckResult>('check_conditions_data_freshness')
+  useGameDataStore.getState().setIsConditionsDataStale(result.isStale)
+}

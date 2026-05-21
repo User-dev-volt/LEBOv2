@@ -19,7 +19,7 @@ use commands::game_data_commands::{
 use commands::icon_commands::{get_icon_cache_path, initialize_icon_pipeline, IconMapCache};
 use commands::context_data_commands::{
     load_idol_data, load_blessings_data, load_conditions_data,
-    check_idol_data_freshness, check_blessings_data_freshness,
+    check_idol_data_freshness, check_blessings_data_freshness, check_conditions_data_freshness,
 };
 use commands::item_commands::{check_item_data_freshness, load_item_database, update_item_data};
 
@@ -78,6 +78,7 @@ pub fn run() {
             load_conditions_data,
             check_idol_data_freshness,
             check_blessings_data_freshness,
+            check_conditions_data_freshness,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

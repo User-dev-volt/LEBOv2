@@ -25,9 +25,12 @@ pub async fn load_conditions_data(app_handle: tauri::AppHandle) -> Result<Condit
 pub async fn check_idol_data_freshness(
     app_handle: tauri::AppHandle,
 ) -> Result<DataVersionCheckResult, String> {
-    let data_dir = game_data_service::ensure_game_data_dir(&app_handle)?;
-    let local = game_data_service::load_manifest(&data_dir)?;
-    let remote = game_data_service::fetch_remote_manifest(REMOTE_DATA_BASE_URL).await?;
+    let data_dir = game_data_service::ensure_game_data_dir(&app_handle)
+        .map_err(|e| format!("CONTEXT_DATA_ERROR: {}", e))?;
+    let local = game_data_service::load_manifest(&data_dir)
+        .map_err(|e| format!("CONTEXT_DATA_ERROR: {}", e))?;
+    let remote = game_data_service::fetch_remote_manifest(REMOTE_DATA_BASE_URL).await
+        .map_err(|e| format!("CONTEXT_DATA_ERROR: {}", e))?;
 
     let local_version = local.idol_data_version.unwrap_or_default();
     let remote_version = remote.idol_data_version.unwrap_or_default();
@@ -48,12 +51,40 @@ pub async fn check_idol_data_freshness(
 pub async fn check_blessings_data_freshness(
     app_handle: tauri::AppHandle,
 ) -> Result<DataVersionCheckResult, String> {
-    let data_dir = game_data_service::ensure_game_data_dir(&app_handle)?;
-    let local = game_data_service::load_manifest(&data_dir)?;
-    let remote = game_data_service::fetch_remote_manifest(REMOTE_DATA_BASE_URL).await?;
+    let data_dir = game_data_service::ensure_game_data_dir(&app_handle)
+        .map_err(|e| format!("CONTEXT_DATA_ERROR: {}", e))?;
+    let local = game_data_service::load_manifest(&data_dir)
+        .map_err(|e| format!("CONTEXT_DATA_ERROR: {}", e))?;
+    let remote = game_data_service::fetch_remote_manifest(REMOTE_DATA_BASE_URL).await
+        .map_err(|e| format!("CONTEXT_DATA_ERROR: {}", e))?;
 
     let local_version = local.blessings_data_version.unwrap_or_default();
     let remote_version = remote.blessings_data_version.unwrap_or_default();
+
+    let is_stale = !local_version.is_empty() && !remote_version.is_empty() && local_version != remote_version;
+    let versions_behind = if is_stale { 1 } else { 0 };
+
+    Ok(DataVersionCheckResult {
+        is_stale,
+        local_version,
+        remote_version,
+        versions_behind,
+    })
+}
+
+#[tauri::command]
+pub async fn check_conditions_data_freshness(
+    app_handle: tauri::AppHandle,
+) -> Result<DataVersionCheckResult, String> {
+    let data_dir = game_data_service::ensure_game_data_dir(&app_handle)
+        .map_err(|e| format!("CONTEXT_DATA_ERROR: {}", e))?;
+    let local = game_data_service::load_manifest(&data_dir)
+        .map_err(|e| format!("CONTEXT_DATA_ERROR: {}", e))?;
+    let remote = game_data_service::fetch_remote_manifest(REMOTE_DATA_BASE_URL).await
+        .map_err(|e| format!("CONTEXT_DATA_ERROR: {}", e))?;
+
+    let local_version = local.conditions_data_version.unwrap_or_default();
+    let remote_version = remote.conditions_data_version.unwrap_or_default();
 
     let is_stale = !local_version.is_empty() && !remote_version.is_empty() && local_version != remote_version;
     let versions_behind = if is_stale { 1 } else { 0 };

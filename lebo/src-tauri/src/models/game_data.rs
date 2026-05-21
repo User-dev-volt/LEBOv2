@@ -80,6 +80,8 @@ pub struct GameDataManifest {
     pub idol_data_version: Option<String>,
     #[serde(default)]
     pub blessings_data_version: Option<String>,
+    #[serde(default)]
+    pub conditions_data_version: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

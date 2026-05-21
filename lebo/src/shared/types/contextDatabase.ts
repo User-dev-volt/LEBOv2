@@ -67,7 +67,7 @@ export interface ConditionEntry {
   displayLabel: string
   category: 'universal' | 'build-specific'
   type: 'select' | 'range' | 'toggle'
-  options?: ConditionOption[]
+  options: ConditionOption[]
   min?: number
   max?: number
   step?: number

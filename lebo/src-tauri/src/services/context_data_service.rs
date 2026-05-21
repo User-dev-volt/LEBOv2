@@ -25,10 +25,12 @@ pub fn copy_bundled_context_resources(app_handle: &tauri::AppHandle) -> Result<P
         .map_err(|e| format!("CONTEXT_DATA_ERROR: resource_dir: {}", e))?;
     let src = resource_dir.join("resources").join("context-data");
     for filename in &files {
-        let src_path = src.join(filename);
         let dst_path = data_dir.join(filename);
-        std::fs::copy(&src_path, &dst_path)
-            .map_err(|e| format!("CONTEXT_DATA_ERROR: copy {}: {}", filename, e))?;
+        if !dst_path.exists() {
+            let src_path = src.join(filename);
+            std::fs::copy(&src_path, &dst_path)
+                .map_err(|e| format!("CONTEXT_DATA_ERROR: copy {}: {}", filename, e))?;
+        }
     }
     Ok(data_dir)
 }

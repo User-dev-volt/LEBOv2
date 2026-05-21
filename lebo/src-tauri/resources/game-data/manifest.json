@@ -8,5 +8,6 @@
   "iconCacheVersion": "1.0.0",
   "iconSource": "placeholder",
   "idolDataVersion": "s4.1",
-  "blessingsDataVersion": "s4.1"
+  "blessingsDataVersion": "s4.1",
+  "conditionsDataVersion": "s4.1"
 }

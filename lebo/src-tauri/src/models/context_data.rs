@@ -95,6 +95,7 @@ pub struct ConditionFilter {
 #[serde(rename_all = "camelCase")]
 pub struct ConditionEntry {
     pub id: String,
+    #[serde(default)]
     pub display_label: String,
     pub category: String,
     #[serde(rename = "type")]
