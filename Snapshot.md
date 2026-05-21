@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Hand story 1.2 to dev agent for implementation; monitor for completion of the Python annotation script and confirmation of all 5 class files passing the verification one-liner before marking story complete.
+Submit for code review via `/bmad-code-review`; on approval, create story 1.3 (affix + item data ingestion) to continue Epic 1 critical path.
 
 ---
 
