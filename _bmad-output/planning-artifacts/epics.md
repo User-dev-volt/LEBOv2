@@ -511,6 +511,11 @@ So that the gear affix scorer can correctly weight affixes for any build's damag
 **Then** both succeed without errors
 **And** no existing TypeScript type assertions fail due to schema changes
 
+**Given** the item database after ingestion
+**When** gear slot IDs are queried
+**Then** exactly 12 canonical slot IDs are present and consistent with lastepochtools.com's slot naming (e.g., `helm`, `chest`, `gloves`, `boots`, `belt`, `amulet`, `ring_1`, `ring_2`, `weapon`, `off_hand`, `relic`, and one additional slot verified against the community DB)
+**And** every affix entry that has a slot restriction uses only IDs from this canonical list
+
 ### Story 1.4: New Game Database Files & Staleness Integration
 
 As a player,
@@ -544,6 +549,11 @@ So that the context input features in Epic 3 have correct data from day one and 
 **Then** entries for enemy type, per-element enemy resistance, and charge counts (frenzy, power, endurance) are all present
 **And** build-specific conditions include at minimum: "Sigil of Hope active" (Paladin), "Is enemy Hexed?" (hex builds)
 
+**Given** `shared/types/build.ts`
+**When** an agent reviews the `BuildState` interface
+**Then** it includes `idolGrid?: IdolGridState`, `blessings?: Record<string, string | null>`, and `activeConditions?: string[]` fields — all optional and defaulting to empty state
+**And** `schemaVersion` remains at `2` — no migration is needed since these fields default to empty values for existing saved builds
+**And** `buildSnapshotSerializer.ts` maps these fields into `BuildSnapshot` so they reach the Rust scoring engine
 
 ---
 
@@ -833,9 +843,9 @@ So that the scoring engine factors in my actual idol bonuses when computing stat
 **Then** confirmation is blocked with a clear message that both are required for this idol type
 
 **Given** placed idols with affixes configured
-**When** `run_optimization` or `run_gear_scoring` is called
-**Then** the full idol context (slot position, idol size, affix IDs, tiers) is present in `BuildSnapshot`
-**And** the optimization payload includes idol data so Claude can generate idol-specific suggestions
+**When** `toBuildSnapshot()` serializes the current build state
+**Then** the full idol context (slot position, idol size, affix IDs, tiers) is present in the returned `BuildSnapshot`
+**And** when `run_optimization` is called, the optimization payload includes idol data so Claude can generate idol-specific suggestions
 
 ### Story 3.3: Blessings Panel
 
@@ -1007,6 +1017,12 @@ So that every suggestion I read is verifiably correct and explained in plain lan
 **Then** it calls `invokeCommand('run_optimization', { snapshot })` as the active optimization path
 **And** all existing suggestion streaming behavior is preserved (`optimization:suggestion-received` events still fire per suggestion)
 
+**Given** `run_optimization` completes Stages 1–3 and Stage 5 (synergy detection)
+**When** it triggers the Claude narrative layer
+**Then** it invokes the existing streaming function in `claude_commands.rs` with the assembled optimization payload
+**And** the `optimization:suggestion-received` event pipeline is unchanged — no new IPC event namespace is introduced for the narrative layer
+**And** `run_optimization` does not replace `invoke_claude_api` but delegates to the existing Claude streaming call internally for the narrative portion
+
 ### Story 4.4: Node Efficiency Overlay on Passive Tree
 
 As a player,
@@ -1155,6 +1171,11 @@ So that the Gear Optimization screen receives gear analysis results without inte
 **When** a developer imports it
 **Then** field names mirror the Rust output struct's snake_case naming exactly
 **And** the type includes `slotRankings: GearSlotRanking[]`, `prioritySlot: string`, and all required nested types
+
+**Given** placed idols in the build when `run_gear_scoring` is called
+**When** the gear scoring command runs
+**Then** the full idol context (slot position, idol size, affix IDs, tiers) is present in the `BuildSnapshot` passed to the Rust scoring engine
+**And** `GearSlotRanking` entries use the canonical 12 slot IDs established in Story 1.3
 
 ### Story 5.4: Gear Optimization View — Priority Ranking & Wishlists
 
