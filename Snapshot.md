@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-- Await user confirmation [Y/N] to launch the three parallel adversarial review layers (acceptance criteria validation, architectural review, integration/edge-case review)
+User clarifies scope ("What do you want to build?") → then invoke either `[CS] Create Story` for story 2-2 or `[QQ] Quick Dev` for ad-hoc work
 
 ---
 
