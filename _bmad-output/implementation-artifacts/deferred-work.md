@@ -41,3 +41,7 @@
 - **No unit tests in `scoring-core` crate** — `Condition::Stacked.is_active()` contains non-trivial prefix-parsing logic with no test coverage. Add at minimum: `Always`, `Named` hit/miss, `Stacked` boundary cases, `Composite` with always/named sub-conditions, `Threshold` always-false invariant.
 - **`Stacked { count: 0 }` footgun** — `count = 0` causes `n >= 0` to always be true for any string of form `{name}_<digits>`. Effectively becomes an unconditional match, not a stack-count gate. Document or add an `assert!(count > 0)` debug assertion when `Stacked` conditions are first constructed with real data in Phase 4.
 - **`GearSlotRanking` / `WishlistAffix` not re-exported from `lib.rs`** — Epic 5 types are accessible only via full path `scoring_core::stat_sheet::GearSlotRanking`. Add to `pub use` block in `lib.rs` when Epic 5 begins consuming them.
+
+## Deferred from: code review of 2-2-stage-1-build-score-function-implementation (2026-05-21)
+
+- **`archetype_weights` lookup assumes sorted ascending** — `resolve_archetype_weights` does a first-match-wins scan; if the table is unsorted (e.g. wrong JSON object order from Story 2.4 loader), the wrong weight band is returned silently. Enforce sort or add a debug assertion in Story 2.4's game data loader when the table is constructed.

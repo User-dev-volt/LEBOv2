@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-- Execute Story 2.2 dev task: expand `GameData` struct with `NodeEffect`, `ArchetypeWeights`, `ArchetypeWeightsEntry`, `BaseClassStats`
+Submit story 2.2 for code review by a different reviewer/LLM before merge.
 
 ---
 
