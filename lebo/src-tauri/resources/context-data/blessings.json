@@ -1,0 +1,349 @@
+[
+  {
+    "id": "bfd-twisted-memory",
+    "timelineId": "blood-frost-death",
+    "timelineName": "Blood, Frost, and Death",
+    "displayName": "Twisted Memory",
+    "statEffects": [{"statKey": "increased_cold_damage", "value": 30.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "bfd-frost-grasp",
+    "timelineId": "blood-frost-death",
+    "timelineName": "Blood, Frost, and Death",
+    "displayName": "Frost Grasp",
+    "statEffects": [{"statKey": "freeze_rate_multiplier", "value": 40.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "bfd-blood-of-the-tundra",
+    "timelineId": "blood-frost-death",
+    "timelineName": "Blood, Frost, and Death",
+    "displayName": "Blood of the Tundra",
+    "statEffects": [{"statKey": "life_leech_percent", "value": 1.5, "modifierType": "flat"}]
+  },
+  {
+    "id": "bfd-bone-armor",
+    "timelineId": "blood-frost-death",
+    "timelineName": "Blood, Frost, and Death",
+    "displayName": "Bone Armor",
+    "statEffects": [{"statKey": "armor", "value": 120.0, "modifierType": "flat"}]
+  },
+
+  {
+    "id": "aow-gift-of-winter",
+    "timelineId": "age-of-winter",
+    "timelineName": "The Age of Winter",
+    "displayName": "Gift of Winter",
+    "statEffects": [{"statKey": "cold_resistance", "value": 18.0, "modifierType": "flat"}]
+  },
+  {
+    "id": "aow-spirits-of-the-deep",
+    "timelineId": "age-of-winter",
+    "timelineName": "The Age of Winter",
+    "displayName": "Spirits of the Deep",
+    "statEffects": [{"statKey": "ward_on_hit", "value": 8.0, "modifierType": "flat"}]
+  },
+  {
+    "id": "aow-winters-bounty",
+    "timelineId": "age-of-winter",
+    "timelineName": "The Age of Winter",
+    "displayName": "Winter's Bounty",
+    "statEffects": [{"statKey": "max_hp_percent", "value": 10.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "aow-frozen-time",
+    "timelineId": "age-of-winter",
+    "timelineName": "The Age of Winter",
+    "displayName": "Frozen Time",
+    "statEffects": [{"statKey": "cast_speed", "value": 8.0, "modifierType": "increased"}]
+  },
+
+  {
+    "id": "rod-dragonfire",
+    "timelineId": "reign-of-dragons",
+    "timelineName": "Reign of Dragons",
+    "displayName": "Dragonfire",
+    "statEffects": [{"statKey": "increased_fire_damage", "value": 30.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "rod-dragon-scale",
+    "timelineId": "reign-of-dragons",
+    "timelineName": "Reign of Dragons",
+    "displayName": "Dragon Scale",
+    "statEffects": [{"statKey": "fire_resistance", "value": 18.0, "modifierType": "flat"}]
+  },
+  {
+    "id": "rod-embers-of-immortality",
+    "timelineId": "reign-of-dragons",
+    "timelineName": "Reign of Dragons",
+    "displayName": "Embers of Immortality",
+    "statEffects": [{"statKey": "ignite_duration", "value": 50.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "rod-wings-shadow",
+    "timelineId": "reign-of-dragons",
+    "timelineName": "Reign of Dragons",
+    "displayName": "Wing's Shadow",
+    "statEffects": [{"statKey": "dodge_rating", "value": 80.0, "modifierType": "flat"}]
+  },
+
+  {
+    "id": "tbs-twisted-hearts",
+    "timelineId": "the-black-sun",
+    "timelineName": "The Black Sun",
+    "displayName": "Twisted Hearts",
+    "statEffects": [{"statKey": "increased_void_damage", "value": 30.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "tbs-seeds-of-corruption",
+    "timelineId": "the-black-sun",
+    "timelineName": "The Black Sun",
+    "displayName": "Seeds of Corruption",
+    "statEffects": [{"statKey": "void_resistance", "value": 18.0, "modifierType": "flat"}]
+  },
+  {
+    "id": "tbs-heart-of-the-maelstrom",
+    "timelineId": "the-black-sun",
+    "timelineName": "The Black Sun",
+    "displayName": "Heart of the Maelstrom",
+    "statEffects": [{"statKey": "necrotic_resistance", "value": 18.0, "modifierType": "flat"}]
+  },
+  {
+    "id": "tbs-death-and-rebirth",
+    "timelineId": "the-black-sun",
+    "timelineName": "The Black Sun",
+    "displayName": "Death and Rebirth",
+    "statEffects": [{"statKey": "max_hp_percent", "value": 12.0, "modifierType": "increased"}]
+  },
+
+  {
+    "id": "tlr-exaltation-of-stone",
+    "timelineId": "the-last-ruin",
+    "timelineName": "The Last Ruin",
+    "displayName": "Exaltation of Stone",
+    "statEffects": [{"statKey": "armor", "value": 150.0, "modifierType": "flat"}]
+  },
+  {
+    "id": "tlr-ruin-of-the-stone",
+    "timelineId": "the-last-ruin",
+    "timelineName": "The Last Ruin",
+    "displayName": "Ruin of the Stone",
+    "statEffects": [{"statKey": "max_hp", "value": 120.0, "modifierType": "flat"}]
+  },
+  {
+    "id": "tlr-end-of-time",
+    "timelineId": "the-last-ruin",
+    "timelineName": "The Last Ruin",
+    "displayName": "End of Time",
+    "statEffects": [{"statKey": "movement_speed", "value": 10.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "tlr-devotion",
+    "timelineId": "the-last-ruin",
+    "timelineName": "The Last Ruin",
+    "displayName": "Devotion of the Last",
+    "statEffects": [{"statKey": "hp_regen_per_sec", "value": 40.0, "modifierType": "flat"}]
+  },
+
+  {
+    "id": "ets-stormbreaker",
+    "timelineId": "ending-the-storm",
+    "timelineName": "Ending the Storm",
+    "displayName": "Stormbreaker's Conviction",
+    "statEffects": [{"statKey": "increased_lightning_damage", "value": 30.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "ets-lightnings-touch",
+    "timelineId": "ending-the-storm",
+    "timelineName": "Ending the Storm",
+    "displayName": "Lightning's Touch",
+    "statEffects": [{"statKey": "critical_strike_chance", "value": 5.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "ets-storms-breath",
+    "timelineId": "ending-the-storm",
+    "timelineName": "Ending the Storm",
+    "displayName": "Storm's Breath",
+    "statEffects": [{"statKey": "lightning_resistance", "value": 18.0, "modifierType": "flat"}]
+  },
+  {
+    "id": "ets-endless-torrent",
+    "timelineId": "ending-the-storm",
+    "timelineName": "Ending the Storm",
+    "displayName": "Endless Torrent",
+    "statEffects": [{"statKey": "max_mana", "value": 60.0, "modifierType": "flat"}]
+  },
+
+  {
+    "id": "sof-conflagration",
+    "timelineId": "spirits-of-fire",
+    "timelineName": "Spirits of Fire",
+    "displayName": "Conflagration",
+    "statEffects": [{"statKey": "fire_penetration", "value": 12.0, "modifierType": "flat"}]
+  },
+  {
+    "id": "sof-scorched-earth",
+    "timelineId": "spirits-of-fire",
+    "timelineName": "Spirits of Fire",
+    "displayName": "Scorched Earth",
+    "statEffects": [{"statKey": "increased_fire_damage", "value": 35.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "sof-eternal-flames",
+    "timelineId": "spirits-of-fire",
+    "timelineName": "Spirits of Fire",
+    "displayName": "Eternal Flames",
+    "statEffects": [{"statKey": "ignite_duration", "value": 60.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "sof-searing-light",
+    "timelineId": "spirits-of-fire",
+    "timelineName": "Spirits of Fire",
+    "displayName": "Searing Light",
+    "statEffects": [{"statKey": "cast_speed", "value": 10.0, "modifierType": "increased"}]
+  },
+
+  {
+    "id": "eom-blood-plague",
+    "timelineId": "echoes-of-mortality",
+    "timelineName": "Echoes of Mortality",
+    "displayName": "Blood Plague",
+    "statEffects": [{"statKey": "increased_poison_damage", "value": 30.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "eom-plague-carrier",
+    "timelineId": "echoes-of-mortality",
+    "timelineName": "Echoes of Mortality",
+    "displayName": "Plague Carrier",
+    "statEffects": [{"statKey": "poison_duration", "value": 50.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "eom-deaths-mark",
+    "timelineId": "echoes-of-mortality",
+    "timelineName": "Echoes of Mortality",
+    "displayName": "Death's Mark",
+    "statEffects": [{"statKey": "necrotic_resistance", "value": 18.0, "modifierType": "flat"}]
+  },
+  {
+    "id": "eom-wretched-soul",
+    "timelineId": "echoes-of-mortality",
+    "timelineName": "Echoes of Mortality",
+    "displayName": "Wretched Soul",
+    "statEffects": [{"statKey": "increased_minion_damage", "value": 30.0, "modifierType": "increased"}]
+  },
+
+  {
+    "id": "foto-outcasts-rage",
+    "timelineId": "fall-of-the-outcasts",
+    "timelineName": "Fall of the Outcasts",
+    "displayName": "Outcasts' Rage",
+    "statEffects": [{"statKey": "increased_physical_damage", "value": 30.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "foto-ironclad-defense",
+    "timelineId": "fall-of-the-outcasts",
+    "timelineName": "Fall of the Outcasts",
+    "displayName": "Ironclad Defense",
+    "statEffects": [{"statKey": "armor", "value": 150.0, "modifierType": "flat"}]
+  },
+  {
+    "id": "foto-warriors-blood",
+    "timelineId": "fall-of-the-outcasts",
+    "timelineName": "Fall of the Outcasts",
+    "displayName": "Warrior's Blood",
+    "statEffects": [{"statKey": "max_hp", "value": 100.0, "modifierType": "flat"}]
+  },
+  {
+    "id": "foto-hardened",
+    "timelineId": "fall-of-the-outcasts",
+    "timelineName": "Fall of the Outcasts",
+    "displayName": "Hardened",
+    "statEffects": [{"statKey": "endurance_threshold", "value": 5.0, "modifierType": "flat"}]
+  },
+
+  {
+    "id": "tsl-lances-edge",
+    "timelineId": "the-stolen-lance",
+    "timelineName": "The Stolen Lance",
+    "displayName": "The Lance's Edge",
+    "statEffects": [{"statKey": "critical_strike_chance", "value": 6.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "tsl-piercing-strikes",
+    "timelineId": "the-stolen-lance",
+    "timelineName": "The Stolen Lance",
+    "displayName": "Piercing Strikes",
+    "statEffects": [{"statKey": "critical_strike_multiplier", "value": 40.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "tsl-swift-as-the-lance",
+    "timelineId": "the-stolen-lance",
+    "timelineName": "The Stolen Lance",
+    "displayName": "Swift as the Lance",
+    "statEffects": [{"statKey": "attack_speed", "value": 10.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "tsl-lance-bearers-mark",
+    "timelineId": "the-stolen-lance",
+    "timelineName": "The Stolen Lance",
+    "displayName": "Lance Bearer's Mark",
+    "statEffects": [{"statKey": "physical_penetration", "value": 10.0, "modifierType": "flat"}]
+  },
+
+  {
+    "id": "as-potent-poison",
+    "timelineId": "apothecary-sanctum",
+    "timelineName": "Apothecary's Sanctum",
+    "displayName": "Potent Poison",
+    "statEffects": [{"statKey": "increased_poison_damage", "value": 35.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "as-wide-spread",
+    "timelineId": "apothecary-sanctum",
+    "timelineName": "Apothecary's Sanctum",
+    "displayName": "Wide Spread",
+    "statEffects": [{"statKey": "area_of_effect", "value": 20.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "as-quick-synthesis",
+    "timelineId": "apothecary-sanctum",
+    "timelineName": "Apothecary's Sanctum",
+    "displayName": "Quick Synthesis",
+    "statEffects": [{"statKey": "movement_speed", "value": 12.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "as-toxic-mastery",
+    "timelineId": "apothecary-sanctum",
+    "timelineName": "Apothecary's Sanctum",
+    "displayName": "Toxic Mastery",
+    "statEffects": [{"statKey": "max_poison_stacks", "value": 2.0, "modifierType": "flat"}]
+  },
+
+  {
+    "id": "ts-epoch-of-fire",
+    "timelineId": "temporal-sanctum",
+    "timelineName": "Temporal Sanctum",
+    "displayName": "Epoch of Fire",
+    "statEffects": [{"statKey": "increased_fire_damage", "value": 40.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "ts-epoch-of-winter",
+    "timelineId": "temporal-sanctum",
+    "timelineName": "Temporal Sanctum",
+    "displayName": "Epoch of Winter",
+    "statEffects": [{"statKey": "increased_cold_damage", "value": 40.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "ts-epoch-of-lightning",
+    "timelineId": "temporal-sanctum",
+    "timelineName": "Temporal Sanctum",
+    "displayName": "Epoch of Lightning",
+    "statEffects": [{"statKey": "increased_lightning_damage", "value": 40.0, "modifierType": "increased"}]
+  },
+  {
+    "id": "ts-epoch-of-void",
+    "timelineId": "temporal-sanctum",
+    "timelineName": "Temporal Sanctum",
+    "displayName": "Epoch of Void",
+    "statEffects": [{"statKey": "increased_void_damage", "value": 40.0, "modifierType": "increased"}]
+  }
+]

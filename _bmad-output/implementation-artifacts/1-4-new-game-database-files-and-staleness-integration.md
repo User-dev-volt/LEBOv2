@@ -1,6 +1,6 @@
 # Story 1.4: New Game Database Files & Staleness Integration
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -37,61 +37,61 @@ so that the context input features in Epic 3 have correct data from day one and 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create context-data resource directory and JSON files (AC: #1, #3, #4, #5)
-  - [ ] Create directory `lebo/src-tauri/resources/context-data/`
-  - [ ] Create `idol-data.json` with grid spec, idol types, and affix pools (see Dev Notes for full content)
-  - [ ] Create `blessings.json` with all 12 Season 4 timeline blessings (see Dev Notes for full content)
-  - [ ] Create `conditions.json` with universal + build-specific conditions (see Dev Notes for full content)
+- [x] Task 1: Create context-data resource directory and JSON files (AC: #1, #3, #4, #5)
+  - [x] Create directory `lebo/src-tauri/resources/context-data/`
+  - [x] Create `idol-data.json` with grid spec, idol types, and affix pools (see Dev Notes for full content)
+  - [x] Create `blessings.json` with all 12 Season 4 timeline blessings (see Dev Notes for full content)
+  - [x] Create `conditions.json` with universal + build-specific conditions (see Dev Notes for full content)
 
-- [ ] Task 2: Extend `GameDataManifest` Rust struct and update merge (AC: #2)
-  - [ ] Open `lebo/src-tauri/src/models/game_data.rs`
-  - [ ] Add `#[serde(default)] pub idol_data_version: Option<String>` to `GameDataManifest`
-  - [ ] Add `#[serde(default)] pub blessings_data_version: Option<String>` to `GameDataManifest`
-  - [ ] Open `lebo/src-tauri/src/commands/game_data_commands.rs`
-  - [ ] In `download_game_data_update`, add `merged.idol_data_version = local.idol_data_version;` and `merged.blessings_data_version = local.blessings_data_version;` alongside the existing `merged.item_data_version` carry-forward
-  - [ ] Update bundled `lebo/src-tauri/resources/game-data/manifest.json` to add `"idolDataVersion": "s4.1"` and `"blessingsDataVersion": "s4.1"` fields
+- [x] Task 2: Extend `GameDataManifest` Rust struct and update merge (AC: #2)
+  - [x] Open `lebo/src-tauri/src/models/game_data.rs`
+  - [x] Add `#[serde(default)] pub idol_data_version: Option<String>` to `GameDataManifest`
+  - [x] Add `#[serde(default)] pub blessings_data_version: Option<String>` to `GameDataManifest`
+  - [x] Open `lebo/src-tauri/src/commands/game_data_commands.rs`
+  - [x] In `download_game_data_update`, add `merged.idol_data_version = local.idol_data_version;` and `merged.blessings_data_version = local.blessings_data_version;` alongside the existing `merged.item_data_version` carry-forward
+  - [x] Update bundled `lebo/src-tauri/resources/game-data/manifest.json` to add `"idolDataVersion": "s4.1"` and `"blessingsDataVersion": "s4.1"` fields
 
-- [ ] Task 3: Create `models/context_data.rs` — Rust data structs (AC: #3, #4, #5)
-  - [ ] Create new file `lebo/src-tauri/src/models/context_data.rs` with all structs (see Dev Notes for exact definitions)
-  - [ ] Add `pub mod context_data;` to `lebo/src-tauri/src/models/mod.rs`
+- [x] Task 3: Create `models/context_data.rs` — Rust data structs (AC: #3, #4, #5)
+  - [x] Create new file `lebo/src-tauri/src/models/context_data.rs` with all structs (see Dev Notes for exact definitions)
+  - [x] Add `pub mod context_data;` to `lebo/src-tauri/src/models/mod.rs`
 
-- [ ] Task 4: Create `services/context_data_service.rs` (AC: #1)
-  - [ ] Create new file `lebo/src-tauri/src/services/context_data_service.rs` with copy/load functions (see Dev Notes for exact implementations)
-  - [ ] Add `pub mod context_data_service;` to `lebo/src-tauri/src/services/mod.rs`
+- [x] Task 4: Create `services/context_data_service.rs` (AC: #1)
+  - [x] Create new file `lebo/src-tauri/src/services/context_data_service.rs` with copy/load functions (see Dev Notes for exact implementations)
+  - [x] Add `pub mod context_data_service;` to `lebo/src-tauri/src/services/mod.rs`
 
-- [ ] Task 5: Create `commands/context_data_commands.rs` — 5 new Tauri commands (AC: #1, #2)
-  - [ ] Create new file `lebo/src-tauri/src/commands/context_data_commands.rs` with all 5 commands (see Dev Notes)
-  - [ ] Add `pub mod context_data_commands;` to `lebo/src-tauri/src/commands/mod.rs`
+- [x] Task 5: Create `commands/context_data_commands.rs` — 5 new Tauri commands (AC: #1, #2)
+  - [x] Create new file `lebo/src-tauri/src/commands/context_data_commands.rs` with all 5 commands (see Dev Notes)
+  - [x] Add `pub mod context_data_commands;` to `lebo/src-tauri/src/commands/mod.rs`
 
-- [ ] Task 6: Register new commands in `lib.rs` (AC: #1)
-  - [ ] Add import: `use commands::context_data_commands::{load_idol_data, load_blessings_data, load_conditions_data, check_idol_data_freshness, check_blessings_data_freshness};`
-  - [ ] Register all 5 commands in `invoke_handler!`
+- [x] Task 6: Register new commands in `lib.rs` (AC: #1)
+  - [x] Add import: `use commands::context_data_commands::{load_idol_data, load_blessings_data, load_conditions_data, check_idol_data_freshness, check_blessings_data_freshness};`
+  - [x] Register all 5 commands in `invoke_handler!`
 
-- [ ] Task 7: Update `tauri.conf.json` resources bundle (AC: #1)
-  - [ ] Add the 3 context-data files to the `bundle.resources` array
-  - [ ] Also add the missing `"resources/items/set-items.json"` entry (pre-existing gap from story 1.3)
+- [x] Task 7: Update `tauri.conf.json` resources bundle (AC: #1)
+  - [x] Add the 3 context-data files to the `bundle.resources` array
+  - [x] Also add the missing `"resources/items/set-items.json"` entry (pre-existing gap from story 1.3)
 
-- [ ] Task 8: Create TypeScript type file `shared/types/contextDatabase.ts` (AC: #3, #4, #5)
-  - [ ] Create new file with all interfaces (see Dev Notes for exact definitions)
-  - [ ] Do NOT create a barrel `index.ts` file
+- [x] Task 8: Create TypeScript type file `shared/types/contextDatabase.ts` (AC: #3, #4, #5)
+  - [x] Create new file with all interfaces (see Dev Notes for exact definitions)
+  - [x] Do NOT create a barrel `index.ts` file
 
-- [ ] Task 9: Create `features/context-database/contextDatabaseLoader.ts` (AC: #1, #2)
-  - [ ] Create new feature folder `lebo/src/features/context-database/`
-  - [ ] Create `contextDatabaseLoader.ts` with 5 async functions (see Dev Notes)
+- [x] Task 9: Create `features/context-database/contextDatabaseLoader.ts` (AC: #1, #2)
+  - [x] Create new feature folder `lebo/src/features/context-database/`
+  - [x] Create `contextDatabaseLoader.ts` with 5 async functions (see Dev Notes)
 
-- [ ] Task 10: Extend `shared/stores/gameDataStore.ts` (AC: #2)
-  - [ ] Add `idolData`, `blessingsDatabase`, `conditionsDatabase` data fields and setters
-  - [ ] Add `isIdolDataStale`, `idolDataStaleAcknowledged` flags + setters (mirroring `isItemDataStale` pattern exactly)
-  - [ ] Add `isBlessingsDataStale`, `blessingsDataStaleAcknowledged` flags + setters
+- [x] Task 10: Extend `shared/stores/gameDataStore.ts` (AC: #2)
+  - [x] Add `idolData`, `blessingsDatabase`, `conditionsDatabase` data fields and setters
+  - [x] Add `isIdolDataStale`, `idolDataStaleAcknowledged` flags + setters (mirroring `isItemDataStale` pattern exactly)
+  - [x] Add `isBlessingsDataStale`, `blessingsDataStaleAcknowledged` flags + setters
 
-- [ ] Task 11: Update `App.tsx` startup loading (AC: #1)
-  - [ ] Import the 3 loaders from `context-database/contextDatabaseLoader`
-  - [ ] Add `loadIdolData()`, `loadBlessingsData()`, `loadConditionsData()` calls in the startup `useEffect` (fire-and-forget `.catch(console.error)` pattern)
+- [x] Task 11: Update `App.tsx` startup loading (AC: #1)
+  - [x] Import the 3 loaders from `context-database/contextDatabaseLoader`
+  - [x] Add `loadIdolData()`, `loadBlessingsData()`, `loadConditionsData()` calls in the startup `useEffect` (fire-and-forget `.catch(console.error)` pattern)
 
-- [ ] Task 12: Verify end-to-end (AC: #1–5)
-  - [ ] Run `pnpm build` from `lebo/` — zero TypeScript errors required
-  - [ ] Run `cargo build` from `lebo/src-tauri/` — zero Rust errors required
-  - [ ] Run `pnpm vitest` — confirm no new regressions (8 pre-existing failures from stories 1.1/1.2 remain expected)
+- [x] Task 12: Verify end-to-end (AC: #1–5)
+  - [x] Run `pnpm build` from `lebo/` — zero TypeScript errors required
+  - [x] Run `cargo build` from `lebo/src-tauri/` — zero Rust errors required
+  - [x] Run `pnpm vitest` — confirm no new regressions (8 pre-existing failures from stories 1.1/1.2 remain expected)
 
 ---
 
@@ -1381,12 +1381,46 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+None — implementation matched specs exactly. Rust compiled cleanly in first pass; TypeScript compiled with zero errors.
+
 ### Completion Notes List
 
+- Created 3 JSON resource files in `resources/context-data/`: idol-data.json (4 idol types with affix pools), blessings.json (48 entries across 12 timelines), conditions.json (10 universal + 2 build-specific)
+- Extended `GameDataManifest` with `idol_data_version` and `blessings_data_version` optional fields; both preserved through `download_game_data_update` merge
+- New Rust module tree: `models/context_data.rs`, `services/context_data_service.rs`, `commands/context_data_commands.rs` — 5 Tauri commands registered in `lib.rs`
+- New TypeScript: `shared/types/contextDatabase.ts` (named exports only, no barrel), `features/context-database/contextDatabaseLoader.ts` (5 async functions)
+- `gameDataStore` extended with idolData, blessingsDatabase, conditionsDatabase fields plus isIdolDataStale/isBlessingsDataStale staleness flags mirroring the itemDatabase pattern
+- `App.tsx` fires `loadIdolData()`, `loadBlessingsData()`, `loadConditionsData()` fire-and-forget on startup
+- Fixed pre-existing gap: `resources/items/set-items.json` added to tauri.conf.json bundle resources
+- `pnpm build` — 0 TypeScript errors; `cargo build` — 0 Rust errors; `pnpm vitest` — 8 pre-existing failures only (ProviderSelector ×5, Settings ×1, SkillTreeCanvas ×1, TreeControls ×1), no regressions
+
 ### File List
+
+**New files:**
+- `lebo/src-tauri/resources/context-data/idol-data.json`
+- `lebo/src-tauri/resources/context-data/blessings.json`
+- `lebo/src-tauri/resources/context-data/conditions.json`
+- `lebo/src-tauri/src/models/context_data.rs`
+- `lebo/src-tauri/src/services/context_data_service.rs`
+- `lebo/src-tauri/src/commands/context_data_commands.rs`
+- `lebo/src/shared/types/contextDatabase.ts`
+- `lebo/src/features/context-database/contextDatabaseLoader.ts`
+
+**Modified files:**
+- `lebo/src-tauri/resources/game-data/manifest.json`
+- `lebo/src-tauri/src/models/game_data.rs`
+- `lebo/src-tauri/src/models/mod.rs`
+- `lebo/src-tauri/src/services/mod.rs`
+- `lebo/src-tauri/src/commands/mod.rs`
+- `lebo/src-tauri/src/commands/game_data_commands.rs`
+- `lebo/src-tauri/src/lib.rs`
+- `lebo/src-tauri/tauri.conf.json`
+- `lebo/src/shared/stores/gameDataStore.ts`
+- `lebo/src/App.tsx`
 
 ### Review Findings
 
 ## Change Log
 
 - 2026-05-21: Story 1.4 created — new game database files and staleness integration
+- 2026-05-21: Story 1.4 implemented — all 12 tasks complete, zero build errors, no new test regressions

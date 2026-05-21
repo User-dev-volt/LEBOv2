@@ -6,5 +6,7 @@
   "classes": ["sentinel", "mage", "primalist", "acolyte", "rogue"],
   "itemDataVersion": "s4.1",
   "iconCacheVersion": "1.0.0",
-  "iconSource": "placeholder"
+  "iconSource": "placeholder",
+  "idolDataVersion": "s4.1",
+  "blessingsDataVersion": "s4.1"
 }

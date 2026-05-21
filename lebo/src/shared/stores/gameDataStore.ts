@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { GameData, GameNode } from '../types/gameData'
 import type { TreeData } from '../types/treeData'
 import type { ItemDatabase } from '../types/itemDatabase'
+import type { IdolData, BlessingsDatabase, ConditionsDatabase } from '../types/contextDatabase'
 
 interface GameDataStore {
   gameData: GameData | null
@@ -32,6 +33,23 @@ interface GameDataStore {
   setIsItemDataStale: (stale: boolean) => void
   acknowledgeItemDataStaleness: () => void
   setIsItemDataUpdating: (updating: boolean) => void
+
+  idolData: IdolData | null
+  setIdolData: (data: IdolData | null) => void
+  isIdolDataStale: boolean
+  idolDataStaleAcknowledged: boolean
+  setIsIdolDataStale: (stale: boolean) => void
+  acknowledgeIdolDataStaleness: () => void
+
+  blessingsDatabase: BlessingsDatabase | null
+  setBlessingsDatabase: (db: BlessingsDatabase | null) => void
+  isBlessingsDataStale: boolean
+  blessingsDataStaleAcknowledged: boolean
+  setIsBlessingsDataStale: (stale: boolean) => void
+  acknowledgeBlessingsDataStaleness: () => void
+
+  conditionsDatabase: ConditionsDatabase | null
+  setConditionsDatabase: (db: ConditionsDatabase | null) => void
 }
 
 export const useGameDataStore = create<GameDataStore>()((set) => ({
@@ -63,4 +81,21 @@ export const useGameDataStore = create<GameDataStore>()((set) => ({
   setIsItemDataStale: (stale) => set({ isItemDataStale: stale }),
   acknowledgeItemDataStaleness: () => set({ itemDataStaleAcknowledged: true }),
   setIsItemDataUpdating: (updating) => set({ isItemDataUpdating: updating }),
+
+  idolData: null,
+  setIdolData: (data) => set({ idolData: data }),
+  isIdolDataStale: false,
+  idolDataStaleAcknowledged: false,
+  setIsIdolDataStale: (stale) => set({ isIdolDataStale: stale }),
+  acknowledgeIdolDataStaleness: () => set({ idolDataStaleAcknowledged: true }),
+
+  blessingsDatabase: null,
+  setBlessingsDatabase: (db) => set({ blessingsDatabase: db }),
+  isBlessingsDataStale: false,
+  blessingsDataStaleAcknowledged: false,
+  setIsBlessingsDataStale: (stale) => set({ isBlessingsDataStale: stale }),
+  acknowledgeBlessingsDataStaleness: () => set({ blessingsDataStaleAcknowledged: true }),
+
+  conditionsDatabase: null,
+  setConditionsDatabase: (db) => set({ conditionsDatabase: db }),
 }))

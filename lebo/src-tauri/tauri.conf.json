@@ -50,7 +50,11 @@
       "resources/icons/skills/**/*",
       "resources/items/base-items.json",
       "resources/items/uniques.json",
-      "resources/items/affixes.json"
+      "resources/items/affixes.json",
+      "resources/items/set-items.json",
+      "resources/context-data/idol-data.json",
+      "resources/context-data/blessings.json",
+      "resources/context-data/conditions.json"
     ],
     "windows": {
       "digestAlgorithm": "sha256",

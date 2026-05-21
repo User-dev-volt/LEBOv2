@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Toaster } from 'react-hot-toast'
 import { initGameData } from './features/game-data/gameDataLoader'
 import { loadItemDatabase } from './features/item-database/itemDatabaseLoader'
+import { loadIdolData, loadBlessingsData, loadConditionsData } from './features/context-database/contextDatabaseLoader'
 import { loadSyntheticWeaverData } from './features/weaver-tree/weaverSyntheticData'
 import { initializeIconPipeline } from './shared/commands/iconCommands'
 import { loadBuildsOnStartup, saveBuild } from './features/build-manager/buildPersistence'
@@ -46,6 +47,9 @@ export function App() {
     loadBuildsOnStartup().catch(console.error)
     initializeIconPipeline().catch(console.error)
     loadItemDatabase().catch(console.error)
+    loadIdolData().catch(console.error)
+    loadBlessingsData().catch(console.error)
+    loadConditionsData().catch(console.error)
 
     // Stub Weaver Tree loader — replace when real community node data is available (see story 4-3 Task 0)
     const { setWeaverTreeData, setWeaverGameNodes } = useGameDataStore.getState()

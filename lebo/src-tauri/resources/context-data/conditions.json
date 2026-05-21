@@ -1,0 +1,121 @@
+[
+  {
+    "id": "enemy_type",
+    "displayLabel": "Enemy Type",
+    "category": "universal",
+    "type": "select",
+    "options": [
+      {"value": "standard_mob", "label": "Standard Mob"},
+      {"value": "rare", "label": "Rare Enemy"},
+      {"value": "unique_boss", "label": "Unique Boss"},
+      {"value": "pinnacle_boss", "label": "Pinnacle Boss"}
+    ],
+    "defaultValue": "standard_mob"
+  },
+  {
+    "id": "enemy_fire_resistance",
+    "displayLabel": "Enemy Fire Resistance (%)",
+    "category": "universal",
+    "type": "range",
+    "min": -100,
+    "max": 100,
+    "step": 5,
+    "defaultValue": 0
+  },
+  {
+    "id": "enemy_cold_resistance",
+    "displayLabel": "Enemy Cold Resistance (%)",
+    "category": "universal",
+    "type": "range",
+    "min": -100,
+    "max": 100,
+    "step": 5,
+    "defaultValue": 0
+  },
+  {
+    "id": "enemy_lightning_resistance",
+    "displayLabel": "Enemy Lightning Resistance (%)",
+    "category": "universal",
+    "type": "range",
+    "min": -100,
+    "max": 100,
+    "step": 5,
+    "defaultValue": 0
+  },
+  {
+    "id": "enemy_void_resistance",
+    "displayLabel": "Enemy Void Resistance (%)",
+    "category": "universal",
+    "type": "range",
+    "min": -100,
+    "max": 100,
+    "step": 5,
+    "defaultValue": 0
+  },
+  {
+    "id": "enemy_poison_resistance",
+    "displayLabel": "Enemy Poison Resistance (%)",
+    "category": "universal",
+    "type": "range",
+    "min": -100,
+    "max": 100,
+    "step": 5,
+    "defaultValue": 0
+  },
+  {
+    "id": "enemy_physical_resistance",
+    "displayLabel": "Enemy Physical Resistance (%)",
+    "category": "universal",
+    "type": "range",
+    "min": -100,
+    "max": 100,
+    "step": 5,
+    "defaultValue": 0
+  },
+  {
+    "id": "frenzy_charges",
+    "displayLabel": "Frenzy Charges",
+    "category": "universal",
+    "type": "range",
+    "min": 0,
+    "max": 4,
+    "step": 1,
+    "defaultValue": 0
+  },
+  {
+    "id": "power_charges",
+    "displayLabel": "Power Charges",
+    "category": "universal",
+    "type": "range",
+    "min": 0,
+    "max": 3,
+    "step": 1,
+    "defaultValue": 0
+  },
+  {
+    "id": "endurance_charges",
+    "displayLabel": "Endurance Charges",
+    "category": "universal",
+    "type": "range",
+    "min": 0,
+    "max": 3,
+    "step": 1,
+    "defaultValue": 0
+  },
+  {
+    "id": "sigil_of_hope_active",
+    "displayLabel": "Sigil of Hope active",
+    "category": "build-specific",
+    "type": "toggle",
+    "defaultValue": false,
+    "filter": {"classId": "sentinel", "skillTag": "sigil_of_hope"}
+  },
+  {
+    "id": "enemy_hexed",
+    "displayLabel": "Is enemy Hexed?",
+    "category": "build-specific",
+    "type": "toggle",
+    "defaultValue": false,
+    "filter": {"skillTag": "hex"}
+  }
+]

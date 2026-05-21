@@ -77,6 +77,8 @@ pub async fn download_game_data_update(
         merged.icon_source = local.icon_source;
         merged.icon_cache_version = local.icon_cache_version;
         merged.item_data_version = local.item_data_version;
+        merged.idol_data_version = local.idol_data_version;
+        merged.blessings_data_version = local.blessings_data_version;
     }
     let manifest_json = serde_json::to_string_pretty(&merged)
         .map_err(|e| format!("STORAGE_ERROR: serialize manifest: {}", e))?;

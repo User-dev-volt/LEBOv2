@@ -76,6 +76,10 @@ pub struct GameDataManifest {
     pub icon_cache_version: Option<String>,
     #[serde(default)]
     pub icon_source: Option<String>,
+    #[serde(default)]
+    pub idol_data_version: Option<String>,
+    #[serde(default)]
+    pub blessings_data_version: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

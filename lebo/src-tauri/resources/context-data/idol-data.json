@@ -1,0 +1,83 @@
+{
+  "version": "s4.1",
+  "defaultGrid": {
+    "rows": 5,
+    "cols": 5,
+    "blockedCells": [[0,0],[0,4],[4,0],[4,4],[2,2]]
+  },
+  "altarVariants": [],
+  "idolTypes": [
+    {
+      "id": "small-1x1",
+      "displayName": "Small Idol",
+      "rows": 1,
+      "cols": 1,
+      "requiresBoth": false,
+      "prefixPool": [
+        {"id": "idol-small-added-fire-damage", "displayName": "of Flame", "type": "prefix", "tiers": [{"tier": 1, "minValue": 3.0, "maxValue": 5.0}, {"tier": 2, "minValue": 6.0, "maxValue": 8.0}, {"tier": 3, "minValue": 9.0, "maxValue": 12.0}], "statKey": "added_fire_damage", "modifierType": "flat"},
+        {"id": "idol-small-increased-physical-damage", "displayName": "Brutal", "type": "prefix", "tiers": [{"tier": 1, "minValue": 8.0, "maxValue": 12.0}, {"tier": 2, "minValue": 13.0, "maxValue": 17.0}, {"tier": 3, "minValue": 18.0, "maxValue": 22.0}], "statKey": "increased_physical_damage", "modifierType": "increased"},
+        {"id": "idol-small-fire-resistance", "displayName": "of the Ember", "type": "prefix", "tiers": [{"tier": 1, "minValue": 8.0, "maxValue": 10.0}, {"tier": 2, "minValue": 11.0, "maxValue": 13.0}, {"tier": 3, "minValue": 14.0, "maxValue": 16.0}], "statKey": "fire_resistance", "modifierType": "flat"},
+        {"id": "idol-small-cold-resistance", "displayName": "of the Tundra", "type": "prefix", "tiers": [{"tier": 1, "minValue": 8.0, "maxValue": 10.0}, {"tier": 2, "minValue": 11.0, "maxValue": 13.0}, {"tier": 3, "minValue": 14.0, "maxValue": 16.0}], "statKey": "cold_resistance", "modifierType": "flat"},
+        {"id": "idol-small-lightning-resistance", "displayName": "of the Storm", "type": "prefix", "tiers": [{"tier": 1, "minValue": 8.0, "maxValue": 10.0}, {"tier": 2, "minValue": 11.0, "maxValue": 13.0}, {"tier": 3, "minValue": 14.0, "maxValue": 16.0}], "statKey": "lightning_resistance", "modifierType": "flat"}
+      ],
+      "suffixPool": []
+    },
+    {
+      "id": "humble-1x2",
+      "displayName": "Humble Idol",
+      "rows": 1,
+      "cols": 2,
+      "requiresBoth": true,
+      "prefixPool": [
+        {"id": "idol-humble-increased-fire-damage", "displayName": "of Conflagration", "type": "prefix", "tiers": [{"tier": 1, "minValue": 20.0, "maxValue": 25.0}, {"tier": 2, "minValue": 26.0, "maxValue": 31.0}, {"tier": 3, "minValue": 32.0, "maxValue": 38.0}], "statKey": "increased_fire_damage", "modifierType": "increased"},
+        {"id": "idol-humble-increased-cold-damage", "displayName": "of the Glacier", "type": "prefix", "tiers": [{"tier": 1, "minValue": 20.0, "maxValue": 25.0}, {"tier": 2, "minValue": 26.0, "maxValue": 31.0}, {"tier": 3, "minValue": 32.0, "maxValue": 38.0}], "statKey": "increased_cold_damage", "modifierType": "increased"},
+        {"id": "idol-humble-increased-void-damage", "displayName": "of the Void", "type": "prefix", "tiers": [{"tier": 1, "minValue": 20.0, "maxValue": 25.0}, {"tier": 2, "minValue": 26.0, "maxValue": 31.0}, {"tier": 3, "minValue": 32.0, "maxValue": 38.0}], "statKey": "increased_void_damage", "modifierType": "increased"},
+        {"id": "idol-humble-max-hp", "displayName": "Stalwart", "type": "prefix", "tiers": [{"tier": 1, "minValue": 25.0, "maxValue": 35.0}, {"tier": 2, "minValue": 36.0, "maxValue": 46.0}, {"tier": 3, "minValue": 47.0, "maxValue": 60.0}], "statKey": "max_hp", "modifierType": "flat"}
+      ],
+      "suffixPool": [
+        {"id": "idol-humble-crit-chance", "displayName": "of Precision", "type": "suffix", "tiers": [{"tier": 1, "minValue": 3.0, "maxValue": 4.0}, {"tier": 2, "minValue": 5.0, "maxValue": 6.0}, {"tier": 3, "minValue": 7.0, "maxValue": 8.0}], "statKey": "critical_strike_chance", "modifierType": "increased"},
+        {"id": "idol-humble-attack-speed", "displayName": "of Swiftness", "type": "suffix", "tiers": [{"tier": 1, "minValue": 4.0, "maxValue": 6.0}, {"tier": 2, "minValue": 7.0, "maxValue": 9.0}, {"tier": 3, "minValue": 10.0, "maxValue": 12.0}], "statKey": "attack_speed", "modifierType": "increased"},
+        {"id": "idol-humble-cast-speed", "displayName": "of Channeling", "type": "suffix", "tiers": [{"tier": 1, "minValue": 4.0, "maxValue": 6.0}, {"tier": 2, "minValue": 7.0, "maxValue": 9.0}, {"tier": 3, "minValue": 10.0, "maxValue": 12.0}], "statKey": "cast_speed", "modifierType": "increased"},
+        {"id": "idol-humble-all-resistances", "displayName": "of Warding", "type": "suffix", "tiers": [{"tier": 1, "minValue": 4.0, "maxValue": 6.0}, {"tier": 2, "minValue": 7.0, "maxValue": 9.0}, {"tier": 3, "minValue": 10.0, "maxValue": 12.0}], "statKey": "all_resistances", "modifierType": "flat"}
+      ]
+    },
+    {
+      "id": "stout-1x3",
+      "displayName": "Stout Idol",
+      "rows": 1,
+      "cols": 3,
+      "requiresBoth": true,
+      "prefixPool": [
+        {"id": "idol-stout-increased-spell-damage", "displayName": "of the Arcane", "type": "prefix", "tiers": [{"tier": 1, "minValue": 25.0, "maxValue": 32.0}, {"tier": 2, "minValue": 33.0, "maxValue": 40.0}, {"tier": 3, "minValue": 41.0, "maxValue": 50.0}], "statKey": "increased_spell_damage", "modifierType": "increased"},
+        {"id": "idol-stout-increased-minion-damage", "displayName": "of the Commander", "type": "prefix", "tiers": [{"tier": 1, "minValue": 25.0, "maxValue": 32.0}, {"tier": 2, "minValue": 33.0, "maxValue": 40.0}, {"tier": 3, "minValue": 41.0, "maxValue": 50.0}], "statKey": "increased_minion_damage", "modifierType": "increased"},
+        {"id": "idol-stout-armor", "displayName": "Plated", "type": "prefix", "tiers": [{"tier": 1, "minValue": 60.0, "maxValue": 80.0}, {"tier": 2, "minValue": 81.0, "maxValue": 100.0}, {"tier": 3, "minValue": 101.0, "maxValue": 125.0}], "statKey": "armor", "modifierType": "flat"},
+        {"id": "idol-stout-max-hp-percent", "displayName": "Vital", "type": "prefix", "tiers": [{"tier": 1, "minValue": 4.0, "maxValue": 5.0}, {"tier": 2, "minValue": 6.0, "maxValue": 7.0}, {"tier": 3, "minValue": 8.0, "maxValue": 10.0}], "statKey": "max_hp_percent", "modifierType": "increased"}
+      ],
+      "suffixPool": [
+        {"id": "idol-stout-crit-multiplier", "displayName": "of Lethal Blows", "type": "suffix", "tiers": [{"tier": 1, "minValue": 10.0, "maxValue": 14.0}, {"tier": 2, "minValue": 15.0, "maxValue": 19.0}, {"tier": 3, "minValue": 20.0, "maxValue": 25.0}], "statKey": "critical_strike_multiplier", "modifierType": "increased"},
+        {"id": "idol-stout-void-resistance", "displayName": "of Void Ward", "type": "suffix", "tiers": [{"tier": 1, "minValue": 10.0, "maxValue": 13.0}, {"tier": 2, "minValue": 14.0, "maxValue": 17.0}, {"tier": 3, "minValue": 18.0, "maxValue": 22.0}], "statKey": "void_resistance", "modifierType": "flat"},
+        {"id": "idol-stout-poison-resistance", "displayName": "of Toxin Ward", "type": "suffix", "tiers": [{"tier": 1, "minValue": 10.0, "maxValue": 13.0}, {"tier": 2, "minValue": 14.0, "maxValue": 17.0}, {"tier": 3, "minValue": 18.0, "maxValue": 22.0}], "statKey": "poison_resistance", "modifierType": "flat"},
+        {"id": "idol-stout-endurance-threshold", "displayName": "of the Bulwark", "type": "suffix", "tiers": [{"tier": 1, "minValue": 3.0, "maxValue": 4.0}, {"tier": 2, "minValue": 5.0, "maxValue": 6.0}, {"tier": 3, "minValue": 7.0, "maxValue": 9.0}], "statKey": "endurance_threshold", "modifierType": "flat"}
+      ]
+    },
+    {
+      "id": "grand-2x2",
+      "displayName": "Grand Idol",
+      "rows": 2,
+      "cols": 2,
+      "requiresBoth": true,
+      "prefixPool": [
+        {"id": "idol-grand-increased-damage", "displayName": "of the Destroyer", "type": "prefix", "tiers": [{"tier": 1, "minValue": 10.0, "maxValue": 14.0}, {"tier": 2, "minValue": 15.0, "maxValue": 19.0}, {"tier": 3, "minValue": 20.0, "maxValue": 25.0}], "statKey": "increased_damage", "modifierType": "increased"},
+        {"id": "idol-grand-max-hp-flat", "displayName": "Heroic", "type": "prefix", "tiers": [{"tier": 1, "minValue": 80.0, "maxValue": 100.0}, {"tier": 2, "minValue": 101.0, "maxValue": 125.0}, {"tier": 3, "minValue": 126.0, "maxValue": 155.0}], "statKey": "max_hp", "modifierType": "flat"},
+        {"id": "idol-grand-ward-per-sec", "displayName": "of Warding", "type": "prefix", "tiers": [{"tier": 1, "minValue": 5.0, "maxValue": 8.0}, {"tier": 2, "minValue": 9.0, "maxValue": 12.0}, {"tier": 3, "minValue": 13.0, "maxValue": 17.0}], "statKey": "ward_per_second", "modifierType": "flat"},
+        {"id": "idol-grand-increased-area-damage", "displayName": "Tidal", "type": "prefix", "tiers": [{"tier": 1, "minValue": 15.0, "maxValue": 20.0}, {"tier": 2, "minValue": 21.0, "maxValue": 27.0}, {"tier": 3, "minValue": 28.0, "maxValue": 35.0}], "statKey": "increased_area_damage", "modifierType": "increased"}
+      ],
+      "suffixPool": [
+        {"id": "idol-grand-crit-avoidance", "displayName": "of Negation", "type": "suffix", "tiers": [{"tier": 1, "minValue": 10.0, "maxValue": 14.0}, {"tier": 2, "minValue": 15.0, "maxValue": 20.0}, {"tier": 3, "minValue": 21.0, "maxValue": 27.0}], "statKey": "critical_strike_avoidance", "modifierType": "flat"},
+        {"id": "idol-grand-movement-speed", "displayName": "of the Wanderer", "type": "suffix", "tiers": [{"tier": 1, "minValue": 5.0, "maxValue": 7.0}, {"tier": 2, "minValue": 8.0, "maxValue": 10.0}, {"tier": 3, "minValue": 11.0, "maxValue": 14.0}], "statKey": "movement_speed", "modifierType": "increased"},
+        {"id": "idol-grand-dodge-rating", "displayName": "of Evasion", "type": "suffix", "tiers": [{"tier": 1, "minValue": 50.0, "maxValue": 65.0}, {"tier": 2, "minValue": 66.0, "maxValue": 82.0}, {"tier": 3, "minValue": 83.0, "maxValue": 100.0}], "statKey": "dodge_rating", "modifierType": "flat"},
+        {"id": "idol-grand-life-leech", "displayName": "of Vampirism", "type": "suffix", "tiers": [{"tier": 1, "minValue": 1.0, "maxValue": 1.5}, {"tier": 2, "minValue": 1.6, "maxValue": 2.0}, {"tier": 3, "minValue": 2.1, "maxValue": 2.5}], "statKey": "life_leech_percent", "modifierType": "flat"}
+      ]
+    }
+  ]
+}
