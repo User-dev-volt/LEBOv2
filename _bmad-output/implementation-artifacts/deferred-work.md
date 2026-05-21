@@ -32,3 +32,12 @@
 ## Deferred from: code review of 1-1-game-data-type-extension-and-schema-definition (2026-05-20)
 
 - `as unknown as ReturnType<...>` double-cast in `useOptimizationStream.test.ts` (lines 315, 353, 381, 417) weakens test mock type coverage. Root cause: partial mock objects for `useBuildStore` and `useGameDataStore` don't fully satisfy store return types (likely `schemaVersion: 2 as const` vs `schemaVersion: 1 | 2` union). Fix: make mocks complete or use `satisfies` with `Partial<>`. Deferred as pre-existing; address in a dedicated test-cleanup story.
+
+## Deferred from: code review of 2-1-scoring-engine-foundation-crate-setup-and-type-system (2026-05-21)
+
+- **Open `String` vs closed union at IPC boundary** — `NodeEfficiency.tier`, `SynergyFlag.flag_type`, `SynergyFlag.priority` are `String` in Rust but closed literal unions in TypeScript. No runtime enforcement at the Tauri IPC seam. A Rust value outside the union silently passes TypeScript type-checking. Address with Rust enums + `#[serde(rename_all = "lowercase")]` when IPC is wired in Story 2.4.
+- **`slider_position` unbounded `u32`** — `BuildSnapshot.slider_position` accepts full `u32` range; spec documents 0–100. No validation or clamping. Add a constructor guard or `TryFrom` impl when Story 2.2 starts consuming it.
+- **`Condition::Composite` unbounded recursion + `Condition` Deserialize** — Composite holds `Vec<Condition>` with no depth limit; `Condition` derives `Deserialize`. If Condition ever comes from user-supplied JSON (future), this is a potential stack-overflow DoS vector. Add a `MAX_CONDITION_DEPTH` guard before any external deserialization is wired.
+- **No unit tests in `scoring-core` crate** — `Condition::Stacked.is_active()` contains non-trivial prefix-parsing logic with no test coverage. Add at minimum: `Always`, `Named` hit/miss, `Stacked` boundary cases, `Composite` with always/named sub-conditions, `Threshold` always-false invariant.
+- **`Stacked { count: 0 }` footgun** — `count = 0` causes `n >= 0` to always be true for any string of form `{name}_<digits>`. Effectively becomes an unconditional match, not a stack-count gate. Document or add an `assert!(count > 0)` debug assertion when `Stacked` conditions are first constructed with real data in Phase 4.
+- **`GearSlotRanking` / `WishlistAffix` not re-exported from `lib.rs`** — Epic 5 types are accessible only via full path `scoring_core::stat_sheet::GearSlotRanking`. Add to `pub use` block in `lib.rs` when Epic 5 begins consuming them.
