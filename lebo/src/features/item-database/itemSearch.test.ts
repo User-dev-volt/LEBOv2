@@ -7,6 +7,7 @@ function makeDatabase(overrides?: Partial<ItemDatabase>): ItemDatabase {
     baseItems: [],
     uniqueItems: [],
     affixes: [],
+    setItems: [],
     ...overrides,
   }
 }

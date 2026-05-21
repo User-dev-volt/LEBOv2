@@ -2693,7 +2693,7 @@
       }
     ],
     "modifierType": "increased",
-    "scope": "melee",
+    "scope": "spell",
     "damageType": null
   },
   {

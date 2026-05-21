@@ -44,7 +44,7 @@ pub async fn update_item_data(app_handle: tauri::AppHandle) -> Result<(), String
     }
 
     let client = game_data_service::http_client()?;
-    for filename in &["base-items.json", "uniques.json", "affixes.json"] {
+    for filename in &["base-items.json", "uniques.json", "affixes.json", "set-items.json"] {
         let url = format!("{}/items/{}", REMOTE_DATA_BASE_URL, filename);
         let response = client
             .get(&url)

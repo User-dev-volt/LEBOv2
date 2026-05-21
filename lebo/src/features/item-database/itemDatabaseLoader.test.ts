@@ -16,6 +16,7 @@ const mockDb: ItemDatabase = {
   baseItems: [{ id: 'refuge-helmet', name: 'Refuge Helmet', baseType: 'Helmet', slot: 'helmet', implicitAffixIds: [] }],
   uniqueItems: [{ id: 'calamity', name: 'Calamity', baseType: 'Helmet', slot: 'helmet', affixes: [{ affixId: 'unique-calamity-0', fixedMinValue: 100, fixedMaxValue: 150 }] }],
   affixes: [{ id: 'affix-inevitable-prefix', name: 'Inevitable', type: 'prefix', itemSlots: [], tiers: [{ tier: 1, minValue: 4, maxValue: 4 }] }],
+  setItems: [],
 }
 
 const staleResult: DataVersionCheckResult = {

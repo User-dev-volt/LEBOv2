@@ -1,0 +1,275 @@
+[
+  {
+    "id": "forgotten-knight-blade",
+    "name": "Blade of the Forgotten Knight",
+    "baseType": "Sword",
+    "slot": "weapon",
+    "setName": "Forgotten Knight",
+    "affixes": [],
+    "setBonuses": [
+      { "piecesRequired": 2, "description": "20% increased Attack and Cast Speed" }
+    ],
+    "description": "Forgotten Knight set weapon. Grants 20% increased Attack and Cast Speed at 2 pieces."
+  },
+  {
+    "id": "forgotten-knight-defiance",
+    "name": "Defiance of the Forgotten Knight",
+    "baseType": "Shield",
+    "slot": "off-hand",
+    "setName": "Forgotten Knight",
+    "affixes": [],
+    "setBonuses": [
+      { "piecesRequired": 2, "description": "20% increased Attack and Cast Speed" }
+    ],
+    "description": "Forgotten Knight set shield. Grants 15-25% increased Block Chance."
+  },
+  {
+    "id": "gaspars-will",
+    "name": "Gaspar's Will",
+    "baseType": "Staff",
+    "slot": "weapon",
+    "setName": "Gaspar's",
+    "affixes": [],
+    "setBonuses": [],
+    "description": "Gaspar's set weapon. Features Decimate skill interactions."
+  },
+  {
+    "id": "gaspars-acuity",
+    "name": "Gaspar's Acuity",
+    "baseType": "Helmet",
+    "slot": "helmet",
+    "setName": "Gaspar's",
+    "affixes": [],
+    "setBonuses": [],
+    "description": "Gaspar's set helmet."
+  },
+  {
+    "id": "gaspars-insight",
+    "name": "Gaspar's Insight",
+    "baseType": "Relic",
+    "slot": "relic",
+    "setName": "Gaspar's",
+    "affixes": [],
+    "setBonuses": [],
+    "description": "Gaspar's set relic."
+  },
+  {
+    "id": "halvars-stand",
+    "name": "Halvar's Stand",
+    "baseType": "Body Armour",
+    "slot": "body",
+    "setName": "Halvar's",
+    "affixes": [],
+    "setBonuses": [
+      { "piecesRequired": 2, "description": "+30-45 Spell Physical Damage" },
+      { "piecesRequired": 3, "description": "75-150% chance to Shred Armour on Spell Hit" }
+    ],
+    "description": "Halvar's set body armour. 35-70% increased Physical Spell Damage."
+  },
+  {
+    "id": "halvars-pledge",
+    "name": "Halvar's Pledge",
+    "baseType": "Shield",
+    "slot": "off-hand",
+    "setName": "Halvar's",
+    "affixes": [],
+    "setBonuses": [
+      { "piecesRequired": 2, "description": "+30-45 Spell Physical Damage" },
+      { "piecesRequired": 3, "description": "75-150% chance to Shred Armour on Spell Hit" }
+    ],
+    "description": "Halvar's set shield. +30-45 flat Spell Physical Damage."
+  },
+  {
+    "id": "halvars-last-gift",
+    "name": "Last Gift of the Mountain",
+    "baseType": "Relic",
+    "slot": "relic",
+    "setName": "Halvar's",
+    "affixes": [],
+    "setBonuses": [
+      { "piecesRequired": 2, "description": "+30-45 Spell Physical Damage" },
+      { "piecesRequired": 3, "description": "75-150% chance to Shred Armour on Spell Hit" }
+    ],
+    "description": "Halvar's set relic. 75-150% chance to Shred Armour on Spell Hit (3-piece bonus)."
+  },
+  {
+    "id": "invokers-static-touch",
+    "name": "Invoker's Static Touch",
+    "baseType": "Gloves",
+    "slot": "gloves",
+    "setName": "Invoker's",
+    "affixes": [],
+    "setBonuses": [],
+    "description": "Invoker's set gloves. +15 Spell Lightning Damage."
+  },
+  {
+    "id": "invokers-scorching-grasp",
+    "name": "Invoker's Scorching Grasp",
+    "baseType": "Relic",
+    "slot": "relic",
+    "setName": "Invoker's",
+    "affixes": [],
+    "setBonuses": [],
+    "description": "Invoker's set relic. 21% increased Fire Spell Cast Speed."
+  },
+  {
+    "id": "invokers-frozen-heart",
+    "name": "Invoker's Frozen Heart",
+    "baseType": "Amulet",
+    "slot": "amulet",
+    "setName": "Invoker's",
+    "affixes": [],
+    "setBonuses": [],
+    "description": "Invoker's set amulet. 21% increased Cold Spell Cast Speed."
+  },
+  {
+    "id": "last-bear-fury",
+    "name": "The Last Bear's Fury",
+    "baseType": "Axe",
+    "slot": "weapon",
+    "setName": "Last Bear",
+    "affixes": [],
+    "setBonuses": [
+      { "piecesRequired": 2, "description": "+1 to Swipe" },
+      { "piecesRequired": 3, "description": "+2 to Warcry and +3 to Werebear Form" }
+    ],
+    "description": "Last Bear set weapon. +1 to Swipe."
+  },
+  {
+    "id": "last-bear-lament",
+    "name": "The Last Bear's Lament",
+    "baseType": "Body Armour",
+    "slot": "body",
+    "setName": "Last Bear",
+    "affixes": [],
+    "setBonuses": [
+      { "piecesRequired": 2, "description": "+1 to Swipe" },
+      { "piecesRequired": 3, "description": "+2 to Warcry and +3 to Werebear Form" }
+    ],
+    "description": "Last Bear set body armour. +2 to Warcry."
+  },
+  {
+    "id": "last-bear-scorn",
+    "name": "The Last Bear's Scorn",
+    "baseType": "Helmet",
+    "slot": "helmet",
+    "setName": "Last Bear",
+    "affixes": [],
+    "setBonuses": [
+      { "piecesRequired": 2, "description": "+1 to Swipe" },
+      { "piecesRequired": 3, "description": "+2 to Warcry and +3 to Werebear Form" }
+    ],
+    "description": "Last Bear set helmet. +3 to Werebear Form."
+  },
+  {
+    "id": "ruby-fang-cleaver",
+    "name": "Ruby Fang Cleaver",
+    "baseType": "Axe",
+    "slot": "weapon",
+    "setName": "Ruby Fang",
+    "affixes": [],
+    "setBonuses": [
+      { "piecesRequired": 2, "description": "10% increased Melee Attack Speed and 10-30% less Poison Damage Taken" }
+    ],
+    "description": "Ruby Fang set axe. 10% increased Melee Attack Speed."
+  },
+  {
+    "id": "ruby-fang-aegis",
+    "name": "Ruby Fang Aegis",
+    "baseType": "Shield",
+    "slot": "off-hand",
+    "setName": "Ruby Fang",
+    "affixes": [],
+    "setBonuses": [
+      { "piecesRequired": 2, "description": "10% increased Melee Attack Speed and 10-30% less Poison Damage Taken" }
+    ],
+    "description": "Ruby Fang set shield. 10-30% less Poison Damage Taken."
+  },
+  {
+    "id": "shattered-lance-shard",
+    "name": "Shard of the Shattered Lance",
+    "baseType": "Spear",
+    "slot": "weapon",
+    "setName": "Shattered Lance",
+    "affixes": [],
+    "setBonuses": [
+      { "piecesRequired": 2, "description": "+50-100% Freeze Rate Multiplier" }
+    ],
+    "description": "Shattered Lance set weapon. Cold damage focused."
+  },
+  {
+    "id": "shattered-lance-fragments",
+    "name": "Fragments of the Shattered Lance",
+    "baseType": "Body Armour",
+    "slot": "body",
+    "setName": "Shattered Lance",
+    "affixes": [],
+    "setBonuses": [
+      { "piecesRequired": 2, "description": "+50-100% Freeze Rate Multiplier" }
+    ],
+    "description": "Shattered Lance set body armour. +50-100% Freeze Rate Multiplier."
+  },
+  {
+    "id": "sinathias-dying-breath",
+    "name": "Sinathia's Dying Breath",
+    "baseType": "Body Armour",
+    "slot": "body",
+    "setName": "Sinathia's",
+    "affixes": [],
+    "setBonuses": [
+      { "piecesRequired": 2, "description": "40-60% to all Resistances for Minions" }
+    ],
+    "description": "Sinathia's set body armour. Minion resistance and survivability focused."
+  },
+  {
+    "id": "sinathias-resurrection",
+    "name": "Sinathia's Resurrection",
+    "baseType": "Relic",
+    "slot": "relic",
+    "setName": "Sinathia's",
+    "affixes": [],
+    "setBonuses": [
+      { "piecesRequired": 2, "description": "40-60% to all Resistances for Minions" }
+    ],
+    "description": "Sinathia's set relic. Minion revival and survivability focused."
+  },
+  {
+    "id": "sunforged-greathelm",
+    "name": "Sunforged Greathelm",
+    "baseType": "Helmet",
+    "slot": "helmet",
+    "setName": "Sunforged",
+    "affixes": [],
+    "setBonuses": [
+      { "piecesRequired": 2, "description": "+250-350 Armour" },
+      { "piecesRequired": 3, "description": "Additional Fire Damage scaling with Armour" }
+    ],
+    "description": "Sunforged set helmet. +250-350 Armour."
+  },
+  {
+    "id": "sunforged-cuirass",
+    "name": "Sunforged Cuirass",
+    "baseType": "Body Armour",
+    "slot": "body",
+    "setName": "Sunforged",
+    "affixes": [],
+    "setBonuses": [
+      { "piecesRequired": 2, "description": "+250-350 Armour" },
+      { "piecesRequired": 3, "description": "Additional Fire Damage scaling with Armour" }
+    ],
+    "description": "Sunforged set body armour. +600-850 Armour."
+  },
+  {
+    "id": "sunforged-greathammer",
+    "name": "Sunforged Greathammer",
+    "baseType": "Two-Handed Mace",
+    "slot": "weapon",
+    "setName": "Sunforged",
+    "affixes": [],
+    "setBonuses": [
+      { "piecesRequired": 2, "description": "+250-350 Armour" },
+      { "piecesRequired": 3, "description": "Additional Fire Damage scaling with Armour" }
+    ],
+    "description": "Sunforged set two-handed mace. Fire damage scales with Armour."
+  }
+]

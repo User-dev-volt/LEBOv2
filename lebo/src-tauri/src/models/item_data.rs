@@ -57,8 +57,30 @@ pub struct RawUniqueItem {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct RawSetBonus {
+    pub pieces_required: u32,
+    pub description: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RawSetItem {
+    pub id: String,
+    pub name: String,
+    pub base_type: String,
+    pub slot: String,
+    pub set_name: String,
+    pub affixes: Vec<RawUniqueItemAffix>,
+    pub set_bonuses: Vec<RawSetBonus>,
+    #[serde(default)]
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct ItemDatabase {
     pub base_items: Vec<RawBaseItem>,
     pub unique_items: Vec<RawUniqueItem>,
     pub affixes: Vec<RawAffix>,
+    pub set_items: Vec<RawSetItem>,
 }

@@ -89,6 +89,7 @@ const mockItemDatabase: ItemDatabase = {
       tiers: [{ tier: 1, minValue: 5, maxValue: 10 }],
     },
   ],
+  setItems: [],
 }
 
 const mockBuild: BuildState = {

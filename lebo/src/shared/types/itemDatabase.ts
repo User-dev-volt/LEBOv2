@@ -47,10 +47,27 @@ export interface UniqueItem {
   description?: string
 }
 
+export interface SetBonus {
+  piecesRequired: number
+  description: string
+}
+
+export interface SetItem {
+  id: string
+  name: string
+  baseType: string
+  slot: string
+  setName: string
+  affixes: UniqueItemAffix[]
+  setBonuses: SetBonus[]
+  description?: string
+}
+
 export interface ItemDatabase {
   baseItems: BaseItem[]
   uniqueItems: UniqueItem[]
   affixes: AffixEntry[]
+  setItems: SetItem[]
 }
 
 export interface SearchResult {

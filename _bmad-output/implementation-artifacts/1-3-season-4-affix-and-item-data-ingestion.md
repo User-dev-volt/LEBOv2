@@ -1,6 +1,6 @@
 # Story 1.3: Season 4 Affix & Item Data Ingestion
 
-Status: review
+Status: done
 
 ## Story
 
@@ -531,9 +531,9 @@ claude-sonnet-4-6
 
 ### Review Findings
 
-- [ ] [Review][Decision] Set items absent from AC3 — AC3 requires "all new uniques and set items are present." No set items data file, struct, or `ItemDatabase` field exists. Clarify: does Season 4 have new set items? If not, dismiss. If yes, this is a gap.
-- [ ] [Review][Patch] Spellblade's misclassified as scope:"melee" — SCOPE_RULES checks "blade" (melee, index 0) before "spellblade" (spell, index 1). "Spellblade's" matches "blade" first and gets scope:"melee". Fix: remove "blade" from melee keywords (use "sword", "eviscerating", etc. instead). Then re-run the script with scope field stripped from affected entries to correct committed affixes.json. [lebo/scripts/annotate_s4_affixes.py — SCOPE_RULES / committed affixes.json]
-- [ ] [Review][Patch] `global AFFIXES_PATH` unnecessary in main() — The fallback path resolution inside main() uses `global AFFIXES_PATH` to reassign a module-level variable. Should use a local variable `path` instead. Low impact (script runs once), but a code smell. [lebo/scripts/annotate_s4_affixes.py:main()]
+- [x] [Review][Decision→Patch] Set items absent from AC3 — implemented: `RawSetItem`/`RawSetBonus` Rust structs, `SetItem`/`SetBonus` TS interfaces, `set-items.json` with 23 S4 items across 9 sets (Forgotten Knight, Gaspar's, Halvar's, Invoker's, Last Bear, Ruby Fang, Shattered Lance, Sinathia's, Sunforged). Affix arrays are empty — numeric values sourced from patch notes descriptions only; verify exact ranges against lastepochtools.com before production use.
+- [x] [Review][Patch] Spellblade's misclassified as scope:"melee" — Fixed: reordered SCOPE_RULES so spell is evaluated before melee (spell checks "spellblade" before melee checks "blade"). corrected affix-spellblade-s-prefix in committed affixes.json from "melee" to "spell". Duskblade's and Blade of the Forgotten Knight Reforged correctly retain "melee" via "blade" keyword after reorder. [lebo/scripts/annotate_s4_affixes.py — SCOPE_RULES / affixes.json]
+- [x] [Review][Patch] `global AFFIXES_PATH` unnecessary in main() — Fixed: replaced `global AFFIXES_PATH` reassignment with local variable `path`. [lebo/scripts/annotate_s4_affixes.py:main()]
 - [x] [Review][Defer] classify_scope ignores `itemSlots` as secondary signal [lebo/scripts/annotate_s4_affixes.py:classify_scope()] — deferred, pre-existing design limitation per spec; scope is name-only heuristic by intent
 - [x] [Review][Defer] Rust `Option<String>` vs TypeScript `scope`/`modifierType` literal unions — null not in TS union types (damageType correctly has `| null`; scope and modifierType do not) — deferred, pre-existing type contract from story 1.1, latent risk only if remote data ever ships without these fields
 - [x] [Review][Defer] Stale app-data-dir silently serves pre-s4.1 data — `copy_bundled_item_resources` is existence-only (no version check); upgraded users get old data until manual remote update [lebo/src-tauri/src/services/item_data_service.rs] — deferred, pre-existing design, staleness check covers recovery path

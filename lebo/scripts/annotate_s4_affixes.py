@@ -15,8 +15,8 @@ from pathlib import Path
 AFFIXES_PATH = Path("lebo/src-tauri/resources/items/affixes.json")
 
 SCOPE_RULES = [
-    ("melee",  ["melee", "attack", "warrior", "blade", "sword", "eviscerating"]),
     ("spell",  ["spell", "cast", "pyromancer", "cryomancer", "spellblade", "arcane", "occultist"]),
+    ("melee",  ["melee", "attack", "warrior", "blade", "sword", "eviscerating"]),
     ("ranged", ["ranged", "bow", "projectile", "marksman"]),
     ("minion", ["minion", "skeleton", "zombie", "wraith", "golem", "companion", "commander", "summon"]),
 ]
@@ -123,16 +123,16 @@ def classify_damage_type(name: str) -> str | None:
 
 
 def main() -> None:
-    global AFFIXES_PATH
-    if not AFFIXES_PATH.exists():
+    path = AFFIXES_PATH
+    if not path.exists():
         alt = Path("src-tauri/resources/items/affixes.json")
         if alt.exists():
-            AFFIXES_PATH = alt
+            path = alt
         else:
             print("ERROR: Could not find affixes.json. Run from lebo/ or repo root.", file=sys.stderr)
             sys.exit(1)
 
-    affixes = json.loads(AFFIXES_PATH.read_text(encoding="utf-8"))
+    affixes = json.loads(path.read_text(encoding="utf-8"))
     existing_ids = {a["id"] for a in affixes}
 
     fallback_count = 0
@@ -153,11 +153,11 @@ def main() -> None:
             affixes.append(roc)
             injected += 1
 
-    AFFIXES_PATH.write_text(
+    path.write_text(
         json.dumps(affixes, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8"
     )
-    print(f"OK: {AFFIXES_PATH.name} annotated — {len(affixes)} total entries")
+    print(f"OK: {path.name} annotated — {len(affixes)} total entries")
     print(f"scope fallback count (generic): {fallback_count}")
     print(f"modifierType: all entries set to 'increased' (name-only heuristics)")
     print(f"Rune of Corruption affixes injected: {injected}")
