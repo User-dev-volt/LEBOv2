@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-1.
+Run `/bmad-code-review` on Story 1.3 using a different LLM model, then unblock Story 1.4 (game database files & staleness integration)
 
 ---
 

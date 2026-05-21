@@ -529,6 +529,18 @@ claude-sonnet-4-6
 - `lebo/src-tauri/resources/items/uniques.json` — `description` added to Exsanguinous, Bleeding Heart, Omnividence
 - `lebo/src-tauri/resources/game-data/manifest.json` — `itemDataVersion` bumped to `"s4.1"`
 
+### Review Findings
+
+- [ ] [Review][Decision] Set items absent from AC3 — AC3 requires "all new uniques and set items are present." No set items data file, struct, or `ItemDatabase` field exists. Clarify: does Season 4 have new set items? If not, dismiss. If yes, this is a gap.
+- [ ] [Review][Patch] Spellblade's misclassified as scope:"melee" — SCOPE_RULES checks "blade" (melee, index 0) before "spellblade" (spell, index 1). "Spellblade's" matches "blade" first and gets scope:"melee". Fix: remove "blade" from melee keywords (use "sword", "eviscerating", etc. instead). Then re-run the script with scope field stripped from affected entries to correct committed affixes.json. [lebo/scripts/annotate_s4_affixes.py — SCOPE_RULES / committed affixes.json]
+- [ ] [Review][Patch] `global AFFIXES_PATH` unnecessary in main() — The fallback path resolution inside main() uses `global AFFIXES_PATH` to reassign a module-level variable. Should use a local variable `path` instead. Low impact (script runs once), but a code smell. [lebo/scripts/annotate_s4_affixes.py:main()]
+- [x] [Review][Defer] classify_scope ignores `itemSlots` as secondary signal [lebo/scripts/annotate_s4_affixes.py:classify_scope()] — deferred, pre-existing design limitation per spec; scope is name-only heuristic by intent
+- [x] [Review][Defer] Rust `Option<String>` vs TypeScript `scope`/`modifierType` literal unions — null not in TS union types (damageType correctly has `| null`; scope and modifierType do not) — deferred, pre-existing type contract from story 1.1, latent risk only if remote data ever ships without these fields
+- [x] [Review][Defer] Stale app-data-dir silently serves pre-s4.1 data — `copy_bundled_item_resources` is existence-only (no version check); upgraded users get old data until manual remote update [lebo/src-tauri/src/services/item_data_service.rs] — deferred, pre-existing design, staleness check covers recovery path
+- [x] [Review][Defer] `affix["name"]` KeyError if entry missing name field — script crashes safely (no data corruption) but with unhelpful traceback [lebo/scripts/annotate_s4_affixes.py:classify_scope call] — deferred, safe failure, existing data contract
+- [x] [Review][Defer] `itemSlots: []` asymmetry between RoC and existing entries — 4171/4176 entries have empty itemSlots; RoC entries have populated slot arrays; future slot-filter code would misread this — deferred, pre-existing from community DB, not introduced by 1.3
+
 ## Change Log
 
 - 2026-05-21: Story 1.3 implemented — Season 4 affix annotation (4176 entries), Rune of Corruption affixes (5), synergy unique descriptions (3), Rust/TS type extensions, itemDataVersion bump to s4.1
+- 2026-05-21: Code review complete — 1 decision-needed, 2 patch, 5 deferred, 9 dismissed
