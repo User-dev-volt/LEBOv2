@@ -13,7 +13,7 @@ import { useAccessibilityAnnouncer } from './shared/hooks/useAccessibilityAnnoun
 import { useBuildStore } from './shared/stores/buildStore'
 import { useGameDataStore } from './shared/stores/gameDataStore'
 import { useOptimizationStore } from './shared/stores/optimizationStore'
-import { calculateScore } from './features/optimization/scoringEngine'
+import { useStatSheet } from './shared/stores/useStatSheet'
 import { useAppStore } from './shared/stores/appStore'
 import { invokeCommand } from './shared/utils/invokeCommand'
 import { useOptimizationStream } from './shared/stores/useOptimizationStream'
@@ -40,6 +40,7 @@ export function App() {
   useUpdateCheck()
   useAccessibilityAnnouncer()
   useOptimizationStream()
+  useStatSheet()
   const currentView = useAppStore((s) => s.currentView)
 
   useEffect(() => {
@@ -76,41 +77,11 @@ export function App() {
 
   useEffect(() => {
     return useBuildStore.subscribe((state, prev) => {
-      if (state.activeBuild?.nodeAllocations === prev.activeBuild?.nodeAllocations) return
-      if (!state.activeBuild) {
-        useOptimizationStore.getState().setScores(null)
-        return
-      }
-      const gameData = useGameDataStore.getState().gameData
-      if (!gameData) {
-        useOptimizationStore.getState().setScores(null)
-        return
-      }
-      const scores = calculateScore(state.activeBuild, gameData)
-      useOptimizationStore.getState().setScores(scores)
-    })
-  }, [])
-
-  useEffect(() => {
-    return useBuildStore.subscribe((state, prev) => {
       if (state.activeBuild?.id === prev.activeBuild?.id) return
       const build = state.activeBuild
       useOptimizationStore.getState().setSliderPosition(build?.sliderPosition ?? 50)
       useOptimizationStore.getState().setFineTuneWeights(build?.fineTuneWeights ?? null)
       useOptimizationStore.getState().clearSuggestions()
-    })
-  }, [])
-
-  // Recalculate scores when game data loads after an active build is already present.
-  // Without this, a saved build loaded before initGameData() resolves would show null scores
-  // until the user manually modifies a node allocation.
-  useEffect(() => {
-    return useGameDataStore.subscribe((state, prev) => {
-      if (!state.gameData || state.gameData === prev.gameData) return
-      const { activeBuild } = useBuildStore.getState()
-      if (!activeBuild) return
-      const scores = calculateScore(activeBuild, state.gameData)
-      useOptimizationStore.getState().setScores(scores)
     })
   }, [])
 

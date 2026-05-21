@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Implement story 2.5: create `buildSnapshotSerializer.ts` (TypeScript stat object → scoring-core::StatSnapshot) and `useStatSheet.ts` hook to invoke the new `compute_stats` command from frontend.
+Dev agent can now implement story 2.5 from the generated file with zero guesswork — no follow-up questions needed.
 
 ---
 

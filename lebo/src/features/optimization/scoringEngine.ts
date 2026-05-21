@@ -1,3 +1,4 @@
+// @deprecated — replaced by useStatSheet + compute_stats Tauri command. Deletion in follow-up story.
 import type { BuildScore } from '../../shared/types/optimization'
 import type { BuildState } from '../../shared/types/build'
 import type { GameData, GameNode } from '../../shared/types/gameData'

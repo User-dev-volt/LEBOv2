@@ -1,6 +1,6 @@
 # Story 2.5: TypeScript Integration — Serializer, Hook & Store
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -38,46 +38,46 @@ so that the stat sheet display in Story 2.6 has live data without any "Recalcula
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `buildSnapshotSerializer.ts` (AC: #1)
-  - [ ] Create `lebo/src/shared/utils/buildSnapshotSerializer.ts`
-  - [ ] Define `BuildSnapshot`, `GearSlotSnapshotTS`, `AffixEntryTS`, `IdolPlacementTS` interfaces (camelCase — Pattern 2 input direction)
-  - [ ] Implement `toBuildSnapshot(build: BuildState, _gameData: GameData): BuildSnapshot` — see exact implementation in Dev Notes
-  - [ ] Do NOT create an `index.ts` barrel file
+- [x] Task 1: Create `buildSnapshotSerializer.ts` (AC: #1)
+  - [x] Create `lebo/src/shared/utils/buildSnapshotSerializer.ts`
+  - [x] Define `BuildSnapshot`, `GearSlotSnapshotTS`, `AffixEntryTS`, `IdolPlacementTS` interfaces (camelCase — Pattern 2 input direction)
+  - [x] Implement `toBuildSnapshot(build: BuildState, _gameData: GameData): BuildSnapshot` — see exact implementation in Dev Notes
+  - [x] Do NOT create an `index.ts` barrel file
 
-- [ ] Task 2: Create `useStatSheet.ts` (AC: #2, #3)
-  - [ ] Create `lebo/src/shared/stores/useStatSheet.ts`
-  - [ ] Implement rAF-based debounce using `cancelAnimationFrame` + `requestAnimationFrame` ref
-  - [ ] Implement generation-based cancellation via `useRef` counter (Pattern 4)
-  - [ ] Subscribe to both `useBuildStore` and `useGameDataStore` — see exact implementation in Dev Notes
-  - [ ] Call `invokeCommand<StatSheet>('compute_stats', { snapshot })` — never raw `invoke()`
+- [x] Task 2: Create `useStatSheet.ts` (AC: #2, #3)
+  - [x] Create `lebo/src/shared/stores/useStatSheet.ts`
+  - [x] Implement rAF-based debounce using `cancelAnimationFrame` + `requestAnimationFrame` ref
+  - [x] Implement generation-based cancellation via `useRef` counter (Pattern 4)
+  - [x] Subscribe to both `useBuildStore` and `useGameDataStore` — see exact implementation in Dev Notes
+  - [x] Call `invokeCommand<StatSheet>('compute_stats', { snapshot })` — never raw `invoke()`
 
-- [ ] Task 3: Update `App.tsx` (AC: #4)
-  - [ ] Remove the two `calculateScore` subscribe `useEffect` blocks (lines 77–92 and 104–115)
-  - [ ] Remove the `import { calculateScore }` line from `scoringEngine` import
-  - [ ] Add `import { useStatSheet } from './shared/stores/useStatSheet'` to imports
-  - [ ] Add `useStatSheet()` call inside `App()` alongside the other hooks (after `useOptimizationStream()`)
-  - [ ] Keep the build-switch `useEffect` (lines 94–102: sliderPosition, fineTuneWeights, clearSuggestions) — it does NOT call `calculateScore`
+- [x] Task 3: Update `App.tsx` (AC: #4)
+  - [x] Remove the two `calculateScore` subscribe `useEffect` blocks (lines 77–92 and 104–115)
+  - [x] Remove the `import { calculateScore }` line from `scoringEngine` import
+  - [x] Add `import { useStatSheet } from './shared/stores/useStatSheet'` to imports
+  - [x] Add `useStatSheet()` call inside `App()` alongside the other hooks (after `useOptimizationStream()`)
+  - [x] Keep the build-switch `useEffect` (lines 94–102: sliderPosition, fineTuneWeights, clearSuggestions) — it does NOT call `calculateScore`
 
-- [ ] Task 4: Deprecate `scoringEngine.ts` in place (AC: #4)
-  - [ ] Add `// @deprecated — replaced by useStatSheet + compute_stats Tauri command. Deletion in follow-up story.` at the top of `lebo/src/features/optimization/scoringEngine.ts`
-  - [ ] Do NOT delete the file — `useOptimizationStream.ts` still uses `calculateScore` for suggestion preview scoring
+- [x] Task 4: Deprecate `scoringEngine.ts` in place (AC: #4)
+  - [x] Add `// @deprecated — replaced by useStatSheet + compute_stats Tauri command. Deletion in follow-up story.` at the top of `lebo/src/features/optimization/scoringEngine.ts`
+  - [x] Do NOT delete the file — `useOptimizationStream.ts` still uses `calculateScore` for suggestion preview scoring
 
-- [ ] Task 5: Verify stores (AC: #5)
-  - [ ] Confirm `optimizationStore.ts` already has `statSheet`, `isComputingStats`, `nodeEfficiencies` + setters — no changes needed (already implemented in Story 2.1)
+- [x] Task 5: Verify stores (AC: #5)
+  - [x] Confirm `optimizationStore.ts` already has `statSheet`, `isComputingStats`, `nodeEfficiencies` + setters — no changes needed (already implemented in Story 2.1)
 
-- [ ] Task 6: Write tests for `buildSnapshotSerializer.ts`
-  - [ ] Create `lebo/src/shared/utils/buildSnapshotSerializer.test.ts`
-  - [ ] Test: full build → snapshot contains nodeAllocations, classId, masteryId, sliderPosition
-  - [ ] Test: sliderPosition defaults to 50 when absent from BuildState
-  - [ ] Test: gear affixes with affixId + tier are included; affixes without affixId/tier are excluded
-  - [ ] Test: UI-only fields (schemaVersion, isPersisted, createdAt, name) are NOT present in snapshot
-  - [ ] Test: empty build (no nodes allocated) → nodeAllocations is `{}`
-  - [ ] Mock `@tauri-apps/api/core` is NOT needed (serializer is pure TypeScript, no IPC)
+- [x] Task 6: Write tests for `buildSnapshotSerializer.ts`
+  - [x] Create `lebo/src/shared/utils/buildSnapshotSerializer.test.ts`
+  - [x] Test: full build → snapshot contains nodeAllocations, classId, masteryId, sliderPosition
+  - [x] Test: sliderPosition defaults to 50 when absent from BuildState
+  - [x] Test: gear affixes with affixId + tier are included; affixes without affixId/tier are excluded
+  - [x] Test: UI-only fields (schemaVersion, isPersisted, createdAt, name) are NOT present in snapshot
+  - [x] Test: empty build (no nodes allocated) → nodeAllocations is `{}`
+  - [x] Mock `@tauri-apps/api/core` is NOT needed (serializer is pure TypeScript, no IPC)
 
-- [ ] Task 7: Verify builds
-  - [ ] Run `pnpm build` from `lebo/` — zero TypeScript errors
-  - [ ] Run `pnpm vitest` from `lebo/` — 8 pre-existing failures unchanged, no new failures
-  - [ ] Run `cargo build` from `lebo/src-tauri/` — zero errors (no Rust changes in this story)
+- [x] Task 7: Verify builds
+  - [x] Run `pnpm build` from `lebo/` — zero TypeScript errors
+  - [x] Run `pnpm vitest` from `lebo/` — 8 pre-existing failures unchanged, no new failures
+  - [x] Run `cargo build` from `lebo/src-tauri/` — zero errors (no Rust changes in this story)
 
 ---
 
@@ -551,3 +551,38 @@ Run in this exact order:
 - [Source: lebo/src-tauri/scoring-core/src/build_snapshot.rs — Rust BuildSnapshot camelCase contract]
 - [Source: lebo/src/shared/stores/useOptimizationStream.ts — still uses calculateScore for suggestion deltas — do not remove]
 - [Source: deferred-work.md 2-3 — no_sustain_layer gap:0.0 deferred to Story 2.5 rendering; not a serializer concern]
+
+---
+
+## Dev Agent Record
+
+### Agent Model Used
+
+claude-sonnet-4-6
+
+### Debug Log
+
+- Test file: `as Record<string, unknown>` cast on `BuildSnapshot` failed TS strict mode (`Index signature missing`). Fixed with `as unknown as Record<string, unknown>` double-cast pattern.
+
+### Completion Notes
+
+- Created `buildSnapshotSerializer.ts` — pure function mapping `BuildState` → `BuildSnapshot`. Implements Pattern 1 (only conversion point). `_gameData` parameter stubbed for Epic 5 gear affix resolution. Epic 3 fields (`activeConditions`, `idolPlacements`, `blessings`) return `[]` stubs.
+- Created `useStatSheet.ts` — rAF cancel-and-reschedule debounce (Pattern C from architecture), generation counter cancellation (Pattern 4). Subscribes to both `buildStore` and `gameDataStore`; only triggers on `gameData` object reference changes.
+- Updated `App.tsx`: removed two `calculateScore` subscribe blocks, replaced with single `useStatSheet()` hook call. Build-switch `useEffect` preserved (does not call `calculateScore`).
+- Added deprecation comment to `scoringEngine.ts` top — file kept in place; `useOptimizationStream.ts` still uses `calculateScore` for suggestion preview delta computation.
+- `pnpm build`: 0 TypeScript errors. `pnpm vitest`: 8 pre-existing failures (ProviderSelector ×5, Settings ×1, SkillTreeCanvas ×1, TreeControls ×1), 0 new failures. 9 new serializer tests all pass.
+
+### File List
+
+- `lebo/src/shared/utils/buildSnapshotSerializer.ts` — NEW
+- `lebo/src/shared/utils/buildSnapshotSerializer.test.ts` — NEW
+- `lebo/src/shared/stores/useStatSheet.ts` — NEW
+- `lebo/src/App.tsx` — MODIFIED (removed calculateScore blocks, added useStatSheet import + call)
+- `lebo/src/features/optimization/scoringEngine.ts` — MODIFIED (deprecation comment added)
+
+### Change Log
+
+- Added `buildSnapshotSerializer.ts` — BuildState → BuildSnapshot conversion (Pattern 1)
+- Added `useStatSheet.ts` — rAF-debounced, generation-cancelling stat sheet compute hook (Patterns C + 4)
+- Updated `App.tsx` — replaced inline calculateScore subscriptions with useStatSheet() hook
+- Deprecated `scoringEngine.ts` in place (Date: 2026-05-21)
