@@ -22,7 +22,8 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Await user decision on patch application method (confirm, defer, or walk-through), then execute and close story 2.3 review.
+- Developer receives story 2.4; implements 6 tasks in sequence using provided copy-paste code
+- Post-implementation: run `cargo build` in both scoring-core and tauri workspaces to verify no regressions before PR
 
 ---
 

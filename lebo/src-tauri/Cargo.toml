@@ -31,4 +31,5 @@ rusqlite = { version = "0.32", features = ["bundled"] }
 futures-util = "0.3"
 reqwest = { version = "0.12", features = ["json", "stream"] }
 tokio = { version = "1", features = ["time"] }
+scoring-core = { path = "scoring-core" }
 

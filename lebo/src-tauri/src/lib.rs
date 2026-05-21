@@ -22,13 +22,40 @@ use commands::context_data_commands::{
     check_idol_data_freshness, check_blessings_data_freshness, check_conditions_data_freshness,
 };
 use commands::item_commands::{check_item_data_freshness, load_item_database, update_item_data};
+use commands::scoring_commands::compute_stats;
+
+use tauri::Manager;
+use std::sync::{Arc, RwLock};
+use scoring_core::GameData;
+
+pub struct ScoringState {
+    pub game_data: Arc<RwLock<GameData>>,
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(IconMapCache(std::sync::Mutex::new(None)))
+        .manage(ScoringState {
+            game_data: Arc::new(RwLock::new(GameData::default())),
+        })
         .setup(|app| {
             let handle = app.handle().clone();
+
+            // Load scoring game data — overwrite the default in ScoringState.
+            // setup() runs before the event loop; commands cannot fire until the frontend loads,
+            // so there is no race between initialization and command calls.
+            let scoring_state = app.state::<ScoringState>();
+            match services::game_data_loader::build_scoring_game_data(&handle) {
+                Ok(gd) => {
+                    *scoring_state.game_data.write().unwrap() = gd;
+                }
+                Err(e) => {
+                    eprintln!("SCORING_ERROR: game data load failed at startup: {}", e);
+                    // Fallback: default GameData (empty node_effects) — scoring returns base stats only
+                }
+            }
+
             tauri::async_runtime::spawn(services::connectivity_service::start_watcher(handle));
             Ok(())
         })
@@ -79,6 +106,7 @@ pub fn run() {
             check_idol_data_freshness,
             check_blessings_data_freshness,
             check_conditions_data_freshness,
+            compute_stats,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,6 +1,6 @@
 # Story 2.4: Tauri IPC Wiring — `compute_stats` Command
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -43,35 +43,35 @@ so that TypeScript can call `invokeCommand<StatSheet>('compute_stats', { snapsho
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `scoring-core` dependency to the Tauri crate (AC: #1)
-  - [ ] In `lebo/src-tauri/Cargo.toml`, add `scoring-core = { path = "scoring-core" }` to `[dependencies]`
-  - [ ] Verify `rayon` is NOT in the Tauri crate's `[dependencies]` (it's only in `scoring-core/Cargo.toml`) — no change needed if already absent
+- [x] Task 1: Add `scoring-core` dependency to the Tauri crate (AC: #1)
+  - [x] In `lebo/src-tauri/Cargo.toml`, add `scoring-core = { path = "scoring-core" }` to `[dependencies]`
+  - [x] Verify `rayon` is NOT in the Tauri crate's `[dependencies]` (it's only in `scoring-core/Cargo.toml`) — no change needed if already absent
 
-- [ ] Task 2: Create `game_data_loader.rs` (AC: #3)
-  - [ ] Create `lebo/src-tauri/src/services/game_data_loader.rs`
-  - [ ] Implement `pub fn build_scoring_game_data(app_handle: &tauri::AppHandle) -> Result<scoring_core::GameData, String>` — see exact implementation in Dev Notes
-  - [ ] Add `pub mod game_data_loader;` to `lebo/src-tauri/src/services/mod.rs`
+- [x] Task 2: Create `game_data_loader.rs` (AC: #3)
+  - [x] Create `lebo/src-tauri/src/services/game_data_loader.rs`
+  - [x] Implement `pub fn build_scoring_game_data(app_handle: &tauri::AppHandle) -> Result<scoring_core::GameData, String>` — see exact implementation in Dev Notes
+  - [x] Add `pub mod game_data_loader;` to `lebo/src-tauri/src/services/mod.rs`
 
-- [ ] Task 3: Add `ScoringState` to `lib.rs` and initialize in `setup` (AC: #3, #4)
-  - [ ] Define `pub struct ScoringState { pub game_data: std::sync::Arc<std::sync::RwLock<scoring_core::GameData>> }` in `lib.rs` (not in a separate module)
-  - [ ] Add `.manage(ScoringState { game_data: std::sync::Arc::new(std::sync::RwLock::new(scoring_core::GameData::default())) })` BEFORE `.setup(...)` in the Builder chain
-  - [ ] Inside the existing `.setup(|app| { ... })` block (after the connectivity watcher spawn), call `build_scoring_game_data` and write the result into `ScoringState` — see exact code in Dev Notes
+- [x] Task 3: Add `ScoringState` to `lib.rs` and initialize in `setup` (AC: #3, #4)
+  - [x] Define `pub struct ScoringState { pub game_data: std::sync::Arc<std::sync::RwLock<scoring_core::GameData>> }` in `lib.rs` (not in a separate module)
+  - [x] Add `.manage(ScoringState { game_data: std::sync::Arc::new(std::sync::RwLock::new(scoring_core::GameData::default())) })` BEFORE `.setup(...)` in the Builder chain
+  - [x] Inside the existing `.setup(|app| { ... })` block (after the connectivity watcher spawn), call `build_scoring_game_data` and write the result into `ScoringState` — see exact code in Dev Notes
 
-- [ ] Task 4: Create `scoring_commands.rs` (AC: #2, #4, #5, #6)
-  - [ ] Create `lebo/src-tauri/src/commands/scoring_commands.rs`
-  - [ ] Implement sync `pub fn compute_stats` command — see exact implementation in Dev Notes
-  - [ ] Add `pub mod scoring_commands;` to `lebo/src-tauri/src/commands/mod.rs`
+- [x] Task 4: Create `scoring_commands.rs` (AC: #2, #4, #5, #6)
+  - [x] Create `lebo/src-tauri/src/commands/scoring_commands.rs`
+  - [x] Implement sync `pub fn compute_stats` command — see exact implementation in Dev Notes
+  - [x] Add `pub mod scoring_commands;` to `lebo/src-tauri/src/commands/mod.rs`
 
-- [ ] Task 5: Register `compute_stats` in `lib.rs` (AC: #2)
-  - [ ] Add `use commands::scoring_commands::compute_stats;` to `lib.rs` imports
-  - [ ] Add `compute_stats` to `invoke_handler!` macro list
+- [x] Task 5: Register `compute_stats` in `lib.rs` (AC: #2)
+  - [x] Add `use commands::scoring_commands::compute_stats;` to `lib.rs` imports
+  - [x] Add `compute_stats` to `invoke_handler!` macro list
 
-- [ ] Task 6: Verify builds (AC: all)
-  - [ ] Run `cargo build -p scoring-core` — zero errors required
-  - [ ] Run `cargo build` from `lebo/src-tauri/` — zero errors (full workspace including Tauri crate with new dep)
-  - [ ] Run `cargo test -p scoring-core` — all 26 existing tests still pass, no new tests required for this story
-  - [ ] Run `pnpm build` from `lebo/` — zero TypeScript errors (no TypeScript changes in this story)
-  - [ ] Run `pnpm vitest` — 8 pre-existing frontend test failures unchanged, no new failures
+- [x] Task 6: Verify builds (AC: all)
+  - [x] Run `cargo build -p scoring-core` — zero errors required
+  - [x] Run `cargo build` from `lebo/src-tauri/` — zero errors (full workspace including Tauri crate with new dep)
+  - [x] Run `cargo test -p scoring-core` — all 26 existing tests still pass, no new tests required for this story
+  - [x] Run `pnpm build` from `lebo/` — zero TypeScript errors (no TypeScript changes in this story)
+  - [x] Run `pnpm vitest` — 8 pre-existing frontend test failures unchanged, no new failures
 
 ---
 
@@ -579,6 +579,21 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- Build error: `app.state::<ScoringState>()` required `use tauri::Manager;` to be in scope — added to `lib.rs` imports.
+
 ### Completion Notes List
 
+- Created `game_data_loader.rs` with `build_scoring_game_data` — reads manifest + class JSON files, constructs `scoring_core::GameData` with `node_effects`, `class_base_stats`, and sorted `archetype_weights` table.
+- Created `scoring_commands.rs` with sync `compute_stats` Tauri command — Pattern 3 (read lock, no clone, lock drops at end).
+- Added `ScoringState` struct to `lib.rs` with `Arc<RwLock<GameData>>`, initialized once in `.setup()` before connectivity watcher spawn.
+- `cargo build -p scoring-core`: 0 errors. `cargo build` (full workspace): 0 errors. `cargo test -p scoring-core`: 26/26 pass. `pnpm build`: 0 TS errors. `pnpm vitest`: 8 pre-existing failures, 0 new.
+- No TypeScript changes — this story is pure Rust IPC plumbing. Story 2.5 adds the TS serializer and hook.
+
 ### File List
+
+- `lebo/src-tauri/Cargo.toml` — added `scoring-core = { path = "scoring-core" }` to `[dependencies]`
+- `lebo/src-tauri/src/lib.rs` — added `ScoringState`, `use tauri::Manager`, `use std::sync::{Arc, RwLock}`, `use scoring_core::GameData`, `.manage(ScoringState{...})`, setup initialization block, `use commands::scoring_commands::compute_stats`, `compute_stats` in `invoke_handler!`
+- `lebo/src-tauri/src/services/mod.rs` — added `pub mod game_data_loader;`
+- `lebo/src-tauri/src/services/game_data_loader.rs` — new file
+- `lebo/src-tauri/src/commands/mod.rs` — added `pub mod scoring_commands;`
+- `lebo/src-tauri/src/commands/scoring_commands.rs` — new file
