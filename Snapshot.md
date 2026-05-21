@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Submit story 2.2 for code review by a different reviewer/LLM before merge.
+Await your choice on the 3 patch handling options before proceeding to implementation.
 
 ---
 

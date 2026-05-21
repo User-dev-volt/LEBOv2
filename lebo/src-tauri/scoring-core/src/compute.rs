@@ -77,15 +77,13 @@ fn compute_offense(registry: &ModifierRegistry, active: &[String]) -> OffenseSta
         .map(|m| m.value)
         .sum();
 
-    // Multiply all More% multipliers
-    let total_more: f64 = registry
+    // Multiply all More% multipliers; product() on empty iterator returns 1.0 correctly
+    let more_factor: f64 = registry
         .query(&StatKey::MoreDamage, active)
         .iter()
         .filter(|m| m.modifier_type == ModifierType::More)
         .map(|m| m.value)
         .product();
-    // product() on empty iterator returns 1.0
-    let more_factor = if total_more == 0.0 { 1.0 } else { total_more };
 
     let base = 100.0_f64;
     let damage_score = (base * (1.0 + total_increased / 100.0) * more_factor).max(0.01);
@@ -94,6 +92,7 @@ fn compute_offense(registry: &ModifierRegistry, active: &[String]) -> OffenseSta
     let crit_chance_raw: f64 = registry
         .query(&StatKey::CriticalStrikeChance, active)
         .iter()
+        .filter(|m| m.modifier_type == ModifierType::Flat)
         .map(|m| m.value)
         .sum::<f64>()
         / 100.0;
@@ -103,6 +102,7 @@ fn compute_offense(registry: &ModifierRegistry, active: &[String]) -> OffenseSta
     let crit_multi_added: f64 = registry
         .query(&StatKey::CriticalStrikeMultiplier, active)
         .iter()
+        .filter(|m| m.modifier_type == ModifierType::Flat)
         .map(|m| m.value)
         .sum();
     let crit_multi = 2.0 + crit_multi_added / 100.0;
@@ -123,12 +123,15 @@ fn compute_offense(registry: &ModifierRegistry, active: &[String]) -> OffenseSta
         .map(|m| m.value)
         .sum();
 
-    let (attack_speed, cast_speed) = if attack_speed_mods != 0.0 {
-        (Some(1.0 + attack_speed_mods / 100.0), None)
-    } else if cast_speed_mods != 0.0 {
-        (None, Some(1.0 + cast_speed_mods / 100.0))
+    let attack_speed = if attack_speed_mods != 0.0 {
+        Some(1.0 + attack_speed_mods / 100.0)
     } else {
-        (None, None)
+        None
+    };
+    let cast_speed = if cast_speed_mods != 0.0 {
+        Some(1.0 + cast_speed_mods / 100.0)
+    } else {
+        None
     };
 
     let aoe_modifier: f64 = registry
@@ -293,7 +296,13 @@ fn compute_defense(
     if ward > 0.0 {
         layer_count += 1;
     }
-    if fire_res >= 75.0 && cold_res >= 75.0 && lightning_res >= 75.0 && void_res >= 75.0 {
+    if fire_res >= 75.0
+        && cold_res >= 75.0
+        && lightning_res >= 75.0
+        && void_res >= 75.0
+        && poison_res >= 75.0
+        && physical_res >= 75.0
+    {
         layer_count += 1;
     }
     if crit_avoidance >= 80.0 {
@@ -759,10 +768,9 @@ mod tests {
 
     #[test]
     fn missing_modifier_type_treated_as_increased() {
-        // ModifierType::Flat on a damage stat falls through; only Increased is summed.
-        // A node with Increased modifier_type and no modifier_type set defaults to Increased.
-        // This test verifies that Increased-tagged modifiers are processed correctly
-        // and that compute_stats does not panic with any modifier combination.
+        // Verifies compute_stats processes Increased-typed modifiers correctly.
+        // AC5 full coverage (JSON missing field → Increased default) is Story 2.4's
+        // responsibility: NodeEffect is constructed programmatically here, not deserialized.
         let mut node_effects = HashMap::new();
         node_effects.insert(
             "node_inc".to_string(),

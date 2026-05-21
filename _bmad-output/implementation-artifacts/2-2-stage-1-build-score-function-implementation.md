@@ -1,6 +1,6 @@
 # Story 2.2: Stage 1 — Build Score Function Implementation
 
-Status: review
+Status: done
 
 ## Story
 
@@ -95,11 +95,11 @@ so that every stat value I see in the app is mathematically correct rather than 
 
 ### Review Findings
 
-- [ ] [Review][Patch] `CriticalStrikeChance` query has no `ModifierType` filter — comment says "Flat modifiers" but code sums all types; non-Flat crit modifiers would corrupt crit chance [compute.rs]
-- [ ] [Review][Patch] Resistance layer check missing Poison and Physical — spec says "all resistance values ≥ 75.0" but only fire/cold/lightning/void are checked [compute.rs]
-- [ ] [Review][Patch] `more_factor` zero-guard is redundant and harmful — `product()` on empty iterator already returns 1.0; the guard silently replaces a legitimate 0.0 More value with 1.0 [compute.rs]
-- [ ] [Review][Patch] `attack_speed`/`cast_speed` mutual exclusion silently drops cast speed — a build with both speed types loses cast_speed from OffenseStats [compute.rs]
-- [ ] [Review][Patch] AC5 test name misleading — `missing_modifier_type_treated_as_increased` uses an explicitly-typed `Increased` field; add a comment clarifying that JSON deserialization fallback is Story 2.4's responsibility [compute.rs]
+- [x] [Review][Patch] `CriticalStrikeChance` query has no `ModifierType` filter — comment says "Flat modifiers" but code sums all types; non-Flat crit modifiers would corrupt crit chance [compute.rs]
+- [x] [Review][Patch] Resistance layer check missing Poison and Physical — spec says "all resistance values ≥ 75.0" but only fire/cold/lightning/void are checked [compute.rs]
+- [x] [Review][Patch] `more_factor` zero-guard is redundant and harmful — `product()` on empty iterator already returns 1.0; the guard silently replaces a legitimate 0.0 More value with 1.0 [compute.rs]
+- [x] [Review][Patch] `attack_speed`/`cast_speed` mutual exclusion silently drops cast speed — a build with both speed types loses cast_speed from OffenseStats [compute.rs]
+- [x] [Review][Patch] AC5 test name misleading — `missing_modifier_type_treated_as_increased` uses an explicitly-typed `Increased` field; add a comment clarifying that JSON deserialization fallback is Story 2.4's responsibility [compute.rs]
 - [x] [Review][Defer] `archetype_weights` lookup assumes table is sorted ascending — no runtime assertion or sort; enforce in Story 2.4 game data loader — deferred, pre-existing concern
 
 ---
