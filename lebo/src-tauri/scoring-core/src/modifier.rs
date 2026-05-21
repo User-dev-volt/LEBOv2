@@ -108,8 +108,9 @@ impl Condition {
             Condition::Always => true,
             Condition::Named(name) => active_conditions.contains(name),
             Condition::Stacked { name, count } => {
+                let prefix = format!("{}_", name);
                 active_conditions.iter().any(|c| {
-                    if let Some(suffix) = c.strip_prefix(&format!("{}_", name)) {
+                    if let Some(suffix) = c.strip_prefix(&prefix) {
                         suffix.parse::<u32>().map(|n| n >= *count).unwrap_or(false)
                     } else {
                         false

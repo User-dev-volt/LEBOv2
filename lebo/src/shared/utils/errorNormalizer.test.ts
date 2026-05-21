@@ -77,10 +77,23 @@ describe('normalizeAppError', () => {
     expect(result.message).toBeTruthy()
   })
 
+  it('detects SCORING_ERROR from string', () => {
+    const result = normalizeAppError('SCORING_ERROR: compute failed')
+    expect(result.type).toBe('SCORING_ERROR')
+    expect(result.message.length).toBeGreaterThan(0)
+  })
+
+  it('detects CONTEXT_DATA_ERROR from string', () => {
+    const result = normalizeAppError('CONTEXT_DATA_ERROR: idol db unavailable')
+    expect(result.type).toBe('CONTEXT_DATA_ERROR')
+    expect(result.message.length).toBeGreaterThan(0)
+  })
+
   it('all error types have non-empty user-facing messages', () => {
     const types = [
       'API_ERROR', 'NETWORK_ERROR', 'TIMEOUT', 'PARSE_ERROR',
-      'DATA_STALE', 'STORAGE_ERROR', 'AUTH_ERROR', 'ICON_ERROR', 'UNKNOWN',
+      'DATA_STALE', 'STORAGE_ERROR', 'AUTH_ERROR', 'ICON_ERROR',
+      'ITEM_DATA_ERROR', 'CONTEXT_DATA_ERROR', 'SCORING_ERROR', 'UNKNOWN',
     ]
     for (const type of types) {
       const result = normalizeAppError(`${type}: test`)

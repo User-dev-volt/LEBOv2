@@ -1,6 +1,6 @@
 # Story 2.1: Scoring Engine Foundation — Crate Setup & Type System
 
-Status: review
+Status: done
 
 ## Story
 
@@ -108,9 +108,9 @@ so that all subsequent Epic 2 stories have a stable, compiler-enforced foundatio
 
 ### Review Findings
 
-- [ ] [Review][Patch] `clearSuggestions()` does not reset `statSheet`, `isComputingStats`, or `nodeEfficiencies` — stale scoring data will persist after a cancelled/failed run once IPC is wired in Story 2.4 [`lebo/src/shared/stores/optimizationStore.ts:74-86`]
-- [ ] [Review][Patch] `format!("{}_", name)` allocated inside `.any()` closure in `Condition::Stacked.is_active()` — moves heap allocation per-iteration; pre-compute prefix outside the closure [`lebo/src-tauri/scoring-core/src/modifier.rs:107`]
-- [ ] [Review][Patch] `errorNormalizer.test.ts` has no coverage for `CONTEXT_DATA_ERROR` or `SCORING_ERROR` — exhaustive USER_MESSAGES test needs two new entries [`lebo/src/shared/utils/errorNormalizer.test.ts`]
+- [x] [Review][Patch] `clearSuggestions()` does not reset `statSheet`, `isComputingStats`, or `nodeEfficiencies` — stale scoring data will persist after a cancelled/failed run once IPC is wired in Story 2.4 [`lebo/src/shared/stores/optimizationStore.ts:74-86`]
+- [x] [Review][Patch] `format!("{}_", name)` allocated inside `.any()` closure in `Condition::Stacked.is_active()` — moves heap allocation per-iteration; pre-compute prefix outside the closure [`lebo/src-tauri/scoring-core/src/modifier.rs:107`]
+- [x] [Review][Patch] `errorNormalizer.test.ts` has no coverage for `CONTEXT_DATA_ERROR` or `SCORING_ERROR` — exhaustive USER_MESSAGES test needs two new entries [`lebo/src/shared/utils/errorNormalizer.test.ts`]
 - [x] [Review][Defer] `NodeEfficiency.tier` / `SynergyFlag.flag_type` / `SynergyFlag.priority` use open `String` in Rust vs closed unions in TypeScript — no runtime IPC validation; a future Rust value outside the union silently passes TypeScript types [`scoring-core/src/stat_sheet.rs`] — deferred, pre-existing design gap addressed when IPC wired in Story 2.4
 - [x] [Review][Defer] `slider_position` accepts full `u32` range with no 0–100 clamping [`scoring-core/src/build_snapshot.rs:17`] — deferred, pre-existing
 - [x] [Review][Defer] `Condition::Composite` depth is unbounded; `Condition` derives `Deserialize` — recursive deserialization possible if Condition JSON ever comes from user input [`scoring-core/src/modifier.rs:82`] — deferred, Phase 4 concern
