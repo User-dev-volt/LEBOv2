@@ -1,6 +1,6 @@
 # Story 2.1: Scoring Engine Foundation — Crate Setup & Type System
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -53,58 +53,58 @@ so that all subsequent Epic 2 stories have a stable, compiler-enforced foundatio
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Convert `src-tauri/Cargo.toml` to workspace root (AC: #1)
-  - [ ] Add `[workspace]` section above `[package]` with `members = [".", "scoring-core"]` and `resolver = "2"`
-  - [ ] Verify `cargo build` (no `-p` flag) still succeeds for the Tauri crate
+- [x] Task 1: Convert `src-tauri/Cargo.toml` to workspace root (AC: #1)
+  - [x] Add `[workspace]` section above `[package]` with `members = [".", "scoring-core"]` and `resolver = "2"`
+  - [x] Verify `cargo build` (no `-p` flag) still succeeds for the Tauri crate
 
-- [ ] Task 2: Create `scoring-core` crate (AC: #1)
-  - [ ] Create directory `lebo/src-tauri/scoring-core/`
-  - [ ] Create `lebo/src-tauri/scoring-core/Cargo.toml` (see Dev Notes for exact content)
-  - [ ] Create `lebo/src-tauri/scoring-core/src/lib.rs` (see Dev Notes for exact content)
+- [x] Task 2: Create `scoring-core` crate (AC: #1)
+  - [x] Create directory `lebo/src-tauri/scoring-core/`
+  - [x] Create `lebo/src-tauri/scoring-core/Cargo.toml` (see Dev Notes for exact content)
+  - [x] Create `lebo/src-tauri/scoring-core/src/lib.rs` (see Dev Notes for exact content)
 
-- [ ] Task 3: Create `scoring-core/src/modifier.rs` — `StatKey`, `Modifier`, `ModifierType`, `Condition`, `ModifierRegistry` (AC: #2)
-  - [ ] Define `StatKey` enum covering all damage/defense/speed stat dimensions (see Dev Notes for full list)
-  - [ ] Define `ModifierType` enum: `Increased`, `More`, `Flat`
-  - [ ] Define `Condition` enum with all five variants including `is_active(&self, active_conditions: &[String]) -> bool`
-  - [ ] Define `Modifier` struct with `stat_key`, `modifier_type`, `value`, `condition`, `source` fields
-  - [ ] Define `ModifierRegistry` with `new()`, `add()`, `query()`, `len()`, `is_empty()` methods
+- [x] Task 3: Create `scoring-core/src/modifier.rs` — `StatKey`, `Modifier`, `ModifierType`, `Condition`, `ModifierRegistry` (AC: #2)
+  - [x] Define `StatKey` enum covering all damage/defense/speed stat dimensions (see Dev Notes for full list)
+  - [x] Define `ModifierType` enum: `Increased`, `More`, `Flat`
+  - [x] Define `Condition` enum with all five variants including `is_active(&self, active_conditions: &[String]) -> bool`
+  - [x] Define `Modifier` struct with `stat_key`, `modifier_type`, `value`, `condition`, `source` fields
+  - [x] Define `ModifierRegistry` with `new()`, `add()`, `query()`, `len()`, `is_empty()` methods
 
-- [ ] Task 4: Create stub type modules in `scoring-core/src/` (AC: #3)
-  - [ ] Create `build_snapshot.rs` — minimal `BuildSnapshot` struct (see Dev Notes)
-  - [ ] Create `stat_sheet.rs` — `StatSheet`, `OffenseStats`, `DefenseStats`, `ScoreComponents`, `StatWarning`, `NodeEfficiency`, `GearAnalysis`, `SynergyFlag`, `AilmentStats`, `MinionStats` (see Dev Notes for exact definitions)
-  - [ ] Create `game_data.rs` — placeholder `GameData` struct with `#[derive(Default)]`
-  - [ ] Create `compute_options.rs` — placeholder `ComputeOptions` struct with `#[derive(Default)]`
+- [x] Task 4: Create stub type modules in `scoring-core/src/` (AC: #3)
+  - [x] Create `build_snapshot.rs` — minimal `BuildSnapshot` struct (see Dev Notes)
+  - [x] Create `stat_sheet.rs` — `StatSheet`, `OffenseStats`, `DefenseStats`, `ScoreComponents`, `StatWarning`, `NodeEfficiency`, `GearAnalysis`, `SynergyFlag`, `AilmentStats`, `MinionStats` (see Dev Notes for exact definitions)
+  - [x] Create `game_data.rs` — placeholder `GameData` struct with `#[derive(Default)]`
+  - [x] Create `compute_options.rs` — placeholder `ComputeOptions` struct with `#[derive(Default)]`
 
-- [ ] Task 5: Create `class_module.rs` and class stubs (AC: #3)
-  - [ ] Create `lebo/src-tauri/scoring-core/src/class_module.rs` (see Dev Notes for exact trait + `ClassStats` definition)
-  - [ ] Create `lebo/src-tauri/scoring-core/src/classes/mod.rs` (see Dev Notes)
-  - [ ] Create five stub modules: `sentinel.rs`, `mage.rs`, `primalist.rs`, `rogue.rs`, `acolyte.rs` (see Dev Notes for pattern)
+- [x] Task 5: Create `class_module.rs` and class stubs (AC: #3)
+  - [x] Create `lebo/src-tauri/scoring-core/src/class_module.rs` (see Dev Notes for exact trait + `ClassStats` definition)
+  - [x] Create `lebo/src-tauri/scoring-core/src/classes/mod.rs` (see Dev Notes)
+  - [x] Create five stub modules: `sentinel.rs`, `mage.rs`, `primalist.rs`, `rogue.rs`, `acolyte.rs` (see Dev Notes for pattern)
 
-- [ ] Task 6: Update `shared/types/errors.ts` (AC: #4)
-  - [ ] Add `'SCORING_ERROR'` to the `ErrorType` union type
-  - [ ] Add `'CONTEXT_DATA_ERROR'` to the `ErrorType` union type (deferred from Story 1.4)
+- [x] Task 6: Update `shared/types/errors.ts` (AC: #4)
+  - [x] Add `'SCORING_ERROR'` to the `ErrorType` union type
+  - [x] Add `'CONTEXT_DATA_ERROR'` to the `ErrorType` union type (deferred from Story 1.4)
 
-- [ ] Task 7: Update `shared/utils/errorNormalizer.ts` (AC: #5)
-  - [ ] Add `SCORING_ERROR: 'SCORING_ERROR'` to `ERROR_TYPE_MAP`
-  - [ ] Add `CONTEXT_DATA_ERROR: 'CONTEXT_DATA_ERROR'` to `ERROR_TYPE_MAP`
-  - [ ] Add user-facing messages for both new types in `USER_MESSAGES`
+- [x] Task 7: Update `shared/utils/errorNormalizer.ts` (AC: #5)
+  - [x] Add `SCORING_ERROR: 'SCORING_ERROR'` to `ERROR_TYPE_MAP`
+  - [x] Add `CONTEXT_DATA_ERROR: 'CONTEXT_DATA_ERROR'` to `ERROR_TYPE_MAP`
+  - [x] Add user-facing messages for both new types in `USER_MESSAGES`
 
-- [ ] Task 8: Create `shared/types/statSheet.ts` (AC: #6)
-  - [ ] Create new file with all interfaces (see Dev Notes for exact definitions)
-  - [ ] Do NOT create a barrel `index.ts` file
+- [x] Task 8: Create `shared/types/statSheet.ts` (AC: #6)
+  - [x] Create new file with all interfaces (see Dev Notes for exact definitions)
+  - [x] Do NOT create a barrel `index.ts` file
 
-- [ ] Task 9: Extend `optimizationStore.ts` (AC: #7)
-  - [ ] Add imports for `StatSheet`, `NodeEfficiency` from `'../types/statSheet'`
-  - [ ] Add `statSheet: StatSheet | null` field + `setStatSheet()` action
-  - [ ] Add `isComputingStats: boolean` field + `setIsComputingStats()` action
-  - [ ] Add `nodeEfficiencies: NodeEfficiency[] | null` field + `setNodeEfficiencies()` action
-  - [ ] Initialize all new fields to `null` / `false` in the store factory
+- [x] Task 9: Extend `optimizationStore.ts` (AC: #7)
+  - [x] Add imports for `StatSheet`, `NodeEfficiency` from `'../types/statSheet'`
+  - [x] Add `statSheet: StatSheet | null` field + `setStatSheet()` action
+  - [x] Add `isComputingStats: boolean` field + `setIsComputingStats()` action
+  - [x] Add `nodeEfficiencies: NodeEfficiency[] | null` field + `setNodeEfficiencies()` action
+  - [x] Initialize all new fields to `null` / `false` in the store factory
 
-- [ ] Task 10: Verify builds (AC: #1, #8)
-  - [ ] Run `cargo build -p scoring-core` from `lebo/src-tauri/` — zero errors required
-  - [ ] Run `cargo build` from `lebo/src-tauri/` — zero errors required (full workspace)
-  - [ ] Run `pnpm build` from `lebo/` — zero TypeScript errors required
-  - [ ] Run `pnpm vitest` — confirm no new regressions (8 pre-existing failures expected)
+- [x] Task 10: Verify builds (AC: #1, #8)
+  - [x] Run `cargo build -p scoring-core` from `lebo/src-tauri/` — zero errors required
+  - [x] Run `cargo build` from `lebo/src-tauri/` — zero errors required (full workspace)
+  - [x] Run `pnpm build` from `lebo/` — zero TypeScript errors required
+  - [x] Run `pnpm vitest` — confirm no new regressions (8 pre-existing failures expected)
 
 ---
 
@@ -960,6 +960,41 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+None — all builds and tests passed cleanly on first attempt.
+
 ### Completion Notes List
 
+- Converted `lebo/src-tauri/Cargo.toml` to a Cargo workspace root with `members = [".", "scoring-core"]` and `resolver = "2"`. Full workspace build verified.
+- Created `scoring-core` pure Rust crate with only `serde`, `serde_json`, `rayon` dependencies — no Tauri, no tokio, no async runtime.
+- Implemented `modifier.rs` with full `StatKey` enum (70+ variants), `ModifierType`, `Condition` (5 variants including `is_active()`), `Modifier` struct, and `ModifierRegistry` with `query()` filtering by stat and active conditions.
+- Created all stub type modules: `build_snapshot.rs`, `stat_sheet.rs`, `game_data.rs`, `compute_options.rs`.
+- Created `class_module.rs` with `ClassModule` trait and `ClassStats`. Created five class stubs (sentinel, mage, primalist, rogue, acolyte) all with no-op implementations.
+- Added `'SCORING_ERROR'` and `'CONTEXT_DATA_ERROR'` to `ErrorType` union and wired both into `ERROR_TYPE_MAP` and `USER_MESSAGES` in `errorNormalizer.ts`.
+- Created `shared/types/statSheet.ts` with all 10 interfaces in snake_case — no barrel file created.
+- Extended `optimizationStore.ts` with `statSheet`, `isComputingStats`, `nodeEfficiencies` fields and their setters. Existing `scores: BuildScore | null` left in place per story spec.
+- `cargo build -p scoring-core`: 0 errors. `cargo build` (full workspace): 0 errors. `pnpm build`: 0 TypeScript errors. `pnpm vitest`: 8 pre-existing failures only, 0 regressions.
+
 ### File List
+
+**New files:**
+- `lebo/src-tauri/scoring-core/Cargo.toml`
+- `lebo/src-tauri/scoring-core/src/lib.rs`
+- `lebo/src-tauri/scoring-core/src/modifier.rs`
+- `lebo/src-tauri/scoring-core/src/build_snapshot.rs`
+- `lebo/src-tauri/scoring-core/src/stat_sheet.rs`
+- `lebo/src-tauri/scoring-core/src/game_data.rs`
+- `lebo/src-tauri/scoring-core/src/compute_options.rs`
+- `lebo/src-tauri/scoring-core/src/class_module.rs`
+- `lebo/src-tauri/scoring-core/src/classes/mod.rs`
+- `lebo/src-tauri/scoring-core/src/classes/sentinel.rs`
+- `lebo/src-tauri/scoring-core/src/classes/mage.rs`
+- `lebo/src-tauri/scoring-core/src/classes/primalist.rs`
+- `lebo/src-tauri/scoring-core/src/classes/rogue.rs`
+- `lebo/src-tauri/scoring-core/src/classes/acolyte.rs`
+- `lebo/src/shared/types/statSheet.ts`
+
+**Modified files:**
+- `lebo/src-tauri/Cargo.toml`
+- `lebo/src/shared/types/errors.ts`
+- `lebo/src/shared/utils/errorNormalizer.ts`
+- `lebo/src/shared/stores/optimizationStore.ts`

@@ -8,6 +8,8 @@ export type ErrorType =
   | 'AUTH_ERROR'
   | 'ICON_ERROR'
   | 'ITEM_DATA_ERROR'
+  | 'CONTEXT_DATA_ERROR'
+  | 'SCORING_ERROR'
   | 'UNKNOWN'
 
 export interface AppError {

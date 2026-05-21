@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { OptimizationGoal, SuggestionResult, BuildScore, FineTuneWeights } from '../types/optimization'
 import type { AppError } from '../types/errors'
+import type { StatSheet, NodeEfficiency } from '../types/statSheet'
 
 export interface HighlightedNodeIds {
   glowing: Set<string>
@@ -17,6 +18,13 @@ interface OptimizationStore {
   isOptimizing: boolean
   hasOptimizationCompleted: boolean
   scores: BuildScore | null
+  // Rust scoring engine fields (Story 2.2+ populates)
+  statSheet: StatSheet | null
+  isComputingStats: boolean
+  nodeEfficiencies: NodeEfficiency[] | null
+  setStatSheet: (sheet: StatSheet | null) => void
+  setIsComputingStats: (computing: boolean) => void
+  setNodeEfficiencies: (efficiencies: NodeEfficiency[] | null) => void
   streamError: AppError | null
   currentModel: string | null
   optimizationBuildId: string | null
@@ -50,6 +58,12 @@ export const useOptimizationStore = create<OptimizationStore>()((set) => ({
   isOptimizing: false,
   hasOptimizationCompleted: false,
   scores: null,
+  statSheet: null,
+  isComputingStats: false,
+  nodeEfficiencies: null,
+  setStatSheet: (sheet) => set({ statSheet: sheet }),
+  setIsComputingStats: (computing) => set({ isComputingStats: computing }),
+  setNodeEfficiencies: (efficiencies) => set({ nodeEfficiencies: efficiencies }),
   streamError: null,
   currentModel: null,
   optimizationBuildId: null,

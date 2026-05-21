@@ -1,3 +1,7 @@
+[workspace]
+members = [".", "scoring-core"]
+resolver = "2"
+
 [package]
 name = "lebo"
 version = "0.1.0"
