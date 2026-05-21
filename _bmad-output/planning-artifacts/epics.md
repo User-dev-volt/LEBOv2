@@ -549,12 +549,6 @@ So that the context input features in Epic 3 have correct data from day one and 
 **Then** entries for enemy type, per-element enemy resistance, and charge counts (frenzy, power, endurance) are all present
 **And** build-specific conditions include at minimum: "Sigil of Hope active" (Paladin), "Is enemy Hexed?" (hex builds)
 
-**Given** `shared/types/build.ts`
-**When** an agent reviews the `BuildState` interface
-**Then** it includes `idolGrid?: IdolGridState`, `blessings?: Record<string, string | null>`, and `activeConditions?: string[]` fields — all optional and defaulting to empty state
-**And** `schemaVersion` remains at `2` — no migration is needed since these fields default to empty values for existing saved builds
-**And** `buildSnapshotSerializer.ts` maps these fields into `BuildSnapshot` so they reach the Rust scoring engine
-
 ---
 
 ## Epic 2: Scoring Engine & Live Stat Sheet
@@ -819,6 +813,12 @@ So that my idol configuration is accurately modeled in the app's stat calculatio
 **When** the build is restored
 **Then** all placed idols are at their exact positions with correct size types
 **And** idol state is persisted in `buildStore.activeBuild.contextData`
+
+**Given** `shared/types/build.ts`
+**When** an agent reviews the `BuildState` interface
+**Then** it includes `idolGrid?: IdolGridState`, `blessings?: Record<string, string | null>`, and `activeConditions?: string[]` fields — all optional and defaulting to empty state
+**And** `schemaVersion` remains at `2` — no migration is needed since these fields default to empty values for existing saved builds
+**And** `buildSnapshotSerializer.ts` maps these fields into `BuildSnapshot` so they reach the Rust scoring engine
 
 ### Story 3.2: Idol Affix Selection & Stat Contribution
 
