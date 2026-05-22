@@ -510,3 +510,36 @@ Expected test baseline: 8 pre-existing failures (from Story 2.6 baseline) — no
 ### Change Log
 
 - 2026-05-22: Story 3.1 implemented — idol grid builder with layout, placement validation, and store integration
+
+---
+
+## Senior Developer Review (AI)
+
+**Date:** 2026-05-22
+**Outcome:** Changes Requested
+**Layers:** Blind Hunter · Edge Case Hunter · Acceptance Auditor
+**Summary:** 4 High + 2 Medium patches, 1 decision needed, 5 deferred, 4 dismissed.
+
+### Action Items
+
+- [ ] [Review][Decision] AC2 — Placeholder affix slots missing: spec states "the idol's visual representation shows the idol type name and placeholder affix slots (affix selection configured in Story 3.2)" but the placed idol renders only the type name and clear button — no slot UI placeholders exist. Clarify: should 3.1 show empty/greyed affix slot placeholders, or was the intent that the full slot UI is deferred to 3.2? [`IdolGrid.tsx`]
+
+- [ ] [Review][Patch] Interior cells of multi-cell idols break CSS Grid layout — occupied non-top-left cells are rendered as individual `<div aria-hidden>` elements that fill their own grid tracks; CSS Grid auto-places them after the spanning top-left cell, producing extra visible gold-tinted cells that push subsequent empty cells out of alignment [`IdolGrid.tsx` occupant+!isTopLeft branch]
+
+- [ ] [Review][Patch] `aspect-square` conflicts with `gridColumn: span N` on placed idol top-left cells — `aspect-ratio: 1/1` forces height equal to full spanned width, making a 1×2 idol render as a tall square and a 2×2 idol produce undefined sizing on both axes [`IdolGrid.tsx` occupant+isTopLeft branch]
+
+- [ ] [Review][Patch] Blocked cells: `aria-hidden="true"` + `aria-disabled="true"` are contradictory — `aria-hidden` removes the element from the AT entirely, making `aria-disabled` invisible to screen readers; use `aria-disabled="true"` alone (no `aria-hidden`) to communicate non-interactivity while remaining perceivable [`IdolGrid.tsx` isBlocked branch]
+
+- [ ] [Review][Patch] `onBlur`/`onChange` race on `<select>`: clicking a second empty cell while a picker is open triggers `handleCellClick` → `setPendingCell(newCell)`, then the select's `onBlur` fires → `setPendingCell(null)`, silently cancelling the new picker — the user sees nothing happen [`IdolGrid.tsx` select onBlur handler]
+
+- [ ] [Review][Patch] Error state not cleared when select is dismissed via `onBlur` without choosing — TR5 requires error cleared on "selection change"; currently `onBlur` only calls `setPendingCell(null)` without clearing `placementError`, leaving a stale error message visible [`IdolGrid.tsx:154`]
+
+- [ ] [Review][Patch] `buildSnapshotSerializer` test never exercises `toIdolPlacements` with actual placed idols — only tests the empty case; `toIdolPlacements` mapping (`idolTypeId` → `idolSize`) is unverified [`buildSnapshotSerializer.test.ts`]
+
+### Deferred
+
+- [x] [Review][Defer] Stale `idolGrid` closure in validation handlers — `idolGrid` captured at render time; low practical risk with Zustand reactive selectors and React 18 batching — deferred
+- [x] [Review][Defer] Unknown `idolTypeId` silently skipped in `isOccupiedByAnother` — corrupted PlacedIdol becomes invisible to overlap detection; edge case for saved data; defer to 3.2 data validation story [`idolGridUtils.ts:isOccupiedByAnother`]
+- [x] [Review][Defer] `idolSize` field sends full `idolTypeId` string (e.g. `"grand-2x2"`) — Rust contract for this field not yet defined; intentional scaffolding per comments; revisit in 3.2 when scoring consumes it [`buildSnapshotSerializer.ts:toIdolPlacements`]
+- [x] [Review][Defer] `applyNodeChange` fallback build construction missing `idolGrid`/`blessings`/`activeConditions` — pre-existing pattern, not introduced by this story [`buildStore.ts`]
+- [x] [Review][Defer] Build persistence round-trip for `idolGrid` untested — `buildPersistence.test.ts` does not verify `idolGrid` survives a save/load cycle [`buildPersistence.test.ts`]
