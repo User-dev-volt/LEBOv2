@@ -51,7 +51,7 @@ development_status:
 
   # Epic 3: Build Context — Idols, Blessings & Conditions
   epic-3: in-progress
-  3-1-idol-grid-builder-layout-and-placement: in-progress
+  3-1-idol-grid-builder-layout-and-placement: review
   3-2-idol-affix-selection-and-stat-contribution: backlog
   3-3-blessings-panel: backlog
   3-4-conditions-panel: backlog

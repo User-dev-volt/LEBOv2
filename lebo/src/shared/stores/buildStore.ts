@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { BuildState, BuildMeta, ApplyNodeResult, GearItemV2, ActiveSkill, IdolItem, IdolGridState, PlacedIdol } from '../types/build'
+import type { BuildState, BuildMeta, ApplyNodeResult, GearItemV2, ActiveSkill, IdolItem, PlacedIdol } from '../types/build'
 import type { FineTuneWeights } from '../types/optimization'
 import type { SkillEntry } from '../types/gameData'
 import type { TreeData } from '../types/treeData'

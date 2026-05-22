@@ -3,7 +3,7 @@ title: 'Idol Grid Builder — Layout & Placement'
 story_id: '3.1'
 story_key: '3-1-idol-grid-builder-layout-and-placement'
 epic: 3
-status: ready-for-dev
+status: review
 created: '2026-05-21'
 ---
 
@@ -475,8 +475,38 @@ Expected test baseline: 8 pre-existing failures (from Story 2.6 baseline) — no
 - For Story 3.2: the `PlacedIdol` type will be extended with `prefixId?: string`, `prefixTier?: number`, `suffixId?: string`, `suffixTier?: number`. Story 3.1 must NOT add these fields — that is 3.2's scope.
 - The existing `buildSnapshotSerializer.ts` already has the `IdolPlacementTS` interface defined (with `prefix?` and `suffix?` as optional). The 3.1 implementation of `toIdolPlacements()` simply omits these optional fields.
 
-## Completion Status
+## Dev Agent Record
 
-Status: **ready-for-dev**
+### Implementation Notes
 
-Context engine analysis complete — comprehensive developer guide created.
+- Added `PlacedIdol`, `IdolGridState` types and updated `BuildState` with `idolGrid?`, `blessings?`, `activeConditions?` fields
+- Added `placeIdol`, `clearIdolSlot`, `resetIdolGrid` store actions following existing pattern; updated `createBuild` to initialize new fields
+- Replaced `idolPlacements: []` stub in `buildSnapshotSerializer.ts` with `toIdolPlacements()` helper
+- Created `idolGridUtils.ts` with pure placement validation (getCellsForPlacement, isBlockedCell, isOccupiedByAnother, validatePlacement, getOccupantAt)
+- Created `IdolGrid.tsx` with full 5×5 grid, blocked cells, placement flow (click → select picker → validate → place), clear per idol, reset all, inline error display
+- Replaced `IdolInput` with `IdolGrid` in `ContextPanel.tsx`; idol count now shows "N placed"
+- A11y: removed `role="grid/gridcell"` (requires row wrappers incompatible with CSS grid layout); interactive cells use native `<button>` with descriptive `aria-labels`; blocked cells use `aria-disabled/aria-hidden`; error region uses `role="alert"`; focus rings via inline `onFocus/onBlur`
+- Updated `ContextPanel.test.tsx` mockBuild to include `idolGrid: []` (prevents infinite-loop from `?? []` creating new array each render) and updated idol count assertion
+
+### Test Results
+
+- `idolGridUtils.test.ts`: 14/14 pass
+- `IdolGrid.test.tsx`: 9/9 pass
+- Full suite: 834 passed, 8 pre-existing failures (no new regressions)
+- `pnpm build`: zero TypeScript errors
+
+### File List
+
+- `lebo/src/shared/types/build.ts` — Added `PlacedIdol`, `IdolGridState`; updated `BuildState`
+- `lebo/src/shared/stores/buildStore.ts` — Added idol grid actions; updated `createBuild`
+- `lebo/src/shared/utils/buildSnapshotSerializer.ts` — Replaced idol stub with `toIdolPlacements()`
+- `lebo/src/features/idol-grid/idolGridUtils.ts` — Created (pure validation helpers)
+- `lebo/src/features/idol-grid/IdolGrid.tsx` — Created (grid component)
+- `lebo/src/features/idol-grid/IdolGrid.test.tsx` — Created (9 tests)
+- `lebo/src/features/idol-grid/idolGridUtils.test.ts` — Created (14 tests)
+- `lebo/src/features/context-panel/ContextPanel.tsx` — Replaced IdolInput with IdolGrid
+- `lebo/src/features/context-panel/ContextPanel.test.tsx` — Updated mockBuild + idol count assertion
+
+### Change Log
+
+- 2026-05-22: Story 3.1 implemented — idol grid builder with layout, placement validation, and store integration

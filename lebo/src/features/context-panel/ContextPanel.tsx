@@ -2,19 +2,18 @@ import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/react
 import { useBuildStore } from '../../shared/stores/buildStore'
 import { GEAR_SLOTS } from './gearData'
 import { SKILL_SLOTS } from './skillData'
-import { IDOL_SLOTS } from './idolData'
 import { GearInput } from './GearInput'
 import { SkillInput } from './SkillInput'
-import { IdolInput } from './IdolInput'
+import { IdolGrid } from '../idol-grid/IdolGrid'
 
 export function ContextPanel() {
   const gear = useBuildStore((s) => s.activeBuild?.contextData.gear ?? [])
   const skills = useBuildStore((s) => s.activeBuild?.contextData.skills ?? [])
-  const idols = useBuildStore((s) => s.activeBuild?.contextData.idols ?? [])
+  const idolGrid = useBuildStore((s) => s.activeBuild?.idolGrid ?? [])
 
   const filledGearCount = gear.filter((g) => g.itemName.trim() !== '').length
   const filledSkillCount = skills.filter((s) => s.skillName.trim() !== '').length
-  const filledIdolCount = idols.filter((i) => i.idolType.trim() !== '').length
+  const filledIdolCount = idolGrid.length
 
   return (
     <div data-testid="context-panel" className="flex flex-col gap-2">
@@ -59,10 +58,10 @@ export function ContextPanel() {
             style={{ backgroundColor: 'var(--color-bg-elevated)', color: 'var(--color-text-secondary)' }}
           >
             <span>Idols</span>
-            <span style={{ color: 'var(--color-text-muted)' }}>{filledIdolCount} / {IDOL_SLOTS.length}</span>
+            <span style={{ color: 'var(--color-text-muted)' }}>{filledIdolCount} placed</span>
           </DisclosureButton>
           <DisclosurePanel>
-            <IdolInput />
+            <IdolGrid />
           </DisclosurePanel>
         </Disclosure>
       </div>

@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Developer picks up story `3-1-idol-grid-builder-layout-and-placement.md` and implements the five new files in `features/idol-grid/` folder, starting with type definitions and utility validation, then component + tests, then store integration.
+Apply the `char_indices()` fix to game_data_loader.rs:232 and re-run pnpm to verify panic resolves.
 
 ---
 

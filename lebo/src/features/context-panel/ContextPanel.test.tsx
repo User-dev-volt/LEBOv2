@@ -17,6 +17,7 @@ const mockBuild: BuildState = {
   activeSkillLevels: {},
   weaverAllocations: {},
   contextData: { gear: [], skills: [], idols: [] },
+  idolGrid: [],
   isPersisted: false,
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
@@ -72,9 +73,9 @@ describe('ContextPanel', () => {
     expect(screen.getByText('0 / 5')).toBeInTheDocument()
   })
 
-  it('shows idol count indicator as 0 / 6 when no idols filled', () => {
+  it('shows idol count indicator as "0 placed" when no idols placed', () => {
     useBuildStore.getState().setActiveBuild(mockBuild)
     render(<ContextPanel />)
-    expect(screen.getByText('0 / 6')).toBeInTheDocument()
+    expect(screen.getByText('0 placed')).toBeInTheDocument()
   })
 })
