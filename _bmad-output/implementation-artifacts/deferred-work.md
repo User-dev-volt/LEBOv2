@@ -62,3 +62,8 @@
 
 - **`skillNodeAllocations` inner mutation isolation not tested** [`buildSnapshotSerializer.test.ts:92-97`] — `copies allocations without mutating the original build` test only verifies `nodeAllocations`; the same shallow-copy pattern on `skillNodeAllocations` inner objects is untested. Code is correct; add test when test suite is next touched.
 - **All gear affixes classified as `prefixes`; `suffixes` always empty** [`buildSnapshotSerializer.ts:69-76`] — `GearItemV2.affixes` has no prefix/suffix discriminator field, making correct splitting impossible until Epic 3 adds that field. Acknowledged in code comment.
+
+## Deferred from: code review of 2-6-stat-sheet-ui-five-tab-display (2026-05-21)
+
+- **`warningGap=0` renders `(+0% needed)`** [`StatSheetPanel.tsx`] — If the scoring engine emits a `StatWarning` with `gap: 0`, the Defense tab renders the warning label in negative color with `(+0% needed)`. A gap of 0 means the resistance is exactly at cap, which should not be warned. Fix the `gap` floor in the scoring engine rather than the display code.
+- **RightPanel `shrink-0` layout on small windows** [`RightPanel.tsx`] — The stat sheet container uses `shrink-0` + `maxHeight: 280px`. On short windows the fixed-height gear and stat sections can push the Optimization section (also `shrink-0`) off-screen with no scroll path. Revisit in Epic 6 layout polish — options: `min-h` floor, or collapsible stat sheet section.

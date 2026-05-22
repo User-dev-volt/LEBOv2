@@ -12,6 +12,7 @@ import { OptimizeButton } from '../optimization/OptimizeButton'
 import { SuggestionsList } from '../optimization/SuggestionsList'
 import { GearSlot } from '../item-database/GearSlot'
 import { GEAR_SLOTS } from '../context-panel/gearData'
+import { StatSheetPanel } from '../stat-sheet/StatSheetPanel'
 
 export function RightPanel() {
   const isCollapsed = useAppStore((s) => s.activePanel.right === 'collapsed')
@@ -89,6 +90,14 @@ export function RightPanel() {
                 itemDatabase={itemDatabase}
               />
             ))}
+          </div>
+
+          {/* Middle: Stat Sheet */}
+          <div
+            className="shrink-0 overflow-y-auto border-t"
+            style={{ borderColor: 'var(--color-bg-elevated)', maxHeight: '280px' }}
+          >
+            <StatSheetPanel />
           </div>
 
           {/* Lower: Optimization — pinned, never scrolls off */}

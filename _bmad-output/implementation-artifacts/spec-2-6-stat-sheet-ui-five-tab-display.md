@@ -2,7 +2,8 @@
 title: 'Stat Sheet UI — Five-Tab Display'
 type: 'feature'
 created: '2026-05-21'
-status: 'draft'
+status: 'done'
+baseline_commit: '9e3caf02d6698e1c934856ccfc16b306806b3a6d'
 context: []
 ---
 
@@ -64,7 +65,7 @@ context: []
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `lebo/src/features/stat-sheet/StatSheetPanel.tsx` — CREATE five-tab panel component
+- [x] `lebo/src/features/stat-sheet/StatSheetPanel.tsx` — CREATE five-tab panel component
   - TabGroup with TabList containing: General, Offense, Defense, [Minion if visible], Other
   - Minion tab: only rendered when `statSheet?.minion != null`
   - Loading: when `isComputingStats`, show an inline spinner alongside the tab bar (values remain visible)
@@ -77,11 +78,11 @@ context: []
   - Use `var(--color-data-positive)` for positive values, `var(--color-data-negative)` for warnings/uncapped resistances, `var(--color-text-muted)` for `—` stubs
   - Tab focus ring: `outline: 2px solid var(--color-accent-gold)` on keyboard focus (use `data-[focus]:` Tailwind pattern matching SkillTreeTabBar)
 
-- [ ] `lebo/src/features/layout/RightPanel.tsx` — INSERT `<StatSheetPanel />` as a new independently-scrollable section between the Gear Context section and the Optimization section
+- [x] `lebo/src/features/layout/RightPanel.tsx` — INSERT `<StatSheetPanel />` as a new independently-scrollable section between the Gear Context section and the Optimization section
   - Import `StatSheetPanel` from `'../stat-sheet/StatSheetPanel'`
   - Section should be conditionally visible in expanded panel only (same as Gear section pattern)
 
-- [ ] `lebo/src/features/stat-sheet/StatSheetPanel.test.tsx` — CREATE tests
+- [x] `lebo/src/features/stat-sheet/StatSheetPanel.test.tsx` — CREATE tests
   - Mock `useOptimizationStore`, `useBuildStore`, `useGameDataStore`
   - Test: renders five tabs when `statSheet.minion != null`; renders four tabs when `statSheet.minion = null`
   - Test: shows loading indicator when `isComputingStats = true`
@@ -111,3 +112,46 @@ context: []
 **Commands:**
 - `pnpm build` (from `lebo/`) -- expected: zero TypeScript errors
 - `pnpm vitest` (from `lebo/`) -- expected: 8 pre-existing failures unchanged, new StatSheetPanel tests pass, no new failures
+
+## Suggested Review Order
+
+**Tab structure and conditional Minion tab**
+
+- Entry point: stores consumed, `showMinionTab` derived from `statSheet?.minion != null`
+  [`StatSheetPanel.tsx:81`](../../lebo/src/features/stat-sheet/StatSheetPanel.tsx#L81)
+
+- `key` on `TabGroup` resets selected index when Minion tab appears/disappears — prevents index shift to wrong panel
+  [`StatSheetPanel.tsx:119`](../../lebo/src/features/stat-sheet/StatSheetPanel.tsx#L119)
+
+- Conditional `Tab` in `TabList` — must stay symmetric with the `TabPanel` below
+  [`StatSheetPanel.tsx:127`](../../lebo/src/features/stat-sheet/StatSheetPanel.tsx#L127)
+
+- Matching conditional `TabPanel` — symmetry with L127 is what makes tab/panel indices align
+  [`StatSheetPanel.tsx:203`](../../lebo/src/features/stat-sheet/StatSheetPanel.tsx#L203)
+
+**Resistance warning display**
+
+- `RESISTANCES` config: field → warning-type mapping drives the Defense tab loop
+  [`StatSheetPanel.tsx:18`](../../lebo/src/features/stat-sheet/StatSheetPanel.tsx#L18)
+
+- Defense tab map: looks up each resistance warning from `statSheet.warnings`; passes `gap` to `StatRow`
+  [`StatSheetPanel.tsx:186`](../../lebo/src/features/stat-sheet/StatSheetPanel.tsx#L186)
+
+- `StatRow`: renders `(+{warningGap}% needed)` in `var(--color-data-negative)` when gap is present
+  [`StatSheetPanel.tsx:56`](../../lebo/src/features/stat-sheet/StatSheetPanel.tsx#L56)
+
+**RightPanel integration**
+
+- Stat sheet section inserted between Gear and Optimization; `maxHeight: 280px` + independent scroll
+  [`RightPanel.tsx:95`](../../lebo/src/features/layout/RightPanel.tsx#L95)
+
+**Tests**
+
+- Axe test clicks through all 5 tabs (with Minion visible) before asserting `toHaveNoViolations`
+  [`StatSheetPanel.test.tsx:163`](../../lebo/src/features/stat-sheet/StatSheetPanel.test.tsx#L163)
+
+- Defense warning test: must click the Defense tab first since inactive panels are unmounted
+  [`StatSheetPanel.test.tsx:132`](../../lebo/src/features/stat-sheet/StatSheetPanel.test.tsx#L132)
+
+- Tab count assertion: 4 tabs without Minion, 5 tabs with Minion
+  [`StatSheetPanel.test.tsx:92`](../../lebo/src/features/stat-sheet/StatSheetPanel.test.tsx#L92)
