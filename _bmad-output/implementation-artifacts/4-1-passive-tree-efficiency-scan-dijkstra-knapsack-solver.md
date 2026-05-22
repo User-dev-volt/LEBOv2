@@ -3,7 +3,7 @@ title: 'Passive Tree Efficiency Scan — Dijkstra + Knapsack Solver'
 story_id: '4.1'
 story_key: '4-1-passive-tree-efficiency-scan-dijkstra-knapsack-solver'
 epic: 4
-status: ready-for-dev
+status: review
 created: '2026-05-22'
 ---
 
@@ -76,31 +76,31 @@ This is Story 4.1 — the first story in Epic 4 and the heaviest Rust story in t
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Extend `GameData` in `scoring-core/src/game_data.rs`
-  - [ ] Add `node_connections: HashMap<String, Vec<String>>` — undirected adjacency list
-  - [ ] Add `node_max_points: HashMap<String, u32>` — max allocatable points per node
-  - [ ] Add `node_mastery_depth: HashMap<String, u32>` — BFS distance from mastery entry node per mastery node
-  - [ ] Keep all fields `#[derive(Default)]` so existing `GameData::default()` still compiles
-- [ ] Task 2: Populate the new fields in `game_data_loader.rs`
-  - [ ] Load base tree edges + mastery tree edges into `node_connections` (undirected: insert both directions)
-  - [ ] Load `max_points` per node into `node_max_points` (from `RawGameNode.max_points`)
-  - [ ] Run BFS from each mastery entry node; populate `node_mastery_depth` with depth ≥ 1 for mastery sub-tree nodes
-  - [ ] Confirm `cargo build` still passes
-- [ ] Task 3: Create `scoring-core/src/scan.rs`
-  - [ ] Define `ScanResult` struct (public)
-  - [ ] Implement multi-source Dijkstra to compute minimum-cost path to each unallocated node
-  - [ ] Implement `compute_path_delta_score()` (calls `compute_stats` twice: baseline vs. snapshot + path nodes)
-  - [ ] Apply "more" modifier multiplier (3–5×) when Σ Increased% > 200%
-  - [ ] Apply 1.2× mastery depth bonus for nodes at depth 7–10
-  - [ ] Parallelise per-path delta score computation with `rayon::prelude::*`
-  - [ ] Implement `classify_efficiency_tiers()` (top 25% → gold, 25–50% → silver, rest → dim)
-  - [ ] Implement two-phase budget solver: greedy top-20 shortlist + DP knapsack
-  - [ ] Implement `run_efficiency_scan()` public function
-  - [ ] Write unit tests in `#[cfg(test)]` at bottom of file (see Testing Requirements)
-- [ ] Task 4: Wire up exports in `scoring-core/src/lib.rs`
-  - [ ] Add `pub mod scan;`
-  - [ ] Export `pub use scan::{run_efficiency_scan, ScanResult};`
-  - [ ] Confirm `cargo test -p scoring-core` passes all new + existing tests
+- [x] Task 1: Extend `GameData` in `scoring-core/src/game_data.rs`
+  - [x] Add `node_connections: HashMap<String, Vec<String>>` — undirected adjacency list
+  - [x] Add `node_max_points: HashMap<String, u32>` — max allocatable points per node
+  - [x] Add `node_mastery_depth: HashMap<String, u32>` — BFS distance from mastery entry node per mastery node
+  - [x] Keep all fields `#[derive(Default)]` so existing `GameData::default()` still compiles
+- [x] Task 2: Populate the new fields in `game_data_loader.rs`
+  - [x] Load base tree edges + mastery tree edges into `node_connections` (undirected: insert both directions)
+  - [x] Load `max_points` per node into `node_max_points` (from `RawGameNode.max_points`)
+  - [x] Run BFS from each mastery entry node; populate `node_mastery_depth` with depth ≥ 1 for mastery sub-tree nodes
+  - [x] Confirm `cargo build` still passes
+- [x] Task 3: Create `scoring-core/src/scan.rs`
+  - [x] Define `ScanResult` struct (public)
+  - [x] Implement multi-source Dijkstra to compute minimum-cost path to each unallocated node
+  - [x] Implement `compute_path_delta_score()` (calls `compute_stats` twice: baseline vs. snapshot + path nodes)
+  - [x] Apply "more" modifier multiplier (3–5×) when Σ Increased% > 200%
+  - [x] Apply 1.2× mastery depth bonus for nodes at depth 7–10
+  - [x] Parallelise per-path delta score computation with `rayon::prelude::*`
+  - [x] Implement `classify_efficiency_tiers()` (top 25% → gold, 25–50% → silver, rest → dim)
+  - [x] Implement two-phase budget solver: greedy top-20 shortlist + DP knapsack
+  - [x] Implement `run_efficiency_scan()` public function
+  - [x] Write unit tests in `#[cfg(test)]` at bottom of file (see Testing Requirements)
+- [x] Task 4: Wire up exports in `scoring-core/src/lib.rs`
+  - [x] Add `pub mod scan;`
+  - [x] Export `pub use scan::{run_efficiency_scan, ScanResult};`
+  - [x] Confirm `cargo test -p scoring-core` passes all new + existing tests
 
 ---
 
@@ -604,16 +604,36 @@ pnpm build                         # TypeScript build unaffected (no TS changes 
 ## Dev Agent Record
 
 ### Agent Model Used
-_(to be filled by dev agent)_
+claude-sonnet-4-6
 
 ### Debug Log References
-_(to be filled by dev agent)_
+- **Test 3 failure (iteration 1)**: `more_multiplier_applied_above_threshold` — compared efficiency in two scenarios where the path length differed, making the ratio meaningless. Fixed by connecting E directly to A (cost 1) and using a separate node X to control Σ Increased%.
+- **Test 3 failure (iteration 2)**: Node E used `stat_key: StatKey::IncreasedDamage, modifier_type: ModifierType::More`. The `compute_offense` function queries `StatKey::MoreDamage` for the `more_factor` product — not `IncreasedDamage`. Result: zero delta. Fixed by changing E's `stat_key` to `StatKey::MoreDamage`.
+- **Test 3 failure (iteration 3)**: Assertion `eff_high <= eff_low * MORE_MULTIPLIER_CAP` compared raw efficiencies across two completely different baseline scenarios, not the multiplier itself. Fixed by computing `raw_eff_high = path_delta_score / effective_point_cost` and asserting `eff_high / raw_eff_high` is in `[2.0, 5.0]`.
+- **Unused imports**: `HashSet` and `VecDeque` removed from top-level `use std::collections::...` (used via full paths inside functions).
+- **Mismatched type on `.query()`**: Fixed `StatKey::IncreasedDamage` → `&StatKey::IncreasedDamage`.
 
 ### Completion Notes List
-_(to be filled by dev agent)_
+- All 4 tasks implemented: `GameData` extended, `game_data_loader.rs` populated, `scan.rs` created, `lib.rs` updated.
+- 41/41 `cargo test -p scoring-core` passing (29 existing + 12 new scan tests).
+- `cargo build` (full Tauri crate) passes cleanly — `game_data_loader.rs` compiles in context.
+- `pnpm build` (TypeScript) unaffected — no TS changes.
+- Key design decisions:
+  - `build_registry` in `compute.rs` promoted to `pub(crate)` to share Σ Increased% computation.
+  - Test node E uses `StatKey::MoreDamage` (not `IncreasedDamage`) to match `compute_offense`'s `more_factor` query.
+  - Mastery BFS constrained to `mastery_node_ids` set to prevent crossing back into base tree.
+  - Rayon results sorted by node_id after `par_iter().collect()` before tier classification for determinism.
+  - Negative-delta paths excluded from knapsack DP phase via `.filter(|&d| d > 0.0)`.
 
 ### File List
-_(to be filled by dev agent — list exact file paths modified)_
+- `lebo/src-tauri/scoring-core/src/game_data.rs` — MODIFIED (3 new fields: `node_connections`, `node_max_points`, `node_mastery_depth`)
+- `lebo/src-tauri/src/services/game_data_loader.rs` — MODIFIED (populate 3 new fields; BFS mastery depth)
+- `lebo/src-tauri/scoring-core/src/compute.rs` — MODIFIED (`fn build_registry` → `pub(crate) fn build_registry`)
+- `lebo/src-tauri/scoring-core/src/scan.rs` — CREATED (`run_efficiency_scan`, Dijkstra, delta scoring, knapsack, 12 tests)
+- `lebo/src-tauri/scoring-core/src/lib.rs` — MODIFIED (`pub mod scan; pub use scan::{run_efficiency_scan, ScanResult};`)
+
+### Change Log
+- 2026-05-22: Story 4.1 implemented — Dijkstra + knapsack passive tree efficiency scan. 41/41 tests passing.
 
 ### Review Findings
 _(to be filled by code review)_

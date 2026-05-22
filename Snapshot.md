@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Start story 4.1 (`passive-tree-efficiency-scan`) — currently in backlog and needs its story file created before review can begin.
+Dev agent: Implement `game_data_loader.rs` changes (load three new fields from class JSON) → expose `build_registry` in `compute.rs` → implement `scan.rs` (Dijkstra + knapsack pipeline)
 
 ---
 

@@ -13,6 +13,9 @@ pub fn build_scoring_game_data(app_handle: &tauri::AppHandle) -> Result<GameData
 
     let mut node_effects: HashMap<String, Vec<NodeEffect>> = HashMap::new();
     let mut class_base_stats: HashMap<String, BaseClassStats> = HashMap::new();
+    let mut node_connections: HashMap<String, Vec<String>> = HashMap::new();
+    let mut node_max_points: HashMap<String, u32> = HashMap::new();
+    let mut node_mastery_depth: HashMap<String, u32> = HashMap::new();
 
     for class_id in &manifest.classes {
         let class_data = game_data_service::load_class_data(&data_dir, class_id)?;
@@ -27,6 +30,19 @@ pub fn build_scoring_game_data(app_handle: &tauri::AppHandle) -> Result<GameData
             if !effects.is_empty() {
                 node_effects.insert(node.id.clone(), effects);
             }
+            node_max_points.insert(node.id.clone(), node.max_points);
+        }
+
+        // Base tree edges — undirected adjacency list
+        for edge in &class_data.base_tree.edges {
+            node_connections
+                .entry(edge.from_id.clone())
+                .or_default()
+                .push(edge.to_id.clone());
+            node_connections
+                .entry(edge.to_id.clone())
+                .or_default()
+                .push(edge.from_id.clone());
         }
 
         // Mastery passive trees
@@ -35,6 +51,44 @@ pub fn build_scoring_game_data(app_handle: &tauri::AppHandle) -> Result<GameData
                 let effects = parse_node_effects(&node.effects, &node.modifier_type);
                 if !effects.is_empty() {
                     node_effects.insert(node.id.clone(), effects);
+                }
+                node_max_points.insert(node.id.clone(), node.max_points);
+            }
+
+            // Mastery tree edges — undirected
+            for edge in &mastery.passive_tree.edges {
+                node_connections
+                    .entry(edge.from_id.clone())
+                    .or_default()
+                    .push(edge.to_id.clone());
+                node_connections
+                    .entry(edge.to_id.clone())
+                    .or_default()
+                    .push(edge.from_id.clone());
+            }
+
+            // BFS from mastery entry node to compute mastery depth for each mastery sub-tree node.
+            // Entry node = first node in the mastery passive_tree (by convention).
+            // Depth 1 = entry node; depth increases for each step further into the mastery.
+            if let Some(entry_node) = mastery.passive_tree.nodes.first() {
+                let mastery_node_ids: std::collections::HashSet<&str> =
+                    mastery.passive_tree.nodes.iter().map(|n| n.id.as_str()).collect();
+                let mut queue = std::collections::VecDeque::new();
+                queue.push_back((entry_node.id.clone(), 1u32));
+                let mut visited: std::collections::HashSet<String> = std::collections::HashSet::new();
+                while let Some((node_id, depth)) = queue.pop_front() {
+                    if visited.contains(&node_id) {
+                        continue;
+                    }
+                    visited.insert(node_id.clone());
+                    node_mastery_depth.insert(node_id.clone(), depth);
+                    if let Some(neighbors) = node_connections.get(&node_id) {
+                        for neighbor in neighbors.clone() {
+                            if mastery_node_ids.contains(neighbor.as_str()) && !visited.contains(&neighbor) {
+                                queue.push_back((neighbor, depth + 1));
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -47,6 +101,8 @@ pub fn build_scoring_game_data(app_handle: &tauri::AppHandle) -> Result<GameData
                     node_effects.insert(node.id.clone(), effects);
                 }
             }
+            // Skill tree nodes and edges are NOT added to node_connections or node_max_points:
+            // the efficiency scan is passive-tree-only (skill allocations use skillNodeAllocations).
         }
     }
 
@@ -109,6 +165,9 @@ pub fn build_scoring_game_data(app_handle: &tauri::AppHandle) -> Result<GameData
         class_base_stats,
         idol_affixes,
         blessing_effects,
+        node_connections,
+        node_max_points,
+        node_mastery_depth,
     })
 }
 

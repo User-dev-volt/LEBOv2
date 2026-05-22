@@ -74,4 +74,19 @@ pub struct GameData {
     /// Blessing ID → scoring effects. Populated by `game_data_loader.rs` from blessings.json.
     /// Reuses NodeEffect (stat_key, modifier_type, value, condition: Always) — same fields apply.
     pub blessing_effects: HashMap<String, Vec<NodeEffect>>,
+
+    /// Undirected adjacency list for passive tree graph traversal (Story 4.1).
+    /// Key: node_id. Value: directly connected node_ids.
+    /// Built from base_tree.edges + mastery.passive_tree.edges for all classes.
+    pub node_connections: HashMap<String, Vec<String>>,
+
+    /// Maximum allocatable points per passive node (Story 4.1).
+    /// Used as Dijkstra edge weight when computing EffectivePointCost.
+    pub node_max_points: HashMap<String, u32>,
+
+    /// BFS depth from mastery entry node for each mastery sub-tree node (Story 4.1).
+    /// Key: node_id. Value: depth (1-indexed; mastery entry node is depth 1).
+    /// Only mastery sub-tree nodes appear here; base tree nodes are absent.
+    /// Depth 7–10 nodes receive the 1.2× efficiency multiplier (FR-A13).
+    pub node_mastery_depth: HashMap<String, u32>,
 }

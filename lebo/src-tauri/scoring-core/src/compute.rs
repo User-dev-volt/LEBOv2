@@ -34,7 +34,7 @@ pub fn compute_stats(
     }
 }
 
-fn build_registry(snapshot: &BuildSnapshot, game_data: &GameData) -> ModifierRegistry {
+pub(crate) fn build_registry(snapshot: &BuildSnapshot, game_data: &GameData) -> ModifierRegistry {
     let mut registry = ModifierRegistry::new();
     for (node_id, &point_count) in &snapshot.node_allocations {
         if let Some(effects) = game_data.node_effects.get(node_id) {
