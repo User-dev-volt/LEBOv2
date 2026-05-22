@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Start story 2.6 (Stat Sheet UI — five-tab display) or re-run code review on other stories if backlog prioritizes breadth.
+Await approval signal (`[A]` or `[E]`). If approved, move to implementation phase using `step-03-build.md`.
 
 ---
 
