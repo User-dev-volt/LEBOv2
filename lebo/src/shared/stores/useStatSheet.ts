@@ -3,6 +3,7 @@ import { useBuildStore } from './buildStore'
 import { useGameDataStore } from './gameDataStore'
 import { useOptimizationStore } from './optimizationStore'
 import { invokeCommand } from '../utils/invokeCommand'
+import { normalizeAppError } from '../utils/errorNormalizer'
 import { toBuildSnapshot } from '../utils/buildSnapshotSerializer'
 import type { StatSheet } from '../types/statSheet'
 
@@ -23,6 +24,7 @@ export function useStatSheet(): void {
         const gameData = useGameDataStore.getState().gameData
 
         if (!build || !gameData) {
+          ++generationRef.current  // invalidate any in-flight IPC for prior build
           useOptimizationStore.getState().setStatSheet(null)
           useOptimizationStore.getState().setIsComputingStats(false)
           return
@@ -38,8 +40,9 @@ export function useStatSheet(): void {
             useOptimizationStore.getState().setStatSheet(result)
             useOptimizationStore.getState().setIsComputingStats(false)
           })
-          .catch(() => {
+          .catch((err: unknown) => {
             if (generationRef.current !== generation) return // stale — discard
+            useOptimizationStore.getState().setStreamError(normalizeAppError(err))
             useOptimizationStore.getState().setIsComputingStats(false)
           })
       })
@@ -49,6 +52,8 @@ export function useStatSheet(): void {
     const unsubGameData = useGameDataStore.subscribe((state, prev) => {
       if (state.gameData !== prev.gameData) scheduleCompute()
     })
+
+    scheduleCompute()  // compute on mount if build + gameData already loaded
 
     return () => {
       unsubBuild()

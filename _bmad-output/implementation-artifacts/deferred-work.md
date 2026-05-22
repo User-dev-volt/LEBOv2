@@ -57,3 +57,8 @@
 - **Fresh-install silent scoring degradation** [`game_data_loader.rs`] — `ensure_game_data_dir` doesn't call `copy_bundled_resources`; if manifest absent on first install, `load_manifest` returns Err and scoring silently uses empty `GameData` (base stats only). Pre-existing init ordering concern; address in a data-management story.
 - **Bare CRIT catch-all in `tags_to_stat_key`** [`game_data_loader.rs`] — Any node tagged `["CRIT"]` alone silently maps to `CriticalStrikeChance`; future crit tag variants that don't match earlier guards will be silently misclassified. Extend with explicit guards as new tag combinations are discovered.
 - **Mastery-to-skill affinity context lost** [`game_data_loader.rs`] — Skills inside the mastery loop iterate all class skills, not mastery-scoped ones; `RawSkillEntry.mastery_id` field is ignored. Architectural limitation for future mastery-gated scoring in Epic 4.
+
+## Deferred from: code review of 2-5-typescript-integration-serializer-hook-and-store (2026-05-21)
+
+- **`skillNodeAllocations` inner mutation isolation not tested** [`buildSnapshotSerializer.test.ts:92-97`] — `copies allocations without mutating the original build` test only verifies `nodeAllocations`; the same shallow-copy pattern on `skillNodeAllocations` inner objects is untested. Code is correct; add test when test suite is next touched.
+- **All gear affixes classified as `prefixes`; `suffixes` always empty** [`buildSnapshotSerializer.ts:69-76`] — `GearItemV2.affixes` has no prefix/suffix discriminator field, making correct splitting impossible until Epic 3 adds that field. Acknowledged in code comment.

@@ -54,6 +54,7 @@ export function toBuildSnapshot(build: BuildState, _gameData: GameData): BuildSn
     gearSlots: toGearSlots(build.contextData?.gear ?? []),
     idolPlacements: [],       // Epic 3 adds structured idol grid state (IdolItem has no row/col)
     blessings: [],            // Epic 3 adds BuildState.blessings
+    // weaverAllocations intentionally excluded — Epic 4 adds weaver scoring to compute_stats
   }
 }
 

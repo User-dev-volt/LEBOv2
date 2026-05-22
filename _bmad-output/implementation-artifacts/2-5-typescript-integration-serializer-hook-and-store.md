@@ -1,6 +1,6 @@
 # Story 2.5: TypeScript Integration — Serializer, Hook & Store
 
-Status: review
+Status: done
 
 ## Story
 
@@ -553,6 +553,15 @@ Run in this exact order:
 - [Source: deferred-work.md 2-3 — no_sustain_layer gap:0.0 deferred to Story 2.5 rendering; not a serializer concern]
 
 ---
+
+### Review Findings
+
+- [x] [Review][Decision→Patch] Silent error swallow in `.catch()` — resolved: surface via `normalizeAppError()` + `setStreamError()`. Fixed in `useStatSheet.ts`. [`useStatSheet.ts:43-47`]
+- [x] [Review][Decision→Patch] `weaverAllocations` dropped from `BuildSnapshot` without a deferral comment — resolved: intentional (Rust engine doesn't model weaver yet). Added `// Epic 4` comment to `buildSnapshotSerializer.ts`. [`buildSnapshotSerializer.ts:57`]
+- [x] [Review][Patch] No initial compute on mount — fixed: added `scheduleCompute()` call after subscriptions are established in `useStatSheet.ts`. [`useStatSheet.ts:56`]
+- [x] [Review][Patch] Stale statSheet written after switch to null-build — fixed: added `++generationRef.current` in the null-build early-return path to invalidate any in-flight IPC. [`useStatSheet.ts:27`]
+- [x] [Review][Defer] `skillNodeAllocations` inner mutation isolation not tested — `copies allocations without mutating the original build` only verifies `nodeAllocations`; the same shallow-copy isolation on `skillNodeAllocations` inner objects is untested. Code is correct. [`buildSnapshotSerializer.test.ts:92-97`] — deferred, pre-existing gap
+- [x] [Review][Defer] All gear affixes classified as `prefixes`; `suffixes` always empty — `GearItemV2.affixes` has no `prefix/suffix` discriminator field, so correct splitting is impossible today. Acknowledged in comment. Depends on Epic 3 type changes before it can be resolved. [`buildSnapshotSerializer.ts:69-76`] — deferred, pre-existing gap
 
 ## Dev Agent Record
 
