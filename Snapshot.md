@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Dev agent: Implement `game_data_loader.rs` changes (load three new fields from class JSON) → expose `build_registry` in `compute.rs` → implement `scan.rs` (Dijkstra + knapsack pipeline)
+Await your response on patch handling approach (apply now / leave as items / walkthrough). Once chosen, execute patch application or confirm story status.
 
 ---
 

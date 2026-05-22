@@ -3,7 +3,7 @@ title: 'Passive Tree Efficiency Scan — Dijkstra + Knapsack Solver'
 story_id: '4.1'
 story_key: '4-1-passive-tree-efficiency-scan-dijkstra-knapsack-solver'
 epic: 4
-status: review
+status: done
 created: '2026-05-22'
 ---
 
@@ -637,8 +637,8 @@ claude-sonnet-4-6
 
 ### Review Findings
 
-- [ ] [Review][Patch] Test 7 does not verify knapsack optimality against a known result [scan.rs:knapsack_optimal_for_known_input]
-- [ ] [Review][Patch] Tier sort has no tie-breaker — non-deterministic under efficiency ties [scan.rs:134-135]
+- [x] [Review][Patch] Test 7 does not verify knapsack optimality against a known result [scan.rs:knapsack_optimal_for_known_input]
+- [x] [Review][Patch] Tier sort has no tie-breaker — non-deterministic under efficiency ties [scan.rs:134-135]
 - [x] [Review][Defer] Small result sets (n < 4) assign no "gold" tier due to integer division [scan.rs:138-139] — deferred, pre-existing
 - [x] [Review][Defer] Zero-cost nodes (max_points=0) corrupt knapsack DP chosen table [scan.rs:solve_knapsack] — deferred, pre-existing
 - [x] [Review][Defer] BFS mastery depth assumes first node in passive_tree.nodes is the entry node [game_data_loader.rs:73] — deferred, pre-existing

@@ -131,8 +131,14 @@ pub fn run_efficiency_scan(snapshot: &BuildSnapshot, game_data: &GameData) -> Sc
         })
         .collect();
 
-    // Sort descending by efficiency for tier classification
-    with_eff.sort_by(|a, b| b.4.partial_cmp(&a.4).unwrap_or(std::cmp::Ordering::Equal));
+    // Sort descending by efficiency; node_id is secondary key for deterministic tie-breaking
+    // (rayon collect order is non-deterministic, so without a tie-breaker two nodes with equal
+    // efficiency could swap tier assignments across runs — violating AC6 determinism requirement).
+    with_eff.sort_by(|a, b| {
+        b.4.partial_cmp(&a.4)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| a.0.cmp(&b.0))
+    });
 
     // ── Step 7: tier classification ───────────────────────────────────────────
     let n = with_eff.len();
@@ -679,7 +685,7 @@ mod tests {
             "knapsack should return paths when positive-delta paths exist and budget > 0"
         );
 
-        // Verify each returned path has cost ≤ unspent_points
+        // Verify total cost of selected paths does not exceed budget (AC4)
         let total_cost: u32 = result
             .knapsack_solution
             .iter()
@@ -690,6 +696,20 @@ mod tests {
             total_cost <= 4,
             "total knapsack cost ({total_cost}) must not exceed unspent budget (4)"
         );
+
+        // Verify cheapest-first ordering within each returned path (FR-A15 / AC4)
+        for path in &result.knapsack_solution {
+            let costs: Vec<u32> = path
+                .iter()
+                .map(|nid| gd.node_max_points.get(nid).copied().unwrap_or(1))
+                .collect();
+            let mut expected = costs.clone();
+            expected.sort();
+            assert_eq!(
+                costs, expected,
+                "each knapsack path must be ordered cheapest-first by max_points (FR-A15)"
+            );
+        }
     }
 
     // ── Test 8: rayon output matches sequential ───────────────────────────────
