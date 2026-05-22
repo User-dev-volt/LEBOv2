@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Await your response on patch handling approach (apply now / leave as items / walkthrough). Once chosen, execute patch application or confirm story status.
+Dev agent: Load `_bmad-output/implementation-artifacts/4-2-cross
 
 ---
 

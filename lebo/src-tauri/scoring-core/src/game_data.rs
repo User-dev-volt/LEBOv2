@@ -51,6 +51,21 @@ pub struct IdolAffixEffect {
     pub values_by_tier: HashMap<u32, f64>,
 }
 
+/// A build-enabling unique item with scoring effects for Game-Changer detection (FR-A22, Story 4.2).
+#[derive(Debug, Clone, Default)]
+pub struct UniqueItem {
+    /// Canonical item ID (e.g., "exsanguinous").
+    pub item_id: String,
+    /// Display name for the suggestion description (e.g., "Exsanguinous").
+    pub display_name: String,
+    /// The scoring stat effects this unique contributes when equipped.
+    /// Injected into a temporary build snapshot to compute BuildScore delta.
+    pub scoring_effects: Vec<NodeEffect>,
+    /// Human-readable description of what stat threshold enables this unique's value
+    /// (e.g., "Ward generation from passives"). Used in Game-Changer suggestion description.
+    pub threshold_description: String,
+}
+
 /// Read-only game reference data loaded once at startup.
 /// Populated in Story 2.4 from disk JSON via `game_data_loader.rs`.
 #[derive(Debug, Clone, Default)]
@@ -89,4 +104,15 @@ pub struct GameData {
     /// Only mastery sub-tree nodes appear here; base tree nodes are absent.
     /// Depth 7–10 nodes receive the 1.2× efficiency multiplier (FR-A13).
     pub node_mastery_depth: HashMap<String, u32>,
+
+    /// Delivery-type scope for each affix ID (Story 4.2).
+    /// Key: affix_id. Value: "melee" | "ranged" | "spell" | "minion" | "generic".
+    /// Missing entries → treat as "generic" (no mismatch flag).
+    /// Populated from the affix database in game_data_loader.rs when scope data is available.
+    pub affix_scope: HashMap<String, String>,
+
+    /// Build-enabling unique items used for Game-Changer detection (FR-A22, Story 4.2).
+    /// Each entry describes a unique that could dramatically increase BuildScore.
+    /// Seeded in game_data_loader.rs; expanded when the full item DB is richer.
+    pub unique_items: Vec<UniqueItem>,
 }

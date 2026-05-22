@@ -159,6 +159,15 @@ pub fn build_scoring_game_data(app_handle: &tauri::AppHandle) -> Result<GameData
         }
     }
 
+    // affix_scope: populated from affix DB when available; empty HashMap degrades gracefully.
+    // No affix-scope JSON source exists yet — mismatched_affix detection relies on this being
+    // populated in a future story once the full affix DB is parsed with scope fields.
+    let affix_scope: HashMap<String, String> = HashMap::new();
+
+    // unique_items: seed with the three PRD-named build-enabling uniques (FR-A22).
+    // Effects are approximate Phase-3 models; expanded when the item database is fully parsed.
+    let unique_items = build_seeded_unique_items();
+
     Ok(GameData {
         node_effects,
         archetype_weights,
@@ -168,6 +177,8 @@ pub fn build_scoring_game_data(app_handle: &tauri::AppHandle) -> Result<GameData
         node_connections,
         node_max_points,
         node_mastery_depth,
+        affix_scope,
+        unique_items,
     })
 }
 
@@ -368,6 +379,48 @@ fn derive_class_base_stats(class_id: &str) -> BaseClassStats {
         "acolyte"  => BaseClassStats { base_hp: 70.0, hp_per_level: 4.0 },
         _          => BaseClassStats { base_hp: 80.0, hp_per_level: 5.0 }, // unknown class
     }
+}
+
+/// Seeds the three PRD-named build-enabling unique items for Game-Changer detection (FR-A22).
+/// Effects are approximate Phase-3 models of each unique's primary scoring contribution.
+fn build_seeded_unique_items() -> Vec<scoring_core::game_data::UniqueItem> {
+    use scoring_core::game_data::{NodeEffect, UniqueItem};
+    use scoring_core::modifier::{Condition, ModifierType, StatKey};
+    vec![
+        UniqueItem {
+            item_id: "exsanguinous".to_string(),
+            display_name: "Exsanguinous".to_string(),
+            scoring_effects: vec![NodeEffect {
+                stat_key: StatKey::WardPerSecond,
+                modifier_type: ModifierType::Flat,
+                value: 200.0,
+                condition: Condition::Always,
+            }],
+            threshold_description: "Ward generation from passives or other sources".to_string(),
+        },
+        UniqueItem {
+            item_id: "bleeding-heart".to_string(),
+            display_name: "Bleeding Heart".to_string(),
+            scoring_effects: vec![NodeEffect {
+                stat_key: StatKey::IncreasedDamage,
+                modifier_type: ModifierType::Increased,
+                value: 80.0,
+                condition: Condition::Always,
+            }],
+            threshold_description: "Bleed or necrotic damage sources in the build".to_string(),
+        },
+        UniqueItem {
+            item_id: "omnividence".to_string(),
+            display_name: "Omnividence".to_string(),
+            scoring_effects: vec![NodeEffect {
+                stat_key: StatKey::CriticalStrikeMultiplier,
+                modifier_type: ModifierType::Flat,
+                value: 100.0,
+                condition: Condition::Always,
+            }],
+            threshold_description: "High critical strike chance (60%+) already in the build".to_string(),
+        },
+    ]
 }
 
 /// Maps idol affix JSON stat key strings to `StatKey` enum variants.

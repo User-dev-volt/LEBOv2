@@ -3,7 +3,7 @@ title: 'Cross-Domain Synergy Detection'
 story_id: '4.2'
 story_key: '4-2-cross-domain-synergy-detection'
 epic: 4
-status: ready-for-dev
+status: review
 created: '2026-05-22'
 ---
 
@@ -69,26 +69,26 @@ Story 4.2 runs before skill role designation (that's Epic 5). We cannot ask "wha
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Extend `GameData` in `scoring-core/src/game_data.rs`
-  - [ ] Add `pub struct UniqueItem` with `item_id`, `display_name`, `scoring_effects: Vec<NodeEffect>`, `threshold_description: String`
-  - [ ] Add `pub affix_scope: HashMap<String, String>` to `GameData` (affix_id → "melee"|"ranged"|"spell"|"minion"|"generic")
-  - [ ] Add `pub unique_items: Vec<UniqueItem>` to `GameData`
-  - [ ] Confirm `cargo build -p scoring-core` passes
-- [ ] Task 2: Populate new fields in `game_data_loader.rs`
-  - [ ] Add `affix_scope` population from any available affix database (may remain empty HashMap — graceful degradation)
-  - [ ] Add `unique_items` population — initially seed with 3 build-enabling uniques (Exsanguinous, Bleeding Heart, Omnividence) as hardcoded stubs in `game_data_loader.rs`; these are the ones explicitly named in the PRD for synergy detection
-  - [ ] Confirm `cargo build` (full Tauri crate) passes
-- [ ] Task 3: Create `scoring-core/src/synergy.rs`
-  - [ ] Implement `infer_delivery_type()` — counts delivery-type-specific StatKey occurrences in allocated nodes; returns dominant type or None
-  - [ ] Implement `detect_zero_value_nodes()` — flags allocated nodes whose ALL damage-typed effects use a mismatching delivery-type StatKey
-  - [ ] Implement `detect_mismatched_affixes()` — flags gear slot affixes whose scope doesn't match inferred delivery type; uses `game_data.affix_scope` lookup
-  - [ ] Implement `detect_game_changers()` — for each unique in `game_data.unique_items`, clones snapshot + game_data, injects unique's scoring_effects, calls `compute_stats`, flags if delta > 30%
-  - [ ] Implement `run_synergy_detection()` public function that orchestrates all three detectors
-  - [ ] Write unit tests (minimum 8 required by ACs — see Testing Requirements)
-- [ ] Task 4: Update exports in `scoring-core/src/lib.rs`
-  - [ ] Add `pub mod synergy;`
-  - [ ] Add `pub use synergy::run_synergy_detection;`
-  - [ ] Confirm `cargo test -p scoring-core` passes all new + existing tests
+- [x] Task 1: Extend `GameData` in `scoring-core/src/game_data.rs`
+  - [x] Add `pub struct UniqueItem` with `item_id`, `display_name`, `scoring_effects: Vec<NodeEffect>`, `threshold_description: String`
+  - [x] Add `pub affix_scope: HashMap<String, String>` to `GameData` (affix_id → "melee"|"ranged"|"spell"|"minion"|"generic")
+  - [x] Add `pub unique_items: Vec<UniqueItem>` to `GameData`
+  - [x] Confirm `cargo build -p scoring-core` passes
+- [x] Task 2: Populate new fields in `game_data_loader.rs`
+  - [x] Add `affix_scope` population from any available affix database (may remain empty HashMap — graceful degradation)
+  - [x] Add `unique_items` population — initially seed with 3 build-enabling uniques (Exsanguinous, Bleeding Heart, Omnividence) as hardcoded stubs in `game_data_loader.rs`; these are the ones explicitly named in the PRD for synergy detection
+  - [x] Confirm `cargo build` (full Tauri crate) passes
+- [x] Task 3: Create `scoring-core/src/synergy.rs`
+  - [x] Implement `infer_delivery_type()` — counts delivery-type-specific StatKey occurrences in allocated nodes; returns dominant type or None
+  - [x] Implement `detect_zero_value_nodes()` — flags allocated nodes whose ALL damage-typed effects use a mismatching delivery-type StatKey
+  - [x] Implement `detect_mismatched_affixes()` — flags gear slot affixes whose scope doesn't match inferred delivery type; uses `game_data.affix_scope` lookup
+  - [x] Implement `detect_game_changers()` — for each unique in `game_data.unique_items`, clones snapshot + game_data, injects unique's scoring_effects, calls `compute_stats`, flags if delta > 30%
+  - [x] Implement `run_synergy_detection()` public function that orchestrates all three detectors
+  - [x] Write unit tests (minimum 8 required by ACs — see Testing Requirements)
+- [x] Task 4: Update exports in `scoring-core/src/lib.rs`
+  - [x] Add `pub mod synergy;`
+  - [x] Add `pub use synergy::run_synergy_detection;`
+  - [x] Confirm `cargo test -p scoring-core` passes all new + existing tests
 
 ---
 
@@ -647,16 +647,29 @@ pnpm build                         # TypeScript build unaffected (no TS changes 
 ## Dev Agent Record
 
 ### Agent Model Used
-_[to be filled by dev agent]_
+claude-sonnet-4-6
 
 ### Debug Log References
-_[to be filled by dev agent]_
+- Task 3 bug: `delivery_effects` variable typed as `Vec<&DeliveryType>` but iterator produced owned values — removed the dead intermediate variable, kept the `delivery_types` collection directly.
+- Task 3 bug: Leftover `ModifierType` import at module level (only used in tests) caused unused-import warning — moved import to `#[cfg(test)]` block.
+- Task 3 bug: `game_changer` flags used `priority: "high"` — sort key treated them identically to mismatched-affix flags. Fixed to `priority: "game_changer"` so the `_ => 0u8` sort branch catches them first.
+- Task 3 bug: Delivery type tie-break order was `melee > spell` but test `zero_value_melee_node_in_spell_build_flagged` required spell to win a tie — changed to `spell > melee > ranged > minion`.
 
 ### Completion Notes List
-_[to be filled by dev agent]_
+- All 4 tasks implemented and verified.
+- 51/51 `cargo test -p scoring-core` (41 pre-existing + 10 new synergy tests).
+- `cargo build` (full Tauri crate) clean, no warnings.
+- `pnpm build` TypeScript build unaffected (no TS changes this story).
+- `affix_scope` is an empty HashMap in production — mismatched_affix flags will only fire once a future story populates the affix DB. Tests use synthetic injected data.
+- `detect_game_changers` clones `GameData` per unique (~3 clones for Phase 3 seeded uniques); acceptable per NFR-1 budget.
+- `game_changer` priority value is the string `"game_changer"` (not `"high"`) so the sort key correctly places it before high-priority mismatched_affix flags.
 
 ### File List
-_[to be filled by dev agent]_
+- `lebo/src-tauri/scoring-core/src/game_data.rs` — MODIFIED: added `UniqueItem` struct + `affix_scope` + `unique_items` fields to `GameData`
+- `lebo/src-tauri/src/services/game_data_loader.rs` — MODIFIED: populated `affix_scope` (empty HashMap) + `unique_items` (3 seeded uniques: Exsanguinous, Bleeding Heart, Omnividence)
+- `lebo/src-tauri/scoring-core/src/synergy.rs` — CREATED: `run_synergy_detection()`, three detectors, 10 unit tests
+- `lebo/src-tauri/scoring-core/src/lib.rs` — MODIFIED: added `pub mod synergy;`, `pub use synergy::run_synergy_detection;`, `UniqueItem` to game_data re-exports
 
 ### Change Log
 - 2026-05-22: Story 4.2 created — cross-domain synergy detection spec.
+- 2026-05-22: Story 4.2 implemented — all 4 tasks complete, 51/51 tests passing, status → review.
