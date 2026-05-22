@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Run `/bmad-dev-story 3-4-conditions-panel.md` to hand off to implementation agent.
+Start story 4.1 (`passive-tree-efficiency-scan`) — currently in backlog and needs its story file created before review can begin.
 
 ---
 
