@@ -72,7 +72,7 @@ function TimelineRow({
           {selectedBlessing.statEffects
             .map(
               (e) =>
-                `${e.modifierType === 'increased' ? '+' : ''}${e.value}% ${e.statKey.replace(/_/g, ' ')}`,
+                `${e.modifierType === 'increased' ? '+' : ''}${e.value}${e.modifierType !== 'flat' ? '%' : ''} ${e.statKey.replace(/_/g, ' ')}`,
             )
             .join(', ')}
         </p>
@@ -124,7 +124,7 @@ export function BlessingsPanel() {
             aria-label="Dismiss blessings staleness notice"
             className="opacity-75 hover:opacity-100 ml-2"
             style={{ outline: 'none' }}
-            onFocus={(e) => { e.currentTarget.style.outline = '2px solid var(--color-bg-base)' }}
+            onFocus={(e) => { e.currentTarget.style.outline = '2px solid var(--color-accent-gold)' }}
             onBlur={(e) => { e.currentTarget.style.outline = 'none' }}
           >
             Dismiss
