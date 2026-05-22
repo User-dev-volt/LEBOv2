@@ -522,7 +522,7 @@ Expected test baseline: 8 pre-existing failures (from Story 2.6 baseline) — no
 
 ### Action Items
 
-- [ ] [Review][Decision] AC2 — Placeholder affix slots missing: spec states "the idol's visual representation shows the idol type name and placeholder affix slots (affix selection configured in Story 3.2)" but the placed idol renders only the type name and clear button — no slot UI placeholders exist. Clarify: should 3.1 show empty/greyed affix slot placeholders, or was the intent that the full slot UI is deferred to 3.2? [`IdolGrid.tsx`]
+- [ ] [Review][Patch] AC2 — Add placeholder affix slot labels to placed idol display: show empty/greyed "— Prefix —" / "— Suffix —" labels below the idol type name; selection wired in Story 3.2 [`IdolGrid.tsx` occupant+isTopLeft branch]
 
 - [ ] [Review][Patch] Interior cells of multi-cell idols break CSS Grid layout — occupied non-top-left cells are rendered as individual `<div aria-hidden>` elements that fill their own grid tracks; CSS Grid auto-places them after the spanning top-left cell, producing extra visible gold-tinted cells that push subsequent empty cells out of alignment [`IdolGrid.tsx` occupant+!isTopLeft branch]
 
