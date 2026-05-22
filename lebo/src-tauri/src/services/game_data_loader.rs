@@ -203,27 +203,34 @@ fn tags_to_stat_key(tags: &[String], modifier_type: &ModifierType) -> Option<Sta
 /// "+.5% per point" → 0.5
 /// Returns None if no numeric value found (effect is dropped).
 fn extract_value(description: &str) -> Option<f64> {
-    // Find first sequence of digits (with optional leading sign and/or dot)
-    let mut start = None;
-    let mut end = 0;
-    let chars: Vec<char> = description.chars().collect();
+    // Collect (byte_offset, char) pairs so slicing description[s..end] uses byte indices.
+    let chars: Vec<(usize, char)> = description.char_indices().collect();
+    let n = chars.len();
+    let mut start: Option<usize> = None; // byte offset
+    let mut end: usize = 0;             // byte offset (exclusive)
     let mut i = 0;
-    while i < chars.len() {
-        if chars[i].is_ascii_digit() {
+    while i < n {
+        let (byte_i, ch) = chars[i];
+        // Byte offset of the character *after* this one (used for end).
+        let next_byte = if i + 1 < n { chars[i + 1].0 } else { description.len() };
+        if ch.is_ascii_digit() {
             if start.is_none() {
                 // Look back for optional leading dot and/or sign: handles "+5", ".5", "+.5"
-                start = Some(if i > 0 && (chars[i - 1] == '+' || chars[i - 1] == '-') {
-                    i - 1
-                } else if i > 0 && chars[i - 1] == '.' {
-                    // leading-dot decimal; check for sign before the dot
-                    if i > 1 && (chars[i - 2] == '+' || chars[i - 2] == '-') { i - 2 } else { i - 1 }
+                start = Some(if i > 0 && (chars[i - 1].1 == '+' || chars[i - 1].1 == '-') {
+                    chars[i - 1].0
+                } else if i > 0 && chars[i - 1].1 == '.' {
+                    if i > 1 && (chars[i - 2].1 == '+' || chars[i - 2].1 == '-') {
+                        chars[i - 2].0
+                    } else {
+                        chars[i - 1].0
+                    }
                 } else {
-                    i
+                    byte_i
                 });
             }
-            end = i + 1;
-        } else if chars[i] == '.' && start.is_some() && i + 1 < chars.len() && chars[i + 1].is_ascii_digit() {
-            end = i + 1;
+            end = next_byte;
+        } else if ch == '.' && start.is_some() && i + 1 < n && chars[i + 1].1.is_ascii_digit() {
+            end = next_byte;
         } else if start.is_some() {
             break;
         }

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { BuildState, BuildMeta, ApplyNodeResult, GearItemV2, ActiveSkill, IdolItem } from '../types/build'
+import type { BuildState, BuildMeta, ApplyNodeResult, GearItemV2, ActiveSkill, IdolItem, IdolGridState, PlacedIdol } from '../types/build'
 import type { FineTuneWeights } from '../types/optimization'
 import type { SkillEntry } from '../types/gameData'
 import type { TreeData } from '../types/treeData'
@@ -47,6 +47,9 @@ export interface BuildStore {
   updateContextGear: (gear: GearItemV2[]) => void
   updateContextSkills: (skills: ActiveSkill[]) => void
   updateContextIdols: (idols: IdolItem[]) => void
+  placeIdol: (placed: PlacedIdol) => void
+  clearIdolSlot: (idolId: string) => void
+  resetIdolGrid: () => void
   setActiveBuildSliderPosition: (pos: number) => void
   setActiveBuildFineTuneWeights: (weights: FineTuneWeights | null) => void
 }
@@ -91,6 +94,9 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
         activeSkillLevels: {},
         weaverAllocations: {},
         contextData: { gear: [], skills: [], idols: [] },
+        idolGrid: [],
+        blessings: {},
+        activeConditions: [],
         isPersisted: false,
         createdAt: now,
         updatedAt: now,
@@ -443,6 +449,48 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
             activeBuild: {
               ...s.activeBuild,
               contextData: { ...s.activeBuild.contextData, idols },
+              isPersisted: false,
+              updatedAt: new Date().toISOString(),
+            },
+          }
+        : {}
+    ),
+
+  placeIdol: (placed) =>
+    set((s) =>
+      s.activeBuild
+        ? {
+            activeBuild: {
+              ...s.activeBuild,
+              idolGrid: [...(s.activeBuild.idolGrid ?? []), placed],
+              isPersisted: false,
+              updatedAt: new Date().toISOString(),
+            },
+          }
+        : {}
+    ),
+
+  clearIdolSlot: (idolId) =>
+    set((s) =>
+      s.activeBuild
+        ? {
+            activeBuild: {
+              ...s.activeBuild,
+              idolGrid: (s.activeBuild.idolGrid ?? []).filter((p) => p.id !== idolId),
+              isPersisted: false,
+              updatedAt: new Date().toISOString(),
+            },
+          }
+        : {}
+    ),
+
+  resetIdolGrid: () =>
+    set((s) =>
+      s.activeBuild
+        ? {
+            activeBuild: {
+              ...s.activeBuild,
+              idolGrid: [],
               isPersisted: false,
               updatedAt: new Date().toISOString(),
             },

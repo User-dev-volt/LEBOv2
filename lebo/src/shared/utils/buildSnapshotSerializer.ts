@@ -1,5 +1,4 @@
-// @deprecated fields (idolPlacements, blessings, activeConditions) are stubs — Epic 3 populates them.
-import type { BuildState, GearItemV2, AffixEntryV2 } from '../types/build'
+import type { BuildState, GearItemV2, AffixEntryV2, IdolGridState } from '../types/build'
 import type { GameData } from '../types/gameData'
 
 // Pattern 2: TypeScript mirrors Rust camelCase input fields exactly.
@@ -50,12 +49,21 @@ export function toBuildSnapshot(build: BuildState, _gameData: GameData): BuildSn
     classId: build.classId,
     masteryId: build.masteryId,
     sliderPosition: Math.max(0, Math.min(100, build.sliderPosition ?? 50)),
-    activeConditions: [],     // Epic 3 adds BuildState.activeConditions
+    activeConditions: build.activeConditions ?? [],
     gearSlots: toGearSlots(build.contextData?.gear ?? []),
-    idolPlacements: [],       // Epic 3 adds structured idol grid state (IdolItem has no row/col)
-    blessings: [],            // Epic 3 adds BuildState.blessings
+    idolPlacements: toIdolPlacements(build.idolGrid ?? []),
+    blessings: [],            // Epic 3.3 adds BuildState.blessings
     // weaverAllocations intentionally excluded — Epic 4 adds weaver scoring to compute_stats
   }
+}
+
+function toIdolPlacements(idolGrid: IdolGridState): IdolPlacementTS[] {
+  return idolGrid.map((placed) => ({
+    row: placed.row,
+    col: placed.col,
+    idolSize: placed.idolTypeId,
+    // prefix and suffix populated in Story 3.2
+  }))
 }
 
 function toGearSlots(gear: GearItemV2[]): Record<string, GearSlotSnapshotTS> {

@@ -51,12 +51,24 @@ export interface BuildState {
     skills: ActiveSkill[]
     idols: IdolItem[]
   }
+  idolGrid?: IdolGridState
+  blessings?: Record<string, string | null>
+  activeConditions?: string[]
   sliderPosition?: number
   fineTuneWeights?: FineTuneWeights | null
   isPersisted: boolean
   createdAt: string
   updatedAt: string
 }
+
+export interface PlacedIdol {
+  id: string
+  row: number
+  col: number
+  idolTypeId: string
+}
+
+export type IdolGridState = PlacedIdol[]
 
 export type ApplyNodeResult = { success: boolean; error?: string; blockedByDependents?: string[] }
 
