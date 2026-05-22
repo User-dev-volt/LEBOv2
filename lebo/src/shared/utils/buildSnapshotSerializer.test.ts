@@ -82,11 +82,30 @@ describe('toBuildSnapshot', () => {
     expect(snapshot.gearSlots['helm']?.suffixes).toEqual([])
   })
 
-  it('returns empty collections for Epic 3 fields not yet in BuildState', () => {
+  it('returns empty collections when Epic 3 fields absent from BuildState', () => {
     const snapshot = toBuildSnapshot(makeBuild(), minimalGameData)
     expect(snapshot.activeConditions).toEqual([])
     expect(snapshot.idolPlacements).toEqual([])
     expect(snapshot.blessings).toEqual([])
+  })
+
+  it('maps idolGrid placements to idolPlacements with row, col, idolSize', () => {
+    const build = makeBuild({
+      idolGrid: [
+        { id: 'a1', row: 1, col: 0, idolTypeId: 'humble-1x2' },
+        { id: 'b2', row: 3, col: 3, idolTypeId: 'grand-2x2' },
+      ],
+    })
+    const snapshot = toBuildSnapshot(build, minimalGameData)
+    expect(snapshot.idolPlacements).toEqual([
+      { row: 1, col: 0, idolSize: 'humble-1x2' },
+      { row: 3, col: 3, idolSize: 'grand-2x2' },
+    ])
+  })
+
+  it('maps activeConditions from BuildState', () => {
+    const build = makeBuild({ activeConditions: ['on-hit', 'channelling'] })
+    expect(toBuildSnapshot(build, minimalGameData).activeConditions).toEqual(['on-hit', 'channelling'])
   })
 
   it('copies allocations without mutating the original build', () => {

@@ -72,13 +72,13 @@ export function IdolGrid() {
             const isTopLeft = occupant ? occupant.row === row && occupant.col === col : false
             const isPending = pendingCell?.row === row && pendingCell?.col === col
 
+            // P3: blocked cells — aria-disabled only (aria-hidden would hide them from AT entirely)
             if (isBlocked) {
               return (
                 <div
                   key={`${row}-${col}`}
                   aria-disabled="true"
-                  aria-hidden="true"
-                  className="aspect-square rounded text-xs flex items-center justify-center"
+                  className="aspect-square rounded"
                   style={{
                     backgroundColor: 'var(--color-bg-base)',
                     cursor: 'not-allowed',
@@ -90,15 +90,40 @@ export function IdolGrid() {
 
             if (occupant && isTopLeft) {
               const idolType = idolTypes.find((t) => t.id === occupant.idolTypeId)
+              const cols = idolType?.cols ?? 1
+              const rows = idolType?.rows ?? 1
               return (
+                // P2: removed aspect-square — let the grid track sizes define the cell dimensions
                 <div
                   key={`${row}-${col}`}
-                  className="aspect-square rounded text-xs flex flex-col items-center justify-center gap-0.5 p-0.5"
-                  style={{ backgroundColor: 'var(--color-accent-gold)', color: 'var(--color-bg-base)', gridColumn: `span ${idolType?.cols ?? 1}`, gridRow: `span ${idolType?.rows ?? 1}` }}
+                  className="rounded text-xs flex flex-col items-center justify-center gap-0.5 p-0.5"
+                  style={{
+                    backgroundColor: 'var(--color-accent-gold)',
+                    color: 'var(--color-bg-base)',
+                    gridColumn: `${col + 1} / span ${cols}`,
+                    gridRow: `${row + 1} / span ${rows}`,
+                  }}
                 >
                   <span className="font-semibold leading-tight text-center" style={{ fontSize: '0.6rem' }}>
                     {idolType?.displayName ?? occupant.idolTypeId}
                   </span>
+                  {/* P0: placeholder affix slot labels (selection wired in Story 3.2) */}
+                  <span
+                    className="leading-tight text-center"
+                    style={{ fontSize: '0.55rem', opacity: 0.6 }}
+                    aria-label="Prefix slot (empty)"
+                  >
+                    — Prefix —
+                  </span>
+                  {(idolType?.requiresBoth ?? false) && (
+                    <span
+                      className="leading-tight text-center"
+                      style={{ fontSize: '0.55rem', opacity: 0.6 }}
+                      aria-label="Suffix slot (empty)"
+                    >
+                      — Suffix —
+                    </span>
+                  )}
                   <button
                     onClick={() => handleClear(occupant.id)}
                     aria-label={`${idolType?.displayName ?? occupant.idolTypeId} placed. Press to clear.`}
@@ -118,15 +143,10 @@ export function IdolGrid() {
               )
             }
 
+            // P1: interior cells of multi-cell idols — skip rendering entirely.
+            // The top-left cell's gridColumn/gridRow span already covers this area.
             if (occupant && !isTopLeft) {
-              return (
-                <div
-                  key={`${row}-${col}`}
-                  aria-hidden="true"
-                  className="aspect-square rounded"
-                  style={{ backgroundColor: 'var(--color-accent-gold)', opacity: 0.5 }}
-                />
-              )
+              return null
             }
 
             if (isPending) {
@@ -134,7 +154,7 @@ export function IdolGrid() {
                 <div
                   key={`${row}-${col}`}
                   className="aspect-square rounded text-xs flex flex-col items-start gap-0.5 p-0.5 overflow-auto"
-                  style={{ backgroundColor: 'var(--color-bg-elevated)', gridColumn: 'span 1' }}
+                  style={{ backgroundColor: 'var(--color-bg-elevated)', gridColumn: `${col + 1}`, gridRow: `${row + 1}` }}
                 >
                   <select
                     autoFocus
@@ -151,7 +171,14 @@ export function IdolGrid() {
                       const type = idolTypes.find((t) => t.id === e.target.value)
                       if (type) handleTypeSelect(row, col, type)
                     }}
-                    onBlur={() => setPendingCell(null)}
+                    // P4+P5: use functional setState so a concurrent handleCellClick on another
+                    // cell isn't overwritten; also clear any stale error on dismiss.
+                    onBlur={() => {
+                      setPendingCell((current) =>
+                        current?.row === row && current?.col === col ? null : current
+                      )
+                      setPlacementError(null)
+                    }}
                     onFocus={(e) => { e.currentTarget.style.outline = '2px solid var(--color-accent-gold)' }}
                   >
                     <option value="" disabled>Pick size</option>
@@ -174,6 +201,8 @@ export function IdolGrid() {
                   color: 'var(--color-text-muted)',
                   cursor: 'pointer',
                   outline: 'none',
+                  gridColumn: `${col + 1}`,
+                  gridRow: `${row + 1}`,
                 }}
                 onFocus={(e) => { e.currentTarget.style.outline = '2px solid var(--color-accent-gold)' }}
                 onBlur={(e) => { e.currentTarget.style.outline = 'none' }}

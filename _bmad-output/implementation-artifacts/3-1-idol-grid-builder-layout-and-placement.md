@@ -3,7 +3,7 @@ title: 'Idol Grid Builder — Layout & Placement'
 story_id: '3.1'
 story_key: '3-1-idol-grid-builder-layout-and-placement'
 epic: 3
-status: review
+status: done
 created: '2026-05-21'
 ---
 
@@ -522,19 +522,19 @@ Expected test baseline: 8 pre-existing failures (from Story 2.6 baseline) — no
 
 ### Action Items
 
-- [ ] [Review][Patch] AC2 — Add placeholder affix slot labels to placed idol display: show empty/greyed "— Prefix —" / "— Suffix —" labels below the idol type name; selection wired in Story 3.2 [`IdolGrid.tsx` occupant+isTopLeft branch]
+- [x] [Review][Patch] AC2 — Add placeholder affix slot labels to placed idol display: show empty/greyed "— Prefix —" / "— Suffix —" labels below the idol type name; selection wired in Story 3.2 [`IdolGrid.tsx` occupant+isTopLeft branch]
 
-- [ ] [Review][Patch] Interior cells of multi-cell idols break CSS Grid layout — occupied non-top-left cells are rendered as individual `<div aria-hidden>` elements that fill their own grid tracks; CSS Grid auto-places them after the spanning top-left cell, producing extra visible gold-tinted cells that push subsequent empty cells out of alignment [`IdolGrid.tsx` occupant+!isTopLeft branch]
+- [x] [Review][Patch] Interior cells of multi-cell idols break CSS Grid layout — occupied non-top-left cells are rendered as individual `<div aria-hidden>` elements that fill their own grid tracks; CSS Grid auto-places them after the spanning top-left cell, producing extra visible gold-tinted cells that push subsequent empty cells out of alignment [`IdolGrid.tsx` occupant+!isTopLeft branch]
 
-- [ ] [Review][Patch] `aspect-square` conflicts with `gridColumn: span N` on placed idol top-left cells — `aspect-ratio: 1/1` forces height equal to full spanned width, making a 1×2 idol render as a tall square and a 2×2 idol produce undefined sizing on both axes [`IdolGrid.tsx` occupant+isTopLeft branch]
+- [x] [Review][Patch] `aspect-square` conflicts with `gridColumn: span N` on placed idol top-left cells — `aspect-ratio: 1/1` forces height equal to full spanned width, making a 1×2 idol render as a tall square and a 2×2 idol produce undefined sizing on both axes [`IdolGrid.tsx` occupant+isTopLeft branch]
 
-- [ ] [Review][Patch] Blocked cells: `aria-hidden="true"` + `aria-disabled="true"` are contradictory — `aria-hidden` removes the element from the AT entirely, making `aria-disabled` invisible to screen readers; use `aria-disabled="true"` alone (no `aria-hidden`) to communicate non-interactivity while remaining perceivable [`IdolGrid.tsx` isBlocked branch]
+- [x] [Review][Patch] Blocked cells: `aria-hidden="true"` + `aria-disabled="true"` are contradictory — `aria-hidden` removes the element from the AT entirely, making `aria-disabled` invisible to screen readers; use `aria-disabled="true"` alone (no `aria-hidden`) to communicate non-interactivity while remaining perceivable [`IdolGrid.tsx` isBlocked branch]
 
-- [ ] [Review][Patch] `onBlur`/`onChange` race on `<select>`: clicking a second empty cell while a picker is open triggers `handleCellClick` → `setPendingCell(newCell)`, then the select's `onBlur` fires → `setPendingCell(null)`, silently cancelling the new picker — the user sees nothing happen [`IdolGrid.tsx` select onBlur handler]
+- [x] [Review][Patch] `onBlur`/`onChange` race on `<select>`: clicking a second empty cell while a picker is open triggers `handleCellClick` → `setPendingCell(newCell)`, then the select's `onBlur` fires → `setPendingCell(null)`, silently cancelling the new picker — the user sees nothing happen [`IdolGrid.tsx` select onBlur handler]
 
-- [ ] [Review][Patch] Error state not cleared when select is dismissed via `onBlur` without choosing — TR5 requires error cleared on "selection change"; currently `onBlur` only calls `setPendingCell(null)` without clearing `placementError`, leaving a stale error message visible [`IdolGrid.tsx:154`]
+- [x] [Review][Patch] Error state not cleared when select is dismissed via `onBlur` without choosing — TR5 requires error cleared on "selection change"; currently `onBlur` only calls `setPendingCell(null)` without clearing `placementError`, leaving a stale error message visible [`IdolGrid.tsx:154`]
 
-- [ ] [Review][Patch] `buildSnapshotSerializer` test never exercises `toIdolPlacements` with actual placed idols — only tests the empty case; `toIdolPlacements` mapping (`idolTypeId` → `idolSize`) is unverified [`buildSnapshotSerializer.test.ts`]
+- [x] [Review][Patch] `buildSnapshotSerializer` test never exercises `toIdolPlacements` with actual placed idols — only tests the empty case; `toIdolPlacements` mapping (`idolTypeId` → `idolSize`) is unverified [`buildSnapshotSerializer.test.ts`]
 
 ### Deferred
 

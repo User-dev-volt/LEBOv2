@@ -82,7 +82,8 @@ describe('IdolGrid', () => {
     expect(grid).toBeInTheDocument()
     // 25 total cells (5×5), but blocked cells render as non-interactive divs
     // Interactive cells render as buttons; blocked cells render as divs with aria-hidden
-    const blockedCells = grid.querySelectorAll('[aria-hidden="true"][aria-disabled="true"]')
+    // Blocked cells have aria-disabled only (aria-hidden was removed — it hides cells from AT entirely)
+    const blockedCells = grid.querySelectorAll('[aria-disabled="true"]')
     expect(blockedCells).toHaveLength(5)
   })
 
