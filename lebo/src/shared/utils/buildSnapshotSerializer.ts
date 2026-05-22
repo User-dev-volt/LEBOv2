@@ -52,7 +52,7 @@ export function toBuildSnapshot(build: BuildState, _gameData: GameData): BuildSn
     activeConditions: build.activeConditions ?? [],
     gearSlots: toGearSlots(build.contextData?.gear ?? []),
     idolPlacements: toIdolPlacements(build.idolGrid ?? []),
-    blessings: [],            // Epic 3.3 adds BuildState.blessings
+    blessings: Object.values(build.blessings ?? {}).filter((id): id is string => id !== null),
     // weaverAllocations intentionally excluded — Epic 4 adds weaver scoring to compute_stats
   }
 }

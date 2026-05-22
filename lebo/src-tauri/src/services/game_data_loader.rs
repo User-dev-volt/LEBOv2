@@ -80,11 +80,35 @@ pub fn build_scoring_game_data(app_handle: &tauri::AppHandle) -> Result<GameData
         }
     }
 
+    // Load blessing scoring effects from blessings.json
+    let blessings_db = super::context_data_service::load_blessings_from_dir(&data_dir)
+        .map_err(|e| format!("blessings load failed: {e}"))?;
+    let mut blessing_effects: HashMap<String, Vec<NodeEffect>> = HashMap::new();
+    for blessing in &blessings_db {
+        let mut effects: Vec<NodeEffect> = Vec::new();
+        for stat_effect in &blessing.stat_effects {
+            if let Some(stat_key) = stat_key_from_str(&stat_effect.stat_key) {
+                let modifier_type = parse_modifier_type(Some(&stat_effect.modifier_type));
+                effects.push(NodeEffect {
+                    stat_key,
+                    modifier_type,
+                    value: stat_effect.value,
+                    condition: Condition::Always,
+                });
+            }
+            // Unknown stat_key → silently skipped (same pattern as idol affixes)
+        }
+        if !effects.is_empty() {
+            blessing_effects.insert(blessing.id.clone(), effects);
+        }
+    }
+
     Ok(GameData {
         node_effects,
         archetype_weights,
         class_base_stats,
         idol_affixes,
+        blessing_effects,
     })
 }
 
@@ -319,6 +343,12 @@ fn stat_key_from_str(s: &str) -> Option<StatKey> {
         "movement_speed"             => Some(StatKey::MovementSpeed),
         "dodge_rating"               => Some(StatKey::DodgeRating),
         "life_leech_percent"         => Some(StatKey::LifeLeechPercent),
+        "increased_lightning_damage" => Some(StatKey::IncreasedLightningDamage),
+        "necrotic_resistance"        => Some(StatKey::NecroticResistance),
+        "hp_regen_per_sec"           => Some(StatKey::HpRegenPerSec),
+        "freeze_rate_multiplier"     => Some(StatKey::FreezeRateMultiplier),
+        "ward_on_hit"                => Some(StatKey::WardOnHit),
+        "ignite_duration"            => Some(StatKey::IgniteDuration),
         _                            => None,
     }
 }

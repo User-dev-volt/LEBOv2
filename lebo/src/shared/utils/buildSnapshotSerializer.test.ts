@@ -154,6 +154,25 @@ describe('toBuildSnapshot', () => {
     })
   })
 
+  it('includes active blessing IDs in snapshot, excluding null entries', () => {
+    const build = makeBuild({
+      blessings: {
+        'blood-frost-death': 'bfd-twisted-memory',
+        'age-of-winter': null,
+        'reign-of-dragons': 'rod-dragonfire',
+      },
+    })
+    const snapshot = toBuildSnapshot(build, minimalGameData)
+    expect(snapshot.blessings).toHaveLength(2)
+    expect(snapshot.blessings).toContain('bfd-twisted-memory')
+    expect(snapshot.blessings).toContain('rod-dragonfire')
+  })
+
+  it('returns empty blessings array when blessings is undefined', () => {
+    const build = makeBuild({ blessings: undefined })
+    expect(toBuildSnapshot(build, minimalGameData).blessings).toEqual([])
+  })
+
   it('copies allocations without mutating the original build', () => {
     const build = makeBuild()
     const snapshot = toBuildSnapshot(build, minimalGameData)

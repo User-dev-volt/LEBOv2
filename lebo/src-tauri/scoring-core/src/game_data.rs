@@ -70,4 +70,8 @@ pub struct GameData {
 
     /// Idol affix ID → scoring effect. Populated by `game_data_loader.rs` from idol-data.json.
     pub idol_affixes: HashMap<String, IdolAffixEffect>,
+
+    /// Blessing ID → scoring effects. Populated by `game_data_loader.rs` from blessings.json.
+    /// Reuses NodeEffect (stat_key, modifier_type, value, condition: Always) — same fields apply.
+    pub blessing_effects: HashMap<String, Vec<NodeEffect>>,
 }

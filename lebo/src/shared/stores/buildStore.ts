@@ -56,6 +56,7 @@ export interface BuildStore {
     suffixId?: string | null
     suffixTier?: number
   }) => void
+  setBlessing: (timelineId: string, blessingId: string | null) => void
   setActiveBuildSliderPosition: (pos: number) => void
   setActiveBuildFineTuneWeights: (weights: FineTuneWeights | null) => void
 }
@@ -529,6 +530,23 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
                         : update.suffixTier ?? p.suffixTier,
                     }
               ),
+              isPersisted: false,
+              updatedAt: new Date().toISOString(),
+            },
+          }
+        : {}
+    ),
+
+  setBlessing: (timelineId, blessingId) =>
+    set((s) =>
+      s.activeBuild
+        ? {
+            activeBuild: {
+              ...s.activeBuild,
+              blessings: {
+                ...(s.activeBuild.blessings ?? {}),
+                [timelineId]: blessingId,
+              },
               isPersisted: false,
               updatedAt: new Date().toISOString(),
             },

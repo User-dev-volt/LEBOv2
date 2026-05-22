@@ -5,11 +5,14 @@ import { SKILL_SLOTS } from './skillData'
 import { GearInput } from './GearInput'
 import { SkillInput } from './SkillInput'
 import { IdolGrid } from '../idol-grid/IdolGrid'
+import { BlessingsPanel } from '../blessings/BlessingsPanel'
 
 export function ContextPanel() {
   const gear = useBuildStore((s) => s.activeBuild?.contextData.gear ?? [])
   const skills = useBuildStore((s) => s.activeBuild?.contextData.skills ?? [])
   const idolGrid = useBuildStore((s) => s.activeBuild?.idolGrid ?? [])
+  const blessings = useBuildStore((s) => s.activeBuild?.blessings ?? {})
+  const activeBlessingsCount = Object.values(blessings).filter((v) => v !== null).length
 
   const filledGearCount = gear.filter((g) => g.itemName.trim() !== '').length
   const filledSkillCount = skills.filter((s) => s.skillName.trim() !== '').length
@@ -62,6 +65,21 @@ export function ContextPanel() {
           </DisclosureButton>
           <DisclosurePanel>
             <IdolGrid />
+          </DisclosurePanel>
+        </Disclosure>
+      </div>
+
+      <div data-testid="context-section-blessings">
+        <Disclosure>
+          <DisclosureButton
+            className="w-full text-left text-xs px-2 py-1.5 rounded flex justify-between"
+            style={{ backgroundColor: 'var(--color-bg-elevated)', color: 'var(--color-text-secondary)' }}
+          >
+            <span>Blessings</span>
+            <span style={{ color: 'var(--color-text-muted)' }}>{activeBlessingsCount} active</span>
+          </DisclosureButton>
+          <DisclosurePanel>
+            <BlessingsPanel />
           </DisclosurePanel>
         </Disclosure>
       </div>

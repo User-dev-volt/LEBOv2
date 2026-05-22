@@ -3,7 +3,7 @@ title: 'Blessings Panel'
 story_id: '3.3'
 story_key: '3-3-blessings-panel'
 epic: 3
-status: ready-for-dev
+status: review
 created: '2026-05-22'
 ---
 
@@ -70,6 +70,29 @@ This story is pure front-end + thin Rust wiring. The infrastructure is already 9
 **When** the app displays the blessings panel
 **Then** an inline staleness notice is visible within the panel
 **And** the blessing selection remains functional with current data while the update is pending
+
+---
+
+## Tasks / Subtasks
+
+- [x] Task 1: Add `setBlessing` action to `buildStore.ts` (AC: blessings state management)
+  - [x] Add interface declaration
+  - [x] Add implementation following `updateIdolAffix` pattern
+- [x] Task 2: Fill blessings stub in `buildSnapshotSerializer.ts` + serializer tests (AC: snapshot includes active blessings)
+  - [x] Replace `blessings: []` stub with Object.values filter
+  - [x] Add 2 serializer tests to `buildSnapshotSerializer.test.ts`
+- [x] Task 3: Create `BlessingsPanel.tsx` + `BlessingsPanel.test.tsx` (AC: all 5 ACs)
+  - [x] Implement BlessingsPanel component with timeline grouping, per-timeline search, staleness notice
+  - [x] Write 12 unit tests
+- [x] Task 4: Update `ContextPanel.tsx` + `ContextPanel.test.tsx` (AC: panel integration)
+  - [x] Add Blessings Disclosure section after Idols
+  - [x] Add `blessings: {}` to mockBuild + 2 new tests
+- [x] Task 5: Add `blessing_effects` field to `GameData` in `game_data.rs` (AC: Rust type system)
+- [x] Task 6: Load blessings in `game_data_loader.rs` + extend `stat_key_from_str` (AC: blessing stat contribution)
+  - [x] Add 6 missing stat key arms to `stat_key_from_str`
+  - [x] Add blessings loading block
+  - [x] Add `blessing_effects` to `Ok(GameData{...})`
+- [x] Task 7: Add blessing loop in `build_registry` in `compute.rs` + 2 Rust tests (AC: stat sheet reflects blessings)
 
 ---
 
@@ -614,4 +637,21 @@ claude-sonnet-4-6
 
 ### Completion Notes List
 
+- All 7 tasks completed. 871 TS tests passing (16 new), 8 pre-existing failures unchanged. 29 Rust tests passing (2 new). Zero TypeScript errors. Clean `cargo build`.
+- `setBlessing` follows `updateIdolAffix` pattern: sets `[timelineId]: blessingId`, null means deselected.
+- `BlessingsPanel` uses sub-component `TimelineRow` to isolate per-timeline `useState(searchTerm)`.
+- Blessing stat keys `increased_lightning_damage`, `necrotic_resistance`, `hp_regen_per_sec`, `freeze_rate_multiplier`, `ward_on_hit`, `ignite_duration` added to `stat_key_from_str` — all had matching `StatKey` variants already.
+- `blessing_effects` reuses `NodeEffect` struct (same fields as passive nodes, condition always `Always`).
+
 ### File List
+
+- `lebo/src/shared/stores/buildStore.ts` — MODIFIED: added `setBlessing` action
+- `lebo/src/shared/utils/buildSnapshotSerializer.ts` — MODIFIED: filled blessings stub
+- `lebo/src/shared/utils/buildSnapshotSerializer.test.ts` — MODIFIED: added 2 blessings serialization tests
+- `lebo/src/features/blessings/BlessingsPanel.tsx` — CREATED: new feature component
+- `lebo/src/features/blessings/BlessingsPanel.test.tsx` — CREATED: 12 unit tests
+- `lebo/src/features/context-panel/ContextPanel.tsx` — MODIFIED: added Blessings Disclosure section
+- `lebo/src/features/context-panel/ContextPanel.test.tsx` — MODIFIED: added blessings to mockBuild + 2 new tests
+- `lebo/src-tauri/scoring-core/src/game_data.rs` — MODIFIED: added `blessing_effects` field to `GameData`
+- `lebo/src-tauri/src/services/game_data_loader.rs` — MODIFIED: added blessing loading + 6 stat key arms + `blessing_effects` to return
+- `lebo/src-tauri/scoring-core/src/compute.rs` — MODIFIED: added blessing loop in `build_registry` + 2 Rust tests

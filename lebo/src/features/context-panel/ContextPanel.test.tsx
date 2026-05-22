@@ -18,6 +18,7 @@ const mockBuild: BuildState = {
   weaverAllocations: {},
   contextData: { gear: [], skills: [], idols: [] },
   idolGrid: [],
+  blessings: {},
   isPersisted: false,
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
@@ -77,5 +78,17 @@ describe('ContextPanel', () => {
     useBuildStore.getState().setActiveBuild(mockBuild)
     render(<ContextPanel />)
     expect(screen.getByText('0 placed')).toBeInTheDocument()
+  })
+
+  it('renders context-section-blessings', () => {
+    useBuildStore.getState().setActiveBuild(mockBuild)
+    render(<ContextPanel />)
+    expect(screen.getByTestId('context-section-blessings')).toBeInTheDocument()
+  })
+
+  it('shows blessings count as "0 active" when none selected', () => {
+    useBuildStore.getState().setActiveBuild(mockBuild)
+    render(<ContextPanel />)
+    expect(screen.getByText('0 active')).toBeInTheDocument()
   })
 })

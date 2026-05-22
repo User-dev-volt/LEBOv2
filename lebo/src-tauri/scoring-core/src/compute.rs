@@ -69,6 +69,22 @@ fn build_registry(snapshot: &BuildSnapshot, game_data: &GameData) -> ModifierReg
         }
     }
 
+    // Blessing modifiers — each active blessing contributes its stat effects
+    for blessing_id in &snapshot.blessings {
+        if let Some(effects) = game_data.blessing_effects.get(blessing_id) {
+            for effect in effects {
+                registry.add(Modifier {
+                    stat_key: effect.stat_key.clone(),
+                    modifier_type: effect.modifier_type.clone(),
+                    value: effect.value,
+                    condition: Condition::Always,
+                    source: blessing_id.clone(),
+                });
+            }
+        }
+        // Unknown blessing_id → silently skipped
+    }
+
     registry
 }
 
@@ -1212,5 +1228,45 @@ mod tests {
             "expected endurance_threshold 5.5 got {}",
             sheet.defense.endurance_threshold
         );
+    }
+
+    #[test]
+    fn blessing_fire_resistance_contributes() {
+        let mut blessing_effects: HashMap<String, Vec<NodeEffect>> = HashMap::new();
+        blessing_effects.insert(
+            "rod-dragon-scale".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::FireResistance,
+                modifier_type: ModifierType::Flat,
+                value: 18.0,
+                condition: Condition::Always,
+            }],
+        );
+        let game_data = GameData {
+            blessing_effects,
+            archetype_weights: standard_weight_table(),
+            ..Default::default()
+        };
+        let mut snapshot = snapshot_at(50);
+        snapshot.blessings.push("rod-dragon-scale".to_string());
+
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        assert!(
+            (sheet.defense.fire_resistance - 18.0).abs() < 0.01,
+            "expected fire_resistance 18.0, got {}",
+            sheet.defense.fire_resistance
+        );
+    }
+
+    #[test]
+    fn unknown_blessing_id_silently_skipped() {
+        let game_data = GameData {
+            archetype_weights: standard_weight_table(),
+            ..Default::default()
+        };
+        let mut snapshot = snapshot_at(50);
+        snapshot.blessings.push("nonexistent-blessing".to_string());
+        // Should not panic
+        let _sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
     }
 }
