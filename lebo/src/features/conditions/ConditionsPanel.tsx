@@ -95,10 +95,12 @@ export function ConditionsPanel() {
   }, [conditionsDatabase, classId, activeSkills])
 
   // Auto-clear stale build-specific condition values when their filter no longer matches.
+  // Guard: skip ids already set to false to prevent re-triggering on every render after clear.
   useEffect(() => {
     if (!conditionsDatabase) return
     const visibleIds = new Set(visibleConditions.map((c) => c.id))
     const staleIds = Object.keys(conditionValues).filter((id) => {
+      if (conditionValues[id] === false) return false
       const entry = conditionsDatabase.find((c) => c.id === id)
       return entry?.category === 'build-specific' && !visibleIds.has(id)
     })

@@ -3,7 +3,7 @@ title: 'Conditions Panel'
 story_id: '3.4'
 story_key: '3-4-conditions-panel'
 epic: 3
-status: review
+status: done
 created: '2026-05-22'
 ---
 
@@ -645,3 +645,7 @@ claude-sonnet-4-6
 - `lebo/src/features/context-panel/ContextPanel.test.tsx` — added conditionValues to mockBuild, scoped blessings test, added 2 new tests
 
 ### Review Findings
+
+- [x] [Review][Patch] Infinite re-render loop in auto-clear `useEffect` — `conditionValues` is in the dep array; after `setConditionValue(id, false)` the key stays in `conditionValues` with value `false`, producing a new object reference that re-fires the effect indefinitely. Fix: add `conditionValues[id] !== false` guard in the `staleIds` filter to short-circuit when the value is already cleared. [`lebo/src/features/conditions/ConditionsPanel.tsx`]
+- [x] [Review][Defer] Auto-clear writes `false` for all stale condition types regardless of their actual type — currently safe because all build-specific entries are toggles, but a future `range` or `select` build-specific condition would receive a `boolean false` value instead of its correct default, causing a type mismatch on re-render. [`lebo/src/features/conditions/ConditionsPanel.tsx`] — deferred, all current build-specific conditions are toggles
+- [x] [Review][Defer] Universal-category entries with a `filter` field bypass filter logic entirely — the `if (entry.category === 'universal') return true` early-return ignores any `filter` on universal entries. No current data uses this combination, but there is no type constraint preventing it. [`lebo/src/features/conditions/ConditionsPanel.tsx`] — deferred, pre-existing architectural edge case, no current data affected

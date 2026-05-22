@@ -83,6 +83,11 @@
 - **`Modifier` in `build_registry` may be missing `source: blessing_id.clone()`** [`compute.rs:~78`] — Spec says to include `source: blessing_id.clone()` but the diff only shows four fields. Code builds, suggesting `source` may have a default. Verify `Modifier` struct definition and confirm source field behavior before Epic 4.
 - **Rust test `blessing_fire_resistance_contributes` fragile if base stats non-zero** [`compute.rs:~1234`] — Test asserts `fire_resistance == 18.0` but `snapshot_at(50)` may initialize non-zero resistance from base stats. If baseline is non-zero the assertion fails; if it passes coincidentally the test provides false confidence.
 
+## Deferred from: code review of 3-4-conditions-panel (2026-05-22)
+
+- **Auto-clear writes `false` for all stale condition types** [`ConditionsPanel.tsx`] — `setConditionValue(id, false)` is correct for all current build-specific entries (all toggles), but structurally wrong for `range`/`select` types — those would receive a `boolean false` instead of their defaultValue. No current data is affected. Add a `clearConditionValue` store action that removes the key when non-toggle build-specific conditions are added.
+- **Universal-category entries with a `filter` field bypass filter logic** [`ConditionsPanel.tsx`] — `if (entry.category === 'universal') return true` early-returns before checking `filter`. No current data has universal entries with filters, so no impact. Add a guard if the data schema evolves to allow this combination.
+
 ## Deferred from: code review of 2-6-stat-sheet-ui-five-tab-display (2026-05-21)
 
 - **`warningGap=0` renders `(+0% needed)`** [`StatSheetPanel.tsx`] — If the scoring engine emits a `StatWarning` with `gap: 0`, the Defense tab renders the warning label in negative color with `(+0% needed)`. A gap of 0 means the resistance is exactly at cap, which should not be warned. Fix the `gap` floor in the scoring engine rather than the display code.
