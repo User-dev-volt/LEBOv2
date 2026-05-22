@@ -57,6 +57,7 @@ export interface BuildStore {
     suffixTier?: number
   }) => void
   setBlessing: (timelineId: string, blessingId: string | null) => void
+  setConditionValue: (id: string, value: string | number | boolean) => void
   setActiveBuildSliderPosition: (pos: number) => void
   setActiveBuildFineTuneWeights: (weights: FineTuneWeights | null) => void
 }
@@ -546,6 +547,23 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
               blessings: {
                 ...(s.activeBuild.blessings ?? {}),
                 [timelineId]: blessingId,
+              },
+              isPersisted: false,
+              updatedAt: new Date().toISOString(),
+            },
+          }
+        : {}
+    ),
+
+  setConditionValue: (id, value) =>
+    set((s) =>
+      s.activeBuild
+        ? {
+            activeBuild: {
+              ...s.activeBuild,
+              conditionValues: {
+                ...(s.activeBuild.conditionValues ?? {}),
+                [id]: value,
               },
               isPersisted: false,
               updatedAt: new Date().toISOString(),

@@ -54,7 +54,7 @@ development_status:
   3-1-idol-grid-builder-layout-and-placement: done
   3-2-idol-affix-selection-and-stat-contribution: done
   3-3-blessings-panel: done
-  3-4-conditions-panel: ready-for-dev
+  3-4-conditions-panel: review
   epic-3-retrospective: optional
 
   # Epic 4: Passive Tree Intelligence & Optimization

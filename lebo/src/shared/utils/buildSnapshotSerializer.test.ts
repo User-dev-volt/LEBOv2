@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toBuildSnapshot } from './buildSnapshotSerializer'
+import { toBuildSnapshot, encodeConditionValues } from './buildSnapshotSerializer'
 import type { BuildState } from '../types/build'
 import type { GameData } from '../types/gameData'
 
@@ -103,9 +103,33 @@ describe('toBuildSnapshot', () => {
     ])
   })
 
-  it('maps activeConditions from BuildState', () => {
-    const build = makeBuild({ activeConditions: ['on-hit', 'channelling'] })
-    expect(toBuildSnapshot(build, minimalGameData).activeConditions).toEqual(['on-hit', 'channelling'])
+  it('encodes toggle conditionValue as condition id when true', () => {
+    const build = makeBuild({ conditionValues: { sigil_of_hope_active: true } })
+    const snapshot = toBuildSnapshot(build, minimalGameData)
+    expect(snapshot.activeConditions).toContain('sigil_of_hope_active')
+  })
+
+  it('encodes select conditionValue as on_value string', () => {
+    const build = makeBuild({ conditionValues: { enemy_type: 'pinnacle_boss' } })
+    const snapshot = toBuildSnapshot(build, minimalGameData)
+    expect(snapshot.activeConditions).toContain('on_pinnacle_boss')
+  })
+
+  it('encodes range conditionValue as id_value and skips zero', () => {
+    const build = makeBuild({
+      conditionValues: {
+        power_charges: 3,
+        frenzy_charges: 0,
+      },
+    })
+    const snapshot = toBuildSnapshot(build, minimalGameData)
+    expect(snapshot.activeConditions).toContain('power_charges_3')
+    expect(snapshot.activeConditions.some((c) => c.startsWith('frenzy_charges'))).toBe(false)
+  })
+
+  it('returns empty activeConditions when conditionValues is undefined', () => {
+    const build = makeBuild({ conditionValues: undefined })
+    expect(toBuildSnapshot(build, minimalGameData).activeConditions).toEqual([])
   })
 
   it('maps placed idol with no affixes to idolPlacement without prefix/suffix fields', () => {
@@ -184,5 +208,39 @@ describe('toBuildSnapshot', () => {
     const build = makeBuild({ contextData: { gear: [], skills: [], idols: [] } })
     const snapshot = toBuildSnapshot(build, minimalGameData)
     expect(snapshot.gearSlots).toEqual({})
+  })
+})
+
+describe('encodeConditionValues', () => {
+  it('encodes boolean true as the condition id', () => {
+    expect(encodeConditionValues({ sigil_of_hope_active: true })).toContain('sigil_of_hope_active')
+  })
+
+  it('skips boolean false', () => {
+    expect(encodeConditionValues({ sigil_of_hope_active: false })).toHaveLength(0)
+  })
+
+  it('encodes non-empty string as on_value', () => {
+    expect(encodeConditionValues({ enemy_type: 'pinnacle_boss' })).toContain('on_pinnacle_boss')
+  })
+
+  it('skips empty string', () => {
+    expect(encodeConditionValues({ enemy_type: '' })).toHaveLength(0)
+  })
+
+  it('encodes non-zero number as id_value', () => {
+    expect(encodeConditionValues({ power_charges: 3 })).toContain('power_charges_3')
+  })
+
+  it('skips zero number', () => {
+    expect(encodeConditionValues({ frenzy_charges: 0 })).toHaveLength(0)
+  })
+
+  it('encodes negative number correctly', () => {
+    expect(encodeConditionValues({ enemy_fire_resistance: -25 })).toContain('enemy_fire_resistance_-25')
+  })
+
+  it('returns empty array for empty input', () => {
+    expect(encodeConditionValues({})).toEqual([])
   })
 })

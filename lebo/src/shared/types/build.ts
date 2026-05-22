@@ -54,6 +54,7 @@ export interface BuildState {
   idolGrid?: IdolGridState
   blessings?: Record<string, string | null>
   activeConditions?: string[]
+  conditionValues?: Record<string, string | number | boolean>
   sliderPosition?: number
   fineTuneWeights?: FineTuneWeights | null
   isPersisted: boolean

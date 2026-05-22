@@ -3,7 +3,7 @@ title: 'Conditions Panel'
 story_id: '3.4'
 story_key: '3-4-conditions-panel'
 epic: 3
-status: ready-for-dev
+status: review
 created: '2026-05-22'
 ---
 
@@ -75,21 +75,21 @@ This is the final story in Epic 3. Infrastructure is 90%+ in place from prior st
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `conditionValues` field to `BuildState` in `shared/types/build.ts`
-  - [ ] Add `conditionValues?: Record<string, string | number | boolean>` (optional, no migration needed)
-- [ ] Task 2: Add `setConditionValue` action to `buildStore.ts`
-  - [ ] Add interface declaration
-  - [ ] Add implementation following `setBlessing` pattern
-- [ ] Task 3: Replace `activeConditions` stub in `buildSnapshotSerializer.ts` + serializer tests
-  - [ ] Implement `encodeConditionValues()` helper function
-  - [ ] Replace stub line with `encodeConditionValues(build.conditionValues ?? {})`
-  - [ ] Add 3 serializer tests
-- [ ] Task 4: Create `ConditionsPanel.tsx` + `ConditionsPanel.test.tsx`
-  - [ ] Implement component with universal conditions and build-specific filtering
-  - [ ] Write 10 unit tests
-- [ ] Task 5: Update `ContextPanel.tsx` + `ContextPanel.test.tsx`
-  - [ ] Add Conditions Disclosure section after Blessings
-  - [ ] Add `conditionValues: {}` to mockBuild + 2 new tests
+- [x] Task 1: Add `conditionValues` field to `BuildState` in `shared/types/build.ts`
+  - [x] Add `conditionValues?: Record<string, string | number | boolean>` (optional, no migration needed)
+- [x] Task 2: Add `setConditionValue` action to `buildStore.ts`
+  - [x] Add interface declaration
+  - [x] Add implementation following `setBlessing` pattern
+- [x] Task 3: Replace `activeConditions` stub in `buildSnapshotSerializer.ts` + serializer tests
+  - [x] Implement `encodeConditionValues()` helper function
+  - [x] Replace stub line with `encodeConditionValues(build.conditionValues ?? {})`
+  - [x] Add 3 serializer tests
+- [x] Task 4: Create `ConditionsPanel.tsx` + `ConditionsPanel.test.tsx`
+  - [x] Implement component with universal conditions and build-specific filtering
+  - [x] Write 10 unit tests
+- [x] Task 5: Update `ContextPanel.tsx` + `ContextPanel.test.tsx`
+  - [x] Add Conditions Disclosure section after Blessings
+  - [x] Add `conditionValues: {}` to mockBuild + 2 new tests
 
 ---
 
@@ -618,11 +618,30 @@ Expected test baseline: 871 TS passed (from 3.3 final) + new tests ≈ 886+. The
 ## Dev Agent Record
 
 ### Agent Model Used
+claude-sonnet-4-6
 
 ### Debug Log References
+- Build passes clean (zero TS errors)
+- All 5 tasks completed and tested; 895 tests passing (903 total, 8 pre-existing failures unrelated to this story)
+- `ConditionEntry.options` typed as required array — used `entry.options ?? []` in select render to guard against absent field in range/toggle entries; mock data includes `options: []` for non-select test entries
 
 ### Completion Notes List
+- Added `conditionValues?: Record<string, string | number | boolean>` to BuildState (optional, backward-compat, no migration)
+- Added `setConditionValue` action to buildStore following setBlessing pattern
+- Exported `encodeConditionValues()` helper in buildSnapshotSerializer.ts; replaced `activeConditions: build.activeConditions ?? []` stub with `encodeConditionValues(build.conditionValues ?? {})`
+- Created ConditionsPanel.tsx with local ConditionRow sub-component, useMemo-filtered visible conditions, useEffect auto-clear of stale build-specific values
+- Added 10 ConditionsPanel tests + 12 serializer tests (4 integration + 8 unit for encodeConditionValues)
+- Scoped blessings "0 active" test in ContextPanel.test.tsx with `within(getByTestId(...))` to avoid conflict with conditions "0 active" button
+- Conditions count in ContextPanel excludes standard_mob string (default enemy type) from active count
 
 ### File List
+- `lebo/src/shared/types/build.ts` — added `conditionValues?: Record<string, string | number | boolean>`
+- `lebo/src/shared/stores/buildStore.ts` — added `setConditionValue` action
+- `lebo/src/shared/utils/buildSnapshotSerializer.ts` — added `encodeConditionValues()`, replaced stub
+- `lebo/src/shared/utils/buildSnapshotSerializer.test.ts` — replaced broken test, added 12 new tests
+- `lebo/src/features/conditions/ConditionsPanel.tsx` — new file
+- `lebo/src/features/conditions/ConditionsPanel.test.tsx` — new file
+- `lebo/src/features/context-panel/ContextPanel.tsx` — added Conditions Disclosure section
+- `lebo/src/features/context-panel/ContextPanel.test.tsx` — added conditionValues to mockBuild, scoped blessings test, added 2 new tests
 
 ### Review Findings

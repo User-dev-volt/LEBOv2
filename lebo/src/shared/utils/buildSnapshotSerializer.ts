@@ -1,6 +1,27 @@
 import type { BuildState, GearItemV2, AffixEntryV2, IdolGridState } from '../types/build'
 import type { GameData } from '../types/gameData'
 
+// Encodes structured conditionValues into the flat activeConditions string array
+// used by the scoring engine.
+//   boolean true  → condition.id (e.g. "sigil_of_hope_active")
+//   string        → "on_" + value (e.g. "on_pinnacle_boss") — skipped if empty string
+//   number != 0   → id + "_" + value (e.g. "power_charges_3")
+export function encodeConditionValues(
+  values: Record<string, string | number | boolean>
+): string[] {
+  const result: string[] = []
+  for (const [id, value] of Object.entries(values)) {
+    if (typeof value === 'boolean') {
+      if (value) result.push(id)
+    } else if (typeof value === 'number') {
+      if (value !== 0) result.push(`${id}_${value}`)
+    } else if (typeof value === 'string') {
+      if (value) result.push(`on_${value}`)
+    }
+  }
+  return result
+}
+
 // Pattern 2: TypeScript mirrors Rust camelCase input fields exactly.
 interface AffixEntryTS {
   affixId: string
@@ -49,7 +70,7 @@ export function toBuildSnapshot(build: BuildState, _gameData: GameData): BuildSn
     classId: build.classId,
     masteryId: build.masteryId,
     sliderPosition: Math.max(0, Math.min(100, build.sliderPosition ?? 50)),
-    activeConditions: build.activeConditions ?? [],
+    activeConditions: encodeConditionValues(build.conditionValues ?? {}),
     gearSlots: toGearSlots(build.contextData?.gear ?? []),
     idolPlacements: toIdolPlacements(build.idolGrid ?? []),
     blessings: Object.values(build.blessings ?? {}).filter((id): id is string => id !== null),

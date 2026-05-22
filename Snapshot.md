@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-- Developer pulls story file `3-3-blessings-panel.md` from `_bmad-output/implementation-artifacts/` and implements 10-file scope
+Run `/bmad-dev-story 3-4-conditions-panel.md` to hand off to implementation agent.
 
 ---
 

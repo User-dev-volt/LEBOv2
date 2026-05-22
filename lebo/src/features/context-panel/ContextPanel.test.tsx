@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { ContextPanel } from './ContextPanel'
 import { useBuildStore } from '../../shared/stores/buildStore'
 import type { BuildState } from '../../shared/types/build'
@@ -19,6 +19,7 @@ const mockBuild: BuildState = {
   contextData: { gear: [], skills: [], idols: [] },
   idolGrid: [],
   blessings: {},
+  conditionValues: {},
   isPersisted: false,
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
@@ -89,6 +90,18 @@ describe('ContextPanel', () => {
   it('shows blessings count as "0 active" when none selected', () => {
     useBuildStore.getState().setActiveBuild(mockBuild)
     render(<ContextPanel />)
-    expect(screen.getByText('0 active')).toBeInTheDocument()
+    expect(within(screen.getByTestId('context-section-blessings')).getByText('0 active')).toBeInTheDocument()
+  })
+
+  it('renders context-section-conditions', () => {
+    useBuildStore.getState().setActiveBuild(mockBuild)
+    render(<ContextPanel />)
+    expect(screen.getByTestId('context-section-conditions')).toBeInTheDocument()
+  })
+
+  it('shows conditions count as "0 active" when none set', () => {
+    useBuildStore.getState().setActiveBuild(mockBuild)
+    render(<ContextPanel />)
+    expect(within(screen.getByTestId('context-section-conditions')).getByText('0 active')).toBeInTheDocument()
   })
 })

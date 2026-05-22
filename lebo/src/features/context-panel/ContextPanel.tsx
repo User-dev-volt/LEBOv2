@@ -6,6 +6,7 @@ import { GearInput } from './GearInput'
 import { SkillInput } from './SkillInput'
 import { IdolGrid } from '../idol-grid/IdolGrid'
 import { BlessingsPanel } from '../blessings/BlessingsPanel'
+import { ConditionsPanel } from '../conditions/ConditionsPanel'
 
 export function ContextPanel() {
   const gear = useBuildStore((s) => s.activeBuild?.contextData.gear ?? [])
@@ -13,6 +14,13 @@ export function ContextPanel() {
   const idolGrid = useBuildStore((s) => s.activeBuild?.idolGrid ?? [])
   const blessings = useBuildStore((s) => s.activeBuild?.blessings ?? {})
   const activeBlessingsCount = Object.values(blessings).filter((v) => v !== null).length
+  const conditionValues = useBuildStore((s) => s.activeBuild?.conditionValues ?? {})
+  const activeConditionsCount = Object.values(conditionValues).filter((v) => {
+    if (typeof v === 'boolean') return v === true
+    if (typeof v === 'number') return v !== 0
+    if (typeof v === 'string') return v !== '' && v !== 'standard_mob'
+    return false
+  }).length
 
   const filledGearCount = gear.filter((g) => g.itemName.trim() !== '').length
   const filledSkillCount = skills.filter((s) => s.skillName.trim() !== '').length
@@ -80,6 +88,21 @@ export function ContextPanel() {
           </DisclosureButton>
           <DisclosurePanel>
             <BlessingsPanel />
+          </DisclosurePanel>
+        </Disclosure>
+      </div>
+
+      <div data-testid="context-section-conditions">
+        <Disclosure>
+          <DisclosureButton
+            className="w-full text-left text-xs px-2 py-1.5 rounded flex justify-between"
+            style={{ backgroundColor: 'var(--color-bg-elevated)', color: 'var(--color-text-secondary)' }}
+          >
+            <span>Conditions</span>
+            <span style={{ color: 'var(--color-text-muted)' }}>{activeConditionsCount} active</span>
+          </DisclosureButton>
+          <DisclosurePanel>
+            <ConditionsPanel />
           </DisclosurePanel>
         </Disclosure>
       </div>
