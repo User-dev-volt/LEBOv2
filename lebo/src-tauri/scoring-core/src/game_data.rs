@@ -41,6 +41,16 @@ pub struct BaseClassStats {
     pub hp_per_level: f64,
 }
 
+/// Scoring effect for one idol affix ID.
+/// Keyed by affix ID in `GameData.idol_affixes`.
+#[derive(Debug, Clone)]
+pub struct IdolAffixEffect {
+    pub stat_key: StatKey,
+    pub modifier_type: ModifierType,
+    /// Average stat value per tier, keyed by 1-indexed tier number.
+    pub values_by_tier: HashMap<u32, f64>,
+}
+
 /// Read-only game reference data loaded once at startup.
 /// Populated in Story 2.4 from disk JSON via `game_data_loader.rs`.
 #[derive(Debug, Clone, Default)]
@@ -57,5 +67,7 @@ pub struct GameData {
     /// Base HP per class ID (e.g., "sentinel", "mage").
     /// Story 2.4 populates from class definitions.
     pub class_base_stats: HashMap<String, BaseClassStats>,
-    // Story 2.4 adds: affix value tables, tree graph, skill definitions, etc.
+
+    /// Idol affix ID → scoring effect. Populated by `game_data_loader.rs` from idol-data.json.
+    pub idol_affixes: HashMap<String, IdolAffixEffect>,
 }

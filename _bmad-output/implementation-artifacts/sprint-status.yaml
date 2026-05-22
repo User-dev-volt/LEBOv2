@@ -25,7 +25,7 @@
 # - Developer typically creates next story after previous one is 'done' to incorporate learnings
 
 generated: 2026-05-20
-last_updated: 2026-05-22 (story 3-2 ready)
+last_updated: 2026-05-22 (story 3-2 review)
 project: LEBOv2 Phase 3
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
@@ -52,7 +52,7 @@ development_status:
   # Epic 3: Build Context — Idols, Blessings & Conditions
   epic-3: in-progress
   3-1-idol-grid-builder-layout-and-placement: done
-  3-2-idol-affix-selection-and-stat-contribution: ready-for-dev
+  3-2-idol-affix-selection-and-stat-contribution: review
   3-3-blessings-panel: backlog
   3-4-conditions-panel: backlog
   epic-3-retrospective: optional

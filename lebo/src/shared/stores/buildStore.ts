@@ -50,6 +50,12 @@ export interface BuildStore {
   placeIdol: (placed: PlacedIdol) => void
   clearIdolSlot: (idolId: string) => void
   resetIdolGrid: () => void
+  updateIdolAffix: (idolId: string, update: {
+    prefixId?: string | null
+    prefixTier?: number
+    suffixId?: string | null
+    suffixTier?: number
+  }) => void
   setActiveBuildSliderPosition: (pos: number) => void
   setActiveBuildFineTuneWeights: (weights: FineTuneWeights | null) => void
 }
@@ -491,6 +497,38 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
             activeBuild: {
               ...s.activeBuild,
               idolGrid: [],
+              isPersisted: false,
+              updatedAt: new Date().toISOString(),
+            },
+          }
+        : {}
+    ),
+
+  updateIdolAffix: (idolId, update) =>
+    set((s) =>
+      s.activeBuild
+        ? {
+            activeBuild: {
+              ...s.activeBuild,
+              idolGrid: (s.activeBuild.idolGrid ?? []).map((p) =>
+                p.id !== idolId
+                  ? p
+                  : {
+                      ...p,
+                      prefixId: update.prefixId === null
+                        ? undefined
+                        : update.prefixId ?? p.prefixId,
+                      prefixTier: update.prefixId === null
+                        ? undefined
+                        : update.prefixTier ?? p.prefixTier,
+                      suffixId: update.suffixId === null
+                        ? undefined
+                        : update.suffixId ?? p.suffixId,
+                      suffixTier: update.suffixId === null
+                        ? undefined
+                        : update.suffixTier ?? p.suffixTier,
+                    }
+              ),
               isPersisted: false,
               updatedAt: new Date().toISOString(),
             },

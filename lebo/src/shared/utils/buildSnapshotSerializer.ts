@@ -58,12 +58,20 @@ export function toBuildSnapshot(build: BuildState, _gameData: GameData): BuildSn
 }
 
 function toIdolPlacements(idolGrid: IdolGridState): IdolPlacementTS[] {
-  return idolGrid.map((placed) => ({
-    row: placed.row,
-    col: placed.col,
-    idolSize: placed.idolTypeId,
-    // prefix and suffix populated in Story 3.2
-  }))
+  return idolGrid.map((placed) => {
+    const entry: IdolPlacementTS = {
+      row: placed.row,
+      col: placed.col,
+      idolSize: placed.idolTypeId,
+    }
+    if (placed.prefixId !== undefined && placed.prefixTier !== undefined) {
+      entry.prefix = { affixId: placed.prefixId, tier: placed.prefixTier }
+    }
+    if (placed.suffixId !== undefined && placed.suffixTier !== undefined) {
+      entry.suffix = { affixId: placed.suffixId, tier: placed.suffixTier }
+    }
+    return entry
+  })
 }
 
 function toGearSlots(gear: GearItemV2[]): Record<string, GearSlotSnapshotTS> {

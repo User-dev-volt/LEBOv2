@@ -108,6 +108,52 @@ describe('toBuildSnapshot', () => {
     expect(toBuildSnapshot(build, minimalGameData).activeConditions).toEqual(['on-hit', 'channelling'])
   })
 
+  it('maps placed idol with no affixes to idolPlacement without prefix/suffix fields', () => {
+    const build = makeBuild({ idolGrid: [{ id: 'a1', row: 1, col: 0, idolTypeId: 'humble-1x2' }] })
+    const snapshot = toBuildSnapshot(build, minimalGameData)
+    expect(snapshot.idolPlacements).toHaveLength(1)
+    expect(snapshot.idolPlacements[0]).toEqual({ row: 1, col: 0, idolSize: 'humble-1x2' })
+  })
+
+  it('maps placed idol with prefix only (Small Idol pattern) to idolPlacement with prefix', () => {
+    const build = makeBuild({
+      idolGrid: [{
+        id: 's1', row: 0, col: 1, idolTypeId: 'small-1x1',
+        prefixId: 'idol-small-fire-res', prefixTier: 2,
+      }],
+    })
+    const snapshot = toBuildSnapshot(build, minimalGameData)
+    expect(snapshot.idolPlacements[0]).toEqual({
+      row: 0, col: 1, idolSize: 'small-1x1',
+      prefix: { affixId: 'idol-small-fire-res', tier: 2 },
+    })
+    expect(snapshot.idolPlacements[0].suffix).toBeUndefined()
+  })
+
+  it('maps placed idol with prefix and suffix to full idolPlacement', () => {
+    const build = makeBuild({
+      idolGrid: [{
+        id: 'idol-1',
+        row: 1,
+        col: 0,
+        idolTypeId: 'humble-1x2',
+        prefixId: 'idol-humble-max-hp',
+        prefixTier: 2,
+        suffixId: 'idol-humble-crit-chance',
+        suffixTier: 3,
+      }],
+    })
+    const snapshot = toBuildSnapshot(build, minimalGameData)
+    expect(snapshot.idolPlacements).toHaveLength(1)
+    expect(snapshot.idolPlacements[0]).toEqual({
+      row: 1,
+      col: 0,
+      idolSize: 'humble-1x2',
+      prefix: { affixId: 'idol-humble-max-hp', tier: 2 },
+      suffix: { affixId: 'idol-humble-crit-chance', tier: 3 },
+    })
+  })
+
   it('copies allocations without mutating the original build', () => {
     const build = makeBuild()
     const snapshot = toBuildSnapshot(build, minimalGameData)

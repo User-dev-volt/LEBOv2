@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use scoring_core::{
-    game_data::{ArchetypeWeights, ArchetypeWeightsEntry, BaseClassStats, GameData, NodeEffect},
+    game_data::{ArchetypeWeights, ArchetypeWeightsEntry, BaseClassStats, GameData, IdolAffixEffect, NodeEffect},
     modifier::{Condition, ModifierType, StatKey},
 };
 use crate::services::game_data_service;
@@ -59,10 +59,32 @@ pub fn build_scoring_game_data(app_handle: &tauri::AppHandle) -> Result<GameData
         "archetype_weights must be sorted ascending with unique slider_upper values"
     );
 
+    // Load idol affix scoring data from idol-data.json
+    let idol_data = super::context_data_service::load_idol_data_from_dir(&data_dir)
+        .map_err(|e| format!("idol-data load failed: {e}"))?;
+    let mut idol_affixes: HashMap<String, IdolAffixEffect> = HashMap::new();
+    for idol_type in &idol_data.idol_types {
+        for affix in idol_type.prefix_pool.iter().chain(idol_type.suffix_pool.iter()) {
+            if let Some(stat_key) = stat_key_from_str(&affix.stat_key) {
+                let modifier_type = parse_modifier_type(Some(&affix.modifier_type));
+                let values_by_tier: HashMap<u32, f64> = affix
+                    .tiers
+                    .iter()
+                    .map(|t| (t.tier, (t.min_value + t.max_value) / 2.0))
+                    .collect();
+                idol_affixes.insert(
+                    affix.id.clone(),
+                    IdolAffixEffect { stat_key, modifier_type, values_by_tier },
+                );
+            }
+        }
+    }
+
     Ok(GameData {
         node_effects,
         archetype_weights,
         class_base_stats,
+        idol_affixes,
     })
 }
 
@@ -262,5 +284,41 @@ fn derive_class_base_stats(class_id: &str) -> BaseClassStats {
         "rogue"    => BaseClassStats { base_hp: 75.0, hp_per_level: 5.0 },
         "acolyte"  => BaseClassStats { base_hp: 70.0, hp_per_level: 4.0 },
         _          => BaseClassStats { base_hp: 80.0, hp_per_level: 5.0 }, // unknown class
+    }
+}
+
+/// Maps idol affix JSON stat key strings to `StatKey` enum variants.
+/// Returns `None` for unknown keys — the affix is silently dropped (FR-A6 pattern).
+fn stat_key_from_str(s: &str) -> Option<StatKey> {
+    match s {
+        "added_fire_damage"          => Some(StatKey::FlatAddedFireDamage),
+        "increased_physical_damage"  => Some(StatKey::IncreasedPhysicalDamage),
+        "fire_resistance"            => Some(StatKey::FireResistance),
+        "cold_resistance"            => Some(StatKey::ColdResistance),
+        "lightning_resistance"       => Some(StatKey::LightningResistance),
+        "increased_fire_damage"      => Some(StatKey::IncreasedFireDamage),
+        "increased_cold_damage"      => Some(StatKey::IncreasedColdDamage),
+        "increased_void_damage"      => Some(StatKey::IncreasedVoidDamage),
+        "max_hp"                     => Some(StatKey::MaxHp),
+        "critical_strike_chance"     => Some(StatKey::CriticalStrikeChance),
+        "attack_speed"               => Some(StatKey::AttackSpeed),
+        "cast_speed"                 => Some(StatKey::CastSpeed),
+        "all_resistances"            => Some(StatKey::AllResistances),
+        "increased_spell_damage"     => Some(StatKey::IncreasedSpellDamage),
+        "increased_minion_damage"    => Some(StatKey::IncreasedMinionDamage),
+        "armor"                      => Some(StatKey::Armor),
+        "max_hp_percent"             => Some(StatKey::MaxHpPercent),
+        "critical_strike_multiplier" => Some(StatKey::CriticalStrikeMultiplier),
+        "void_resistance"            => Some(StatKey::VoidResistance),
+        "poison_resistance"          => Some(StatKey::PoisonResistance),
+        "endurance_threshold"        => Some(StatKey::EnduranceThreshold),
+        "increased_damage"           => Some(StatKey::IncreasedDamage),
+        "ward_per_second"            => Some(StatKey::WardPerSecond),
+        "increased_area_damage"      => Some(StatKey::IncreasedAreaDamage),
+        "critical_strike_avoidance"  => Some(StatKey::CriticalStrikeAvoidance),
+        "movement_speed"             => Some(StatKey::MovementSpeed),
+        "dodge_rating"               => Some(StatKey::DodgeRating),
+        "life_leech_percent"         => Some(StatKey::LifeLeechPercent),
+        _                            => None,
     }
 }

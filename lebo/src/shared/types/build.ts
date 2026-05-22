@@ -66,6 +66,10 @@ export interface PlacedIdol {
   row: number
   col: number
   idolTypeId: string
+  prefixId?: string
+  prefixTier?: number
+  suffixId?: string
+  suffixTier?: number
 }
 
 export type IdolGridState = PlacedIdol[]

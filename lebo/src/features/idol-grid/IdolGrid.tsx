@@ -2,13 +2,25 @@ import { useState } from 'react'
 import { useGameDataStore } from '../../shared/stores/gameDataStore'
 import { useBuildStore } from '../../shared/stores/buildStore'
 import type { IdolType } from '../../shared/types/contextDatabase'
+import type { PlacedIdol } from '../../shared/types/build'
 import { validatePlacement, getOccupantAt } from './idolGridUtils'
+import { IdolAffixPicker } from './IdolAffixPicker'
 
 export function IdolGrid() {
   const idolData = useGameDataStore((s) => s.idolData)
   const idolGrid = useBuildStore((s) => s.activeBuild?.idolGrid ?? [])
 
   const [pendingCell, setPendingCell] = useState<{ row: number; col: number } | null>(null)
+  const [configuringNew, setConfiguringNew] = useState<{
+    row: number
+    col: number
+    idolType: IdolType
+    prefixId?: string
+    prefixTier?: number
+    suffixId?: string
+    suffixTier?: number
+  } | null>(null)
+  const [editingIdolId, setEditingIdolId] = useState<string | null>(null)
   const [placementError, setPlacementError] = useState<string | null>(null)
 
   if (!idolData) {
@@ -24,6 +36,10 @@ export function IdolGrid() {
   function handleCellClick(row: number, col: number) {
     const occupant = getOccupantAt(row, col, idolGrid, idolTypes)
     if (occupant) return
+    // If another placement config is active, cancel it first
+    if (configuringNew !== null) {
+      setConfiguringNew(null)
+    }
     setPlacementError(null)
     setPendingCell({ row, col })
   }
@@ -37,22 +53,56 @@ export function IdolGrid() {
     }
     setPlacementError(null)
     setPendingCell(null)
+    setConfiguringNew({ row, col, idolType })
+  }
+
+  function handleConfirmPlacement(state: {
+    prefixId?: string
+    prefixTier?: number
+    suffixId?: string
+    suffixTier?: number
+  }) {
+    if (!configuringNew) return
     useBuildStore.getState().placeIdol({
       id: crypto.randomUUID(),
-      row,
-      col,
-      idolTypeId: idolType.id,
+      row: configuringNew.row,
+      col: configuringNew.col,
+      idolTypeId: configuringNew.idolType.id,
+      ...state,
     })
+    setConfiguringNew(null)
   }
 
   function handleClear(idolId: string) {
     setPlacementError(null)
+    if (editingIdolId === idolId) setEditingIdolId(null)
     useBuildStore.getState().clearIdolSlot(idolId)
   }
 
   function handleReset() {
     setPlacementError(null)
+    setEditingIdolId(null)
+    setConfiguringNew(null)
     useBuildStore.getState().resetIdolGrid()
+  }
+
+  function handleAffixUpdate(
+    idolId: string,
+    update: { prefixId?: string | null; prefixTier?: number; suffixId?: string | null; suffixTier?: number }
+  ) {
+    useBuildStore.getState().updateIdolAffix(idolId, update)
+  }
+
+  function getPrefixName(placed: PlacedIdol): string {
+    if (!placed.prefixId) return ''
+    const type = idolTypes.find((t) => t.id === placed.idolTypeId)
+    return type?.prefixPool.find((a) => a.id === placed.prefixId)?.displayName ?? placed.prefixId
+  }
+
+  function getSuffixName(placed: PlacedIdol): string {
+    if (!placed.suffixId) return ''
+    const type = idolTypes.find((t) => t.id === placed.idolTypeId)
+    return type?.suffixPool.find((a) => a.id === placed.suffixId)?.displayName ?? placed.suffixId
   }
 
   const placedCount = idolGrid.length
@@ -72,7 +122,6 @@ export function IdolGrid() {
             const isTopLeft = occupant ? occupant.row === row && occupant.col === col : false
             const isPending = pendingCell?.row === row && pendingCell?.col === col
 
-            // P3: blocked cells — aria-disabled only (aria-hidden would hide them from AT entirely)
             if (isBlocked) {
               return (
                 <div
@@ -88,44 +137,180 @@ export function IdolGrid() {
               )
             }
 
+            // Interior cells of a new-idol-being-configured — skip (top-left cell's span covers this area)
+            const isInConfiguringArea =
+              configuringNew !== null &&
+              row >= configuringNew.row &&
+              row < configuringNew.row + configuringNew.idolType.rows &&
+              col >= configuringNew.col &&
+              col < configuringNew.col + configuringNew.idolType.cols &&
+              !(row === configuringNew.row && col === configuringNew.col)
+            if (isInConfiguringArea) return null
+
+            // New idol being configured — show picker at top-left
+            if (
+              configuringNew !== null &&
+              row === configuringNew.row &&
+              col === configuringNew.col
+            ) {
+              const { idolType } = configuringNew
+              return (
+                <div
+                  key={`${row}-${col}`}
+                  className="rounded p-0.5 overflow-auto"
+                  style={{
+                    backgroundColor: 'var(--color-bg-elevated)',
+                    gridColumn: `${col + 1} / span ${idolType.cols}`,
+                    gridRow: `${row + 1} / span ${idolType.rows}`,
+                  }}
+                >
+                  <span
+                    className="leading-tight"
+                    style={{ fontSize: '0.55rem', color: 'var(--color-text-secondary)', display: 'block' }}
+                  >
+                    {idolType.displayName}
+                  </span>
+                  <IdolAffixPicker
+                    idolType={idolType}
+                    prefixId={configuringNew.prefixId}
+                    prefixTier={configuringNew.prefixTier}
+                    suffixId={configuringNew.suffixId}
+                    suffixTier={configuringNew.suffixTier}
+                    onPrefixChange={(affixId, tier) =>
+                      setConfiguringNew((c) => (c ? { ...c, prefixId: affixId, prefixTier: tier } : null))
+                    }
+                    onSuffixChange={(affixId, tier) =>
+                      setConfiguringNew((c) => (c ? { ...c, suffixId: affixId, suffixTier: tier } : null))
+                    }
+                    onConfirm={handleConfirmPlacement}
+                    onCancel={() => {
+                      setConfiguringNew(null)
+                      setPlacementError(null)
+                    }}
+                  />
+                </div>
+              )
+            }
+
             if (occupant && isTopLeft) {
               const idolType = idolTypes.find((t) => t.id === occupant.idolTypeId)
               const cols = idolType?.cols ?? 1
               const rows = idolType?.rows ?? 1
+
+              // Edit mode
+              if (editingIdolId === occupant.id) {
+                return (
+                  <div
+                    key={`${row}-${col}`}
+                    className="rounded p-0.5 overflow-auto"
+                    style={{
+                      backgroundColor: 'var(--color-accent-gold)',
+                      gridColumn: `${col + 1} / span ${cols}`,
+                      gridRow: `${row + 1} / span ${rows}`,
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span style={{ fontSize: '0.55rem', fontWeight: 600, color: 'var(--color-bg-base)' }}>
+                        {idolType?.displayName}
+                      </span>
+                      <button
+                        onClick={() => setEditingIdolId(null)}
+                        aria-label="Done editing affix"
+                        className="rounded px-1"
+                        style={{
+                          fontSize: '0.55rem',
+                          color: 'var(--color-bg-base)',
+                          backgroundColor: 'transparent',
+                          outline: 'none',
+                        }}
+                        onFocus={(e) => { e.currentTarget.style.outline = '2px solid var(--color-bg-base)' }}
+                        onBlur={(e) => { e.currentTarget.style.outline = 'none' }}
+                      >
+                        Done
+                      </button>
+                    </div>
+                    {idolType && (
+                      <IdolAffixPicker
+                        idolType={idolType}
+                        prefixId={occupant.prefixId}
+                        prefixTier={occupant.prefixTier}
+                        suffixId={occupant.suffixId}
+                        suffixTier={occupant.suffixTier}
+                        onPrefixChange={(affixId, tier) =>
+                          handleAffixUpdate(occupant.id, { prefixId: affixId, prefixTier: tier })
+                        }
+                        onSuffixChange={(affixId, tier) =>
+                          handleAffixUpdate(occupant.id, { suffixId: affixId, suffixTier: tier })
+                        }
+                      />
+                    )}
+                  </div>
+                )
+              }
+
+              // View mode
               return (
-                // P2: removed aspect-square — let the grid track sizes define the cell dimensions
                 <div
                   key={`${row}-${col}`}
-                  className="rounded text-xs flex flex-col items-center justify-center gap-0.5 p-0.5"
+                  className="rounded text-xs flex flex-col items-center justify-center gap-0.5 p-0.5 cursor-pointer"
                   style={{
                     backgroundColor: 'var(--color-accent-gold)',
                     color: 'var(--color-bg-base)',
                     gridColumn: `${col + 1} / span ${cols}`,
                     gridRow: `${row + 1} / span ${rows}`,
+                    outline: 'none',
                   }}
+                  role="button"
+                  aria-label={`${idolType?.displayName ?? occupant.idolTypeId} placed. Click to edit affixes.`}
+                  tabIndex={0}
+                  onClick={() => setEditingIdolId(occupant.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') setEditingIdolId(occupant.id)
+                  }}
+                  onFocus={(e) => { e.currentTarget.style.outline = '2px solid var(--color-bg-base)' }}
+                  onBlur={(e) => { e.currentTarget.style.outline = 'none' }}
                 >
                   <span className="font-semibold leading-tight text-center" style={{ fontSize: '0.6rem' }}>
                     {idolType?.displayName ?? occupant.idolTypeId}
                   </span>
-                  {/* P0: placeholder affix slot labels (selection wired in Story 3.2) */}
-                  <span
-                    className="leading-tight text-center"
-                    style={{ fontSize: '0.55rem', opacity: 0.6 }}
-                    aria-label="Prefix slot (empty)"
-                  >
-                    — Prefix —
-                  </span>
-                  {(idolType?.requiresBoth ?? false) && (
+                  {occupant.prefixId ? (
+                    <span
+                      className="leading-tight text-center"
+                      style={{ fontSize: '0.55rem' }}
+                      aria-label={`Prefix: ${getPrefixName(occupant)} T${occupant.prefixTier}`}
+                    >
+                      {getPrefixName(occupant)} T{occupant.prefixTier}
+                    </span>
+                  ) : (
                     <span
                       className="leading-tight text-center"
                       style={{ fontSize: '0.55rem', opacity: 0.6 }}
-                      aria-label="Suffix slot (empty)"
+                      aria-label="Prefix slot (empty)"
                     >
-                      — Suffix —
+                      — Prefix —
                     </span>
                   )}
+                  {(idolType?.requiresBoth ?? false) && (
+                    occupant.suffixId ? (
+                      <span
+                        className="leading-tight text-center"
+                        style={{ fontSize: '0.55rem' }}
+                        aria-label={`Suffix: ${getSuffixName(occupant)} T${occupant.suffixTier}`}
+                      >
+                        {getSuffixName(occupant)} T{occupant.suffixTier}
+                      </span>
+                    ) : (
+                      <span
+                        className="leading-tight text-center"
+                        style={{ fontSize: '0.55rem', opacity: 0.6 }}
+                        aria-label="Suffix slot (empty)"
+                      >
+                        — Suffix —
+                      </span>
+                    )
+                  )}
                   <button
-                    onClick={() => handleClear(occupant.id)}
+                    onClick={(e) => { e.stopPropagation(); handleClear(occupant.id) }}
                     aria-label={`${idolType?.displayName ?? occupant.idolTypeId} placed. Press to clear.`}
                     className="rounded px-1 leading-tight"
                     style={{
@@ -143,8 +328,7 @@ export function IdolGrid() {
               )
             }
 
-            // P1: interior cells of multi-cell idols — skip rendering entirely.
-            // The top-left cell's gridColumn/gridRow span already covers this area.
+            // Interior cells of placed multi-cell idols — skip
             if (occupant && !isTopLeft) {
               return null
             }
@@ -171,8 +355,6 @@ export function IdolGrid() {
                       const type = idolTypes.find((t) => t.id === e.target.value)
                       if (type) handleTypeSelect(row, col, type)
                     }}
-                    // P4+P5: use functional setState so a concurrent handleCellClick on another
-                    // cell isn't overwritten; also clear any stale error on dismiss.
                     onBlur={() => {
                       setPendingCell((current) =>
                         current?.row === row && current?.col === col ? null : current

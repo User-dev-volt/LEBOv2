@@ -3,7 +3,7 @@ title: 'Idol Affix Selection & Stat Contribution'
 story_id: '3.2'
 story_key: '3-2-idol-affix-selection-and-stat-contribution'
 epic: 3
-status: ready-for-dev
+status: review
 created: '2026-05-22'
 ---
 
@@ -786,3 +786,45 @@ Expected test baseline: 834 passed pre-existing + new tests. 8 pre-existing fail
 - `game_data_loader.rs` imports `crate::services::context_data_service`. This module already exists and `load_idol_data_from_dir` is already public — just add the call.
 - When calling `context_data_service::load_idol_data_from_dir(&data_dir)` in `game_data_loader.rs`, use the SAME `data_dir` path as for class data — both are in the game data directory.
 - The `IdolAffixEffect` struct needs to be `pub` and the `values_by_tier: HashMap<u32, f64>` field needs `use std::collections::HashMap` in `game_data.rs` (already imported there).
+
+---
+
+## Dev Agent Record
+
+### Implementation Notes
+
+All 8 tasks completed in a single session (2026-05-22).
+
+**TypeScript:**
+- `PlacedIdol` extended with 4 optional affix fields; schema version stays at 2 (fields are optional, no migration needed)
+- `updateIdolAffix` action follows `null`-clears-the-affix pattern matching the story spec exactly
+- `buildSnapshotSerializer.ts` `toIdolPlacements` now populates prefix/suffix when set
+- `IdolAffixPicker.tsx` created with placement mode (local state + Place/Cancel) and edit mode (immediate store updates, no local state)
+- `IdolGrid.tsx` extended with 3-state machine: `pendingCell` (size selection) → `configuringNew` (affix config) → placed; plus `editingIdolId` for inline edit; concurrent placement cancelled on new cell click
+
+**Rust:**
+- `IdolAffixEffect` struct added to `game_data.rs` with `Default` deriving from `GameData`'s derive
+- `stat_key_from_str` mapping function added covering all 27 idol affix stat keys from `idol-data.json`
+- `game_data_loader.rs` extended to load idol affixes using same `data_dir` as class data; `IdolAffixEffect` imported from scoring-core
+- `compute.rs` `build_registry` extended with idol affix loop after node_allocations; `Condition` added to top-level import
+
+**Tests:**
+- 11 `IdolAffixPicker.test.tsx` tests (all new, all pass)
+- 6 `IdolGrid.test.tsx` additions + updated test 4 to new placement flow (9 pre-existing + 6 new = 15 total)
+- 3 `buildSnapshotSerializer.test.ts` additions (12 total)
+- 1 Rust test `idol_affix_endurance_threshold_contributes` (27 Rust tests total)
+- Final: 855 TS passed / 8 pre-existing failures / 0 regressions; 27 Rust tests all pass
+
+### File List
+
+- `lebo/src/shared/types/build.ts` — MODIFIED (extended `PlacedIdol`)
+- `lebo/src/shared/stores/buildStore.ts` — MODIFIED (added `updateIdolAffix`)
+- `lebo/src/shared/utils/buildSnapshotSerializer.ts` — MODIFIED (populated prefix/suffix)
+- `lebo/src/shared/utils/buildSnapshotSerializer.test.ts` — MODIFIED (3 new tests)
+- `lebo/src/features/idol-grid/IdolAffixPicker.tsx` — CREATED
+- `lebo/src/features/idol-grid/IdolAffixPicker.test.tsx` — CREATED
+- `lebo/src/features/idol-grid/IdolGrid.tsx` — MODIFIED (full state machine rewrite)
+- `lebo/src/features/idol-grid/IdolGrid.test.tsx` — MODIFIED (updated + 6 new tests)
+- `lebo/src-tauri/scoring-core/src/game_data.rs` — MODIFIED (`IdolAffixEffect` + field)
+- `lebo/src-tauri/src/services/game_data_loader.rs` — MODIFIED (idol affix loading + `stat_key_from_str`)
+- `lebo/src-tauri/scoring-core/src/compute.rs` — MODIFIED (idol affix registry loop + test)

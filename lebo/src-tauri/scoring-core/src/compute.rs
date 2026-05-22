@@ -1,7 +1,7 @@
 use crate::build_snapshot::BuildSnapshot;
 use crate::compute_options::ComputeOptions;
 use crate::game_data::{ArchetypeWeights, GameData};
-use crate::modifier::{Modifier, ModifierRegistry, ModifierType, StatKey};
+use crate::modifier::{Condition, Modifier, ModifierRegistry, ModifierType, StatKey};
 use crate::stat_sheet::{DefenseStats, OffenseStats, ScoreComponents, StatSheet, StatWarning};
 
 pub fn compute_stats(
@@ -52,6 +52,23 @@ fn build_registry(snapshot: &BuildSnapshot, game_data: &GameData) -> ModifierReg
         }
         // Unknown node_id (not in game_data) → silently skipped; no panic (FR-A6)
     }
+
+    // Idol affix modifiers — each placed idol's prefix and suffix contribute stat modifiers
+    for placement in &snapshot.idol_placements {
+        for opt_entry in [&placement.prefix, &placement.suffix] {
+            let Some(entry) = opt_entry else { continue };
+            let Some(effect) = game_data.idol_affixes.get(&entry.affix_id) else { continue };
+            let Some(&value) = effect.values_by_tier.get(&entry.tier) else { continue };
+            registry.add(Modifier {
+                stat_key: effect.stat_key.clone(),
+                modifier_type: effect.modifier_type.clone(),
+                value,
+                condition: Condition::Always,
+                source: entry.affix_id.clone(),
+            });
+        }
+    }
+
     registry
 }
 
@@ -452,7 +469,8 @@ fn resolve_archetype_weights(slider_position: u32, game_data: &GameData) -> Arch
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::game_data::{ArchetypeWeightsEntry, BaseClassStats, NodeEffect};
+    use crate::build_snapshot::{AffixEntry, IdolPlacement};
+    use crate::game_data::{ArchetypeWeightsEntry, BaseClassStats, IdolAffixEffect, NodeEffect};
     use crate::modifier::Condition;
     use std::collections::HashMap;
 
@@ -1157,6 +1175,42 @@ mod tests {
             sheet.warnings.is_empty(),
             "expected no warnings, got: {:?}",
             sheet.warnings.iter().map(|w| &w.warning_type).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn idol_affix_endurance_threshold_contributes() {
+        // stout-endurance-threshold T2: (5.0 + 6.0) / 2 = 5.5
+        let mut idol_affixes = HashMap::new();
+        idol_affixes.insert(
+            "idol-stout-endurance-threshold".to_string(),
+            IdolAffixEffect {
+                stat_key: StatKey::EnduranceThreshold,
+                modifier_type: ModifierType::Flat,
+                values_by_tier: [(2, 5.5)].into_iter().collect(),
+            },
+        );
+        let game_data = GameData {
+            idol_affixes,
+            archetype_weights: standard_weight_table(),
+            ..Default::default()
+        };
+        let mut snapshot = snapshot_at(50);
+        snapshot.idol_placements.push(IdolPlacement {
+            row: 1,
+            col: 0,
+            idol_size: "stout-1x3".to_string(),
+            prefix: Some(AffixEntry {
+                affix_id: "idol-stout-endurance-threshold".to_string(),
+                tier: 2,
+            }),
+            suffix: None,
+        });
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        assert!(
+            (sheet.defense.endurance_threshold - 5.5).abs() < 0.01,
+            "expected endurance_threshold 5.5 got {}",
+            sheet.defense.endurance_threshold
         );
     }
 }
