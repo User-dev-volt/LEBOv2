@@ -97,15 +97,12 @@ fn infer_delivery_type(snapshot: &BuildSnapshot, game_data: &GameData) -> Option
         let Some(effects) = game_data.node_effects.get(node_id) else {
             continue;
         };
-        for effect in effects {
-            match effect.stat_key {
-                StatKey::IncreasedMeleeDamage => melee += pts,
-                StatKey::IncreasedSpellDamage => spell += pts,
-                StatKey::IncreasedRangedDamage => ranged += pts,
-                StatKey::IncreasedMinionDamage => minion += pts,
-                _ => {}
-            }
-        }
+        // Count pts once per delivery type per node, not once per matching effect.
+        // A node with two IncreasedSpellDamage effects is still one spell node.
+        if effects.iter().any(|e| e.stat_key == StatKey::IncreasedMeleeDamage) { melee += pts; }
+        if effects.iter().any(|e| e.stat_key == StatKey::IncreasedSpellDamage) { spell += pts; }
+        if effects.iter().any(|e| e.stat_key == StatKey::IncreasedRangedDamage) { ranged += pts; }
+        if effects.iter().any(|e| e.stat_key == StatKey::IncreasedMinionDamage) { minion += pts; }
     }
 
     let max = melee.max(spell).max(ranged).max(minion);
@@ -163,7 +160,14 @@ fn detect_zero_value_nodes(
             continue;
         }
 
-        let mismatch_str = delivery_types[0].as_str();
+        // Collect all unique mismatch type names for the description (e.g. "melee/ranged").
+        let mut seen_types = std::collections::HashSet::new();
+        let mismatch_str: String = delivery_types
+            .iter()
+            .map(|dt| dt.as_str())
+            .filter(|s| seen_types.insert(*s))
+            .collect::<Vec<_>>()
+            .join("/");
         flags.push(SynergyFlag {
             flag_type: "zero_value_allocation".to_string(),
             priority: "medium".to_string(),
@@ -204,11 +208,12 @@ fn detect_mismatched_affixes(
     for (slot_id, slot) in &snapshot.gear_slots {
         let all_affixes = slot.prefixes.iter().chain(slot.suffixes.iter());
         for affix_entry in all_affixes {
+            // Normalize scope to lowercase so "Melee" / "SPELL" compare correctly.
             let scope = game_data
                 .affix_scope
                 .get(&affix_entry.affix_id)
-                .map(|s| s.as_str())
-                .unwrap_or("generic");
+                .map(|s| s.to_ascii_lowercase())
+                .unwrap_or_else(|| "generic".to_string());
 
             if scope == "generic" || scope == primary_str {
                 continue; // no mismatch
@@ -219,12 +224,11 @@ fn detect_mismatched_affixes(
                 priority: "high".to_string(),
                 description: format!(
                     "Affix '{}' on your {} slot has {} scope but your build uses {} damage. \
-                     Replace it with a {} Critical Strike Chance or equivalent {} affix.",
+                     Replace it with an equivalent {} affix.",
                     affix_entry.affix_id,
                     slot_id,
                     scope,
                     primary_str,
-                    primary.capitalize(),
                     primary.capitalize(),
                 ),
                 node_id: None,
@@ -277,10 +281,11 @@ fn detect_game_changers(
                 flag_type: "game_changer".to_string(),
                 priority: "game_changer".to_string(),
                 description: format!(
-                    "{} would increase your BuildScore by {:.0}% — a Game-Changer upgrade. \
+                    "{} would increase your BuildScore by {:.0}% (+{:.1} score) — a Game-Changer upgrade. \
                      Requires: {}.",
                     unique.display_name,
                     delta_ratio * 100.0,
+                    new_score - baseline_score,
                     unique.threshold_description,
                 ),
                 node_id: None,
@@ -528,20 +533,27 @@ mod tests {
     #[test]
     fn game_changer_high_delta_unique_flagged() {
         let gd = make_test_game_data();
-        // Empty build (baseline score is very low) — test-unique adds +200% increased damage
-        let snapshot = snapshot_with_allocations(&[]);
+        // Use generic-node to guarantee a non-zero baseline score (avoids the baseline_score <= 0
+        // early-return guard in detect_game_changers). test-unique adds +200% IncreasedDamage
+        // on top of +30% baseline — a 154%+ relative delta, well above the 30% threshold.
+        let snapshot = snapshot_with_allocations(&[("generic-node", 1)]);
         let flags = run_synergy_detection(&snapshot, &gd);
 
         let gc: Vec<_> = flags
             .iter()
             .filter(|f| f.flag_type == "game_changer" && f.description.contains("Test Unique"))
             .collect();
-        assert!(!gc.is_empty(), "Test Unique should be a game-changer on an empty build");
+        assert!(!gc.is_empty(), "Test Unique should be a game-changer against a +30% IncreasedDamage baseline");
         let f = &gc[0];
         assert!(f.delta_build_score.is_some());
         assert!(
             f.description.contains("Game-Changer"),
             "description should contain Game-Changer: {}",
+            f.description
+        );
+        assert!(
+            f.description.contains("score"),
+            "description should include raw score delta: {}",
             f.description
         );
     }
@@ -606,8 +618,11 @@ mod tests {
     #[test]
     fn game_changer_ranks_before_high_priority() {
         let gd = make_test_game_data();
-        // Spell build with mismatched affix (high) + zero-value node (medium) + game-changer
-        let mut snapshot = snapshot_with_allocations(&[("spell-node", 1), ("melee-node", 1)]);
+        // Spell build: generic-node (non-zero baseline) + melee-node (zero-value) + mismatched affix.
+        // generic-node (+30% IncreasedDamage) guarantees baseline_score > 0 so detect_game_changers
+        // runs. test-unique (+200% IncreasedDamage) must produce a game_changer flag.
+        let mut snapshot =
+            snapshot_with_allocations(&[("spell-node", 1), ("melee-node", 1), ("generic-node", 1)]);
         let mut helm = GearSlotSnapshot::default();
         helm.prefixes.push(AffixEntry {
             affix_id: "melee-crit-chance".to_string(),
@@ -622,14 +637,11 @@ mod tests {
             .iter()
             .position(|f| f.priority == "high" && f.flag_type != "game_changer");
 
-        // game_changer may not appear if baseline is too high — only assert if it appears
-        if let (Some(gc_pos), Some(high_pos)) = (first_gc, first_high) {
-            assert!(
-                gc_pos < high_pos,
-                "game_changer should rank before other high-priority flags"
-            );
-        }
-        // If no game_changer appears (baseline too high for test-unique to trigger), that's fine —
-        // the ordering invariant still holds for the flags that do appear.
+        assert!(first_gc.is_some(), "test-unique should produce a game_changer flag in this scenario");
+        assert!(first_high.is_some(), "mismatched affix should produce a high-priority flag");
+        assert!(
+            first_gc.unwrap() < first_high.unwrap(),
+            "game_changer must rank before other high-priority flags"
+        );
     }
 }

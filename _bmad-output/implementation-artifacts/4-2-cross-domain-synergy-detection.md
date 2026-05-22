@@ -3,7 +3,7 @@ title: 'Cross-Domain Synergy Detection'
 story_id: '4.2'
 story_key: '4-2-cross-domain-synergy-detection'
 epic: 4
-status: review
+status: done
 created: '2026-05-22'
 ---
 
@@ -672,14 +672,14 @@ claude-sonnet-4-6
 
 ### Review Findings
 
-- [ ] [Review][Decision] AC1 — Node identified by raw ID, not display name — `detect_zero_value_nodes` uses `node_id` (e.g. `"mage_melee_dmg_1"`) in the user-facing description. AC1 requires the suggestion "identifies the node by name." Whether raw IDs are sufficiently human-readable depends on actual game data node ID format. [synergy.rs:170]
-- [ ] [Review][Decision] AC3 — "Current gap" absent from game-changer description — description includes the threshold category and score delta %, but AC3 says "includes the specific stat threshold needed and the current gap." Clarify: is the %-delta sufficient, or must the raw stat gap be shown? [synergy.rs:279]
-- [ ] [Review][Patch] Test 7 may be vacuous — empty build baseline_score may be 0.0, triggering the `baseline_score <= 0.0` early-return and preventing the game-changer test from exercising the detection path [synergy.rs:529–547]
-- [ ] [Review][Patch] Test 10 ordering invariant never verified — conditional `if let` guard means the test passes unconditionally if no game_changer flag fires; the sort-order contract goes untested [synergy.rs:607–634]
-- [ ] [Review][Patch] `infer_delivery_type` overcounts multi-effect nodes — `pts` added once per matching effect, so a node with 2× `IncreasedSpellDamage` effects counts twice, skewing inference toward nodes with duplicate effect keys [synergy.rs:96–109]
-- [ ] [Review][Patch] `detect_zero_value_nodes` description mentions only first mismatch type — uses `delivery_types[0]` for the user message; nodes with melee+ranged effects on a spell build report only "melee" [synergy.rs:166]
-- [ ] [Review][Patch] Case-sensitive scope comparison in `detect_mismatched_affixes` — `scope == primary_str` and `scope == "generic"` are byte-exact; scopes stored as "Melee" or "SPELL" in a future affix DB will never match and produce false-positive flags [synergy.rs:213]
-- [ ] [Review][Patch] `mismatched_affix` description hardcodes "Critical Strike Chance" — format string always says "Replace it with a {Primary} Critical Strike Chance or equivalent…" regardless of affix type; a mismatched melee-damage affix gets a misleading crit-chance recommendation [synergy.rs:221–229]
+- [x] [Review][Decision] AC1 — Node identified by raw ID, not display name — deferred to Story 4.3 (no display name map in GameData yet; revisit when UI presentation is designed)
+- [x] [Review][Decision] AC3 — "Current gap" absent from game-changer description — resolved: added raw score delta `(+{:.1} score)` to description alongside the % [synergy.rs:279]
+- [x] [Review][Patch] Test 7 may be vacuous — fixed: snapshot now uses `generic-node` allocation to guarantee non-zero baseline; added explicit assertions [synergy.rs:529–547]
+- [x] [Review][Patch] Test 10 ordering invariant never verified — fixed: removed conditional `if let` guard; test now asserts game_changer fires and ranks before high-priority flags [synergy.rs:607–634]
+- [x] [Review][Patch] `infer_delivery_type` overcounts multi-effect nodes — fixed: counts pts once per delivery type per node using `.any()` instead of per-effect loop [synergy.rs:96–109]
+- [x] [Review][Patch] `detect_zero_value_nodes` description mentions only first mismatch type — fixed: collects all unique mismatch types and joins with "/" [synergy.rs:166]
+- [x] [Review][Patch] Case-sensitive scope comparison in `detect_mismatched_affixes` — fixed: normalizes scope to ascii_lowercase before comparison [synergy.rs:213]
+- [x] [Review][Patch] `mismatched_affix` description hardcodes "Critical Strike Chance" — fixed: removed hardcode; description now says "Replace it with an equivalent {Primary} affix." [synergy.rs:221–229]
 - [x] [Review][Defer] `affix_scope` always empty at runtime — FR-A21 never fires in production until a future story populates the affix DB; documented and intentional per story spec [game_data_loader.rs:165] — deferred, pre-existing
 - [x] [Review][Defer] `GameData` clone per unique in `detect_game_changers` — O(n) deep clones accepted for Phase 3's 3-item seed; acknowledged in story dev notes [synergy.rs:262] — deferred, pre-existing
 - [x] [Review][Defer] Proxy node ID collision unenforced — `__unique__{item_id}` prefix assumed collision-free by convention only [synergy.rs:261] — deferred, pre-existing
