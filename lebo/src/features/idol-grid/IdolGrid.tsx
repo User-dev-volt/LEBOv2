@@ -35,7 +35,10 @@ export function IdolGrid() {
 
   function handleCellClick(row: number, col: number) {
     const occupant = getOccupantAt(row, col, idolGrid, idolTypes)
-    if (occupant) return
+    if (occupant) {
+      setPendingCell(null)
+      return
+    }
     // If another placement config is active, cancel it first
     if (configuringNew !== null) {
       setConfiguringNew(null)
@@ -355,7 +358,8 @@ export function IdolGrid() {
                       const type = idolTypes.find((t) => t.id === e.target.value)
                       if (type) handleTypeSelect(row, col, type)
                     }}
-                    onBlur={() => {
+                    onBlur={(e) => {
+                      if (e.currentTarget.contains(e.relatedTarget as Node)) return
                       setPendingCell((current) =>
                         current?.row === row && current?.col === col ? null : current
                       )

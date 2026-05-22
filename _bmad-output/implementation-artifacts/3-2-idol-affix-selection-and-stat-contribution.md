@@ -3,7 +3,7 @@ title: 'Idol Affix Selection & Stat Contribution'
 story_id: '3.2'
 story_key: '3-2-idol-affix-selection-and-stat-contribution'
 epic: 3
-status: review
+status: done
 created: '2026-05-22'
 ---
 
@@ -831,9 +831,9 @@ All 8 tasks completed in a single session (2026-05-22).
 
 ### Review Findings
 
-- [ ] [Review][Decision] Edit mode allocates local state unconditionally — TR4 says "NO local state" in edit mode, but React's Rules of Hooks forbid conditional `useState` calls; requires decision on whether to split into two components or accept current approach (state allocated but bypassed in edit mode)
-- [ ] [Review][Patch] Occupied cell click doesn't cancel `pendingCell` — `handleCellClick` returns early when `occupant` is found without clearing `pendingCell`, leaving a stale type-select dropdown visible [IdolGrid.tsx:handleCellClick]
-- [ ] [Review][Patch] Type-select `onBlur` dismisses `pendingCell` when focus moves to a child element — clicking inside the dropdown fires `onBlur` on the container, clearing `pendingCell` and collapsing the selector before the user can pick [IdolGrid.tsx:pending cell select onBlur]
+- [x] [Review][Decision] Edit mode allocates local state unconditionally — TR4 says "NO local state" in edit mode, but React's Rules of Hooks forbid conditional `useState` calls; accepted as-is (state allocated but functionally bypassed in edit mode)
+- [x] [Review][Patch] Occupied cell click doesn't cancel `pendingCell` — fixed: `handleCellClick` now calls `setPendingCell(null)` before returning when `occupant` is found [IdolGrid.tsx:handleCellClick]
+- [x] [Review][Patch] Type-select `onBlur` dismisses `pendingCell` when focus moves to a child element — fixed: `onBlur` now checks `e.currentTarget.contains(e.relatedTarget)` and skips if focus stays within [IdolGrid.tsx:pending cell select onBlur]
 - [x] [Review][Defer] `prefixTier` undefined if placement mode props initialize `prefixId` without tier — `isConfirmBlocked` would pass but `onConfirm` called with `tier: undefined`; serializer silently drops prefix [IdolAffixPicker.tsx:useState init] — deferred, not triggerable in current code paths (configuringNew always initializes without prefixId)
 - [x] [Review][Defer] `stat_key_from_str` has 28 arms; dev notes say 27 keys — extra arm is harmless (silently matched but unused) [game_data_loader.rs:stat_key_from_str] — deferred, pre-existing
 - [x] [Review][Defer] Empty tier list in game data yields empty `values_by_tier`; affix registered but silently contributes nothing to score [game_data_loader.rs:values_by_tier] — deferred, pre-existing game-data quality risk
