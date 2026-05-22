@@ -92,3 +92,10 @@
 
 - **`warningGap=0` renders `(+0% needed)`** [`StatSheetPanel.tsx`] — If the scoring engine emits a `StatWarning` with `gap: 0`, the Defense tab renders the warning label in negative color with `(+0% needed)`. A gap of 0 means the resistance is exactly at cap, which should not be warned. Fix the `gap` floor in the scoring engine rather than the display code.
 - **RightPanel `shrink-0` layout on small windows** [`RightPanel.tsx`] — The stat sheet container uses `shrink-0` + `maxHeight: 280px`. On short windows the fixed-height gear and stat sections can push the Optimization section (also `shrink-0`) off-screen with no scroll path. Revisit in Epic 6 layout polish — options: `min-h` floor, or collapsible stat sheet section.
+
+## Deferred from: code review of 4-1-passive-tree-efficiency-scan-dijkstra-knapsack-solver (2026-05-22)
+
+- **Small result sets (n < 4) assign no "gold" tier** [`scan.rs:138-139`] — `n/4 = 0` for n < 4 nodes, so the best candidate in a small result set is labeled "dim" instead of "gold". Extremely unlikely in practice (LE passive trees have hundreds of nodes), but the rounding means the top-25% intent breaks down at small n. Fix with `(n / 4).max(1)` if needed.
+- **Zero-cost nodes (max_points=0) corrupt knapsack DP chosen table** [`scan.rs:solve_knapsack`] — If game data contains a node with `max_points=0`, Dijkstra assigns it cost=0, and the DP loop `for w in (0..=cap).rev()` iterates every weight with `c=0`, overwriting all prior `chosen` rows. In practice LE passive nodes have `max_points >= 1`.
+- **BFS mastery depth assumes first node in passive_tree.nodes is the mastery entry node** [`game_data_loader.rs:73`] — Documented assumption in dev notes ("verified: void-knight-passive-entry is always index 0"). If game data ordering changes, depth values would be wrong. Consider validating or documenting the ordering guarantee more explicitly.
+
