@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-- Complete the three parallel adversarial review layers and triage findings with structured output
+Wait for parallel review layers (Edge Case Hunter and Acceptance Auditor) to complete; then triage findings and present actionable results in structured format.
 
 ---
 
