@@ -77,6 +77,12 @@
 - **`stat_key_from_str` has 28 arms vs. spec's stated 27** [`game_data_loader.rs:stat_key_from_str`] — Extra arm is harmless (matched but unused); likely spec miscounted. Verify against actual `idol-data.json` when data pipeline is revisited.
 - **Empty tier list → empty `values_by_tier` → silent zero contribution** [`game_data_loader.rs:values_by_tier`] — Affix registered with no tier values causes every `values_by_tier.get(&tier)` miss in `compute.rs`; affix silently contributes nothing. Pre-existing game-data quality risk.
 
+## Deferred from: code review of 3-3-blessings-panel (2026-05-22)
+
+- **Search filtering leaves stale select value when selected blessing is filtered out** [`BlessingsPanel.tsx:53-65`] — When a search term filters out the currently-selected blessing, the `<select>` has no matching `<option>` and browsers snap it to blank. No data corruption; UX confusion only. Fix: inject the selected option into the filtered list regardless of search term, or clear search on selection.
+- **`Modifier` in `build_registry` may be missing `source: blessing_id.clone()`** [`compute.rs:~78`] — Spec says to include `source: blessing_id.clone()` but the diff only shows four fields. Code builds, suggesting `source` may have a default. Verify `Modifier` struct definition and confirm source field behavior before Epic 4.
+- **Rust test `blessing_fire_resistance_contributes` fragile if base stats non-zero** [`compute.rs:~1234`] — Test asserts `fire_resistance == 18.0` but `snapshot_at(50)` may initialize non-zero resistance from base stats. If baseline is non-zero the assertion fails; if it passes coincidentally the test provides false confidence.
+
 ## Deferred from: code review of 2-6-stat-sheet-ui-five-tab-display (2026-05-21)
 
 - **`warningGap=0` renders `(+0% needed)`** [`StatSheetPanel.tsx`] — If the scoring engine emits a `StatWarning` with `gap: 0`, the Defense tab renders the warning label in negative color with `(+0% needed)`. A gap of 0 means the resistance is exactly at cap, which should not be warned. Fix the `gap` floor in the scoring engine rather than the display code.

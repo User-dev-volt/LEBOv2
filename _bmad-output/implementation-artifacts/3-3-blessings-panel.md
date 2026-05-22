@@ -655,3 +655,11 @@ claude-sonnet-4-6
 - `lebo/src-tauri/scoring-core/src/game_data.rs` — MODIFIED: added `blessing_effects` field to `GameData`
 - `lebo/src-tauri/src/services/game_data_loader.rs` — MODIFIED: added blessing loading + 6 stat key arms + `blessing_effects` to return
 - `lebo/src-tauri/scoring-core/src/compute.rs` — MODIFIED: added blessing loop in `build_registry` + 2 Rust tests
+
+### Review Findings
+
+- [ ] [Review][Patch] Flat modifier stat summary always appends `%` regardless of `modifierType` [lebo/src/features/blessings/BlessingsPanel.tsx:75]
+- [ ] [Review][Patch] Dismiss button focus ring uses wrong color token (`var(--color-bg-base)` instead of `var(--color-accent-gold)`) [lebo/src/features/blessings/BlessingsPanel.tsx:127-128]
+- [x] [Review][Defer] Search filtering leaves stale select value when selected blessing is filtered out [lebo/src/features/blessings/BlessingsPanel.tsx:53-65] — deferred, UX confusion only, no data corruption
+- [x] [Review][Defer] `Modifier` in `build_registry` may be missing `source: blessing_id.clone()` [lebo/src-tauri/scoring-core/src/compute.rs:~78] — deferred, code builds and tests pass; verify before Epic 4
+- [x] [Review][Defer] Rust test `blessing_fire_resistance_contributes` fragile if base stats non-zero [lebo/src-tauri/scoring-core/src/compute.rs:~1234] — deferred, pre-existing test pattern
