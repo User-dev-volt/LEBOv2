@@ -99,3 +99,11 @@
 - **Zero-cost nodes (max_points=0) corrupt knapsack DP chosen table** [`scan.rs:solve_knapsack`] — If game data contains a node with `max_points=0`, Dijkstra assigns it cost=0, and the DP loop `for w in (0..=cap).rev()` iterates every weight with `c=0`, overwriting all prior `chosen` rows. In practice LE passive nodes have `max_points >= 1`.
 - **BFS mastery depth assumes first node in passive_tree.nodes is the mastery entry node** [`game_data_loader.rs:73`] — Documented assumption in dev notes ("verified: void-knight-passive-entry is always index 0"). If game data ordering changes, depth values would be wrong. Consider validating or documenting the ordering guarantee more explicitly.
 
+## Deferred from: code review of 4-2-cross-domain-synergy-detection (2026-05-22)
+
+- **`affix_scope` always empty at runtime** [`game_data_loader.rs:165`] — `detect_mismatched_affixes` never fires in production until a future story populates the affix DB from JSON. Intentional per story spec; revisit in Epic 5 affix scoring work.
+- **`GameData` clone per unique in `detect_game_changers`** [`synergy.rs:262`] — O(n) deep clones of `node_effects` per unique; acceptable for 3-item Phase 3 seed. Profile if unique count grows past ~20 in Phase 4.
+- **Proxy node ID collision unenforced** [`synergy.rs:261`] — `__unique__{item_id}` namespace prefix assumed collision-free by convention. Add a debug_assert or scan in game_data_loader if real game IDs ever use `__` prefix.
+- **Exsanguinous seeded with `Flat` modifier for `WardPerSecond`** [`game_data_loader.rs:393`] — Inconsistent with loader's guard that drops flat-ward passive nodes, but documented as intentional Phase-3 approximation. Revisit when full item DB is parsed.
+- **"critical" priority rank undefined in synergy sort** [`synergy.rs:74`] — If Story 4.3 produces "critical" floor-check flags and merges them with synergy flags using the same sort, they land at priority 0 alongside "game_changer" (correct by coincidence). Story 4.3 should define the merged sort explicitly.
+

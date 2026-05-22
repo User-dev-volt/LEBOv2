@@ -670,6 +670,23 @@ claude-sonnet-4-6
 - `lebo/src-tauri/scoring-core/src/synergy.rs` — CREATED: `run_synergy_detection()`, three detectors, 10 unit tests
 - `lebo/src-tauri/scoring-core/src/lib.rs` — MODIFIED: added `pub mod synergy;`, `pub use synergy::run_synergy_detection;`, `UniqueItem` to game_data re-exports
 
+### Review Findings
+
+- [ ] [Review][Decision] AC1 — Node identified by raw ID, not display name — `detect_zero_value_nodes` uses `node_id` (e.g. `"mage_melee_dmg_1"`) in the user-facing description. AC1 requires the suggestion "identifies the node by name." Whether raw IDs are sufficiently human-readable depends on actual game data node ID format. [synergy.rs:170]
+- [ ] [Review][Decision] AC3 — "Current gap" absent from game-changer description — description includes the threshold category and score delta %, but AC3 says "includes the specific stat threshold needed and the current gap." Clarify: is the %-delta sufficient, or must the raw stat gap be shown? [synergy.rs:279]
+- [ ] [Review][Patch] Test 7 may be vacuous — empty build baseline_score may be 0.0, triggering the `baseline_score <= 0.0` early-return and preventing the game-changer test from exercising the detection path [synergy.rs:529–547]
+- [ ] [Review][Patch] Test 10 ordering invariant never verified — conditional `if let` guard means the test passes unconditionally if no game_changer flag fires; the sort-order contract goes untested [synergy.rs:607–634]
+- [ ] [Review][Patch] `infer_delivery_type` overcounts multi-effect nodes — `pts` added once per matching effect, so a node with 2× `IncreasedSpellDamage` effects counts twice, skewing inference toward nodes with duplicate effect keys [synergy.rs:96–109]
+- [ ] [Review][Patch] `detect_zero_value_nodes` description mentions only first mismatch type — uses `delivery_types[0]` for the user message; nodes with melee+ranged effects on a spell build report only "melee" [synergy.rs:166]
+- [ ] [Review][Patch] Case-sensitive scope comparison in `detect_mismatched_affixes` — `scope == primary_str` and `scope == "generic"` are byte-exact; scopes stored as "Melee" or "SPELL" in a future affix DB will never match and produce false-positive flags [synergy.rs:213]
+- [ ] [Review][Patch] `mismatched_affix` description hardcodes "Critical Strike Chance" — format string always says "Replace it with a {Primary} Critical Strike Chance or equivalent…" regardless of affix type; a mismatched melee-damage affix gets a misleading crit-chance recommendation [synergy.rs:221–229]
+- [x] [Review][Defer] `affix_scope` always empty at runtime — FR-A21 never fires in production until a future story populates the affix DB; documented and intentional per story spec [game_data_loader.rs:165] — deferred, pre-existing
+- [x] [Review][Defer] `GameData` clone per unique in `detect_game_changers` — O(n) deep clones accepted for Phase 3's 3-item seed; acknowledged in story dev notes [synergy.rs:262] — deferred, pre-existing
+- [x] [Review][Defer] Proxy node ID collision unenforced — `__unique__{item_id}` prefix assumed collision-free by convention only [synergy.rs:261] — deferred, pre-existing
+- [x] [Review][Defer] Exsanguinous seeded with `ModifierType::Flat` for `WardPerSecond` — inconsistent with the loader guard that drops flat-ward passive nodes, but documented as intentional approximation [game_data_loader.rs:393] — deferred, pre-existing
+- [x] [Review][Defer] "critical" priority rank undefined in synergy sort — Story 4.3 owns the merged sort; any "critical" flags from floor-check would land at position 0 alongside "game_changer" (correct by coincidence) [synergy.rs:74] — deferred, Story 4.3 concern
+
 ### Change Log
 - 2026-05-22: Story 4.2 created — cross-domain synergy detection spec.
 - 2026-05-22: Story 4.2 implemented — all 4 tasks complete, 51/51 tests passing, status → review.
+- 2026-05-22: Code review complete — 2 decision-needed, 6 patches, 5 deferred, 3 dismissed.
