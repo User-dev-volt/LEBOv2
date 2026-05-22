@@ -71,6 +71,12 @@
 - `applyNodeChange` fallback build construction missing `idolGrid`/`blessings`/`activeConditions` — pre-existing pattern, not introduced by this story.
 - Build persistence round-trip for `idolGrid` untested — `buildPersistence.test.ts` does not verify `idolGrid` survives a save/load cycle.
 
+## Deferred from: code review of 3-2-idol-affix-selection-and-stat-contribution (2026-05-22)
+
+- **`prefixTier` undefined risk in placement mode** [`IdolAffixPicker.tsx:useState init`] — If `prefixId` prop is defined but `prefixTier` is undefined on mount, `isConfirmBlocked` passes but `onConfirm` receives `prefixTier: undefined`; serializer silently drops the prefix. Not triggerable in current code paths (configuringNew always initializes without affixes), but latent if callers change.
+- **`stat_key_from_str` has 28 arms vs. spec's stated 27** [`game_data_loader.rs:stat_key_from_str`] — Extra arm is harmless (matched but unused); likely spec miscounted. Verify against actual `idol-data.json` when data pipeline is revisited.
+- **Empty tier list → empty `values_by_tier` → silent zero contribution** [`game_data_loader.rs:values_by_tier`] — Affix registered with no tier values causes every `values_by_tier.get(&tier)` miss in `compute.rs`; affix silently contributes nothing. Pre-existing game-data quality risk.
+
 ## Deferred from: code review of 2-6-stat-sheet-ui-five-tab-display (2026-05-21)
 
 - **`warningGap=0` renders `(+0% needed)`** [`StatSheetPanel.tsx`] — If the scoring engine emits a `StatWarning` with `gap: 0`, the Defense tab renders the warning label in negative color with `(+0% needed)`. A gap of 0 means the resistance is exactly at cap, which should not be warned. Fix the `gap` floor in the scoring engine rather than the display code.
