@@ -107,3 +107,11 @@
 - **Exsanguinous seeded with `Flat` modifier for `WardPerSecond`** [`game_data_loader.rs:393`] — Inconsistent with loader's guard that drops flat-ward passive nodes, but documented as intentional Phase-3 approximation. Revisit when full item DB is parsed.
 - **"critical" priority rank undefined in synergy sort** [`synergy.rs:74`] — If Story 4.3 produces "critical" floor-check flags and merges them with synergy flags using the same sort, they land at priority 0 alongside "game_changer" (correct by coincidence). Story 4.3 should define the merged sort explicitly.
 
+## Deferred from: code review of 4-3-run-optimization-tauri-command-and-claude-narrative (2026-05-22)
+
+- **`startOptimization` no in-flight guard for concurrent invocations** [`useOptimizationStream.ts`] — UI "Optimize" button disabled via `isOptimizing` state is the only gate; concurrent double-submit (e.g. via keyboard) could interleave two suggestion streams. Pre-existing pattern; same race existed with `invoke_claude_api`.
+- **NaN `delta_build_score` causes non-deterministic game-changer sort** [`scoring_commands.rs, assemble_run_optimization_payload`] — `partial_cmp + unwrap_or(Equal)` is standard Rust float sort; NaN in scoring output is a scoring-core engine bug, not a 4.3 issue.
+- **OpenRouter errors use `claude_service::OptimizationErrorPayload` type** [`scoring_commands.rs`] — Cross-module coupling; identical pattern from `invoke_claude_api`; refactor both together if claude_service is restructured.
+- **Gear suffix affixes never serialized — detect_mismatched_affixes misses suffix-side** [`buildSnapshotSerializer.ts`] — Acknowledged in code comment; no `prefix/suffix` discriminator on `GearItemV2`; address in Epic 5 affix scoring work.
+- **Level-0/1 builds: baseline_score == 0 triggers detect_game_changers early-return** [`synergy.rs`] — Pre-existing engine edge case; these builds have no game-changer suggestions. Intentional by coincidence (divide-by-zero guard doubles as degenerate-build guard).
+
