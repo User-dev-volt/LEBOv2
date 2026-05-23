@@ -3,7 +3,7 @@ title: '`run_optimization` Tauri Command & Claude Narrative'
 story_id: '4.3'
 story_key: '4-3-run-optimization-tauri-command-and-claude-narrative'
 epic: 4
-status: review
+status: done
 created: '2026-05-22'
 ---
 
@@ -639,11 +639,11 @@ claude-sonnet-4-6
 
 ### Review Findings
 
-- [ ] [Review][Patch] Fix knapsack target-node lookup: search path for node in `node_efficiencies` instead of `path.last()` — after `solve_knapsack` sorts each path cheapest-first (scan.rs:327), `path.last()` is the highest-max_points node, not the efficiency target. Fix: replace `path.last().unwrap()` lookup with `path.iter().find(|nid| scan_result.node_efficiencies.iter().any(|e| &e.node_id == *nid))`, falling back to `path.last()` if no match. [scoring_commands.rs, assemble_run_optimization_payload section 4]
+- [x] [Review][Patch] Fix knapsack target-node lookup: search path for node in `node_efficiencies` instead of `path.last()` — after `solve_knapsack` sorts each path cheapest-first (scan.rs:327), `path.last()` is the highest-max_points node, not the efficiency target. Fixed: `path.iter().find_map(...)` against `node_efficiencies`, falling back to `path.last()`. [scoring_commands.rs, assemble_run_optimization_payload section 4]
 - [x] [Review][Dismiss] Game-changer `toNodeId: "unique:unknown"` — left as-is; preview delta is zero for all non-passive suggestions regardless; Claude reads the `context` field for narrative; item_id deferred to Epic 5 when SynergyFlag gains an item_id field.
-- [ ] [Review][Patch] AC4 — add `activeSkillLevels` to `buildContext` — `snapshot.active_skill_levels` is available on `BuildSnapshot`; Claude needs active skill levels to tailor passive-tree suggestions toward skills (e.g. recommending nodes that buff a character's main damage skill). Add `"activeSkillLevels": snapshot.active_skill_levels` to the `buildContext` JSON object. [scoring_commands.rs, assemble_run_optimization_payload buildContext section]
-- [ ] [Review][Patch] `assemble_run_optimization_payload` returns `""` on serialization failure — `serde_json::to_string(&payload).unwrap_or_default()` silently returns an empty string if serialization fails (e.g. NaN or Infinity in `path_delta_score` / `delta_build_score`). The empty string is then sent to the LLM with no error surfaced to the user or the frontend. Fix: change function to return `Result<String, String>`, propagate the error up through `run_optimization` with a `"SCORING_ERROR: "` prefix, and emit `optimization:error`. [scoring_commands.rs, assemble_run_optimization_payload]
-- [ ] [Review][Patch] Claude branch `get_api_key` failure doesn't emit `optimization:error` event — when `get_api_key(&app_handle).await?` fails in the Claude branch, the error is propagated via `?` without emitting an `optimization:error` event. The OpenRouter branch explicitly emits the event before returning `Err`. This asymmetry means the frontend's `optimization:error` listener never fires for Anthropic key errors — the error only surfaces via `invokeCommand`'s rejection through the TypeScript `catch` block, producing different UX than the OpenRouter path. Fix: match the OpenRouter pattern — emit event, then `return Err(...)`. [scoring_commands.rs, run_optimization, Claude branch]
+- [x] [Review][Patch] AC4 — add `activeSkillLevels` to `buildContext` — added `active_skill_levels` to `BuildSnapshot` (Rust + TS), serialized in `toBuildSnapshot`, included in `buildContext` payload. [build_snapshot.rs, buildSnapshotSerializer.ts, scoring_commands.rs]
+- [x] [Review][Patch] `assemble_run_optimization_payload` returns `""` on serialization failure — changed function to return `Result<String, String>`; propagates error with `"SCORING_ERROR: "` prefix and emits `optimization:error`. [scoring_commands.rs, assemble_run_optimization_payload]
+- [x] [Review][Patch] Claude branch `get_api_key` failure doesn't emit `optimization:error` event — replaced `?` propagation with explicit match that emits event before returning `Err`, matching OpenRouter branch. [scoring_commands.rs, run_optimization]
 - [x] [Review][Defer] `startOptimization` no in-flight guard for concurrent invocations [useOptimizationStream.ts, startOptimization] — deferred, pre-existing: UI's "Optimize" button is disabled while `isOptimizing` is true (same gate existed before this story); concurrent double-submit requires a broken UI state.
 - [x] [Review][Defer] NaN `delta_build_score` causes non-deterministic game-changer sort [scoring_commands.rs, assemble_run_optimization_payload section 2] — deferred, pre-existing: NaN in scoring engine output is a scoring-core bug, not introduced here; `partial_cmp` + `unwrap_or(Equal)` is the standard Rust float sort pattern.
 - [x] [Review][Defer] OpenRouter errors use `claude_service::OptimizationErrorPayload` type (cross-module coupling) [scoring_commands.rs] — deferred, pre-existing: identical pattern used in `invoke_claude_api`; fix at the same time as that command if refactored.

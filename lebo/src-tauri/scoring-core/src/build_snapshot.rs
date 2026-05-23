@@ -58,4 +58,7 @@ pub struct BuildSnapshot {
     /// Blessing IDs currently active
     #[serde(default)]
     pub blessings: Vec<String>,
+    /// Active skill levels keyed by slot ID (e.g. "slot1" → 15)
+    #[serde(default)]
+    pub active_skill_levels: HashMap<String, u32>,
 }

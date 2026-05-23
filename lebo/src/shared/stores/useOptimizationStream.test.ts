@@ -19,6 +19,7 @@ vi.mock('../utils/buildSnapshotSerializer', () => ({
     gearSlots: {},
     idolPlacements: [],
     blessings: [],
+    activeSkillLevels: {},
   })),
 }))
 
@@ -67,7 +68,6 @@ vi.mock('./gameDataStore', () => ({
 
 import { listen } from '@tauri-apps/api/event'
 import { invokeCommand } from '../utils/invokeCommand'
-import { useBuildStore } from './buildStore'
 import { useGameDataStore } from './gameDataStore'
 import { useOptimizationStore } from './optimizationStore'
 import { useOptimizationStream, startOptimization } from './useOptimizationStream'

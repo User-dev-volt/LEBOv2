@@ -47,7 +47,16 @@ pub async fn run_optimization(
 
     let user_message = assemble_run_optimization_payload(
         &snapshot, &stat_sheet, &scan_result, &synergy_flags,
-    );
+    ).map_err(|e| {
+        let _ = app_handle.emit(
+            "optimization:error",
+            &crate::services::claude_service::OptimizationErrorPayload {
+                error_type: "SCORING_ERROR".to_string(),
+                message: e.clone(),
+            },
+        );
+        e
+    })?;
 
     // Provider routing — identical pattern to invoke_claude_api.
     let provider = match crate::services::keychain_service::get_llm_provider(&app_handle).await {
@@ -82,7 +91,20 @@ pub async fn run_optimization(
         };
         crate::services::openrouter_service::stream_optimization(&app_handle, &or_key, user_message).await
     } else {
-        let api_key = crate::services::keychain_service::get_api_key(&app_handle).await?;
+        let api_key = match crate::services::keychain_service::get_api_key(&app_handle).await {
+            Ok(k) => k,
+            Err(e) => {
+                let err = format!("AUTH_ERROR: No Anthropic API key configured. Add your key in Settings. ({})", e);
+                let _ = app_handle.emit(
+                    "optimization:error",
+                    &crate::services::claude_service::OptimizationErrorPayload {
+                        error_type: "AUTH_ERROR".to_string(),
+                        message: "No Anthropic API key configured. Add your key in Settings.".to_string(),
+                    },
+                );
+                return Err(err);
+            }
+        };
         #[cfg(debug_assertions)]
         let api_key = std::env::var("ANTHROPIC_API_KEY").unwrap_or(api_key);
         crate::services::claude_service::stream_optimization(&app_handle, &api_key, user_message).await
@@ -121,7 +143,7 @@ fn assemble_run_optimization_payload(
     stat_sheet: &scoring_core::StatSheet,
     scan_result: &scoring_core::ScanResult,
     synergy_flags: &[scoring_core::SynergyFlag],
-) -> String {
+) -> Result<String, String> {
     let mut suggestions: Vec<serde_json::Value> = Vec::new();
     let mut rank: u32 = 1;
 
@@ -188,12 +210,17 @@ fn assemble_run_optimization_payload(
     }
 
     // 4. Knapsack solution paths (optimal passive allocations)
+    // solve_knapsack sorts each path cheapest-first (scan.rs:327), so path.last() is NOT
+    // reliably the efficiency target. Find the target by locating the path node that was
+    // scored for efficiency (bridge nodes are never in node_efficiencies).
     for path in &scan_result.knapsack_solution {
         if path.is_empty() { continue; }
-        let target_node = path.last().unwrap();
-        let efficiency_entry = scan_result.node_efficiencies
+        let efficiency_entry = path
             .iter()
-            .find(|e| &e.node_id == target_node);
+            .find_map(|nid| scan_result.node_efficiencies.iter().find(|e| &e.node_id == nid));
+        let target_node = efficiency_entry
+            .map(|e| e.node_id.as_str())
+            .unwrap_or_else(|| path.last().unwrap().as_str());
         let (delta_score, point_cost) = efficiency_entry
             .map(|e| (e.path_delta_score, e.effective_point_cost))
             .unwrap_or((0.0, path.len() as u32));
@@ -206,7 +233,8 @@ fn assemble_run_optimization_payload(
             "pointCost": point_cost,
             "deltaBuildScore": delta_score,
             "context": format!(
-                "Allocating this path adds {:.2} BuildScore for {} passive point(s). Path: {}.",
+                "Allocating {} adds {:.2} BuildScore for {} passive point(s). Path: {}.",
+                target_node,
                 delta_score,
                 point_cost,
                 path.join(" → ")
@@ -240,11 +268,13 @@ fn assemble_run_optimization_payload(
             "characterLevel": snapshot.character_level,
             "sliderPosition": snapshot.slider_position,
             "activeConditions": snapshot.active_conditions,
+            "activeSkillLevels": snapshot.active_skill_levels,
             "buildScoreBaseline": scan_result.build_score_baseline
         },
         "instructions": "You are a Last Epoch build optimizer. For each suggestion below, output exactly one NDJSON line matching the schema: {\"rank\":N,\"from_node_id\":null|\"nodeId\",\"to_node_id\":\"nodeId\",\"points_change\":N,\"explanation\":\"...\"}. Output one line per suggestion in rank order. Reference the specific delta values and context in your explanation. Do not add suggestions beyond the list.",
         "suggestions": suggestions
     });
 
-    serde_json::to_string(&payload).unwrap_or_default()
+    serde_json::to_string(&payload)
+        .map_err(|e| format!("SCORING_ERROR: failed to serialize optimization payload: {e}"))
 }

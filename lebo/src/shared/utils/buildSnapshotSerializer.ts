@@ -53,6 +53,7 @@ export interface BuildSnapshot {
   gearSlots: Record<string, GearSlotSnapshotTS>
   idolPlacements: IdolPlacementTS[]
   blessings: string[]
+  activeSkillLevels: Record<string, number>
 }
 
 // Pattern 1: ONLY conversion point from BuildState → BuildSnapshot.
@@ -74,6 +75,7 @@ export function toBuildSnapshot(build: BuildState, _gameData: GameData): BuildSn
     gearSlots: toGearSlots(build.contextData?.gear ?? []),
     idolPlacements: toIdolPlacements(build.idolGrid ?? []),
     blessings: Object.values(build.blessings ?? {}).filter((id): id is string => id !== null),
+    activeSkillLevels: { ...(build.activeSkillLevels ?? {}) },
     // weaverAllocations intentionally excluded — Epic 4 adds weaver scoring to compute_stats
   }
 }
