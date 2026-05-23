@@ -4,11 +4,11 @@ import type { UnlistenFn } from '@tauri-apps/api/event'
 import { calculateScore } from '../../features/optimization/scoringEngine'
 import { invokeCommand } from '../utils/invokeCommand'
 import { normalizeAppError } from '../utils/errorNormalizer'
-import { calculatePassivePoints } from '../utils/budgetCalculator'
+import { toBuildSnapshot } from '../utils/buildSnapshotSerializer'
 import { useBuildStore } from './buildStore'
 import { useGameDataStore } from './gameDataStore'
 import { useOptimizationStore } from './optimizationStore'
-import type { SuggestionResult, LevelContext, StructuredGearAffix, StructuredGearSlot } from '../types/optimization'
+import type { SuggestionResult } from '../types/optimization'
 
 // Payload shapes emitted by claude_service.rs (snake_case from serde)
 interface SuggestionReceivedPayload {
@@ -35,55 +35,19 @@ interface ModelActivePayload {
 
 export async function startOptimization() {
   const activeBuild = useBuildStore.getState().activeBuild
-  const { sliderPosition, fineTuneWeights } = useOptimizationStore.getState()
   if (!activeBuild) return
 
-  let levelContext: LevelContext | null = null
-  if (activeBuild.budgetEnforced) {
-    const availablePassivePoints = calculatePassivePoints(activeBuild.characterLevel)
-    const allocatedPassivePoints = Object.values(activeBuild.nodeAllocations ?? {}).reduce((sum, v) => sum + v, 0)
-    levelContext = {
-      characterLevel: activeBuild.characterLevel,
-      availablePassivePoints,
-      allocatedPassivePoints,
-      unspentPassivePoints: availablePassivePoints - allocatedPassivePoints,
-      activeSkillLevels: { ...(activeBuild.activeSkillLevels ?? {}) },
-    }
-  }
+  const gameData = useGameDataStore.getState().gameData
+  if (!gameData) return
 
-  const itemDatabase = useGameDataStore.getState().itemDatabase
-  const gearItems = activeBuild.contextData?.gear ?? []
-  const populatedGear = gearItems.filter((g) => g.itemName !== '')
-  const structuredGear: StructuredGearSlot[] | null = populatedGear.length > 0
-    ? populatedGear.map((g): StructuredGearSlot => {
-        const dbAffixes = g.affixes.filter((a) => a.affixId !== undefined && a.tier !== undefined)
-        if (dbAffixes.length === 0) {
-          return { slot: g.slotId, itemName: g.itemName, affixes: [] }
-        }
-        const affixes: StructuredGearAffix[] = dbAffixes.map((a) => {
-          const entry = itemDatabase?.affixes.find((e) => e.id === a.affixId)
-          const tierEntry = entry?.tiers.find((t) => t.tier === a.tier)
-          const value = tierEntry
-            ? Math.round((tierEntry.minValue + tierEntry.maxValue) / 2)
-            : undefined
-          return { name: a.name, tier: a.tier, value }
-        })
-        return { slot: g.slotId, itemName: g.itemName, affixes }
-      })
-    : null
+  const snapshot = toBuildSnapshot(activeBuild, gameData)
 
   useOptimizationStore.getState().clearSuggestions()
   useOptimizationStore.getState().setIsOptimizing(true)
   useOptimizationStore.getState().setOptimizationBuildId(activeBuild.id)
 
   try {
-    await invokeCommand('invoke_claude_api', {
-      buildState: activeBuild,
-      sliderPosition,
-      fineTuneWeights,
-      levelContext,
-      structuredGear,
-    })
+    await invokeCommand('run_optimization', { snapshot })
   } catch (err) {
     const appError = normalizeAppError(err)
     useOptimizationStore.getState().setStreamError(appError)

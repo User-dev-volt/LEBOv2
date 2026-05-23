@@ -3,7 +3,7 @@ title: '`run_optimization` Tauri Command & Claude Narrative'
 story_id: '4.3'
 story_key: '4-3-run-optimization-tauri-command-and-claude-narrative'
 epic: 4
-status: ready-for-dev
+status: review
 created: '2026-05-22'
 ---
 
@@ -76,31 +76,31 @@ All three are pure functions (no locks, no async) designed specifically for `spa
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `run_optimization` to `scoring_commands.rs`
-  - [ ] Add async `run_optimization` Tauri command: clone game_data (Pattern 3), `spawn_blocking` for compute_stats + run_efficiency_scan + run_synergy_detection, assemble payload, provider routing, delegate to streaming
-  - [ ] Implement `assemble_run_optimization_payload()` helper: priority-merge warnings + synergy + scan into a JSON string; assign ranks
-  - [ ] Replicate provider routing pattern from `invoke_claude_api` (get provider, get key, call streaming fn, emit error event on failure)
-  - [ ] `cargo build` (full Tauri crate) passes, zero new warnings
+- [x] Task 1: Add `run_optimization` to `scoring_commands.rs`
+  - [x] Add async `run_optimization` Tauri command: clone game_data (Pattern 3), `spawn_blocking` for compute_stats + run_efficiency_scan + run_synergy_detection, assemble payload, provider routing, delegate to streaming
+  - [x] Implement `assemble_run_optimization_payload()` helper: priority-merge warnings + synergy + scan into a JSON string; assign ranks
+  - [x] Replicate provider routing pattern from `invoke_claude_api` (get provider, get key, call streaming fn, emit error event on failure)
+  - [x] `cargo build` (full Tauri crate) passes, zero new warnings
 
-- [ ] Task 2: Register in `lib.rs`
-  - [ ] Add `run_optimization` to `use commands::scoring_commands::` import
-  - [ ] Add `run_optimization,` to `invoke_handler!`
-  - [ ] `cargo build` passes
+- [x] Task 2: Register in `lib.rs`
+  - [x] Add `run_optimization` to `use commands::scoring_commands::` import
+  - [x] Add `run_optimization,` to `invoke_handler!`
+  - [x] `cargo build` passes
 
-- [ ] Task 3: Refactor `startOptimization()` in `useOptimizationStream.ts`
-  - [ ] Add import: `import { toBuildSnapshot } from '../utils/buildSnapshotSerializer'`
-  - [ ] Add `gameData` null guard: if `useGameDataStore.getState().gameData` is null, return early
-  - [ ] Replace the `invoke_claude_api` call block with: `const snapshot = toBuildSnapshot(activeBuild, gameData)` then `invokeCommand('run_optimization', { snapshot })`
-  - [ ] Remove now-dead code: `levelContext` block, `structuredGear` block, `fineTuneWeights` read from store
-  - [ ] Remove now-unused imports if nothing else in the file uses them: `calculatePassivePoints`, `LevelContext`, `StructuredGearAffix`, `StructuredGearSlot`
-  - [ ] `pnpm build` passes with zero TypeScript errors
+- [x] Task 3: Refactor `startOptimization()` in `useOptimizationStream.ts`
+  - [x] Add import: `import { toBuildSnapshot } from '../utils/buildSnapshotSerializer'`
+  - [x] Add `gameData` null guard: if `useGameDataStore.getState().gameData` is null, return early
+  - [x] Replace the `invoke_claude_api` call block with: `const snapshot = toBuildSnapshot(activeBuild, gameData)` then `invokeCommand('run_optimization', { snapshot })`
+  - [x] Remove now-dead code: `levelContext` block, `structuredGear` block, `fineTuneWeights` read from store
+  - [x] Remove now-unused imports if nothing else in the file uses them: `calculatePassivePoints`, `LevelContext`, `StructuredGearAffix`, `StructuredGearSlot`
+  - [x] `pnpm build` passes with zero TypeScript errors
 
-- [ ] Task 4: Update `useOptimizationStream.test.ts`
-  - [ ] Add `vi.mock('../utils/buildSnapshotSerializer', ...)` with `toBuildSnapshot` returning a fixed snapshot shape
-  - [ ] Update `mockInvokeCommand` assertions from `'invoke_claude_api'` to `'run_optimization'` with snapshot arg shape
-  - [ ] Remove tests that verified `levelContext`, `structuredGear`, `sliderPosition`, `fineTuneWeights` as top-level `invoke_claude_api` args
-  - [ ] Add: `startOptimization calls run_optimization with a snapshot`, `startOptimization early-returns if gameData is null`
-  - [ ] `pnpm vitest src/shared/stores/useOptimizationStream.test.ts` — all tests pass
+- [x] Task 4: Update `useOptimizationStream.test.ts`
+  - [x] Add `vi.mock('../utils/buildSnapshotSerializer', ...)` with `toBuildSnapshot` returning a fixed snapshot shape
+  - [x] Update `mockInvokeCommand` assertions from `'invoke_claude_api'` to `'run_optimization'` with snapshot arg shape
+  - [x] Remove tests that verified `levelContext`, `structuredGear`, `sliderPosition`, `fineTuneWeights` as top-level `invoke_claude_api` args
+  - [x] Add: `startOptimization calls run_optimization with a snapshot`, `startOptimization early-returns if gameData is null`
+  - [x] `pnpm vitest src/shared/stores/useOptimizationStream.test.ts` — all tests pass
 
 ---
 
@@ -617,19 +617,29 @@ pnpm vitest                                                       # Full test su
 ## Dev Agent Record
 
 ### Agent Model Used
-<!-- to be filled by dev agent -->
+claude-sonnet-4-6
 
 ### Debug Log References
-<!-- to be filled by dev agent -->
+- Fixed `NodeEfficiency.path_delta_score` field name (story spec incorrectly named it `delta_build_score`)
+- Added `use tauri::Emitter;` to `scoring_commands.rs` — required for `app_handle.emit()` in Tauri 2
+- Fixed `SynergyFlag.delta_build_score` sort: used `.unwrap_or(0.0)` since field is `Option<f64>`
+- `effective_point_cost` is `u32` (not `f64`) — used directly in JSON without cast
 
 ### Completion Notes List
-<!-- to be filled by dev agent -->
+- All 4 tasks complete. `cargo build` passes clean. `pnpm build` passes. 13/13 tests pass.
+- `startOptimization()` reduced from ~60 lines to ~20 lines as designed.
+- Pre-existing `ProviderSelector.test.tsx` failures confirmed unrelated to this story (present before any changes).
+- `invoke_claude_api` command remains registered and unchanged — `run_optimization` delegates to the same streaming infrastructure.
 
 ### File List
-<!-- to be filled by dev agent -->
+- `lebo/src-tauri/src/commands/scoring_commands.rs` — Added `run_optimization` async command, `assemble_run_optimization_payload()`, `extract_optimization_error_type()`; added `use tauri::Emitter`
+- `lebo/src-tauri/src/lib.rs` — Added `run_optimization` to import and `invoke_handler!`
+- `lebo/src/shared/stores/useOptimizationStream.ts` — Refactored `startOptimization()` to call `run_optimization` with snapshot; removed dead code and unused imports
+- `lebo/src/shared/stores/useOptimizationStream.test.ts` — Added `buildSnapshotSerializer` mock; removed 6 stale tests; added 2 new tests; updated command-name assertions
 
 ### Review Findings
 <!-- to be filled by code review agent -->
 
 ### Change Log
 - 2026-05-22: Story 4.3 created — `run_optimization` wiring spec.
+- 2026-05-22: Implemented — all 4 tasks complete, ready for review.

@@ -22,7 +22,7 @@ use commands::context_data_commands::{
     check_idol_data_freshness, check_blessings_data_freshness, check_conditions_data_freshness,
 };
 use commands::item_commands::{check_item_data_freshness, load_item_database, update_item_data};
-use commands::scoring_commands::compute_stats;
+use commands::scoring_commands::{compute_stats, run_optimization};
 
 use tauri::Manager;
 use std::sync::{Arc, RwLock};
@@ -107,6 +107,7 @@ pub fn run() {
             check_blessings_data_freshness,
             check_conditions_data_freshness,
             compute_stats,
+            run_optimization,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
