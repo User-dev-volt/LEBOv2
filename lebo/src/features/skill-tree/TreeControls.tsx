@@ -5,9 +5,12 @@ interface TreeControlsProps {
   onSearchChange: (query: string) => void
   onReset: () => void
   onFit?: () => void
+  hasOverlay?: boolean
+  showOverlay?: boolean
+  onToggleOverlay?: () => void
 }
 
-export function TreeControls({ searchQuery, onSearchChange, onReset, onFit }: TreeControlsProps) {
+export function TreeControls({ searchQuery, onSearchChange, onReset, onFit, hasOverlay, showOverlay, onToggleOverlay }: TreeControlsProps) {
   const [focused, setFocused] = useState(false)
   const [confirming, setConfirming] = useState(false)
 
@@ -77,6 +80,27 @@ export function TreeControls({ searchQuery, onSearchChange, onReset, onFit }: Tr
           }}
         >
           Fit
+        </button>
+      )}
+
+      {hasOverlay && onToggleOverlay && (
+        <button
+          type="button"
+          aria-label="Toggle efficiency overlay"
+          aria-pressed={showOverlay ?? false}
+          onClick={onToggleOverlay}
+          style={{
+            height: 28,
+            background: 'transparent',
+            border: `1px solid ${showOverlay ? 'var(--color-accent-gold)' : 'var(--color-bg-elevated)'}`,
+            borderRadius: 4,
+            padding: '0 8px',
+            fontSize: 12,
+            color: showOverlay ? 'var(--color-accent-gold)' : 'var(--color-text-secondary)',
+            cursor: 'pointer',
+          }}
+        >
+          Overlay
         </button>
       )}
 

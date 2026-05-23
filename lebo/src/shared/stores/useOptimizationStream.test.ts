@@ -94,19 +94,20 @@ describe('useOptimizationStream', () => {
     vi.restoreAllMocks()
   })
 
-  it('registers four event listeners on mount', async () => {
+  it('registers five event listeners on mount', async () => {
     await act(async () => {
       renderHook(() => useOptimizationStream())
     })
-    expect(mockListen).toHaveBeenCalledTimes(4)
+    expect(mockListen).toHaveBeenCalledTimes(5)
     expect(mockListen).toHaveBeenCalledWith('optimization:suggestion-received', expect.any(Function))
     expect(mockListen).toHaveBeenCalledWith('optimization:complete', expect.any(Function))
     expect(mockListen).toHaveBeenCalledWith('optimization:error', expect.any(Function))
     expect(mockListen).toHaveBeenCalledWith('optimization:model-active', expect.any(Function))
+    expect(mockListen).toHaveBeenCalledWith('optimization:node-efficiencies', expect.any(Function))
   })
 
   it('calls unlisten for all listeners on unmount', async () => {
-    const unlistenFns = [vi.fn(), vi.fn(), vi.fn(), vi.fn()]
+    const unlistenFns = [vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn()]
     let callCount = 0
     mockListen.mockImplementation(() => Promise.resolve(unlistenFns[callCount++]))
 
@@ -122,6 +123,7 @@ describe('useOptimizationStream', () => {
     expect(unlistenFns[1]).toHaveBeenCalled()
     expect(unlistenFns[2]).toHaveBeenCalled()
     expect(unlistenFns[3]).toHaveBeenCalled()
+    expect(unlistenFns[4]).toHaveBeenCalled()
   })
 
   it('sets isOptimizing(false) on unmount', async () => {
@@ -311,6 +313,37 @@ describe('useOptimizationStream', () => {
     expect(useOptimizationStore.getState().suggestions).toHaveLength(1)
     expect(useOptimizationStore.getState().suggestions[0].rank).toBe(1)
     expect(useOptimizationStore.getState().suggestions[0].nodeChange.toNodeId).toBe('node_b')
+  })
+
+  // Story 4.4: node-efficiencies event
+  it('optimization:node-efficiencies event calls setNodeEfficiencies with parsed data', async () => {
+    let efficienciesHandler: ((event: { payload: string }) => void) | undefined
+    mockListen.mockImplementation((eventName: string, handler: (event: { payload: unknown }) => void) => {
+      if (eventName === 'optimization:node-efficiencies') efficienciesHandler = handler as typeof efficienciesHandler
+      return Promise.resolve(vi.fn())
+    })
+
+    await act(async () => {
+      renderHook(() => useOptimizationStream())
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    const efficiencies = [
+      { node_id: 'node_gold', efficiency: 0.9, path_delta_score: 5.2, effective_point_cost: 2, tier: 'gold' },
+      { node_id: 'node_silver', efficiency: 0.6, path_delta_score: 3.1, effective_point_cost: 1, tier: 'silver' },
+      { node_id: 'node_dim', efficiency: 0.2, path_delta_score: 0.5, effective_point_cost: 3, tier: 'dim' },
+    ]
+
+    await act(async () => {
+      efficienciesHandler?.({ payload: JSON.stringify(efficiencies) })
+    })
+
+    const stored = useOptimizationStore.getState().nodeEfficiencies
+    expect(stored).toHaveLength(3)
+    expect(stored![0].node_id).toBe('node_gold')
+    expect(stored![0].tier).toBe('gold')
+    expect(stored![1].tier).toBe('silver')
+    expect(stored![2].tier).toBe('dim')
   })
 
 })

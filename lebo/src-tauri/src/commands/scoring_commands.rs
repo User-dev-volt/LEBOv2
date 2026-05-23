@@ -45,6 +45,12 @@ pub async fn run_optimization(
         .await
         .map_err(|e| format!("SCORING_ERROR: optimization compute panicked: {}", e))?;
 
+    // Emit node efficiencies for the passive tree overlay (Story 4.4).
+    // Emitted before Claude delegation so the overlay appears as soon as the engine finishes.
+    if let Ok(eff_json) = serde_json::to_string(&scan_result.node_efficiencies) {
+        let _ = app_handle.emit("optimization:node-efficiencies", eff_json);
+    }
+
     let user_message = assemble_run_optimization_payload(
         &snapshot, &stat_sheet, &scan_result, &synergy_flags,
     ).map_err(|e| {

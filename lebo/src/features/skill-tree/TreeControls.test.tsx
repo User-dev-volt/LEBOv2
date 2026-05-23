@@ -72,4 +72,68 @@ describe('TreeControls', () => {
     fireEvent.click(fitBtn)
     expect(onFit).toHaveBeenCalledTimes(1)
   })
+
+  // ── Story 4.4: Overlay toggle ────────────────────────────────────────────
+
+  it('Overlay button is absent when hasOverlay is false', () => {
+    render(<TreeControls searchQuery="" onSearchChange={vi.fn()} onReset={vi.fn()} hasOverlay={false} />)
+    expect(screen.queryByRole('button', { name: 'Toggle efficiency overlay' })).not.toBeInTheDocument()
+  })
+
+  it('Overlay button is present when hasOverlay is true', () => {
+    render(
+      <TreeControls
+        searchQuery=""
+        onSearchChange={vi.fn()}
+        onReset={vi.fn()}
+        hasOverlay={true}
+        showOverlay={false}
+        onToggleOverlay={vi.fn()}
+      />
+    )
+    expect(screen.getByRole('button', { name: 'Toggle efficiency overlay' })).toBeInTheDocument()
+  })
+
+  it('clicking Overlay button fires onToggleOverlay', () => {
+    const onToggleOverlay = vi.fn()
+    render(
+      <TreeControls
+        searchQuery=""
+        onSearchChange={vi.fn()}
+        onReset={vi.fn()}
+        hasOverlay={true}
+        showOverlay={false}
+        onToggleOverlay={onToggleOverlay}
+      />
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle efficiency overlay' }))
+    expect(onToggleOverlay).toHaveBeenCalledTimes(1)
+  })
+
+  it('Overlay button aria-pressed reflects showOverlay', () => {
+    const { rerender } = render(
+      <TreeControls
+        searchQuery=""
+        onSearchChange={vi.fn()}
+        onReset={vi.fn()}
+        hasOverlay={true}
+        showOverlay={false}
+        onToggleOverlay={vi.fn()}
+      />
+    )
+    const btn = screen.getByRole('button', { name: 'Toggle efficiency overlay' })
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
+
+    rerender(
+      <TreeControls
+        searchQuery=""
+        onSearchChange={vi.fn()}
+        onReset={vi.fn()}
+        hasOverlay={true}
+        showOverlay={true}
+        onToggleOverlay={vi.fn()}
+      />
+    )
+    expect(btn).toHaveAttribute('aria-pressed', 'true')
+  })
 })

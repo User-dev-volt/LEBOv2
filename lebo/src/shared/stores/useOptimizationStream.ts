@@ -9,6 +9,7 @@ import { useBuildStore } from './buildStore'
 import { useGameDataStore } from './gameDataStore'
 import { useOptimizationStore } from './optimizationStore'
 import type { SuggestionResult } from '../types/optimization'
+import type { NodeEfficiency } from '../types/statSheet'
 
 // Payload shapes emitted by claude_service.rs (snake_case from serde)
 interface SuggestionReceivedPayload {
@@ -155,6 +156,20 @@ export function useOptimizationStream() {
       )
       if (!isMounted) { unlisten4(); return }
       unlisteners.push(unlisten4)
+
+      const unlisten5 = await listen<string>(
+        'optimization:node-efficiencies',
+        (event) => {
+          try {
+            const efficiencies = JSON.parse(event.payload) as NodeEfficiency[]
+            useOptimizationStore.getState().setNodeEfficiencies(efficiencies)
+          } catch {
+            // parse failure = no overlay; correct behavior
+          }
+        },
+      )
+      if (!isMounted) { unlisten5(); return }
+      unlisteners.push(unlisten5)
     }
 
     registerListeners().catch(console.error)

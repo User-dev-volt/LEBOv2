@@ -24,12 +24,14 @@ export function SkillTreeCanvas({
   onKeyboardNavigate,
   onPointerMove,
   flashNodeIds,
+  nodeEfficiencies,
+  showOverlay,
 }: SkillTreeCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rendererRef = useRef<RendererInstance | null>(null)
   const callbacksRef = useRef<RendererCallbacks>({ onNodeClick, onNodeHover, onNodeSelect, onNodeContextMenu })
-  const dataRef = useRef({ treeData, nodeAllocations, highlightedNodes, iconTextures, selectedNodeId })
+  const dataRef = useRef({ treeData, nodeAllocations, highlightedNodes, iconTextures, selectedNodeId, nodeEfficiencies, showOverlay })
   const treeDataRef = useRef(treeData)
   const bfsOrderRef = useRef<string[]>([])
   const focusedNodeIdRef = useRef<string | null>(null)
@@ -82,7 +84,7 @@ export function SkillTreeCanvas({
   // Keep refs current after every render
   useEffect(() => {
     callbacksRef.current = { onNodeClick, onNodeHover, onNodeSelect, onNodeContextMenu }
-    dataRef.current = { treeData, nodeAllocations, highlightedNodes, iconTextures, selectedNodeId }
+    dataRef.current = { treeData, nodeAllocations, highlightedNodes, iconTextures, selectedNodeId, nodeEfficiencies, showOverlay }
     treeDataRef.current = treeData
     bfsOrderRef.current = bfsOrder
     reducedMotionRef.current = reducedMotion
@@ -177,8 +179,8 @@ export function SkillTreeCanvas({
         const { width, height } = container.getBoundingClientRect()
         r.resize(width, height)
         r.setReducedMotion(reducedMotionRef.current)
-        const { treeData: td, nodeAllocations: na, highlightedNodes: hn, iconTextures: it, selectedNodeId: sid } = dataRef.current
-        r.renderTree(td, na, hn, it, sid)
+        const { treeData: td, nodeAllocations: na, highlightedNodes: hn, iconTextures: it, selectedNodeId: sid, nodeEfficiencies: ne, showOverlay: so } = dataRef.current
+        r.renderTree(td, na, hn, it, sid, ne, so)
 
         syncButtonPositions()
         unsubTicker = r.addTickerListener(syncButtonPositions)
@@ -202,16 +204,16 @@ export function SkillTreeCanvas({
 
   // Re-render whenever tree data or selection changes
   useEffect(() => {
-    rendererRef.current?.renderTree(treeData, nodeAllocations, highlightedNodes, iconTextures, selectedNodeId)
-  }, [treeData, nodeAllocations, highlightedNodes, iconTextures, selectedNodeId])
+    rendererRef.current?.renderTree(treeData, nodeAllocations, highlightedNodes, iconTextures, selectedNodeId, nodeEfficiencies, showOverlay)
+  }, [treeData, nodeAllocations, highlightedNodes, iconTextures, selectedNodeId, nodeEfficiencies, showOverlay])
 
   // Propagate reduced motion preference to renderer and re-render so the change takes effect immediately
   useEffect(() => {
     const r = rendererRef.current
     if (!r) return
     r.setReducedMotion(reducedMotion)
-    const { treeData: td, nodeAllocations: na, highlightedNodes: hn, iconTextures: it, selectedNodeId: sid } = dataRef.current
-    r.renderTree(td, na, hn, it, sid)
+    const { treeData: td, nodeAllocations: na, highlightedNodes: hn, iconTextures: it, selectedNodeId: sid, nodeEfficiencies: ne, showOverlay: so } = dataRef.current
+    r.renderTree(td, na, hn, it, sid, ne, so)
   }, [reducedMotion])
 
   // Trigger flash animation — each failure creates a new array reference to re-run this effect

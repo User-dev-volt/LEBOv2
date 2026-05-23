@@ -1,6 +1,7 @@
 import { Application, Circle, Container, Graphics, Sprite, Text } from 'pixi.js'
 import type { Texture } from 'pixi.js'
 import type { TreeData, TreeNode, HighlightedNodes, RendererCallbacks, RendererInstance } from './types'
+import type { NodeEfficiency } from '../../shared/types/statSheet'
 
 // PixiJS v8's logPrettyShaderError calls .split() on getShaderSource/getShaderInfoLog results,
 // which throws if WebGL returns null (valid per spec). Patch before any Application init.
@@ -90,6 +91,18 @@ function drawSearchHighlight(g: Graphics, x: number, y: number, r: number) {
   g.circle(x, y, r + 4).stroke({ color: 0xc9a84c, width: 2 })
 }
 
+function drawOverlayGold(g: Graphics, x: number, y: number, r: number) {
+  g.circle(x, y, r + 4).stroke({ color: 0xFFD700, width: 2.5, alpha: 0.85 })
+}
+
+function drawOverlaySilver(g: Graphics, x: number, y: number, r: number) {
+  g.circle(x, y, r + 3).stroke({ color: 0xAAAAAA, width: 2, alpha: 0.7 })
+}
+
+function drawOverlayDim(g: Graphics, x: number, y: number, r: number) {
+  g.circle(x, y, r + 2).stroke({ color: 0x444455, width: 1.5, alpha: 0.45 })
+}
+
 export interface RendererConfig {
   treeLayout?: 'standard' | 'weaver'
 }
@@ -124,6 +137,7 @@ export async function initRenderer(
   const dimmedGraphics = new Graphics()
   const previewRemovedGraphics = new Graphics()
   const previewAddedGraphics = new Graphics()
+  const overlayGraphics = new Graphics()
   const searchDimOverlayGraphics = new Graphics()
   const searchHighlightGraphics = new Graphics()
   // Text labels for point counts
@@ -147,6 +161,7 @@ export async function initRenderer(
     suggestedGraphics,
     previewRemovedGraphics,
     previewAddedGraphics,
+    overlayGraphics,
     searchDimOverlayGraphics,
     searchHighlightGraphics,
     labelContainer,
@@ -245,7 +260,9 @@ export async function initRenderer(
     nodeAllocations: Record<string, number>,
     highlightedNodes: HighlightedNodes,
     iconTextures: Map<string, Texture>,
-    selectedNodeId?: string | null
+    selectedNodeId?: string | null,
+    nodeEfficiencies?: NodeEfficiency[] | null,
+    showOverlay?: boolean
   ) {
     iconTexturesMap = iconTextures
     lastRenderedNodeMap = new Map(data.nodes.map((n) => [n.id, n]))
@@ -268,6 +285,7 @@ export async function initRenderer(
     dimmedGraphics.clear()
     previewRemovedGraphics.clear()
     previewAddedGraphics.clear()
+    overlayGraphics.clear()
     searchDimOverlayGraphics.clear()
     searchHighlightGraphics.clear()
     selectionGraphics.clear()
@@ -416,6 +434,23 @@ export async function initRenderer(
     }
 
     lastRenderedIconIds = newIconIds
+
+    // Efficiency overlay — drawn after main node loop so it sits above base node layers.
+    // overlayGraphics is already cleared above; only draw when overlay is active.
+    if (nodeEfficiencies && nodeEfficiencies.length > 0 && showOverlay) {
+      const effMap = new Map(nodeEfficiencies.map((e) => [e.node_id, e]))
+      for (const node of data.nodes) {
+        const isAllocated = (nodeAllocations[node.id] ?? 0) > 0
+        const isPreviewAdded = highlightedNodes.previewAdded.has(node.id)
+        if (isAllocated || isPreviewAdded) continue
+        const eff = effMap.get(node.id)
+        if (!eff) continue
+        const r = NODE_RADIUS[node.size]
+        if (eff.tier === 'gold') drawOverlayGold(overlayGraphics, node.x, node.y, r)
+        else if (eff.tier === 'silver') drawOverlaySilver(overlayGraphics, node.x, node.y, r)
+        else drawOverlayDim(overlayGraphics, node.x, node.y, r)
+      }
+    }
   }
 
   let reducedMotionEnabled = false

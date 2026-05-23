@@ -83,6 +83,7 @@ export function SkillTreeView() {
   const highlightedNodeIds = useOptimizationStore((s) => s.highlightedNodeIds)
   const previewSuggestionRank = useOptimizationStore((s) => s.previewSuggestionRank)
   const suggestions = useOptimizationStore((s) => s.suggestions)
+  const nodeEfficiencies = useOptimizationStore((s) => s.nodeEfficiencies)
   const selectedNodeId = useAppStore((s) => s.selectedNodeId)
   const setSelectedNodeId = useAppStore((s) => s.setSelectedNodeId)
 
@@ -90,6 +91,7 @@ export function SkillTreeView() {
   const [pickerState, setPickerState] = useState<PickerState | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [weaverFlashNodeIds, setWeaverFlashNodeIds] = useState<string[] | null>(null)
+  const [showOverlay, setShowOverlay] = useState(false)
   const emptySlotButtonRef = useRef<HTMLButtonElement>(null)
 
   // Canvas refs for imperative viewport control (fit, zoom)
@@ -108,6 +110,13 @@ export function SkillTreeView() {
       setActiveTabIndex(0)
     }
   }, [activeTabIndex])
+
+  // Auto-show overlay when new efficiencies arrive from optimization
+  useEffect(() => {
+    if (nodeEfficiencies && nodeEfficiencies.length > 0) {
+      setShowOverlay(true)
+    }
+  }, [nodeEfficiencies])
 
   const classData = selectedClassId && gameData ? gameData.classes[selectedClassId] : null
 
@@ -537,6 +546,9 @@ export function SkillTreeView() {
   const allocatedPassivePoints = Object.values(baseAllocatedNodes).reduce((sum, v) => sum + v, 0)
   const unspentPassivePoints = availablePassivePoints - allocatedPassivePoints
 
+  // FR-A27: suppress overlay when zero unspent passive points (nothing to reallocate)
+  const effectiveNodeEfficiencies = unspentPassivePoints > 0 ? nodeEfficiencies : null
+
   const allocatedSkillPoints = Object.values(slotAllocations).reduce((sum, v) => sum + v, 0)
   const unspentSkillPoints = calculateSkillPoints(skillLevel) - allocatedSkillPoints
 
@@ -612,6 +624,9 @@ export function SkillTreeView() {
           onSearchChange={setSearchQuery}
           onReset={handleReset}
           onFit={() => activeCanvasRef.current?.fitToTree()}
+          hasOverlay={isPassiveTab && !!effectiveNodeEfficiencies && effectiveNodeEfficiencies.length > 0}
+          showOverlay={showOverlay}
+          onToggleOverlay={() => setShowOverlay((v) => !v)}
         />
       )}
 
@@ -633,6 +648,8 @@ export function SkillTreeView() {
               onKeyboardNavigate={handleKeyboardNavigate}
               onPointerMove={handlePointerMove}
               flashNodeIds={flashNodeIds ?? undefined}
+              nodeEfficiencies={effectiveNodeEfficiencies}
+              showOverlay={showOverlay}
             />
 
             {hoveredGameNode && !nodeError && (
