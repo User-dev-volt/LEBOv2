@@ -115,3 +115,10 @@
 - **Gear suffix affixes never serialized — detect_mismatched_affixes misses suffix-side** [`buildSnapshotSerializer.ts`] — Acknowledged in code comment; no `prefix/suffix` discriminator on `GearItemV2`; address in Epic 5 affix scoring work.
 - **Level-0/1 builds: baseline_score == 0 triggers detect_game_changers early-return** [`synergy.rs`] — Pre-existing engine edge case; these builds have no game-changer suggestions. Intentional by coincidence (divide-by-zero guard doubles as degenerate-build guard).
 
+
+## Deferred from: code review of 4-4-node-efficiency-overlay-on-passive-tree (2026-05-23)
+
+- **Listener unmount race condition (unlisten1-5)** [`useOptimizationStream.ts`] — async gap between `await listen()` and `if (!isMounted)` check can write to store on an unmounted component. Pre-existing pattern across all 5 listeners; not isolated to 4.4.
+- **`from_node = path[0]` for multi-hop knapsack paths** [`scoring_commands.rs, assemble_run_optimization_payload`] — In cheapest-first paths, `path[0]` is a bridge allocation node, not a deallocation source; sending it as `from_node_id` to Claude is conceptually misleading. Pre-existing code; not introduced by 4.4.
+- **Overlay rings stack on top of suggestion glow rings** [`pixiRenderer.ts`] — A Claude-suggested node can simultaneously carry an efficiency tier ring and a suggestion glow ring; both draw on the same node. Minor visual noise.
+- **<= 2ms frame-render AC unverifiable** [`pixiRenderer.ts, renderTree()`] — No instrumentation or test asserts render time. O(N) circle strokes by design; add a `performance.now()` guard or DevTools profiling session if jank is reported.
