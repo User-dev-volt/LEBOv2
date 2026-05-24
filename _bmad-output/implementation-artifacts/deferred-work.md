@@ -116,6 +116,12 @@
 - **Level-0/1 builds: baseline_score == 0 triggers detect_game_changers early-return** [`synergy.rs`] — Pre-existing engine edge case; these builds have no game-changer suggestions. Intentional by coincidence (divide-by-zero guard doubles as degenerate-build guard).
 
 
+## Deferred from: code review of 4-5-stat-sheet-suggestion-preview-hover-deltas (2026-05-24)
+
+- **`isComputingStats` read from hook subscription, not `.getState()`** [`SuggestionsList.tsx:handleHoverEnter`] — `activeBuild` and `gameData` already use `.getState()` for freshness; `isComputingStats` uses the hook closure (1-render-stale window). Spec dev notes acknowledge this race as acceptable for AC3. Align with `.getState()` pattern if concurrent mode is adopted.
+- **`clearSuggestions()` resets store but does not cancel `previewAbortRef`** [`optimizationStore.ts + SuggestionsList.tsx`] — In-flight hover IPC can write `previewStatSheet` back after suggestions are cleared. Benign in practice (`statSheet` is also null so `deltas` never renders), but a minor orphan write. Cancel the ref in the `clearSuggestions` action or in the component's cleanup.
+- **AC5 `previewAbortRef` guard pattern untested** [`SuggestionsList.test.tsx`] — The stale-hover-cancellation logic (hover A → hover B before A resolves → A discarded) has no automated test. Requires Promise resolution control (e.g., deferred Promise fixtures). Add when async test infrastructure is mature enough to support it.
+
 ## Deferred from: code review of 4-4-node-efficiency-overlay-on-passive-tree (2026-05-23)
 
 - **Listener unmount race condition (unlisten1-5)** [`useOptimizationStream.ts`] — async gap between `await listen()` and `if (!isMounted)` check can write to store on an unmounted component. Pre-existing pattern across all 5 listeners; not isolated to 4.4.
