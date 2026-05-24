@@ -2,6 +2,27 @@ use std::collections::HashMap;
 
 use crate::modifier::{Condition, ModifierType, StatKey};
 
+/// Gear affix scoring data — one entry per affix ID in the affix database.
+/// Populated by game_data_loader.rs from the affix DB (initially empty; loaded in a future story).
+#[derive(Debug, Clone)]
+pub struct GearAffixData {
+    /// Human-readable affix name for WishlistAffix.display_name.
+    pub display_name: String,
+    /// Stat contributed by this affix.
+    pub stat_key: StatKey,
+    pub modifier_type: ModifierType,
+    /// Average stat value at each tier. Key = 1-indexed tier number.
+    pub values_by_tier: HashMap<u32, f64>,
+    /// "prefix" or "suffix" — determines which wishlist bucket this affix goes into.
+    pub affix_class: String,
+    /// Delivery-type scope: "melee" | "ranged" | "spell" | "minion" | "generic".
+    /// "generic" affixes apply to all delivery types (e.g., % Fire Resistance).
+    pub scope: String,
+    /// Damage elements this affix applies to: e.g. ["fire", "cold"].
+    /// Empty = applies to all damage elements (no element filtering).
+    pub damage_elements: Vec<String>,
+}
+
 /// A single stat effect contributed by one point allocated to a passive node.
 /// One node may have multiple effects (e.g., "+5% Fire Damage, +3% Crit Chance").
 #[derive(Debug, Clone)]
@@ -115,4 +136,9 @@ pub struct GameData {
     /// Each entry describes a unique that could dramatically increase BuildScore.
     /// Seeded in game_data_loader.rs; expanded when the full item DB is richer.
     pub unique_items: Vec<UniqueItem>,
+
+    /// Gear affix database for the affix scorer (Story 5.2).
+    /// Initially empty; populated from affix DB when the full affix pipeline is integrated.
+    /// run_gear_scoring degrades gracefully when this is empty.
+    pub gear_affixes: HashMap<String, GearAffixData>,
 }

@@ -85,6 +85,22 @@ pub(crate) fn build_registry(snapshot: &BuildSnapshot, game_data: &GameData) -> 
         // Unknown blessing_id → silently skipped
     }
 
+    // Gear slot affix modifiers — each slot's prefix and suffix entries contribute stat modifiers
+    // via game_data.gear_affixes lookup. Unknown affix IDs are silently skipped (FR-A6 pattern).
+    for (slot_id, slot) in &snapshot.gear_slots {
+        for entry in slot.prefixes.iter().chain(slot.suffixes.iter()) {
+            let Some(effect) = game_data.gear_affixes.get(&entry.affix_id) else { continue };
+            let Some(&value) = effect.values_by_tier.get(&entry.tier) else { continue };
+            registry.add(Modifier {
+                stat_key: effect.stat_key.clone(),
+                modifier_type: effect.modifier_type.clone(),
+                value,
+                condition: Condition::Always,
+                source: format!("{}:{}", slot_id, entry.affix_id),
+            });
+        }
+    }
+
     registry
 }
 

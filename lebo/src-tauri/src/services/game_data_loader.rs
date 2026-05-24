@@ -179,6 +179,7 @@ pub fn build_scoring_game_data(app_handle: &tauri::AppHandle) -> Result<GameData
         node_mastery_depth,
         affix_scope,
         unique_items,
+        gear_affixes: std::collections::HashMap::new(),
     })
 }
 

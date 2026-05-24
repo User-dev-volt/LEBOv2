@@ -61,4 +61,16 @@ pub struct BuildSnapshot {
     /// Active skill levels keyed by slot ID (e.g. "slot1" → 15)
     #[serde(default)]
     pub active_skill_levels: HashMap<String, u32>,
+    /// Skill role designations: slotId → "primary_offense" | "secondary_offense" | "defensive" | "utility"
+    /// Populated by TypeScript in Story 5.3 via buildSnapshotSerializer. Default = empty (no role context).
+    #[serde(default)]
+    pub skill_roles: HashMap<String, String>,
+    /// Delivery type of the Primary Offense skill: "melee" | "ranged" | "spell" | "minion"
+    /// None when no Primary Offense is designated. Zero-weights delivery-scoped affixes that mismatch.
+    #[serde(default)]
+    pub primary_offense_delivery_type: Option<String>,
+    /// Damage elements active for the Primary Offense skill: e.g. ["poison", "physical"].
+    /// Empty = no element filtering applied. Non-empty = affixes with mismatching elements score 0.0.
+    #[serde(default)]
+    pub primary_offense_damage_elements: Vec<String>,
 }
