@@ -72,17 +72,17 @@ fn compute_weight(
         return 0.0;
     }
 
-    let t5 = t5_value(&data.values_by_tier);
-    if t5 == 0.0 {
+    let (best_tier, best_val) = best_tier_value(&data.values_by_tier);
+    if best_val == 0.0 {
         return 0.0;
     }
 
-    // ΔBuildScore = compute_stats with affix injected at T5 minus baseline.
-    // Weight is a build-level concept (FR-A16: ΔBuildScore when affix present at T5).
+    // ΔBuildScore = compute_stats with affix injected at its best tier minus baseline.
+    // Weight is a build-level concept (FR-A16: ΔBuildScore when affix present at best tier).
     // We inject into "helm" for all affixes to ensure deterministic, comparable weights.
     let mut modified = snapshot.clone();
     let inject_slot = modified.gear_slots.entry("helm".to_string()).or_default();
-    let entry = AffixEntry { affix_id: affix_id.to_string(), tier: 5 };
+    let entry = AffixEntry { affix_id: affix_id.to_string(), tier: best_tier };
     if data.affix_class == "prefix" {
         inject_slot.prefixes.push(entry);
     } else {
@@ -116,16 +116,16 @@ fn passes_element_filter(affix_elements: &[String], primary_elements: &[String])
     affix_elements.iter().any(|e| primary_elements.contains(e))
 }
 
-fn t5_value(values_by_tier: &HashMap<u32, f64>) -> f64 {
+fn best_tier_value(values_by_tier: &HashMap<u32, f64>) -> (u32, f64) {
     // T5 preferred; fall back to highest available tier.
     if let Some(&v) = values_by_tier.get(&5) {
-        return v;
+        return (5, v);
     }
     values_by_tier
         .iter()
         .max_by_key(|(&t, _)| t)
-        .map(|(_, &v)| v)
-        .unwrap_or(0.0)
+        .map(|(&t, &v)| (t, v))
+        .unwrap_or((0, 0.0))
 }
 
 // ── Per-slot scoring ──────────────────────────────────────────────────────────
@@ -223,8 +223,8 @@ fn is_satisfied(affix_id: &str, target_tier: u32, slot: Option<&GearSlotSnapshot
         .any(|a| a.affix_id == affix_id && a.tier >= target_tier)
 }
 
-/// Sums weights of current slot affixes that appear in the ideal wishlist.
-/// Affixes not in the ideal wishlist have no upgrade-gap contribution.
+/// Sums weights of current slot affixes that appear in the ideal wishlist at their required tier.
+/// Affixes not in the wishlist, or present at a lower tier than required, have no upgrade-gap contribution.
 fn current_affix_total(
     slot: Option<&GearSlotSnapshot>,
     ideal_prefix: &[WishlistAffix],
@@ -232,15 +232,20 @@ fn current_affix_total(
     affix_weights: &HashMap<String, f64>,
 ) -> f64 {
     let Some(slot) = slot else { return 0.0 };
-    let all_ideal: Vec<&str> = ideal_prefix
+    // Map affix_id → required target_tier so we can gate on tier, not just ID.
+    let ideal_tiers: HashMap<&str, u32> = ideal_prefix
         .iter()
         .chain(ideal_suffix.iter())
-        .map(|w| w.affix_id.as_str())
+        .map(|w| (w.affix_id.as_str(), w.target_tier))
         .collect();
     slot.prefixes
         .iter()
         .chain(slot.suffixes.iter())
-        .filter(|a| all_ideal.contains(&a.affix_id.as_str()))
+        .filter(|a| {
+            ideal_tiers
+                .get(a.affix_id.as_str())
+                .map_or(false, |&required| a.tier >= required)
+        })
         .filter_map(|a| affix_weights.get(&a.affix_id).copied())
         .sum()
 }
