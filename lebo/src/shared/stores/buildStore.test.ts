@@ -950,3 +950,36 @@ describe('buildStore — setActiveBuildFineTuneWeights', () => {
     expect(useBuildStore.getState().activeBuild).toBeNull()
   })
 })
+
+describe('buildStore — skill role designation', () => {
+  beforeEach(() => {
+    useBuildStore.setState({
+      ...initialState,
+      activeBuild: mockBuild,
+    }, true)
+  })
+
+  it('setSkillRole persists role for a slot', () => {
+    useBuildStore.getState().setSkillRole('slot-0', 'primary_offense')
+    expect(useBuildStore.getState().activeBuild?.skillRoles?.['slot-0']).toBe('primary_offense')
+  })
+
+  it('clearSkillRole removes role for a slot', () => {
+    useBuildStore.getState().setSkillRole('slot-0', 'primary_offense')
+    useBuildStore.getState().clearSkillRole('slot-0')
+    expect(useBuildStore.getState().activeBuild?.skillRoles?.['slot-0']).toBeUndefined()
+  })
+
+  it('assignSkillToSlot clears role when skill changes, preserves role when same skill re-assigned', () => {
+    useBuildStore.getState().setSkillRole('slot-0', 'primary_offense')
+    // First assignment (slot was empty — counts as a skill change from undefined to erasing-strike)
+    useBuildStore.getState().assignSkillToSlot('slot-0', { skillId: 'erasing-strike', skillName: 'Erasing Strike' })
+    // Re-assign same skill: role should persist
+    useBuildStore.getState().setSkillRole('slot-0', 'primary_offense')
+    useBuildStore.getState().assignSkillToSlot('slot-0', { skillId: 'erasing-strike', skillName: 'Erasing Strike' })
+    expect(useBuildStore.getState().activeBuild?.skillRoles?.['slot-0']).toBe('primary_offense')
+    // Different skill: role should be cleared
+    useBuildStore.getState().assignSkillToSlot('slot-0', { skillId: 'warpath', skillName: 'Warpath' })
+    expect(useBuildStore.getState().activeBuild?.skillRoles?.['slot-0']).toBeUndefined()
+  })
+})

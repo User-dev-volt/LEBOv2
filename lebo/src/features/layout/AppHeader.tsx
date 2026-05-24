@@ -1,10 +1,12 @@
 import { useAppStore } from '../../shared/stores/appStore'
+import { useBuildStore } from '../../shared/stores/buildStore'
 import { getPendingUpdate } from '../../shared/hooks/useUpdateCheck'
 import { invokeCommand } from '../../shared/utils/invokeCommand'
 
 export function AppHeader() {
   const currentView = useAppStore((s) => s.currentView)
   const setCurrentView = useAppStore((s) => s.setCurrentView)
+  const activeBuild = useBuildStore((s) => s.activeBuild)
   const updateInfo = useAppStore((s) => s.updateInfo)
   const updateStatus = useAppStore((s) => s.updateStatus)
   const updateProgress = useAppStore((s) => s.updateProgress)
@@ -121,19 +123,34 @@ export function AppHeader() {
         </div>
       )}
 
-      {currentView !== 'settings' && (
-        <button
-          onClick={() => setCurrentView('settings')}
-          data-testid="settings-button"
-          className="ml-auto text-xs px-3 py-1 rounded"
-          style={{
-            backgroundColor: 'var(--color-bg-hover)',
-            color: 'var(--color-text-secondary)',
-          }}
-        >
-          Settings
-        </button>
-      )}
+      <div className="ml-auto flex gap-2">
+        {currentView === 'main' && activeBuild && (
+          <button
+            onClick={() => setCurrentView('gear-optimization')}
+            data-testid="gear-optimization-button"
+            className="text-xs px-3 py-1 rounded"
+            style={{
+              backgroundColor: 'var(--color-bg-hover)',
+              color: 'var(--color-text-secondary)',
+            }}
+          >
+            Gear Optimization
+          </button>
+        )}
+        {currentView !== 'settings' && (
+          <button
+            onClick={() => setCurrentView('settings')}
+            data-testid="settings-button"
+            className="text-xs px-3 py-1 rounded"
+            style={{
+              backgroundColor: 'var(--color-bg-hover)',
+              color: 'var(--color-text-secondary)',
+            }}
+          >
+            Settings
+          </button>
+        )}
+      </div>
     </header>
   )
 }

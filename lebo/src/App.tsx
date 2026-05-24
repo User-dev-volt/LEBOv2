@@ -23,6 +23,7 @@ import { LeftPanel } from './features/layout/LeftPanel'
 import { RightPanel } from './features/layout/RightPanel'
 import { CenterCanvas } from './features/layout/CenterCanvas'
 import { Settings } from './features/settings/Settings'
+import { GearOptimizationView } from './features/gear-optimization/GearOptimizationView'
 import { ErrorBoundary } from './shared/components/ErrorBoundary'
 
 const TOASTER_OPTS = {
@@ -140,6 +141,10 @@ export function App() {
         {/* Settings is always mounted so in-flight saves survive navigation */}
         <div style={{ display: currentView === 'settings' ? 'block' : 'none' }}>
           <Settings />
+        </div>
+        {/* Gear Optimization is always mounted so in-flight state survives navigation */}
+        <div style={{ display: currentView === 'gear-optimization' ? 'block' : 'none' }}>
+          <GearOptimizationView />
         </div>
         <div
           className="flex flex-col overflow-hidden"

@@ -10,7 +10,7 @@ interface PanelState {
 interface AppStore {
   isOnline: boolean
   isOnlineChecked: boolean
-  currentView: 'main' | 'settings'
+  currentView: 'main' | 'settings' | 'gear-optimization'
   activePanel: PanelState
   isApiKeyConfigured: boolean | null
   isOpenRouterConfigured: boolean | null
@@ -22,7 +22,7 @@ interface AppStore {
   iconSource: 'game-files' | 'community-cdn' | 'placeholder' | null
   selectedNodeId: string | null
   setOnline: (online: boolean) => void
-  setCurrentView: (view: 'main' | 'settings') => void
+  setCurrentView: (view: 'main' | 'settings' | 'gear-optimization') => void
   setPanelState: (panel: 'left' | 'right', state: PanelCollapseState) => void
   setApiKeyConfigured: (v: boolean | null) => void
   setOpenRouterConfigured: (v: boolean | null) => void

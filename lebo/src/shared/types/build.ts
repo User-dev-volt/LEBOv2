@@ -34,6 +34,8 @@ export interface IdolItem {
   modifiers: string[]
 }
 
+export type SkillRole = 'primary_offense' | 'secondary_offense' | 'defensive' | 'utility'
+
 export interface BuildState {
   schemaVersion: 1 | 2
   id: string
@@ -55,6 +57,7 @@ export interface BuildState {
   blessings?: Record<string, string | null>
   activeConditions?: string[]
   conditionValues?: Record<string, string | number | boolean>
+  skillRoles?: Record<string, SkillRole>
   sliderPosition?: number
   fineTuneWeights?: FineTuneWeights | null
   isPersisted: boolean

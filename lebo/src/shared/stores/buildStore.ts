@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { BuildState, BuildMeta, ApplyNodeResult, GearItemV2, ActiveSkill, IdolItem, PlacedIdol } from '../types/build'
+import type { BuildState, BuildMeta, ApplyNodeResult, GearItemV2, ActiveSkill, IdolItem, PlacedIdol, SkillRole } from '../types/build'
 import type { FineTuneWeights } from '../types/optimization'
 import type { SkillEntry } from '../types/gameData'
 import type { TreeData } from '../types/treeData'
@@ -58,6 +58,8 @@ export interface BuildStore {
   }) => void
   setBlessing: (timelineId: string, blessingId: string | null) => void
   setConditionValue: (id: string, value: string | number | boolean) => void
+  setSkillRole: (slotId: string, role: SkillRole) => void
+  clearSkillRole: (slotId: string) => void
   setActiveBuildSliderPosition: (pos: number) => void
   setActiveBuildFineTuneWeights: (weights: FineTuneWeights | null) => void
 }
@@ -105,6 +107,7 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
         idolGrid: [],
         blessings: {},
         activeConditions: [],
+        skillRoles: {},
         isPersisted: false,
         createdAt: now,
         updatedAt: now,
@@ -349,11 +352,18 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
       const updatedSkillNodeAllocations = skillChanged
         ? { ...s.activeBuild.skillNodeAllocations, [slotId]: {} }
         : s.activeBuild.skillNodeAllocations
+      const updatedSkillRoles = skillChanged
+        ? (() => {
+            const { [slotId]: _removed, ...rest } = s.activeBuild!.skillRoles ?? {}
+            return rest
+          })()
+        : (s.activeBuild.skillRoles ?? {})
       return {
         activeBuild: {
           ...s.activeBuild,
           contextData: { ...s.activeBuild.contextData, skills: updatedSkills },
           skillNodeAllocations: updatedSkillNodeAllocations,
+          skillRoles: updatedSkillRoles,
           isPersisted: false,
           updatedAt: new Date().toISOString(),
         },
@@ -599,4 +609,32 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
           }
         : {}
     ),
+
+  setSkillRole: (slotId, role) =>
+    set((s) =>
+      s.activeBuild
+        ? {
+            activeBuild: {
+              ...s.activeBuild,
+              skillRoles: { ...(s.activeBuild.skillRoles ?? {}), [slotId]: role },
+              isPersisted: false,
+              updatedAt: new Date().toISOString(),
+            },
+          }
+        : {}
+    ),
+
+  clearSkillRole: (slotId) =>
+    set((s) => {
+      if (!s.activeBuild) return {}
+      const { [slotId]: _removed, ...rest } = s.activeBuild.skillRoles ?? {}
+      return {
+        activeBuild: {
+          ...s.activeBuild,
+          skillRoles: rest,
+          isPersisted: false,
+          updatedAt: new Date().toISOString(),
+        },
+      }
+    }),
 }))

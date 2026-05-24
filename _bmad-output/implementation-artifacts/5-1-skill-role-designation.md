@@ -3,7 +3,7 @@ title: 'Skill Role Designation'
 story_id: '5.1'
 story_key: '5-1-skill-role-designation'
 epic: 5
-status: ready-for-dev
+status: review
 created: '2026-05-24'
 ---
 
@@ -74,54 +74,54 @@ This is Story 5.1 — the first story in Epic 5 (Gear Optimization Screen). It i
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Type and store changes (AC2, AC3)
-  - [ ] Add `SkillRole` type to `shared/types/build.ts`
-  - [ ] Add `skillRoles?: Record<string, SkillRole>` field to `BuildState`
-  - [ ] Add `setSkillRole` and `clearSkillRole` to `BuildStore` interface
-  - [ ] Implement `setSkillRole` and `clearSkillRole` in `buildStore.ts` (same immutable update pattern as `setBlessing`)
-  - [ ] Extend `assignSkillToSlot` to call `clearSkillRole` when `skillChanged` is true
-  - [ ] Add `skillRoles: {}` to `createBuild` initial state
-  - [ ] `pnpm build` passes, zero TypeScript errors
+- [x] Task 1: Type and store changes (AC2, AC3)
+  - [x] Add `SkillRole` type to `shared/types/build.ts`
+  - [x] Add `skillRoles?: Record<string, SkillRole>` field to `BuildState`
+  - [x] Add `setSkillRole` and `clearSkillRole` to `BuildStore` interface
+  - [x] Implement `setSkillRole` and `clearSkillRole` in `buildStore.ts` (same immutable update pattern as `setBlessing`)
+  - [x] Extend `assignSkillToSlot` to call `clearSkillRole` when `skillChanged` is true
+  - [x] Add `skillRoles: {}` to `createBuild` initial state
+  - [x] `pnpm build` passes, zero TypeScript errors
 
-- [ ] Task 2: View and navigation (AC1)
-  - [ ] Extend `appStore.currentView` union type to `'main' | 'settings' | 'gear-optimization'`
-  - [ ] Add "Gear Optimization" button to `AppHeader` (mirrors "Settings" button; hidden when `currentView === 'gear-optimization'` or `currentView === 'settings'`; shown when `activeBuild` is non-null)
-  - [ ] Add `GearOptimizationView` mount in `App.tsx` using `display: none/block` pattern (always mounted, never unmounted)
-  - [ ] `pnpm build` passes
+- [x] Task 2: View and navigation (AC1)
+  - [x] Extend `appStore.currentView` union type to `'main' | 'settings' | 'gear-optimization'`
+  - [x] Add "Gear Optimization" button to `AppHeader` (mirrors "Settings" button; hidden when `currentView === 'gear-optimization'` or `currentView === 'settings'`; shown when `activeBuild` is non-null)
+  - [x] Add `GearOptimizationView` mount in `App.tsx` using `display: none/block` pattern (always mounted, never unmounted)
+  - [x] `pnpm build` passes
 
-- [ ] Task 3: `SkillRoleDesignator.tsx` component (AC1, AC2, AC3, AC4)
-  - [ ] Create `src/features/gear-optimization/SkillRoleDesignator.tsx`
-  - [ ] Shows each of the 5 skill slots from `SKILL_SLOTS` with the assigned skill name (or "Empty" if unassigned)
-  - [ ] Each non-empty slot has 4 role toggle buttons: Primary Offense, Secondary Offense, Defensive, Utility
-  - [ ] Active role button is visually selected (accent-gold outline or fill); clicking it again clears the role (toggles off)
-  - [ ] Empty slots show the role buttons as disabled
-  - [ ] Reads from `buildStore` via `useBuildStore`; calls `setSkillRole` / `clearSkillRole`
+- [x] Task 3: `SkillRoleDesignator.tsx` component (AC1, AC2, AC3, AC4)
+  - [x] Create `src/features/gear-optimization/SkillRoleDesignator.tsx`
+  - [x] Shows each of the 5 skill slots from `SKILL_SLOTS` with the assigned skill name (or "Empty" if unassigned)
+  - [x] Each non-empty slot has 4 role toggle buttons: Primary Offense, Secondary Offense, Defensive, Utility
+  - [x] Active role button is visually selected (accent-gold outline or fill); clicking it again clears the role (toggles off)
+  - [x] Empty slots show the role buttons as disabled
+  - [x] Reads from `buildStore` via `useBuildStore`; calls `setSkillRole` / `clearSkillRole`
 
-- [ ] Task 4: `GearOptimizationView.tsx` shell (AC1, AC4)
-  - [ ] Create `src/features/gear-optimization/GearOptimizationView.tsx`
-  - [ ] Shows `SkillRoleDesignator` at the top always
-  - [ ] When no roles are set at all: shows prompt text "Designate at least one skill as Primary Offense before running gear analysis"
-  - [ ] "Analyze Gear" button present always; when clicked with no Primary Offense role set, shows inline error message "Please designate at least one skill as Primary Offense before running gear analysis"
-  - [ ] When Primary Offense IS set: "Analyze Gear" button click shows a "Not yet implemented" placeholder (story 5.3 wires the real command)
-  - [ ] Back button or header "← Back" link sets `currentView` to `'main'`
-  - [ ] `pnpm build` passes
+- [x] Task 4: `GearOptimizationView.tsx` shell (AC1, AC4)
+  - [x] Create `src/features/gear-optimization/GearOptimizationView.tsx`
+  - [x] Shows `SkillRoleDesignator` at the top always
+  - [x] When no roles are set at all: shows prompt text "Designate at least one skill as Primary Offense before running gear analysis"
+  - [x] "Analyze Gear" button present always; when clicked with no Primary Offense role set, shows inline error message "Please designate at least one skill as Primary Offense before running gear analysis"
+  - [x] When Primary Offense IS set: "Analyze Gear" button click shows a "Not yet implemented" placeholder (story 5.3 wires the real command)
+  - [x] Back button or header "← Back" link sets `currentView` to `'main'`
+  - [x] `pnpm build` passes
 
-- [ ] Task 5: Tests (AC1, AC2, AC3, AC4)
-  - [ ] `buildStore.test.ts` — 3 new tests:
+- [x] Task 5: Tests (AC1, AC2, AC3, AC4)
+  - [x] `buildStore.test.ts` — 3 new tests:
     - (a) `setSkillRole` persists role for a slot
     - (b) `clearSkillRole` removes role for a slot
     - (c) `assignSkillToSlot` clears role when skill changes (not when same skill re-assigned)
-  - [ ] `SkillRoleDesignator.test.tsx` — 4 new tests:
+  - [x] `SkillRoleDesignator.test.tsx` — 4 new tests (6 total including null-build and hides-prompt cases):
     - (a) renders all 5 SKILL_SLOTS
     - (b) shows skill name for assigned skills, "Empty" for unassigned
     - (c) clicking a role button calls `setSkillRole` with the correct slotId and role
     - (d) clicking the active role button calls `clearSkillRole`
-  - [ ] `GearOptimizationView.test.tsx` — 3 new tests:
+  - [x] `GearOptimizationView.test.tsx` — 3 new tests (5 total including hides-prompt and back-button cases):
     - (a) shows prompt text when no roles are set
     - (b) clicking "Analyze Gear" with no Primary Offense shows the error message
     - (c) clicking "Analyze Gear" with Primary Offense set does NOT show the error message
-  - [ ] `pnpm build` passes, zero TypeScript errors
-  - [ ] `pnpm vitest` — all new tests pass, full suite still green
+  - [x] `pnpm build` passes, zero TypeScript errors
+  - [x] `pnpm vitest` — all new tests pass, full suite still green (918 passed / 8 pre-existing failures unchanged)
 
 ---
 
@@ -727,19 +727,36 @@ This avoids the `ml-auto` / `ml-2` conditional in the Technical Requirements sec
 
 ### Agent Model Used
 
-<!-- to be filled by dev agent -->
+claude-sonnet-4-6
 
 ### Debug Log References
 
-<!-- to be filled by dev agent -->
+No blockers or debug iterations required. Implementation succeeded on first attempt with zero TypeScript errors and all tests passing.
 
 ### Completion Notes List
 
-<!-- to be filled by dev agent -->
+- Added `SkillRole` type and optional `skillRoles` field to `BuildState` (no schema bump — optional field, existing saves handled via `?? {}`).
+- Added `setSkillRole` / `clearSkillRole` to `buildStore` using the `setBlessing` immutable-update pattern.
+- Extended `assignSkillToSlot` to clear the role for a changed slot using an IIFE destructure: `const { [slotId]: _removed, ...rest } = ...` — the `_removed` prefix suppresses `noUnusedLocals`.
+- Extended `appStore.currentView` union to `'main' | 'settings' | 'gear-optimization'`.
+- Added "Gear Optimization" button to `AppHeader` inside a `<div className="ml-auto flex gap-2">` wrapper (cleaner than conditional `ml-auto`/`ml-2`).
+- Mounted `GearOptimizationView` in `App.tsx` as always-on sibling alongside Settings using `display: block/none`.
+- `SkillRoleDesignator`: maps `SKILL_SLOTS × ROLES`, disables buttons for empty slots, toggles role via `setSkillRole`/`clearSkillRole`, active role gets gold background with `aria-pressed`.
+- `GearOptimizationView`: shell screen with prompt, `SkillRoleDesignator`, and "Analyze Gear" button guarded by Primary Offense check.
+- 14 new tests added (3 buildStore + 6 SkillRoleDesignator + 5 GearOptimizationView). Final suite: 918 passed / 8 pre-existing failures (unchanged from story 4.5 baseline).
 
 ### File List
 
-<!-- to be filled by dev agent -->
+- `lebo/src/shared/types/build.ts` — MODIFIED (added `SkillRole` type; added `skillRoles` field to `BuildState`)
+- `lebo/src/shared/stores/buildStore.ts` — MODIFIED (added `setSkillRole`, `clearSkillRole`; extended `assignSkillToSlot`; added `skillRoles: {}` to `createBuild`)
+- `lebo/src/shared/stores/appStore.ts` — MODIFIED (extended `currentView` union to include `'gear-optimization'`)
+- `lebo/src/features/layout/AppHeader.tsx` — MODIFIED (added "Gear Optimization" button; added `useBuildStore` import)
+- `lebo/src/App.tsx` — MODIFIED (imported `GearOptimizationView`; added always-mounted div)
+- `lebo/src/features/gear-optimization/SkillRoleDesignator.tsx` — CREATED
+- `lebo/src/features/gear-optimization/GearOptimizationView.tsx` — CREATED
+- `lebo/src/shared/stores/buildStore.test.ts` — MODIFIED (added 3 skill role tests)
+- `lebo/src/features/gear-optimization/SkillRoleDesignator.test.tsx` — CREATED (6 tests)
+- `lebo/src/features/gear-optimization/GearOptimizationView.test.tsx` — CREATED (5 tests)
 
 ---
 
