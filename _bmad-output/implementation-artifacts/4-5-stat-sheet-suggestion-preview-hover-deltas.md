@@ -3,7 +3,7 @@ title: 'Stat Sheet Suggestion Preview — Hover Deltas'
 story_id: '4.5'
 story_key: '4-5-stat-sheet-suggestion-preview-hover-deltas'
 epic: 4
-status: ready-for-dev
+status: review
 created: '2026-05-24'
 ---
 
@@ -76,20 +76,20 @@ This is Story 4.5 — the final story in Epic 4. Stories 4.1–4.4 have establis
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Extend `optimizationStore` with `previewStatSheet` (AC1, AC2, AC3)
-  - [ ] Add `previewStatSheet: StatSheet | null` field (initialize to `null`)
-  - [ ] Add `setPreviewStatSheet: (sheet: StatSheet | null) => void` action
-  - [ ] In `clearSuggestions()`: add `previewStatSheet: null` to the reset object
-  - [ ] `pnpm build` passes, zero TypeScript errors
+- [x] Task 1: Extend `optimizationStore` with `previewStatSheet` (AC1, AC2, AC3)
+  - [x] Add `previewStatSheet: StatSheet | null` field (initialize to `null`)
+  - [x] Add `setPreviewStatSheet: (sheet: StatSheet | null) => void` action
+  - [x] In `clearSuggestions()`: add `previewStatSheet: null` to the reset object
+  - [x] `pnpm build` passes, zero TypeScript errors
 
-- [ ] Task 2: Update `SuggestionsList.tsx` — compute preview on hover (AC1, AC2, AC3, AC5)
-  - [ ] Import `invokeCommand` from `'../../shared/utils/invokeCommand'`
-  - [ ] Import `toBuildSnapshot` from `'../../shared/utils/buildSnapshotSerializer'`
-  - [ ] Import `StatSheet` type from `'../../shared/types/statSheet'`
-  - [ ] Add `setPreviewStatSheet` selector from `optimizationStore`
-  - [ ] Add `isComputingStats` selector from `optimizationStore`
-  - [ ] Add `previewAbortRef = useRef<{ cancelled: boolean }>({ cancelled: false })`
-  - [ ] Refactor `handleHoverEnter(suggestion)` to be `async`:
+- [x] Task 2: Update `SuggestionsList.tsx` — compute preview on hover (AC1, AC2, AC3, AC5)
+  - [x] Import `invokeCommand` from `'../../shared/utils/invokeCommand'`
+  - [x] Import `toBuildSnapshot` from `'../../shared/utils/buildSnapshotSerializer'`
+  - [x] Import `StatSheet` type from `'../../shared/types/statSheet'`
+  - [x] Add `setPreviewStatSheet` selector from `optimizationStore`
+  - [x] Add `isComputingStats` selector from `optimizationStore`
+  - [x] Add `previewAbortRef = useRef<{ cancelled: boolean }>({ cancelled: false })`
+  - [x] Refactor `handleHoverEnter(suggestion)` to be `async`:
     - Still calls `setHighlightedNodeIds(...)` as before (unchanged)
     - Guard: if `isComputingStats` is true → return immediately (AC3)
     - Build modified snapshot: clone `activeBuild.nodeAllocations`, apply `suggestion.nodeChange` (add `pointsChange` to `toNodeId`, subtract from `fromNodeId`), call `toBuildSnapshot({ ...activeBuild, nodeAllocations: modified }, gameData)`
@@ -97,55 +97,35 @@ This is Story 4.5 — the final story in Epic 4. Stories 4.1–4.4 have establis
     - `await invokeCommand<StatSheet>('compute_stats', { snapshot })` inside try/catch
     - If `!guard.cancelled`: call `setPreviewStatSheet(result)`
     - Catch block: swallow — no delta shown on IPC failure (correct behavior)
-  - [ ] Refactor `handleHoverLeave()`:
+  - [x] Refactor `handleHoverLeave()`:
     - Still calls `setHighlightedNodeIds(null)` (unchanged)
     - Sets `previewAbortRef.current.cancelled = true`
     - Calls `setPreviewStatSheet(null)` (AC2)
-  - [ ] `pnpm build` passes
+  - [x] `pnpm build` passes
 
-- [ ] Task 3: Update `StatSheetPanel.tsx` — show deltas (AC1, AC2, AC4)
-  - [ ] Add `previewStatSheet` selector: `const previewStatSheet = useOptimizationStore((s) => s.previewStatSheet)`
-  - [ ] Update `StatRow` interface: add `delta?: number` prop (optional)
-  - [ ] Add inline `DeltaBadge` helper in `StatSheetPanel.tsx` (NOT a separate file — keep it co-located):
-    ```tsx
-    function DeltaBadge({ delta, unit = '' }: { delta: number; unit?: string }) {
-      const sign = delta > 0 ? '+' : ''
-      const color = delta > 0 ? 'var(--color-data-positive)' : 'var(--color-data-negative)'
-      return (
-        <span
-          style={{ color, fontFamily: 'var(--font-mono)', fontSize: '0.7rem', marginLeft: '0.25rem' }}
-          aria-label={`${sign}${delta}${unit}`}
-        >
-          ({sign}{delta.toFixed(1)}{unit})
-        </span>
-      )
-    }
-    ```
-  - [ ] Update `StatRow` render: when `delta !== undefined && delta !== 0`, render `<DeltaBadge delta={delta} unit={unit} />` after the value span
-  - [ ] In `StatSheetPanel`, compute `deltas` object only when `previewStatSheet !== null && statSheet !== null && !isComputingStats`:
-    ```typescript
-    const deltas = previewStatSheet && statSheet && !isComputingStats
-      ? computeStatDeltas(statSheet, previewStatSheet)
-      : null
-    ```
-  - [ ] Add pure helper function `computeStatDeltas(base, preview)` in the same file (NOT exported):
-    Returns an object with the same keys as `StatSheet` numeric fields — computed as `preview - base`. Only compute fields actually displayed in the stat sheet rows. See Technical Requirements section below for exact fields.
-  - [ ] Pass `delta={deltas?.field}` to each `StatRow` where a delta is meaningful (Offense, Defense, Other tabs — not General)
-  - [ ] `pnpm build` passes
+- [x] Task 3: Update `StatSheetPanel.tsx` — show deltas (AC1, AC2, AC4)
+  - [x] Add `previewStatSheet` selector: `const previewStatSheet = useOptimizationStore((s) => s.previewStatSheet)`
+  - [x] Update `StatRow` interface: add `delta?: number` prop (optional)
+  - [x] Add inline `DeltaBadge` helper in `StatSheetPanel.tsx` (NOT a separate file — keep it co-located)
+  - [x] Update `StatRow` render: when `delta !== undefined && delta !== 0`, render `<DeltaBadge delta={delta} unit={unit} />` after the value span
+  - [x] In `StatSheetPanel`, compute `deltas` object only when `previewStatSheet !== null && statSheet !== null && !isComputingStats`
+  - [x] Add pure helper function `computeStatDeltas(base, preview)` in the same file (NOT exported)
+  - [x] Pass `delta={deltas?.field}` to each `StatRow` where a delta is meaningful (Offense, Defense, Other tabs — not General)
+  - [x] `pnpm build` passes
 
-- [ ] Task 4: Tests (AC1, AC2, AC3, AC4, AC5)
-  - [ ] `StatSheetPanel.test.tsx` — 4 new tests:
+- [x] Task 4: Tests (AC1, AC2, AC3, AC4, AC5)
+  - [x] `StatSheetPanel.test.tsx` — 4 new tests:
     - (a) shows positive delta on Offense stat when `previewStatSheet` has higher value
     - (b) shows negative delta on Defense stat when `previewStatSheet` has lower value  
     - (c) no delta shown when `previewStatSheet` is null
     - (d) no delta shown when `isComputingStats` is true (even with `previewStatSheet` set)
-  - [ ] `StatSheetPanel.test.tsx` — update `setupMocks` to accept `previewStatSheet` option
-  - [ ] `SuggestionsList.test.tsx` — 2 new tests:
+  - [x] `StatSheetPanel.test.tsx` — update `setupMocks` to accept `previewStatSheet` option
+  - [x] `SuggestionsList.test.tsx` — 2 new tests:
     - (a) `mouseenter` on suggestion card calls `invokeCommand('compute_stats')` when `isComputingStats` is false
     - (b) `mouseenter` on suggestion card does NOT call `invokeCommand('compute_stats')` when `isComputingStats` is true
-  - [ ] `pnpm vitest src/features/stat-sheet/StatSheetPanel.test.tsx` — all pass
-  - [ ] `pnpm vitest src/features/optimization/SuggestionsList.test.tsx` — all pass
-  - [ ] `pnpm build` — zero TypeScript errors
+  - [x] `pnpm vitest src/features/stat-sheet/StatSheetPanel.test.tsx` — 13 passed (all)
+  - [x] `pnpm vitest src/features/optimization/SuggestionsList.test.tsx` — 42 passed (all)
+  - [x] `pnpm build` — zero TypeScript errors
 
 ---
 
@@ -629,4 +609,18 @@ claude-sonnet-4-6
 
 ### Completion Notes List
 
+- Implemented `previewStatSheet: StatSheet | null` + `setPreviewStatSheet` in `optimizationStore` and added to `clearSuggestions()` reset
+- `SuggestionsList.tsx` `handleHoverEnter` refactored to async; applies node change to a cloned `nodeAllocations`, serializes snapshot via `toBuildSnapshot`, calls `invokeCommand<StatSheet>('compute_stats', { snapshot })`; uses `previewAbortRef` guard to discard stale results from fast hover moves
+- `handleHoverLeave` cancels in-flight guard and calls `setPreviewStatSheet(null)` immediately
+- `StatSheetPanel.tsx` gains `computeStatDeltas` pure helper, `DeltaBadge` component (green/red with `+`/`-` prefix), and `StatRow` delta prop — all wired to Offense, Defense, and Other tabs; General tab intentionally skipped
+- `deltas` derived only when `previewStatSheet !== null && statSheet !== null && !isComputingStats` (AC3)
+- 4 new `StatSheetPanel` tests + 2 new `SuggestionsList` hover tests; full suite 902 passed / 8 pre-existing failures (unrelated, from stories 4.3/4.4)
+- Pre-existing test failures confirmed in `ProviderSelector`, `Settings`, `SkillTreeCanvas`, `TreeControls` — none from this story
+
 ### File List
+
+- lebo/src/shared/stores/optimizationStore.ts
+- lebo/src/features/optimization/SuggestionsList.tsx
+- lebo/src/features/stat-sheet/StatSheetPanel.tsx
+- lebo/src/features/stat-sheet/StatSheetPanel.test.tsx
+- lebo/src/features/optimization/SuggestionsList.test.tsx

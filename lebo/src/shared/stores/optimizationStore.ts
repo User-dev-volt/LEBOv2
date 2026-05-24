@@ -22,9 +22,11 @@ interface OptimizationStore {
   statSheet: StatSheet | null
   isComputingStats: boolean
   nodeEfficiencies: NodeEfficiency[] | null
+  previewStatSheet: StatSheet | null
   setStatSheet: (sheet: StatSheet | null) => void
   setIsComputingStats: (computing: boolean) => void
   setNodeEfficiencies: (efficiencies: NodeEfficiency[] | null) => void
+  setPreviewStatSheet: (sheet: StatSheet | null) => void
   streamError: AppError | null
   currentModel: string | null
   optimizationBuildId: string | null
@@ -61,9 +63,11 @@ export const useOptimizationStore = create<OptimizationStore>()((set) => ({
   statSheet: null,
   isComputingStats: false,
   nodeEfficiencies: null,
+  previewStatSheet: null,
   setStatSheet: (sheet) => set({ statSheet: sheet }),
   setIsComputingStats: (computing) => set({ isComputingStats: computing }),
   setNodeEfficiencies: (efficiencies) => set({ nodeEfficiencies: efficiencies }),
+  setPreviewStatSheet: (sheet) => set({ previewStatSheet: sheet }),
   streamError: null,
   currentModel: null,
   optimizationBuildId: null,
@@ -86,6 +90,7 @@ export const useOptimizationStore = create<OptimizationStore>()((set) => ({
       statSheet: null,
       isComputingStats: false,
       nodeEfficiencies: null,
+      previewStatSheet: null,
     }),
   setIsOptimizing: (optimizing) => set({ isOptimizing: optimizing }),
   setOptimizationBuildId: (id) => set({ optimizationBuildId: id }),

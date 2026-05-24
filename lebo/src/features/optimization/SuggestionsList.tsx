@@ -8,6 +8,9 @@ import type { GameData } from '../../shared/types/gameData'
 import { buildTreeData } from '../skill-tree/treeDataTransformer'
 import type { SuggestionResult } from '../../shared/types/optimization'
 import { SuggestionCard } from './SuggestionCard'
+import { invokeCommand } from '../../shared/utils/invokeCommand'
+import { toBuildSnapshot } from '../../shared/utils/buildSnapshotSerializer'
+import type { StatSheet } from '../../shared/types/statSheet'
 
 function getNodeName(
   nodeId: string,
@@ -63,6 +66,8 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
   const setPreviewSuggestionRank = useOptimizationStore((s) => s.setPreviewSuggestionRank)
   const setHighlightedNodeIds = useOptimizationStore((s) => s.setHighlightedNodeIds)
   const clearSuggestions = useOptimizationStore((s) => s.clearSuggestions)
+  const setPreviewStatSheet = useOptimizationStore((s) => s.setPreviewStatSheet)
+  const isComputingStats = useOptimizationStore((s) => s.isComputingStats)
 
   const activeBuild = useBuildStore((s) => s.activeBuild)
   const applyNodeChange = useBuildStore((s) => s.applyNodeChange)
@@ -72,6 +77,7 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
   const [focusedCardIndex, setFocusedCardIndex] = useState<number | null>(null)
   const [expandedRank, setExpandedRank] = useState<number | null>(null)
   const cardRefs = useRef<Map<number, HTMLDivElement>>(new Map())
+  const previewAbortRef = useRef<{ cancelled: boolean }>({ cancelled: false })
 
   const classId = activeBuild?.classId ?? ''
   const masteryId = activeBuild?.masteryId ?? ''
@@ -171,17 +177,48 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
     [suggestions, focusedCardIndex, expandedRank, previewSuggestionRank, setPreviewSuggestionRank, skipSuggestion]
   )
 
-  function handleHoverEnter(suggestion: SuggestionResult) {
+  async function handleHoverEnter(suggestion: SuggestionResult) {
     setHighlightedNodeIds({
       glowing: new Set([suggestion.nodeChange.toNodeId]),
       dimmed: suggestion.nodeChange.fromNodeId
         ? new Set([suggestion.nodeChange.fromNodeId])
         : new Set(),
     })
+
+    if (isComputingStats) return
+
+    const activeBuild = useBuildStore.getState().activeBuild
+    const gameData = useGameDataStore.getState().gameData
+    if (!activeBuild || !gameData) return
+
+    const { toNodeId, fromNodeId, pointsChange } = suggestion.nodeChange
+    const modifiedAllocations = { ...activeBuild.nodeAllocations }
+    modifiedAllocations[toNodeId] = (modifiedAllocations[toNodeId] ?? 0) + pointsChange
+    if (fromNodeId) {
+      modifiedAllocations[fromNodeId] = Math.max(
+        0,
+        (modifiedAllocations[fromNodeId] ?? 0) - pointsChange,
+      )
+    }
+
+    const snapshot = toBuildSnapshot({ ...activeBuild, nodeAllocations: modifiedAllocations }, gameData)
+    const guard = { cancelled: false }
+    previewAbortRef.current = guard
+
+    try {
+      const previewSheet = await invokeCommand<StatSheet>('compute_stats', { snapshot })
+      if (!guard.cancelled) {
+        setPreviewStatSheet(previewSheet)
+      }
+    } catch {
+      // IPC failure = no delta shown; correct behavior
+    }
   }
 
   function handleHoverLeave() {
     setHighlightedNodeIds(null)
+    previewAbortRef.current.cancelled = true
+    setPreviewStatSheet(null)
   }
 
   function handlePreview(rank: number) {

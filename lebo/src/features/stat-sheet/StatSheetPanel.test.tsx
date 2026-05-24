@@ -65,10 +65,12 @@ type AnySelector = (s: Record<string, unknown>) => unknown
 function setupMocks(opts: {
   statSheet?: StatSheet | null
   isComputingStats?: boolean
+  previewStatSheet?: StatSheet | null
 } = {}) {
   const optState = {
     statSheet: opts.statSheet ?? null,
     isComputingStats: opts.isComputingStats ?? false,
+    previewStatSheet: opts.previewStatSheet ?? null,
   }
   const buildState = { activeBuild: null }
   const gameDataState = { gameData: null }
@@ -158,6 +160,41 @@ describe('StatSheetPanel', () => {
     render(<StatSheetPanel />)
     const dashElements = screen.getAllByText('—')
     expect(dashElements.length).toBeGreaterThan(0)
+  })
+
+  it('shows positive delta on Offense stat when previewStatSheet has higher damage_score', () => {
+    const base = makeStatSheet()
+    const preview = makeStatSheet({ offense: { ...makeStatSheet().offense, damage_score: 120 } })
+    setupMocks({ statSheet: base, previewStatSheet: preview, isComputingStats: false })
+    render(<StatSheetPanel />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Offense' }))
+    expect(screen.getByText(/\(\+20\.0\)/)).toBeInTheDocument()
+  })
+
+  it('shows negative delta on Defense stat when previewStatSheet has lower effective_hp', () => {
+    const base = makeStatSheet()
+    const preview = makeStatSheet({ defense: { ...makeStatSheet().defense, effective_hp: 4500 } })
+    setupMocks({ statSheet: base, previewStatSheet: preview, isComputingStats: false })
+    render(<StatSheetPanel />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Defense' }))
+    expect(screen.getByText(/\(-500\.0\)/)).toBeInTheDocument()
+  })
+
+  it('shows no delta when previewStatSheet is null', () => {
+    setupMocks({ statSheet: makeStatSheet(), previewStatSheet: null })
+    render(<StatSheetPanel />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Offense' }))
+    expect(screen.queryByText(/\(\+/)).toBeNull()
+    expect(screen.queryByText(/\(-/)).toBeNull()
+  })
+
+  it('suppresses delta when isComputingStats is true even with previewStatSheet set', () => {
+    const base = makeStatSheet()
+    const preview = makeStatSheet({ offense: { ...makeStatSheet().offense, damage_score: 120 } })
+    setupMocks({ statSheet: base, previewStatSheet: preview, isComputingStats: true })
+    render(<StatSheetPanel />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Offense' }))
+    expect(screen.queryByText(/\(\+/)).toBeNull()
   })
 
   it('passes axe accessibility check on all tabs', async () => {

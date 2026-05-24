@@ -25,7 +25,7 @@
 # - Developer typically creates next story after previous one is 'done' to incorporate learnings
 
 generated: 2026-05-20
-last_updated: 2026-05-24 (story 4-5 created, ready-for-dev)
+last_updated: 2026-05-24 (story 4-5 review)
 project: LEBOv2 Phase 3
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
@@ -63,7 +63,7 @@ development_status:
   4-2-cross-domain-synergy-detection: done
   4-3-run-optimization-tauri-command-and-claude-narrative: done
   4-4-node-efficiency-overlay-on-passive-tree: done
-  4-5-stat-sheet-suggestion-preview-hover-deltas: ready-for-dev
+  4-5-stat-sheet-suggestion-preview-hover-deltas: review
   epic-4-retrospective: optional
 
   # Epic 5: Gear Optimization Screen

@@ -10,8 +10,13 @@ vi.mock('@tauri-apps/api/event', () => ({
   listen: vi.fn(() => Promise.resolve(vi.fn())),
 }))
 
+vi.mock('../../shared/utils/invokeCommand', () => ({
+  invokeCommand: vi.fn(() => Promise.resolve(null)),
+}))
+
 import { SuggestionsList } from './SuggestionsList'
 import type { SuggestionResult } from '../../shared/types/optimization'
+import type { GameData } from '../../shared/types/gameData'
 
 const BASE_SCORE = { damage: 10, survivability: 10, speed: 10 }
 
@@ -542,6 +547,42 @@ describe('SuggestionsList', () => {
       fireEvent.click(screen.getByTestId('clear-suggestions-button'))
     })
     expect(useOptimizationStore.getState().suggestions).toHaveLength(0)
+  })
+
+  // Story 4.5: hover delta preview tests
+
+  it('calls invokeCommand compute_stats on mouseenter when isComputingStats is false', async () => {
+    const { invokeCommand } = await import('../../shared/utils/invokeCommand')
+    vi.mocked(invokeCommand).mockClear()
+    useOptimizationStore.setState({
+      suggestions: [makeSuggestion(1)],
+      isComputingStats: false,
+      isOptimizing: false,
+    })
+    useBuildStore.setState({ activeBuild: MOCK_BUILD })
+    useGameDataStore.setState({ gameData: { classes: {} } as unknown as GameData })
+    render(<SuggestionsList onRetry={vi.fn()} />)
+    const card = screen.getByTestId('suggestion-card-1')
+    fireEvent.mouseEnter(card)
+    await act(async () => {})
+    expect(vi.mocked(invokeCommand)).toHaveBeenCalledWith('compute_stats', expect.objectContaining({ snapshot: expect.any(Object) }))
+  })
+
+  it('does NOT call invokeCommand compute_stats on mouseenter when isComputingStats is true', async () => {
+    const { invokeCommand } = await import('../../shared/utils/invokeCommand')
+    vi.mocked(invokeCommand).mockClear()
+    useOptimizationStore.setState({
+      suggestions: [makeSuggestion(1)],
+      isComputingStats: true,
+      isOptimizing: false,
+    })
+    useBuildStore.setState({ activeBuild: MOCK_BUILD })
+    useGameDataStore.setState({ gameData: { classes: {} } as unknown as GameData })
+    render(<SuggestionsList onRetry={vi.fn()} />)
+    const card = screen.getByTestId('suggestion-card-1')
+    fireEvent.mouseEnter(card)
+    await act(async () => {})
+    expect(vi.mocked(invokeCommand)).not.toHaveBeenCalledWith('compute_stats', expect.anything())
   })
 
   it('global keyboard:escape event clears focused card state', async () => {
