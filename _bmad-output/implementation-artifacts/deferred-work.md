@@ -122,6 +122,12 @@
 - **`clearSuggestions()` resets store but does not cancel `previewAbortRef`** [`optimizationStore.ts + SuggestionsList.tsx`] — In-flight hover IPC can write `previewStatSheet` back after suggestions are cleared. Benign in practice (`statSheet` is also null so `deltas` never renders), but a minor orphan write. Cancel the ref in the `clearSuggestions` action or in the component's cleanup.
 - **AC5 `previewAbortRef` guard pattern untested** [`SuggestionsList.test.tsx`] — The stale-hover-cancellation logic (hover A → hover B before A resolves → A discarded) has no automated test. Requires Promise resolution control (e.g., deferred Promise fixtures). Add when async test infrastructure is mature enough to support it.
 
+## Deferred from: code review of 5-1-skill-role-designation (2026-05-24)
+
+- **`analyzeError` stale across build switch** [`GearOptimizationView.tsx:9`] — `analyzeError` useState is never reset when `activeBuild` changes; if a user triggers an analysis error on build A, loads build B, and returns to gear-optimization, the error from build A persists. Spec acknowledges this pattern as optional polish ("not required for AC compliance"). Fix with a `useEffect` watching `activeBuild` to clear the error on build change.
+- **`aria-label` on disabled role buttons uses slot label var** [`SkillRoleDesignator.tsx:52`] — For empty slots, `aria-label` reads `"Primary role for Skill 2"` (slot display name) instead of something like `"Primary role for empty slot"`. Minor a11y polish.
+- **`handleAnalyzeGear` clears error before async work begins** [`GearOptimizationView.tsx:18`] — `setAnalyzeError(null)` fires before the IPC call in Story 5.3. When wired, there will be a gap where no error or loading indicator is shown. Add a loading state guard in Story 5.3 when the real command is wired.
+
 ## Deferred from: code review of 4-4-node-efficiency-overlay-on-passive-tree (2026-05-23)
 
 - **Listener unmount race condition (unlisten1-5)** [`useOptimizationStream.ts`] — async gap between `await listen()` and `if (!isMounted)` check can write to store on an unmounted component. Pre-existing pattern across all 5 listeners; not isolated to 4.4.

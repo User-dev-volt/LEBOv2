@@ -3,7 +3,7 @@ title: 'Skill Role Designation'
 story_id: '5.1'
 story_key: '5-1-skill-role-designation'
 epic: 5
-status: review
+status: done
 created: '2026-05-24'
 ---
 
@@ -762,4 +762,6 @@ No blockers or debug iterations required. Implementation succeeded on first atte
 
 ### Review Findings
 
-<!-- to be filled by code reviewer -->
+- [x] [Review][Defer] `analyzeError` state persists when `activeBuild` changes between builds [GearOptimizationView.tsx:9] — deferred, acknowledged optional polish in spec; stale error from prior build visible if user loads a different build and returns to gear-optimization
+- [x] [Review][Defer] `aria-label` for role buttons on empty slots uses slot label var (e.g. "Primary role for Skill 2") instead of clearer "empty slot" phrasing [SkillRoleDesignator.tsx:52] — deferred, minor a11y polish
+- [x] [Review][Defer] `handleAnalyzeGear` clears error before async work with no loading state; will create a bare gap when Story 5.3 wires the real IPC call [GearOptimizationView.tsx:18] — deferred, Story 5.3 concern
