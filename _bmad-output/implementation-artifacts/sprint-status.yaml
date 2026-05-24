@@ -25,7 +25,7 @@
 # - Developer typically creates next story after previous one is 'done' to incorporate learnings
 
 generated: 2026-05-20
-last_updated: 2026-05-24 (story 5-2 done)
+last_updated: 2026-05-24 (story 5-3 ready-for-dev)
 project: LEBOv2 Phase 3
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
@@ -70,7 +70,7 @@ development_status:
   epic-5: in-progress
   5-1-skill-role-designation: done
   5-2-gear-affix-scorer-rust-implementation: done
-  5-3-run-gear-scoring-tauri-command-and-typescript-wiring: backlog
+  5-3-run-gear-scoring-tauri-command-and-typescript-wiring: ready-for-dev
   5-4-gear-optimization-view-priority-ranking-and-wishlists: backlog
   5-5-claude-gear-narrative-integration: backlog
   epic-5-retrospective: optional
