@@ -53,6 +53,7 @@ export async function startOptimization() {
     const appError = normalizeAppError(err)
     useOptimizationStore.getState().setStreamError(appError)
     useOptimizationStore.getState().setIsOptimizing(false)
+    useOptimizationStore.getState().setCurrentModel(null)
   }
 }
 
@@ -160,6 +161,9 @@ export function useOptimizationStream() {
       const unlisten5 = await listen<string>(
         'optimization:node-efficiencies',
         (event) => {
+          const activeBuild = useBuildStore.getState().activeBuild
+          if (!activeBuild) return
+          if (useOptimizationStore.getState().optimizationBuildId !== activeBuild.id) return
           try {
             const efficiencies = JSON.parse(event.payload) as NodeEfficiency[]
             useOptimizationStore.getState().setNodeEfficiencies(efficiencies)

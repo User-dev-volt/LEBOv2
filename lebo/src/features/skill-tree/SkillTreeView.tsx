@@ -111,10 +111,12 @@ export function SkillTreeView() {
     }
   }, [activeTabIndex])
 
-  // Auto-show overlay when new efficiencies arrive from optimization
+  // Auto-show when new efficiencies arrive; reset when cleared between runs
   useEffect(() => {
     if (nodeEfficiencies && nodeEfficiencies.length > 0) {
       setShowOverlay(true)
+    } else {
+      setShowOverlay(false)
     }
   }, [nodeEfficiencies])
 
@@ -624,7 +626,7 @@ export function SkillTreeView() {
           onSearchChange={setSearchQuery}
           onReset={handleReset}
           onFit={() => activeCanvasRef.current?.fitToTree()}
-          hasOverlay={isPassiveTab && !!effectiveNodeEfficiencies && effectiveNodeEfficiencies.length > 0}
+          hasOverlay={isPassiveTab && nodeEfficiencies !== null && nodeEfficiencies.length > 0}
           showOverlay={showOverlay}
           onToggleOverlay={() => setShowOverlay((v) => !v)}
         />

@@ -3,7 +3,7 @@ title: 'Node Efficiency Overlay on Passive Tree'
 story_id: '4.4'
 story_key: '4-4-node-efficiency-overlay-on-passive-tree'
 epic: 4
-status: review
+status: done
 created: '2026-05-23'
 ---
 
@@ -605,11 +605,11 @@ None — all tasks completed without blockers.
 
 ### Review Findings
 
-- [ ] [Review][Decision] `hasOverlay` uses `effectiveNodeEfficiencies` instead of raw `nodeEfficiencies` — Toggle button disappears when `unspentPassivePoints === 0`, contradicting spec Constraint 2 which requires it to remain visible so users can see "Overlay" in the controls bar even at zero budget. Dev note (completion note 3) argues "when there's no budget left, the overlay button provides no value." Decision: keep the current conservative behavior, or fix to match spec? [`SkillTreeView.tsx:624`]
+- [x] [Review][Patch] `hasOverlay` uses `effectiveNodeEfficiencies` instead of raw `nodeEfficiencies` — Fixed to use `nodeEfficiencies !== null && nodeEfficiencies.length > 0` so toggle button stays visible at zero budget. [`SkillTreeView.tsx:627`]
 - [x] [Review][Dismiss] Nodes absent from `effMap` — `if (!eff) continue` is correct. `scan.rs` confirms Rust includes ALL graph-reachable unallocated nodes in `node_efficiencies` regardless of budget (test 10/11 verify this). Absent nodes are physically disconnected from the tree; showing a ring on them would be wrong. `dim` for "unreachable within budget" is handled by Rust's lower-tier assignment for expensive-but-reachable nodes.
-- [ ] [Review][Patch] `showOverlay` never resets to `false` when `nodeEfficiencies` transitions to null or empty — Auto-show effect (`useEffect`) only sets `true` when `nodeEfficiencies && length > 0`; no `else` branch resets to `false`. After a re-optimization that returns zero efficiencies (empty array), `showOverlay` stays `true` in state while `hasOverlay` becomes `false` (button hidden). More critically, if the user deliberately toggles overlay off, a subsequent run that clears and re-populates efficiencies overrides their toggle. [`SkillTreeView.tsx:115-119`]
-- [ ] [Review][Patch] `optimization:node-efficiencies` listener has no build ID guard — `unlisten1` (suggestion handler) guards against stale events with `if (useOptimizationStore.getState().optimizationBuildId !== activeBuild.id) return`. The new `unlisten5` (node-efficiencies) has no such guard. On rapid re-runs, the first run's efficiency event (queued in the IPC buffer) can arrive after the second run's `clearSuggestions()` and overwrite the second run's overlay with stale data. [`useOptimizationStream.ts`]
-- [ ] [Review][Patch] Double-error on `assemble_run_optimization_payload` failure — Error path emits `optimization:error` (which `unlisten3` handles, calling `setStreamError`) AND propagates `Err(e)` from the command (which `startOptimization`'s catch also handles). The event-listener error path calls `setCurrentModel(null)` but the IPC-rejection path does not, leaving a stale model name in the store when serialization fails before any `optimization:model-active` event fires. [`scoring_commands.rs` + `useOptimizationStream.ts`]
+- [x] [Review][Patch] `showOverlay` never resets to `false` when `nodeEfficiencies` transitions to null or empty — Added `else { setShowOverlay(false) }` branch to auto-show effect. [`SkillTreeView.tsx:115-119`]
+- [x] [Review][Patch] `optimization:node-efficiencies` listener has no build ID guard — Added `optimizationBuildId` guard matching `unlisten1` pattern. [`useOptimizationStream.ts`]
+- [x] [Review][Patch] Double-error on `assemble_run_optimization_payload` failure — Added `setCurrentModel(null)` to `startOptimization` catch block. [`useOptimizationStream.ts`]
 - [x] [Review][Defer] Listener unmount race condition (unlisten1–5) — async gap between `await listen(...)` and `if (!isMounted)` check can write to store on an unmounted component. Pre-existing pattern across all listeners; not introduced by this story.
 - [x] [Review][Defer] `from_node = path[0]` for multi-hop paths — `assemble_run_optimization_payload` uses `path[0]` as `from_node_id` unconditionally; in a cheapest-first path, this is a bridge node, not a deallocation source. Pre-existing code; not introduced by this story.
 - [x] [Review][Defer] Overlay rings stack on top of suggestion glow rings — A node can simultaneously have a suggestion glow ring (Claude highlight) and an efficiency tier ring; both draw on the same node. Minor visual noise with no functional consequence.
