@@ -1,11 +1,16 @@
 import { useState } from 'react'
 import { useAppStore } from '../../shared/stores/appStore'
 import { useBuildStore } from '../../shared/stores/buildStore'
+import { useOptimizationStore } from '../../shared/stores/optimizationStore'
+import { useGearStream, startGearAnalysis } from '../../shared/stores/useGearStream'
 import { SkillRoleDesignator } from './SkillRoleDesignator'
 
 export function GearOptimizationView() {
+  useGearStream()
+
   const setCurrentView = useAppStore((s) => s.setCurrentView)
   const activeBuild = useBuildStore((s) => s.activeBuild)
+  const isAnalyzingGear = useOptimizationStore((s) => s.isAnalyzingGear)
   const [analyzeError, setAnalyzeError] = useState<string | null>(null)
 
   const skillRoles = activeBuild?.skillRoles ?? {}
@@ -18,7 +23,7 @@ export function GearOptimizationView() {
       return
     }
     setAnalyzeError(null)
-    // Story 5.3 will call invokeCommand('run_gear_scoring', { snapshot }) here
+    startGearAnalysis()
   }
 
   return (
@@ -66,14 +71,26 @@ export function GearOptimizationView() {
           <button
             data-testid="analyze-gear-button"
             onClick={handleAnalyzeGear}
+            disabled={isAnalyzingGear}
             className="text-sm px-4 py-2 rounded font-medium"
             style={{
-              backgroundColor: 'var(--color-accent-gold)',
-              color: 'var(--color-bg-base)',
+              backgroundColor: isAnalyzingGear ? 'var(--color-bg-hover)' : 'var(--color-accent-gold)',
+              color: isAnalyzingGear ? 'var(--color-text-muted)' : 'var(--color-bg-base)',
+              cursor: isAnalyzingGear ? 'not-allowed' : 'pointer',
             }}
           >
-            Analyze Gear
+            {isAnalyzingGear ? 'Analyzing...' : 'Analyze Gear'}
           </button>
+          {isAnalyzingGear && (
+            <p
+              data-testid="gear-analysis-loading"
+              className="text-xs"
+              aria-live="polite"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Analyzing gear...
+            </p>
+          )}
           {analyzeError && (
             <p
               data-testid="analyze-gear-error"

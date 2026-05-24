@@ -54,11 +54,39 @@ export interface BuildSnapshot {
   idolPlacements: IdolPlacementTS[]
   blessings: string[]
   activeSkillLevels: Record<string, number>
+  // Added in Story 5.3 — populates run_gear_scoring context fields
+  skillRoles: Record<string, string>
+  primaryOffenseDeliveryType: string | null
+  primaryOffenseDamageElements: string[]
+}
+
+function extractPrimaryOffenseDeliveryType(
+  build: BuildState,
+  gameData: GameData,
+): string | null {
+  if (!build.skillRoles) return null
+
+  const primarySlotId = Object.entries(build.skillRoles).find(
+    ([, role]) => role === 'primary_offense',
+  )?.[0]
+  if (!primarySlotId) return null
+
+  const activeSkill = build.contextData.skills.find((s) => s.slotId === primarySlotId)
+  if (!activeSkill) return null
+
+  const classData = gameData.classes?.[build.classId]
+  if (!classData) return null
+
+  const skillEntry = classData.skills.find((s) => s.skillId === activeSkill.skillId)
+  if (!skillEntry) return null
+
+  // 'unknown' → null (no delivery type filtering in gear scorer)
+  return skillEntry.type === 'unknown' ? null : skillEntry.type
 }
 
 // Pattern 1: ONLY conversion point from BuildState → BuildSnapshot.
 // Never pass BuildState directly to invokeCommand('compute_stats', ...).
-export function toBuildSnapshot(build: BuildState, _gameData: GameData): BuildSnapshot {
+export function toBuildSnapshot(build: BuildState, gameData: GameData): BuildSnapshot {
   return {
     nodeAllocations: { ...build.nodeAllocations },
     skillNodeAllocations: Object.fromEntries(
@@ -77,6 +105,9 @@ export function toBuildSnapshot(build: BuildState, _gameData: GameData): BuildSn
     blessings: Object.values(build.blessings ?? {}).filter((id): id is string => id !== null),
     activeSkillLevels: { ...(build.activeSkillLevels ?? {}) },
     // weaverAllocations intentionally excluded — Epic 4 adds weaver scoring to compute_stats
+    skillRoles: { ...(build.skillRoles ?? {}) },
+    primaryOffenseDeliveryType: extractPrimaryOffenseDeliveryType(build, gameData),
+    primaryOffenseDamageElements: [], // No element data in SkillEntry for Phase 3; scorer degrades gracefully
   }
 }
 

@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Dev agent: Load `_bmad-output/implementation-artifacts/4-2-cross
+Begin Story 5.3 implementation: start with Rust `run_gear_scoring` command in `scoring_commands.rs`, then TypeScript serializer extensions, then hook + UI wiring.
 
 ---
 

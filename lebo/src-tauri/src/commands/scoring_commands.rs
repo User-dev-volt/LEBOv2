@@ -130,6 +130,50 @@ pub async fn run_optimization(
     Ok(())
 }
 
+/// Async Tauri command — gear slot affix analysis (~10–50ms).
+/// Pattern 3: clone game_data BEFORE spawn_blocking; never hold a read lock across await.
+/// Emits gear:analysis-complete on success, gear:error on failure (Pattern 6 — NOT optimization:*).
+#[tauri::command]
+pub async fn run_gear_scoring(
+    app_handle: tauri::AppHandle,
+    snapshot: scoring_core::BuildSnapshot,
+    state: tauri::State<'_, ScoringState>,
+) -> Result<(), String> {
+    let game_data = state.game_data.read()
+        .map_err(|e| {
+            let err = format!("SCORING_ERROR: game_data lock poisoned: {}", e);
+            let _ = app_handle.emit(
+                "gear:error",
+                &crate::services::claude_service::OptimizationErrorPayload {
+                    error_type: "SCORING_ERROR".to_string(),
+                    message: err.clone(),
+                },
+            );
+            err
+        })?
+        .clone();
+
+    let gear_result =
+        tauri::async_runtime::spawn_blocking(move || {
+            scoring_core::run_gear_scoring(&snapshot, &game_data)
+        })
+        .await
+        .map_err(|e| {
+            let err = format!("SCORING_ERROR: gear scoring compute panicked: {}", e);
+            let _ = app_handle.emit(
+                "gear:error",
+                &crate::services::claude_service::OptimizationErrorPayload {
+                    error_type: "SCORING_ERROR".to_string(),
+                    message: err.clone(),
+                },
+            );
+            err
+        })?;
+
+    let _ = app_handle.emit("gear:analysis-complete", &gear_result);
+    Ok(())
+}
+
 fn extract_optimization_error_type(err: &str) -> String {
     for prefix in &["AUTH_ERROR", "API_ERROR", "NETWORK_ERROR", "TIMEOUT", "PARSE_ERROR", "SCORING_ERROR"] {
         if err.starts_with(prefix) {

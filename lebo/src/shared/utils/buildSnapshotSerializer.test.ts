@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { toBuildSnapshot, encodeConditionValues } from './buildSnapshotSerializer'
 import type { BuildState } from '../types/build'
-import type { GameData } from '../types/gameData'
+import type { GameData, ClassData, SkillEntry } from '../types/gameData'
 
 const minimalGameData = {} as GameData
 
@@ -242,5 +242,139 @@ describe('encodeConditionValues', () => {
 
   it('returns empty array for empty input', () => {
     expect(encodeConditionValues({})).toEqual([])
+  })
+})
+
+// ── Skill role fields (Story 5.3) ─────────────────────────────────────────────
+
+function makeSkillEntry(overrides: Partial<SkillEntry> = {}): SkillEntry {
+  return {
+    skillId: 'test-skill',
+    skillName: 'Test Skill',
+    masteryId: null,
+    masteryName: null,
+    masteryGatePoints: null,
+    type: 'spell',
+    ...overrides,
+  }
+}
+
+function makeGameDataWithSkill(classId: string, skill: SkillEntry): GameData {
+  return {
+    classes: {
+      [classId]: {
+        classId,
+        className: classId,
+        baseTree: {},
+        masteries: {},
+        skillTrees: {},
+        skills: [skill],
+      } as ClassData,
+    },
+  } as unknown as GameData
+}
+
+describe('toBuildSnapshot — skill role fields (Story 5.3)', () => {
+  it('maps skillRoles to snapshot', () => {
+    const build = makeBuild({ skillRoles: { 'slot-0': 'primary_offense', 'slot-1': 'defensive' } })
+    const snap = toBuildSnapshot(build, minimalGameData)
+    expect(snap.skillRoles).toEqual({ 'slot-0': 'primary_offense', 'slot-1': 'defensive' })
+  })
+
+  it('defaults skillRoles to {} when not set', () => {
+    expect(toBuildSnapshot(makeBuild(), minimalGameData).skillRoles).toEqual({})
+  })
+
+  it('defaults primaryOffenseDamageElements to []', () => {
+    expect(toBuildSnapshot(makeBuild(), minimalGameData).primaryOffenseDamageElements).toEqual([])
+  })
+
+  it('returns null primaryOffenseDeliveryType when no skillRoles set', () => {
+    expect(toBuildSnapshot(makeBuild(), minimalGameData).primaryOffenseDeliveryType).toBeNull()
+  })
+
+  it('returns null primaryOffenseDeliveryType when no primary_offense role', () => {
+    const build = makeBuild({ skillRoles: { 'slot-0': 'defensive' } })
+    expect(toBuildSnapshot(build, minimalGameData).primaryOffenseDeliveryType).toBeNull()
+  })
+
+  it('looks up delivery type from game data for primary_offense slot (spell)', () => {
+    const skill = makeSkillEntry({ skillId: 'poison-eruption', type: 'spell' })
+    const gameData = makeGameDataWithSkill('rogue', skill)
+    const build = makeBuild({
+      classId: 'rogue',
+      skillRoles: { 'slot-0': 'primary_offense' },
+      contextData: {
+        gear: [],
+        idols: [],
+        skills: [{ slotId: 'slot-0', skillName: 'Poison Eruption', skillId: 'poison-eruption' }],
+      },
+    })
+    expect(toBuildSnapshot(build, gameData).primaryOffenseDeliveryType).toBe('spell')
+  })
+
+  it('looks up delivery type for melee skill', () => {
+    const skill = makeSkillEntry({ skillId: 'rive', type: 'melee' })
+    const gameData = makeGameDataWithSkill('sentinel', skill)
+    const build = makeBuild({
+      classId: 'sentinel',
+      skillRoles: { 'slot-0': 'primary_offense' },
+      contextData: {
+        gear: [],
+        idols: [],
+        skills: [{ slotId: 'slot-0', skillName: 'Rive', skillId: 'rive' }],
+      },
+    })
+    expect(toBuildSnapshot(build, gameData).primaryOffenseDeliveryType).toBe('melee')
+  })
+
+  it('returns null for primaryOffenseDeliveryType when skill type is unknown', () => {
+    const skill = makeSkillEntry({ skillId: 'mystery-skill', type: 'unknown' })
+    const gameData = makeGameDataWithSkill('rogue', skill)
+    const build = makeBuild({
+      classId: 'rogue',
+      skillRoles: { 'slot-0': 'primary_offense' },
+      contextData: {
+        gear: [],
+        idols: [],
+        skills: [{ slotId: 'slot-0', skillName: 'Mystery', skillId: 'mystery-skill' }],
+      },
+    })
+    expect(toBuildSnapshot(build, gameData).primaryOffenseDeliveryType).toBeNull()
+  })
+
+  it('returns null for primaryOffenseDeliveryType when skill not found in game data', () => {
+    const build = makeBuild({
+      classId: 'rogue',
+      skillRoles: { 'slot-0': 'primary_offense' },
+      contextData: {
+        gear: [],
+        idols: [],
+        skills: [{ slotId: 'slot-0', skillName: 'Unknown Skill', skillId: 'not-in-db' }],
+      },
+    })
+    expect(toBuildSnapshot(build, minimalGameData).primaryOffenseDeliveryType).toBeNull()
+  })
+
+  it('returns null when primary_offense slot has no assigned skill', () => {
+    const build = makeBuild({
+      skillRoles: { 'slot-0': 'primary_offense' },
+      contextData: { gear: [], idols: [], skills: [] }, // no skill in slot-0
+    })
+    expect(toBuildSnapshot(build, minimalGameData).primaryOffenseDeliveryType).toBeNull()
+  })
+
+  it('returns null when game data has no classes', () => {
+    const build = makeBuild({
+      classId: 'rogue',
+      skillRoles: { 'slot-0': 'primary_offense' },
+      contextData: {
+        gear: [],
+        idols: [],
+        skills: [{ slotId: 'slot-0', skillName: 'Poison Eruption', skillId: 'poison-eruption' }],
+      },
+    })
+    // minimalGameData = {} as GameData — no classes
+    expect(toBuildSnapshot(build, minimalGameData).primaryOffenseDeliveryType).toBeNull()
   })
 })

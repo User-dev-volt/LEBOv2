@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { OptimizationGoal, SuggestionResult, BuildScore, FineTuneWeights } from '../types/optimization'
 import type { AppError } from '../types/errors'
-import type { StatSheet, NodeEfficiency } from '../types/statSheet'
+import type { StatSheet, NodeEfficiency, GearAnalysis } from '../types/statSheet'
 
 export interface HighlightedNodeIds {
   glowing: Set<string>
@@ -23,10 +23,14 @@ interface OptimizationStore {
   isComputingStats: boolean
   nodeEfficiencies: NodeEfficiency[] | null
   previewStatSheet: StatSheet | null
+  gearAnalysis: GearAnalysis | null
+  isAnalyzingGear: boolean
   setStatSheet: (sheet: StatSheet | null) => void
   setIsComputingStats: (computing: boolean) => void
   setNodeEfficiencies: (efficiencies: NodeEfficiency[] | null) => void
   setPreviewStatSheet: (sheet: StatSheet | null) => void
+  setGearAnalysis: (analysis: GearAnalysis | null) => void
+  setIsAnalyzingGear: (analyzing: boolean) => void
   streamError: AppError | null
   currentModel: string | null
   optimizationBuildId: string | null
@@ -64,10 +68,14 @@ export const useOptimizationStore = create<OptimizationStore>()((set) => ({
   isComputingStats: false,
   nodeEfficiencies: null,
   previewStatSheet: null,
+  gearAnalysis: null,
+  isAnalyzingGear: false,
   setStatSheet: (sheet) => set({ statSheet: sheet }),
   setIsComputingStats: (computing) => set({ isComputingStats: computing }),
   setNodeEfficiencies: (efficiencies) => set({ nodeEfficiencies: efficiencies }),
   setPreviewStatSheet: (sheet) => set({ previewStatSheet: sheet }),
+  setGearAnalysis: (analysis) => set({ gearAnalysis: analysis }),
+  setIsAnalyzingGear: (analyzing) => set({ isAnalyzingGear: analyzing }),
   streamError: null,
   currentModel: null,
   optimizationBuildId: null,
