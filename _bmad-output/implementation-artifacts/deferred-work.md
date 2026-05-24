@@ -122,6 +122,10 @@
 - **`clearSuggestions()` resets store but does not cancel `previewAbortRef`** [`optimizationStore.ts + SuggestionsList.tsx`] — In-flight hover IPC can write `previewStatSheet` back after suggestions are cleared. Benign in practice (`statSheet` is also null so `deltas` never renders), but a minor orphan write. Cancel the ref in the `clearSuggestions` action or in the component's cleanup.
 - **AC5 `previewAbortRef` guard pattern untested** [`SuggestionsList.test.tsx`] — The stale-hover-cancellation logic (hover A → hover B before A resolves → A discarded) has no automated test. Requires Promise resolution control (e.g., deferred Promise fixtures). Add when async test infrastructure is mature enough to support it.
 
+## Deferred from: code review of 5-2-gear-affix-scorer-rust-implementation (2026-05-24)
+
+- **`affix_class` and `scope` use unvalidated strings** [`gear.rs`, `game_data.rs`] — Both fields are used as branch discriminators (`== "prefix"`, `== "generic"`) but are plain `String`. A typo in game data (e.g. `"Prefix"`, `"MELEE"`) causes silent misdirection: wrong wishlist bucket or zero weight. Convert to enums at deserialization time when the affix DB pipeline is built in a future story.
+
 ## Deferred from: code review of 5-1-skill-role-designation (2026-05-24)
 
 - **`analyzeError` stale across build switch** [`GearOptimizationView.tsx:9`] — `analyzeError` useState is never reset when `activeBuild` changes; if a user triggers an analysis error on build A, loads build B, and returns to gear-optimization, the error from build A persists. Spec acknowledges this pattern as optional polish ("not required for AC compliance"). Fix with a `useEffect` watching `activeBuild` to clear the error on build change.
