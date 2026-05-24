@@ -143,7 +143,7 @@ This is Story 5.2 — the second story in Epic 5 (Gear Optimization Screen). **I
 
 ### Review Findings
 
-- [ ] [Review][Decision] `compute.rs` modified outside spec's declared file scope — The spec's Files to Create/Modify table does not list `compute.rs`, but the dev agent added gear slot processing to `build_registry()` in `build_registry()` as an undocumented scope expansion. The change is architecturally correct (it was the root cause of all 5 gear tests failing) and is documented in the Dev Agent Record under "Blocker 1", but the story's task checklist and files table don't reflect it. Confirm this change belongs in this story (vs. a separate story) and whether the Files table should be updated retroactively.
+- [x] [Review][Decision] `compute.rs` modified outside spec's declared file scope — The spec's Files to Create/Modify table does not list `compute.rs`, but the dev agent added gear slot processing to `build_registry()` in `build_registry()` as an undocumented scope expansion. The change is architecturally correct (it was the root cause of all 5 gear tests failing) and is documented in the Dev Agent Record under "Blocker 1", but the story's task checklist and files table don't reflect it. Confirm this change belongs in this story (vs. a separate story) and whether the Files table should be updated retroactively.
 - [ ] [Review][Patch] `current_affix_total` credits any-tier copy of a wishlist affix at full T5 weight [`gear.rs:228-246`] — matches by `affix_id` only, no tier check. A T1 affix on the current slot is credited at the same weight as T5, overstating `current_total`, understating `upgrade_score`, and inflating `efficiency_percent` — the user would see false-high efficiency on slots with low-tier wishlist affixes.
 - [ ] [Review][Patch] `compute_weight` injects at hardcoded `tier: 5` — sub-T5-max affixes get weight 0.0 silently [`gear.rs:100-110`] — `t5_value()` correctly falls back to the highest available tier's raw value (e.g. T4 = 50.0), the `if t5 == 0.0` guard passes, but `AffixEntry { tier: 5 }` is always injected. `build_registry` then calls `values_by_tier.get(&5)` which returns `None` for a T4-max affix, silently skipping the modifier. ΔBuildScore is 0.0 and the affix is excluded from all wishlists despite having real value.
 - [x] [Review][Defer] `affix_class` and `scope` use unvalidated strings — silent misdirection from data typos [`gear.rs`, `game_data.rs`] — deferred, pre-existing design concern for future affix DB pipeline
@@ -716,6 +716,7 @@ The `HashMap` import is already at the top of `build_snapshot.rs` (used by `node
 | `lebo/src-tauri/scoring-core/src/lib.rs` | MODIFY | Add `pub mod gear;` and `pub use gear::run_gear_scoring;` |
 | `lebo/src-tauri/scoring-core/src/gear.rs` | CREATE | New module with `run_gear_scoring()` + 5 unit tests |
 | `lebo/src-tauri/src/services/game_data_loader.rs` | MODIFY | Add `gear_affixes: HashMap::new()` to `GameData` struct literal in `build_scoring_game_data()` |
+| `lebo/src-tauri/scoring-core/src/compute.rs` | MODIFY (unplanned) | Added gear slot affix processing loop to `build_registry()` — discovered necessary when ΔBuildScore injection produced 0.0 for all affixes (gear slot entries were not being registered) |
 
 **Do NOT touch:**
 - Any TypeScript files — the new `BuildSnapshot` fields are serialized in Story 5.3
