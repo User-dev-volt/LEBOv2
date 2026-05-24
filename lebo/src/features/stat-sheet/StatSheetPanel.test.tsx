@@ -197,6 +197,15 @@ describe('StatSheetPanel', () => {
     expect(screen.queryByText(/\(\+/)).toBeNull()
   })
 
+  it('passes axe accessibility check with delta badges visible (AC4)', async () => {
+    const base = makeStatSheet()
+    const preview = makeStatSheet({ offense: { ...makeStatSheet().offense, damage_score: 120 } })
+    setupMocks({ statSheet: base, previewStatSheet: preview, isComputingStats: false })
+    const { container } = render(<StatSheetPanel />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Offense' }))
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
   it('passes axe accessibility check on all tabs', async () => {
     setupMocks({ statSheet: makeStatSheet({ minion: {} }) })
     const { container } = render(<StatSheetPanel />)

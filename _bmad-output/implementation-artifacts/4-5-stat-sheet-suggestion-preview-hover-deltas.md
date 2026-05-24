@@ -3,7 +3,7 @@ title: 'Stat Sheet Suggestion Preview — Hover Deltas'
 story_id: '4.5'
 story_key: '4-5-stat-sheet-suggestion-preview-hover-deltas'
 epic: 4
-status: review
+status: done
 created: '2026-05-24'
 ---
 
@@ -629,9 +629,9 @@ claude-sonnet-4-6
 
 ### Review Findings
 
-- [ ] [Review][Patch] `toNodeId` allocation lacks `Math.max(0, …)` guard [SuggestionsList.tsx:handleHoverEnter] — `modifiedAllocations[toNodeId] = (modifiedAllocations[toNodeId] ?? 0) + pointsChange` has no lower bound. `fromNodeId` branch uses `Math.max(0, …)` but `toNodeId` does not. If `pointsChange` is ever ≤ 0 the allocation goes negative, producing an invalid snapshot for `compute_stats`. Fix: wrap with `Math.max(0, …)` consistent with the `fromNodeId` branch.
-- [ ] [Review][Patch] Missing AC2 test — `mouseleave` clearing `previewStatSheet` not covered [SuggestionsList.test.tsx] — Both new hover tests exercise only `mouseenter`. AC2 requires that mouse-off clears the stat sheet delta display. Add a test: `fireEvent.mouseLeave(card)` then assert `setPreviewStatSheet` was called with `null`.
-- [ ] [Review][Patch] Missing AC4 axe test with `previewStatSheet` set [StatSheetPanel.test.tsx] — The existing axe test runs with `previewStatSheet: null`, so `DeltaBadge` never renders. AC4 requires `axe(container)` passes with delta badges visible. Add an axe assertion inside the positive-delta test, or add a dedicated axe test with `previewStatSheet` set.
+- [x] [Review][Patch] `toNodeId` allocation lacks `Math.max(0, …)` guard [SuggestionsList.tsx:handleHoverEnter] — `modifiedAllocations[toNodeId] = (modifiedAllocations[toNodeId] ?? 0) + pointsChange` has no lower bound. `fromNodeId` branch uses `Math.max(0, …)` but `toNodeId` does not. If `pointsChange` is ever ≤ 0 the allocation goes negative, producing an invalid snapshot for `compute_stats`. Fix: wrap with `Math.max(0, …)` consistent with the `fromNodeId` branch.
+- [x] [Review][Patch] Missing AC2 test — `mouseleave` clearing `previewStatSheet` not covered [SuggestionsList.test.tsx] — Both new hover tests exercise only `mouseenter`. AC2 requires that mouse-off clears the stat sheet delta display. Add a test: `fireEvent.mouseLeave(card)` then assert `setPreviewStatSheet` was called with `null`.
+- [x] [Review][Patch] Missing AC4 axe test with `previewStatSheet` set [StatSheetPanel.test.tsx] — The existing axe test runs with `previewStatSheet: null`, so `DeltaBadge` never renders. AC4 requires `axe(container)` passes with delta badges visible. Add an axe assertion inside the positive-delta test, or add a dedicated axe test with `previewStatSheet` set.
 - [x] [Review][Defer] `isComputingStats` read from hook subscription, not `.getState()` [SuggestionsList.tsx:handleHoverEnter] — `activeBuild` and `gameData` use `.getState()` (always fresh), but `isComputingStats` uses a hook closure value. In practice the window where these diverge is zero (Zustand re-renders synchronously); spec dev notes acknowledge the post-hover race as acceptable. Inconsistency worth aligning if concurrent mode is ever adopted. — deferred, pre-existing pattern acceptable per spec
 - [x] [Review][Defer] `clearSuggestions()` resets store but does not cancel `previewAbortRef` [optimizationStore.ts + SuggestionsList.tsx] — An in-flight hover IPC can resolve after suggestions are cleared and write a non-null `previewStatSheet` back into the store. `statSheet` is also null after a clear so `deltas` won't render, making this benign. — deferred, benign in current flow
 - [x] [Review][Defer] AC5 stale-guard behavior untested [SuggestionsList.test.tsx] — The `previewAbortRef` guard pattern (hover A → hover B before A resolves → A discarded) has no automated test. Requires Promise control fixtures to test. — deferred, complex async test setup

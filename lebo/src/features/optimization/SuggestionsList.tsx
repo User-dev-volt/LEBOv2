@@ -193,7 +193,7 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
 
     const { toNodeId, fromNodeId, pointsChange } = suggestion.nodeChange
     const modifiedAllocations = { ...activeBuild.nodeAllocations }
-    modifiedAllocations[toNodeId] = (modifiedAllocations[toNodeId] ?? 0) + pointsChange
+    modifiedAllocations[toNodeId] = Math.max(0, (modifiedAllocations[toNodeId] ?? 0) + pointsChange)
     if (fromNodeId) {
       modifiedAllocations[fromNodeId] = Math.max(
         0,

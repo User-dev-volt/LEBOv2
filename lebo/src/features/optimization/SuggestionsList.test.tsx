@@ -585,6 +585,24 @@ describe('SuggestionsList', () => {
     expect(vi.mocked(invokeCommand)).not.toHaveBeenCalledWith('compute_stats', expect.anything())
   })
 
+  it('mouseleave clears previewStatSheet (AC2)', async () => {
+    const { invokeCommand } = await import('../../shared/utils/invokeCommand')
+    vi.mocked(invokeCommand).mockClear()
+    useOptimizationStore.setState({
+      suggestions: [makeSuggestion(1)],
+      isComputingStats: false,
+      isOptimizing: false,
+    })
+    useBuildStore.setState({ activeBuild: MOCK_BUILD })
+    useGameDataStore.setState({ gameData: { classes: {} } as unknown as GameData })
+    render(<SuggestionsList onRetry={vi.fn()} />)
+    const card = screen.getByTestId('suggestion-card-1')
+    fireEvent.mouseEnter(card)
+    await act(async () => {})
+    fireEvent.mouseLeave(card)
+    expect(useOptimizationStore.getState().previewStatSheet).toBeNull()
+  })
+
   it('global keyboard:escape event clears focused card state', async () => {
     useOptimizationStore.setState({
       suggestions: [makeSuggestion(1)],
