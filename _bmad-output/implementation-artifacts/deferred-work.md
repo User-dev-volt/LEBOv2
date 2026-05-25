@@ -138,3 +138,7 @@
 - **`from_node = path[0]` for multi-hop knapsack paths** [`scoring_commands.rs, assemble_run_optimization_payload`] — In cheapest-first paths, `path[0]` is a bridge allocation node, not a deallocation source; sending it as `from_node_id` to Claude is conceptually misleading. Pre-existing code; not introduced by 4.4.
 - **Overlay rings stack on top of suggestion glow rings** [`pixiRenderer.ts`] — A Claude-suggested node can simultaneously carry an efficiency tier ring and a suggestion glow ring; both draw on the same node. Minor visual noise.
 - **<= 2ms frame-render AC unverifiable** [`pixiRenderer.ts, renderTree()`] — No instrumentation or test asserts render time. O(N) circle strokes by design; add a `performance.now()` guard or DevTools profiling session if jank is reported.
+
+## Deferred from: code review of 5-3-run-gear-scoring-tauri-command-and-typescript-wiring (2026-05-24)
+
+- **`priority_slot` may be empty string in degraded mode** [`scoring-core/src/gear.rs`] — When `gear_affixes` is empty, all 12 slots return `upgrade_score: 0.0`. The `priority_slot` selection logic in `gear.rs` was not inspected in this review. Story 5.4 should guard against `gearAnalysis.priority_slot === ""` when rendering the priority slot display.

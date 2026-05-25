@@ -3,7 +3,7 @@ title: 'run_gear_scoring Tauri Command & TypeScript Wiring'
 story_id: '5.3'
 story_key: '5-3-run-gear-scoring-tauri-command-and-typescript-wiring'
 epic: 5
-status: review
+status: done
 created: '2026-05-24'
 ---
 
@@ -747,3 +747,7 @@ No blockers encountered. All implementations matched the Technical Requirements 
 - `lebo/src/shared/stores/useGearStream.ts` — CREATED (hook + `startGearAnalysis()`)
 - `lebo/src/shared/stores/useGearStream.test.ts` — CREATED (8 tests; 8/8 pass)
 - `lebo/src/features/gear-optimization/GearOptimizationView.tsx` — MODIFIED (wired `useGearStream`, `startGearAnalysis`, loading state)
+
+### Review Findings
+
+- [x] [Review][Defer] `priority_slot` may be empty string when `gear_affixes` is empty (degraded mode) [`scoring-core/src/gear.rs` — not modified in this diff] — deferred, pre-existing
