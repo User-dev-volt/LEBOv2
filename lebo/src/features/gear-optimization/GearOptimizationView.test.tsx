@@ -2,11 +2,13 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { useBuildStore } from '../../shared/stores/buildStore'
 import { useAppStore } from '../../shared/stores/appStore'
+import { useOptimizationStore } from '../../shared/stores/optimizationStore'
 import { GearOptimizationView } from './GearOptimizationView'
 import type { BuildState } from '../../shared/types/build'
 
 const initialBuildState = useBuildStore.getState()
 const initialAppState = useAppStore.getState()
+const initialOptimizationState = useOptimizationStore.getState()
 
 function makeBuild(skillRoles: Record<string, string> = {}): BuildState {
   return {
@@ -35,6 +37,7 @@ describe('GearOptimizationView', () => {
   beforeEach(() => {
     useBuildStore.setState(initialBuildState, true)
     useAppStore.setState(initialAppState, true)
+    useOptimizationStore.setState(initialOptimizationState, true)
   })
 
   it('shows no-roles prompt when no roles are set', () => {
@@ -70,5 +73,26 @@ describe('GearOptimizationView', () => {
     render(<GearOptimizationView />)
     fireEvent.click(screen.getByTestId('gear-optimization-back-button'))
     expect(useAppStore.getState().currentView).toBe('main')
+  })
+
+  it('shows slot ranking list when gearAnalysis is available', () => {
+    useOptimizationStore.setState({
+      gearAnalysis: {
+        slot_rankings: [{ slot: 'helmet', upgrade_score: 0, efficiency_percent: 100, ideal_prefix: [], ideal_suffix: [] }],
+        priority_slot: '',
+      },
+      isAnalyzingGear: false,
+    })
+    useBuildStore.setState({ activeBuild: makeBuild({ 'slot-0': 'primary_offense' }) })
+    render(<GearOptimizationView />)
+    expect(screen.getByText('Helmet')).toBeInTheDocument()
+    expect(screen.getByText('100% of ideal')).toBeInTheDocument()
+  })
+
+  it('hides slot ranking list when gearAnalysis is null', () => {
+    useOptimizationStore.setState({ gearAnalysis: null })
+    useBuildStore.setState({ activeBuild: makeBuild() })
+    render(<GearOptimizationView />)
+    expect(screen.queryByTestId('gear-slot-ranking-list')).toBeNull()
   })
 })

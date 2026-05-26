@@ -3,7 +3,7 @@ title: 'Gear Optimization View — Priority Ranking & Wishlists'
 story_id: '5.4'
 story_key: '5-4-gear-optimization-view-priority-ranking-and-wishlists'
 epic: 5
-status: ready-for-dev
+status: review
 created: '2026-05-26'
 ---
 
@@ -123,35 +123,35 @@ This is Story 5.4 — the display layer for Epic 5's gear analysis pipeline. Sto
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `GearSlotRankingList.tsx` component (AC1–AC8)
-  - [ ] Create `lebo/src/features/gear-optimization/GearSlotRankingList.tsx`
-  - [ ] Accept props: `rankings: GearSlotRanking[]`, `prioritySlot: string` (see Technical Requirements §1)
-  - [ ] Build slot ID → display name lookup using `GEAR_SLOTS` from `gearData.ts` (see Technical Requirements §2)
-  - [ ] Render each slot row with: display name, "XX% of ideal" label, Priority badge, wishlist section
-  - [ ] Implement prefix/suffix wishlist rows with satisfied/missing visual states
-  - [ ] Add graceful empty wishlist state (AC6)
-  - [ ] Handle "correct — keep" via Technical Requirements §4 approach
-  - [ ] `pnpm build` passes
+- [x] Task 1: Create `GearSlotRankingList.tsx` component (AC1–AC8)
+  - [x] Create `lebo/src/features/gear-optimization/GearSlotRankingList.tsx`
+  - [x] Accept props: `rankings: GearSlotRanking[]`, `prioritySlot: string` (see Technical Requirements §1)
+  - [x] Build slot ID → display name lookup using `GEAR_SLOTS` from `gearData.ts` (see Technical Requirements §2)
+  - [x] Render each slot row with: display name, "XX% of ideal" label, Priority badge, wishlist section
+  - [x] Implement prefix/suffix wishlist rows with satisfied/missing visual states
+  - [x] Add graceful empty wishlist state (AC6)
+  - [x] Handle "correct — keep" via Technical Requirements §4 approach — deferred with TODO comment; Rust `GearSlotRanking` has no `is_correct_unique` field and `GearItemV2` has no rarity field
+  - [x] `pnpm build` passes
 
-- [ ] Task 2: Update `GearOptimizationView.tsx` to integrate the ranking list (AC1, AC9)
-  - [ ] Import `GearSlotRankingList` and `useOptimizationStore` gearAnalysis selector
-  - [ ] Render `<GearSlotRankingList>` below the analyze button section when `gearAnalysis` is non-null
-  - [ ] Do NOT re-mount `useGearStream()` — it is already mounted (avoid duplicate subscription)
-  - [ ] `pnpm build` passes
+- [x] Task 2: Update `GearOptimizationView.tsx` to integrate the ranking list (AC1, AC9)
+  - [x] Import `GearSlotRankingList` and `useOptimizationStore` gearAnalysis selector
+  - [x] Render `<GearSlotRankingList>` below the analyze button section when `gearAnalysis` is non-null
+  - [x] Do NOT re-mount `useGearStream()` — it is already mounted (avoid duplicate subscription)
+  - [x] `pnpm build` passes
 
-- [ ] Task 3: Create `GearSlotRankingList.test.tsx` (AC10, AC12)
-  - [ ] Test: renders slot rows when rankings are provided
-  - [ ] Test: priority slot gets Priority badge; non-priority slots do not
-  - [ ] Test: empty priority_slot string shows no badge
-  - [ ] Test: wishlist items with `satisfied: true` show checkmark
-  - [ ] Test: wishlist items with `satisfied: false` show highlight (not checkmark)
-  - [ ] Test: empty ideal_prefix/ideal_suffix shows "no affix data" message
-  - [ ] Test: axe accessibility check passes
-  - [ ] `pnpm vitest` passes (new tests green, pre-existing unaffected)
+- [x] Task 3: Create `GearSlotRankingList.test.tsx` (AC10, AC12)
+  - [x] Test: renders slot rows when rankings are provided
+  - [x] Test: priority slot gets Priority badge; non-priority slots do not
+  - [x] Test: empty priority_slot string shows no badge
+  - [x] Test: wishlist items with `satisfied: true` show checkmark
+  - [x] Test: wishlist items with `satisfied: false` show highlight (not checkmark)
+  - [x] Test: empty ideal_prefix/ideal_suffix shows "no affix data" message
+  - [x] Test: axe accessibility check passes
+  - [x] `pnpm vitest` passes (new tests green, pre-existing unaffected)
 
-- [ ] Task 4: Update `GearOptimizationView.test.tsx` (if needed)
-  - [ ] Check existing tests still pass — the new `GearSlotRankingList` only renders when `gearAnalysis` is non-null, so existing tests that mock `gearAnalysis: null` are unaffected
-  - [ ] If any test breaks, fix — do NOT change the test IDs that existing tests assert on
+- [x] Task 4: Update `GearOptimizationView.test.tsx` (if needed)
+  - [x] Check existing tests still pass — the new `GearSlotRankingList` only renders when `gearAnalysis` is non-null, so existing tests that mock `gearAnalysis: null` are unaffected
+  - [x] Added 2 new integration tests: gearAnalysis available shows ranking list; null hides it; reset `useOptimizationStore` in `beforeEach`
 
 ---
 
@@ -557,6 +557,19 @@ claude-sonnet-4-6 (2026-05-26)
 
 ### Debug Log References
 
+No blockers. Implementation matched story spec on first attempt.
+
 ### Completion Notes List
 
+- **Task 1:** Created `GearSlotRankingList.tsx` as a props-only component. Inline `SLOT_DISPLAY` map covers both GEAR_SLOTS IDs and Rust canonical variants. Efficiency percent color thresholds applied (≥80% neutral, ≥50% gold, <50% damage color). `○`/`✓` indicators + `aria-label` provide color-independent accessibility. Mechanical reason guarded with `{affix.mechanical_reason && ...}` for degraded-mode safety. Confirmed Rust `GearSlotRanking` has no `is_correct_unique` field and `GearItemV2` has no rarity field — deferred AC7 with TODO comment per story guidance.
+- **Task 2:** `GearOptimizationView.tsx` updated minimally — added `gearAnalysis` selector and conditional `<GearSlotRankingList>` render. No duplicate `useGearStream()` call.
+- **Task 3:** 15 tests in `GearSlotRankingList.test.tsx` — all pass. Covers display name mapping, fallback to raw ID, priority badge logic, satisfied/missing differentiation, mechanical reason display, empty wishlist state, Prefixes/Suffixes labels, multiple slots, and axe accessibility.
+- **Task 4:** Added `useOptimizationStore` reset in `beforeEach`, 2 new integration tests (gearAnalysis available → list shown; null → list hidden). All 7 `GearOptimizationView.test.tsx` tests pass. Pre-existing failures in `SkillTreeCanvas`, `TreeControls`, `ProviderSelector`, `Settings` are unchanged (confirmed pre-existing from Story 5.3 notes).
+- **Build:** `pnpm build` succeeds with zero TypeScript errors. Chunk size warning is pre-existing.
+
 ### File List
+
+- `lebo/src/features/gear-optimization/GearSlotRankingList.tsx` — CREATED
+- `lebo/src/features/gear-optimization/GearSlotRankingList.test.tsx` — CREATED (15 tests)
+- `lebo/src/features/gear-optimization/GearOptimizationView.tsx` — MODIFIED (import + gearAnalysis selector + conditional ranking list)
+- `lebo/src/features/gear-optimization/GearOptimizationView.test.tsx` — MODIFIED (import optimizationStore; reset in beforeEach; 2 new tests)

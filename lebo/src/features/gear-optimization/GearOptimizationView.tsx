@@ -4,6 +4,7 @@ import { useBuildStore } from '../../shared/stores/buildStore'
 import { useOptimizationStore } from '../../shared/stores/optimizationStore'
 import { useGearStream, startGearAnalysis } from '../../shared/stores/useGearStream'
 import { SkillRoleDesignator } from './SkillRoleDesignator'
+import { GearSlotRankingList } from './GearSlotRankingList'
 
 export function GearOptimizationView() {
   useGearStream()
@@ -11,6 +12,7 @@ export function GearOptimizationView() {
   const setCurrentView = useAppStore((s) => s.setCurrentView)
   const activeBuild = useBuildStore((s) => s.activeBuild)
   const isAnalyzingGear = useOptimizationStore((s) => s.isAnalyzingGear)
+  const gearAnalysis = useOptimizationStore((s) => s.gearAnalysis)
   const [analyzeError, setAnalyzeError] = useState<string | null>(null)
 
   const skillRoles = activeBuild?.skillRoles ?? {}
@@ -101,6 +103,14 @@ export function GearOptimizationView() {
             </p>
           )}
         </div>
+
+        {/* Gear slot ranking — shown when analysis results are available */}
+        {gearAnalysis !== null && (
+          <GearSlotRankingList
+            rankings={gearAnalysis.slot_rankings}
+            prioritySlot={gearAnalysis.priority_slot}
+          />
+        )}
       </div>
     </div>
   )
