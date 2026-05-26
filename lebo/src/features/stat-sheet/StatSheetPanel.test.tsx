@@ -206,6 +206,15 @@ describe('StatSheetPanel', () => {
     expect(await axe(container)).toHaveNoViolations()
   })
 
+  it('fire resistance label uses fire damage-type color', () => {
+    setupMocks({ statSheet: makeStatSheet() })
+    render(<StatSheetPanel />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Defense' }))
+
+    const fireLabel = screen.getByText('Fire Res')
+    expect(fireLabel).toHaveStyle({ color: 'var(--color-dmg-fire)' })
+  })
+
   it('passes axe accessibility check on all tabs', async () => {
     setupMocks({ statSheet: makeStatSheet({ minion: {} }) })
     const { container } = render(<StatSheetPanel />)

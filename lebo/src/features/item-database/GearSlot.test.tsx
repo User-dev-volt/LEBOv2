@@ -236,7 +236,7 @@ describe('GearSlot', () => {
     expect(screen.queryByPlaceholderText('Search items…')).toBeNull()
   })
 
-  it('unique item affixes resolve and show AffixTierControl rows', async () => {
+  it('unique item affixes are read-only — no tier slider rendered', async () => {
     render(
       <GearSlot slotId="body" slotName="Body" itemDatabase={mockItemDatabase} />
     )
@@ -247,7 +247,25 @@ describe('GearSlot', () => {
     await userEvent.click(screen.getByText('Solarum Plate'))
 
     await waitFor(() => {
-      expect(screen.getByRole('slider', { name: 'Increased Health tier' })).toBeInTheDocument()
+      // Affix name shown as text
+      expect(screen.getByText('Increased Health')).toBeInTheDocument()
+      // No slider — unique affixes are read-only
+      expect(screen.queryByRole('slider', { name: 'Increased Health tier' })).toBeNull()
+    })
+  })
+
+  it('unique item hides the "Add affix" button', async () => {
+    render(
+      <GearSlot slotId="body" slotName="Body" itemDatabase={mockItemDatabase} />
+    )
+    const input = screen.getByPlaceholderText('Search items…')
+    await userEvent.type(input, 'Solar')
+
+    await waitFor(() => expect(screen.getByText('Solarum Plate')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('Solarum Plate'))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Add custom affix to Body' })).toBeNull()
     })
   })
 

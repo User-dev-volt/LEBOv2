@@ -12,6 +12,7 @@ import type { ItemDatabase, AffixEntry, SearchResult } from '../../shared/types/
 import type { AffixEntryV2 } from '../../shared/types/build'
 import { useBuildStore } from '../../shared/stores/buildStore'
 import { searchItems } from './itemSearch'
+import { getRarityColorForItemType } from '../../shared/utils/rarityColors'
 
 interface ResolvedAffix {
   affixId: string
@@ -310,7 +311,7 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
             <div className="flex flex-col gap-0.5 min-w-0">
               <span
                 className="text-[14px] font-semibold truncate"
-                style={{ color: 'var(--color-text-primary)' }}
+                style={{ color: getRarityColorForItemType(selectedItem.type) }}
               >
                 {selectedItem.name}
               </span>
@@ -330,56 +331,73 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
               ×
             </button>
           </div>
-          {resolvedAffixes.map((r) => (
-            <div key={r.affixId} className="flex items-center gap-2 px-1">
-              <span
-                className="flex-1 text-[13px] truncate"
-                style={{ color: 'var(--color-text-secondary)' }}
+          {selectedItem.type === 'unique' ? (
+            /* Unique item: affixes are fixed — display read-only, no tier controls */
+            resolvedAffixes.map((r) => (
+              <div key={r.affixId} className="flex items-center px-1 py-0.5">
+                <span
+                  className="text-[13px] truncate"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  {r.name}
+                </span>
+              </div>
+            ))
+          ) : (
+            /* Base item: affixes are editable */
+            <>
+              {resolvedAffixes.map((r) => (
+                <div key={r.affixId} className="flex items-center gap-2 px-1">
+                  <span
+                    className="flex-1 text-[13px] truncate"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    {r.name}
+                  </span>
+                  <AffixTierControl
+                    affixEntry={r.affixEntry}
+                    currentTier={affixTiers[r.affixId] ?? medianTier(r.affixEntry)}
+                    onChange={(tier) => handleTierChange(r.affixId, tier)}
+                  />
+                </div>
+              ))}
+              {customResolvedAffixes.map((r) => (
+                <div key={r.affixId} className="flex items-center gap-2 px-1">
+                  <span
+                    className="flex-1 text-[13px] truncate"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    {r.name}
+                  </span>
+                  <AffixTierControl
+                    affixEntry={r.affixEntry}
+                    currentTier={affixTiers[r.affixId] ?? medianTier(r.affixEntry)}
+                    onChange={(tier) => handleTierChange(r.affixId, tier)}
+                  />
+                </div>
+              ))}
+              <button
+                onClick={() => setAffixPickerOpen(true)}
+                aria-label={`Add custom affix to ${slotName}`}
+                className="text-[11px] self-start mt-1"
+                style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               >
-                {r.name}
-              </span>
-              <AffixTierControl
-                affixEntry={r.affixEntry}
-                currentTier={affixTiers[r.affixId] ?? medianTier(r.affixEntry)}
-                onChange={(tier) => handleTierChange(r.affixId, tier)}
-              />
-            </div>
-          ))}
-          {customResolvedAffixes.map((r) => (
-            <div key={r.affixId} className="flex items-center gap-2 px-1">
-              <span
-                className="flex-1 text-[13px] truncate"
-                style={{ color: 'var(--color-text-secondary)' }}
-              >
-                {r.name}
-              </span>
-              <AffixTierControl
-                affixEntry={r.affixEntry}
-                currentTier={affixTiers[r.affixId] ?? medianTier(r.affixEntry)}
-                onChange={(tier) => handleTierChange(r.affixId, tier)}
-              />
-            </div>
-          ))}
-          <button
-            onClick={() => setAffixPickerOpen(true)}
-            aria-label={`Add custom affix to ${slotName}`}
-            className="text-[11px] self-start mt-1"
-            style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-          >
-            + Add affix
-          </button>
-          {affixPickerOpen && itemDatabase && (
-            <div className="relative mt-1">
-              <AffixPicker
-                allAffixes={itemDatabase.affixes}
-                excludeIds={[
-                  ...resolvedAffixes.map((r) => r.affixId),
-                  ...customAffixIds,
-                ]}
-                onSelect={handleAddCustomAffix}
-                onClose={() => setAffixPickerOpen(false)}
-              />
-            </div>
+                + Add affix
+              </button>
+              {affixPickerOpen && itemDatabase && (
+                <div className="relative mt-1">
+                  <AffixPicker
+                    allAffixes={itemDatabase.affixes}
+                    excludeIds={[
+                      ...resolvedAffixes.map((r) => r.affixId),
+                      ...customAffixIds,
+                    ]}
+                    onSelect={handleAddCustomAffix}
+                    onClose={() => setAffixPickerOpen(false)}
+                  />
+                </div>
+              )}
+            </>
           )}
         </>
       )}

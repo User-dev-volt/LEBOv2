@@ -81,7 +81,7 @@ development_status:
   # Story 6.3 scope is now: undo/redo buttons + undo/redo key bindings only (C/S/P shortcuts
   # are superseded by the 1-5 tab model; update epics.md Story 6.3 ACs before creating story).
   epic-6: in-progress
-  6-1-item-rarity-and-damage-type-color-systems: ready-for-dev
+  6-1-item-rarity-and-damage-type-color-systems: review
   6-2-tree-background-textures: backlog
   6-3-keyboard-shortcuts-and-undo-redo-controls: backlog
   6-4-tooltip-polish-and-multi-point-allocation: backlog

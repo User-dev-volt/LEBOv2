@@ -15,13 +15,13 @@ type ResistanceFieldKey = Extract<
   | 'physical_resistance'
 >
 
-const RESISTANCES: Array<{ field: ResistanceFieldKey; warnType: string; label: string }> = [
-  { field: 'fire_resistance', warnType: 'fire_resistance_uncapped', label: 'Fire Res' },
-  { field: 'cold_resistance', warnType: 'cold_resistance_uncapped', label: 'Cold Res' },
-  { field: 'lightning_resistance', warnType: 'lightning_resistance_uncapped', label: 'Lightning Res' },
-  { field: 'void_resistance', warnType: 'void_resistance_uncapped', label: 'Void Res' },
-  { field: 'poison_resistance', warnType: 'poison_resistance_uncapped', label: 'Poison Res' },
-  { field: 'physical_resistance', warnType: 'physical_resistance_uncapped', label: 'Physical Res' },
+const RESISTANCES: Array<{ field: ResistanceFieldKey; warnType: string; label: string; damageTypeColor: string }> = [
+  { field: 'fire_resistance',      warnType: 'fire_resistance_uncapped',      label: 'Fire Res',      damageTypeColor: 'var(--color-dmg-fire)'      },
+  { field: 'cold_resistance',      warnType: 'cold_resistance_uncapped',      label: 'Cold Res',      damageTypeColor: 'var(--color-dmg-cold)'      },
+  { field: 'lightning_resistance', warnType: 'lightning_resistance_uncapped', label: 'Lightning Res', damageTypeColor: 'var(--color-dmg-lightning)'  },
+  { field: 'void_resistance',      warnType: 'void_resistance_uncapped',      label: 'Void Res',      damageTypeColor: 'var(--color-dmg-void)'      },
+  { field: 'poison_resistance',    warnType: 'poison_resistance_uncapped',    label: 'Poison Res',    damageTypeColor: 'var(--color-dmg-poison)'    },
+  { field: 'physical_resistance',  warnType: 'physical_resistance_uncapped',  label: 'Physical Res',  damageTypeColor: 'var(--color-dmg-physical)'  },
 ]
 
 const TAB_CLASS =
@@ -129,13 +129,14 @@ interface StatRowProps {
   unit?: string
   warningGap?: number
   delta?: number
+  labelColor?: string
 }
 
-function StatRow({ label, value, unit = '', warningGap, delta }: StatRowProps) {
+function StatRow({ label, value, unit = '', warningGap, delta, labelColor }: StatRowProps) {
   const isWarning = warningGap !== undefined
   return (
     <div className="flex justify-between items-baseline py-0.5 min-w-0">
-      <span className="text-xs shrink-0 mr-2" style={{ color: 'var(--color-text-secondary)' }}>
+      <span className="text-xs shrink-0 mr-2" style={{ color: labelColor ?? 'var(--color-text-secondary)' }}>
         {label}
       </span>
       <span
@@ -271,7 +272,7 @@ export function StatSheetPanel() {
             <StatRow label="Armor" value={statSheet ? fmtInt(statSheet.defense.armor) : '—'} delta={deltas?.armor} />
             <StatRow label="Endurance" value={statSheet ? fmt(statSheet.defense.endurance_percent) : '—'} unit="%" delta={deltas?.endurance_percent} />
             <StatRow label="End. Threshold" value={statSheet ? fmtInt(statSheet.defense.endurance_threshold) : '—'} delta={deltas?.endurance_threshold} />
-            {RESISTANCES.map(({ field, warnType, label }) => {
+            {RESISTANCES.map(({ field, warnType, label, damageTypeColor }) => {
               const warn = statSheet ? findWarning(statSheet.warnings, warnType) : undefined
               return (
                 <StatRow
@@ -281,6 +282,7 @@ export function StatSheetPanel() {
                   unit="%"
                   warningGap={warn?.gap}
                   delta={deltas?.[field as keyof StatDeltas] as number | undefined}
+                  labelColor={damageTypeColor}
                 />
               )
             })}

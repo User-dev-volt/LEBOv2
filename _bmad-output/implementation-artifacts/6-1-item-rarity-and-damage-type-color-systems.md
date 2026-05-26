@@ -3,7 +3,7 @@ title: 'Item Rarity & Damage-Type Color Systems'
 story_id: '6.1'
 story_key: '6-1-item-rarity-and-damage-type-color-systems'
 epic: 6
-status: ready-for-dev
+status: review
 created: '2026-05-26'
 ---
 
@@ -82,30 +82,30 @@ This is Story 6.1 — the first story in Epic 6 (Visual Fidelity & UX Polish). A
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1:** Add CSS design tokens to `global.css` (AC1, AC3)
+- [x] **Task 1:** Add CSS design tokens to `global.css` (AC1, AC3)
   - Add 7 rarity CSS tokens and 7 damage-type CSS tokens under `@theme` in `src/assets/styles/global.css`
 
-- [ ] **Task 2:** Create `src/shared/utils/rarityColors.ts` (AC1, AC3)
+- [x] **Task 2:** Create `src/shared/utils/rarityColors.ts` (AC1, AC3)
   - Export `RARITY_COLORS` record mapping `'common' | 'magic' | 'rare' | 'unique' | 'set' | 'exalted' | 'legendary'` → hex string
   - Export `getRarityColorForItemType(type: 'base' | 'unique'): string` — maps `'unique'` → Unique orange, `'base'` → Common light gray
   - Export `DAMAGE_TYPE_COLORS` record mapping `DamageType` → CSS var name string
   - Export `getDamageTypeColor(type: string): string` — returns CSS var string (e.g. `'var(--color-dmg-fire)'`)
   - Create `rarityColors.test.ts` co-located in `src/shared/utils/`
 
-- [ ] **Task 3:** Update `GearSlot.tsx` — rarity color + unique read-only (AC1, AC2)
+- [x] **Task 3:** Update `GearSlot.tsx` — rarity color + unique read-only (AC1, AC2)
   - Item name span: apply `getRarityColorForItemType(selectedItem.type)` as inline `style={{ color }}`
   - When `selectedItem.type === 'unique'`: render `resolvedAffixes` as plain text rows (name only, no `AffixTierControl`)
   - When `selectedItem.type === 'unique'`: hide the "Add affix" button (no `affixPickerOpen` path)
   - `customResolvedAffixes` and `customAffixIds` state still exists — just not surfaced for unique items
   - `pnpm build` passes (no unused vars — verify `customResolvedAffixes` reference is cleaned up)
 
-- [ ] **Task 4:** Update `StatSheetPanel.tsx` — damage-type colors on resistance labels (AC3)
+- [x] **Task 4:** Update `StatSheetPanel.tsx` — damage-type colors on resistance labels (AC3)
   - Add `damageTypeColor` field to the `RESISTANCES` array entries
   - Update `StatRow` in the Defense tab resistance render loop: pass `labelColor={r.damageTypeColor}` to `StatRow`
   - Update `StatRow` interface and rendering to accept optional `labelColor?: string` that overrides the default `var(--color-text-secondary)` on the label span
   - Resistance *values* stay `var(--color-text-primary)` (or warning red) — only the *label* gets the damage-type color
 
-- [ ] **Task 5:** Update tests (AC2, AC4)
+- [x] **Task 5:** Update tests (AC2, AC4)
   - `GearSlot.test.tsx`: update the existing "unique item affixes resolve and show AffixTierControl rows" test — it must now assert that **no slider** is present for unique items (read-only assertion replaces the old AffixTierControl assertion)
   - `GearSlot.test.tsx`: add test "unique item hides Add affix button"
   - `StatSheetPanel.test.tsx`: add test "defense resistance labels have damage-type color" (check `data-testid` or element color style on Fire Res label)
@@ -530,15 +530,19 @@ pnpm vitest                                                         # Full suite
 
 ### Agent Model Used
 
-_To be filled by dev agent_
+claude-sonnet-4-6 (2026-05-26)
 
 ### Debug Log References
 
-_To be filled by dev agent_
+No blockers. All tasks completed without issues. Pre-existing test failures in `AppHeader`, `RightPanel`, `ProviderSelector`, `Settings`, `SkillTreeCanvas`, `TreeControls` are unchanged from Story 5.5 — confirmed not introduced by this story.
 
 ### Completion Notes List
 
-_To be filled by dev agent_
+- **Task 1:** Added 14 CSS tokens to `global.css` inside `@theme {}`: 7 rarity (`--color-rarity-*`) and 7 damage-type (`--color-dmg-*`) custom properties. All hex values match the LE canonical palette from the PRD.
+- **Task 2:** Created `rarityColors.ts` with `RARITY_COLORS` (7 entries), `getRarityColorForItemType()`, `DAMAGE_TYPE_COLORS` (7 entries), `getDamageTypeColor()`. Created `rarityColors.test.ts` with 21 tests — all pass.
+- **Task 3:** Updated `GearSlot.tsx` — item name now uses `getRarityColorForItemType(selectedItem.type)` giving Unique orange (#E87722) for unique items and Common light gray (#E8E8E8) for base items. Unique items now render their affix list as read-only text rows (no `AffixTierControl`), and the "Add affix" button / AffixPicker are hidden. Base items retain full edit functionality. `customResolvedAffixes` memo is still computed for base items but gated behind the `type !== 'unique'` branch — no TypeScript unused-var issue.
+- **Task 4:** Updated `StatSheetPanel.tsx` — `RESISTANCES` array extended with `damageTypeColor` field per entry. `StatRow` accepts optional `labelColor?: string`. Resistance labels now render in their canonical damage-type CSS var (fire → `var(--color-dmg-fire)`, etc.). Resistance values remain in `--color-text-primary` (or warning red when uncapped).
+- **Task 5:** Updated `GearSlot.test.tsx`: renamed existing unique-affix test to assert no slider; added "unique item hides Add affix button" test. Added fire-resistance label color test to `StatSheetPanel.test.tsx`. Story-relevant suite: 61/61 pass. Full suite: 987/1001 pass (14 pre-existing failures unchanged).
 
 ### Review Findings
 
@@ -546,4 +550,10 @@ _To be filled after code review_
 
 ### File List
 
-_To be filled by dev agent_
+- `lebo/src/assets/styles/global.css` — MODIFIED (added 14 CSS tokens)
+- `lebo/src/shared/utils/rarityColors.ts` — CREATED
+- `lebo/src/shared/utils/rarityColors.test.ts` — CREATED (21 tests)
+- `lebo/src/features/item-database/GearSlot.tsx` — MODIFIED (rarity color + unique read-only)
+- `lebo/src/features/item-database/GearSlot.test.tsx` — MODIFIED (updated unique-affix test + new test)
+- `lebo/src/features/stat-sheet/StatSheetPanel.tsx` — MODIFIED (damageTypeColor in RESISTANCES + StatRow labelColor)
+- `lebo/src/features/stat-sheet/StatSheetPanel.test.tsx` — MODIFIED (fire label color test)
