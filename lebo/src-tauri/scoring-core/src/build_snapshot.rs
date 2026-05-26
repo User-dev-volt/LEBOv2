@@ -73,4 +73,8 @@ pub struct BuildSnapshot {
     /// Empty = no element filtering applied. Non-empty = affixes with mismatching elements score 0.0.
     #[serde(default)]
     pub primary_offense_damage_elements: Vec<String>,
+    /// Human-readable name of the Primary Offense skill (e.g., "Poison Eruption").
+    /// Populated by TypeScript via buildSnapshotSerializer. None when no Primary Offense is set.
+    #[serde(default)]
+    pub primary_offense_skill_name: Option<String>,
 }

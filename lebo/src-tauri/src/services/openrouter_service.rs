@@ -2,8 +2,8 @@ use futures_util::StreamExt;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use tauri::Emitter;
-use crate::services::claude_service::{SuggestionEvent, SuggestionReceivedPayload, OptimizationCompletePayload, OptimizationErrorPayload};
-use crate::services::prompts::OPTIMIZATION_SYSTEM_PROMPT;
+use crate::services::claude_service::{SuggestionEvent, SuggestionReceivedPayload, OptimizationCompletePayload, OptimizationErrorPayload, GearNarrativeChunkPayload, GearNarrativeCompletePayload};
+use crate::services::prompts::{GEAR_NARRATIVE_SYSTEM_PROMPT, OPTIMIZATION_SYSTEM_PROMPT};
 
 const BASE_URL: &str = "https://openrouter.ai/api/v1/chat/completions";
 const TIMEOUT_SECS: u64 = 45;
@@ -336,6 +336,119 @@ async fn try_model(
             &OptimizationCompletePayload { suggestion_count: *suggestion_count },
         )
         .map_err(|e| StreamError::Fatal(format!("APP_ERROR: emit complete failed: {}", e)))?;
+
+    Ok(())
+}
+
+// ── Gear narrative streaming (prose chunks, no NDJSON, no model fallback) ────
+
+pub async fn stream_gear_narrative(
+    app_handle: &tauri::AppHandle,
+    api_key: &str,
+    user_message: String,
+) -> Result<(), String> {
+    let client = Client::builder()
+        .timeout(std::time::Duration::from_secs(TIMEOUT_SECS))
+        .build()
+        .map_err(|e| format!("NETWORK_ERROR: failed to build HTTP client: {}", e))?;
+
+    // Use the first model in the list for narrative (simple, short output)
+    let (model_id, _) = MODELS[0];
+
+    let messages = vec![
+        Message { role: "system", content: GEAR_NARRATIVE_SYSTEM_PROMPT.to_string() },
+        Message { role: "user", content: user_message },
+    ];
+
+    let request_body = OpenRouterRequest {
+        model: model_id.to_string(),
+        messages,
+        stream: true,
+    };
+
+    let send_result = client
+        .post(BASE_URL)
+        .header("Authorization", format!("Bearer {}", api_key))
+        .header("Content-Type", "application/json")
+        .header("HTTP-Referer", SITE_URL)
+        .header("X-Title", "Last Epoch Build Optimizer")
+        .json(&request_body)
+        .send()
+        .await;
+
+    let response = match send_result {
+        Ok(r) => r,
+        Err(e) => {
+            return Err(if e.is_timeout() {
+                format!("TIMEOUT: request exceeded {} seconds", TIMEOUT_SECS)
+            } else {
+                format!("NETWORK_ERROR: {}", e)
+            });
+        }
+    };
+
+    let status = response.status();
+    if !status.is_success() {
+        let body = response.text().await.unwrap_or_default();
+        return Err(match status.as_u16() {
+            401 | 403 => "AUTH_ERROR: invalid OpenRouter API key".to_string(),
+            429 => "API_ERROR: rate limit reached — wait a moment and retry".to_string(),
+            _ => format!("API_ERROR: OpenRouter server error (HTTP {}): {}", status, body),
+        });
+    }
+
+    let mut stream = response.bytes_stream();
+    let mut sse_buffer = String::new();
+
+    while let Some(chunk_result) = stream.next().await {
+        let chunk = chunk_result
+            .map_err(|e| format!("NETWORK_ERROR: stream read error: {}", e))?;
+        let text = String::from_utf8_lossy(&chunk);
+        sse_buffer.push_str(&text);
+
+        while let Some(newline_pos) = sse_buffer.find('\n') {
+            let line = sse_buffer[..newline_pos].trim().to_string();
+            sse_buffer = sse_buffer[newline_pos + 1..].to_string();
+
+            if line.is_empty() || line.starts_with(':') || !line.starts_with("data: ") {
+                continue;
+            }
+
+            let data = &line["data: ".len()..];
+            if data == "[DONE]" {
+                app_handle
+                    .emit("gear:narrative-complete", &GearNarrativeCompletePayload {})
+                    .map_err(|e| format!("APP_ERROR: emit complete failed: {}", e))?;
+                return Ok(());
+            }
+
+            let sse_chunk: SseChunk = match serde_json::from_str(data) {
+                Ok(c) => c,
+                Err(_) => continue,
+            };
+
+            for choice in &sse_chunk.choices {
+                if let Some(ref content) = choice.delta.content {
+                    if !content.is_empty() {
+                        app_handle
+                            .emit("gear:narrative-chunk", &GearNarrativeChunkPayload { chunk: content.clone() })
+                            .map_err(|e| format!("APP_ERROR: emit failed: {}", e))?;
+                    }
+                }
+                if choice.finish_reason.as_deref() == Some("stop") {
+                    app_handle
+                        .emit("gear:narrative-complete", &GearNarrativeCompletePayload {})
+                        .map_err(|e| format!("APP_ERROR: emit complete failed: {}", e))?;
+                    return Ok(());
+                }
+            }
+        }
+    }
+
+    // Stream ended without explicit [DONE] or stop
+    app_handle
+        .emit("gear:narrative-complete", &GearNarrativeCompletePayload {})
+        .map_err(|e| format!("APP_ERROR: emit complete failed: {}", e))?;
 
     Ok(())
 }

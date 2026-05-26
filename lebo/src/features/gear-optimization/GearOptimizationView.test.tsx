@@ -95,4 +95,46 @@ describe('GearOptimizationView', () => {
     render(<GearOptimizationView />)
     expect(screen.queryByTestId('gear-slot-ranking-list')).toBeNull()
   })
+
+  it('shows GearNarrativePanel when narrative is available', () => {
+    useOptimizationStore.setState({
+      gearAnalysis: {
+        slot_rankings: [{ slot: 'helmet', upgrade_score: 0, efficiency_percent: 100, ideal_prefix: [], ideal_suffix: [] }],
+        priority_slot: '',
+      },
+      gearNarrative: 'Your Poison Eruption build needs better gear.',
+      isGeneratingNarrative: false,
+      isAnalyzingGear: false,
+    })
+    useBuildStore.setState({ activeBuild: makeBuild({ 'slot-0': 'primary_offense' }) })
+    render(<GearOptimizationView />)
+    expect(screen.getByTestId('gear-narrative-text')).toBeInTheDocument()
+    expect(screen.getByTestId('gear-narrative-text')).toHaveTextContent('Poison Eruption')
+  })
+
+  it('shows narrative loading state when isGeneratingNarrative is true', () => {
+    useOptimizationStore.setState({
+      gearAnalysis: {
+        slot_rankings: [],
+        priority_slot: '',
+      },
+      gearNarrative: null,
+      isGeneratingNarrative: true,
+      isAnalyzingGear: false,
+    })
+    useBuildStore.setState({ activeBuild: makeBuild() })
+    render(<GearOptimizationView />)
+    expect(screen.getByTestId('gear-narrative-loading')).toBeInTheDocument()
+  })
+
+  it('does not show narrative panel when neither narrative nor generating', () => {
+    useOptimizationStore.setState({
+      gearNarrative: null,
+      isGeneratingNarrative: false,
+    })
+    useBuildStore.setState({ activeBuild: makeBuild() })
+    render(<GearOptimizationView />)
+    expect(screen.queryByTestId('gear-narrative-loading')).toBeNull()
+    expect(screen.queryByTestId('gear-narrative-text')).toBeNull()
+  })
 })

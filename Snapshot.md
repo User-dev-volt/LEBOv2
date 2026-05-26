@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Answer the D1 question (Rust caps or UI caps for wishlist affixes?) so findings can be finalized and story moved to `in-progress`.
+-
 
 ---
 

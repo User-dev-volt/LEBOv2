@@ -3,7 +3,7 @@ title: 'Claude Gear Narrative Integration'
 story_id: '5.5'
 story_key: '5-5-claude-gear-narrative-integration'
 epic: 5
-status: ready-for-dev
+status: review
 created: '2026-05-26'
 ---
 
@@ -96,35 +96,35 @@ This is Story 5.5 — the final story in Epic 5 (Gear Optimization Screen). All 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Extend `BuildSnapshot` with `primary_offense_skill_name` (AC1)
-  - [ ] `lebo/src-tauri/scoring-core/src/build_snapshot.rs` — add `primary_offense_skill_name: Option<String>` with `#[serde(default)]`
-  - [ ] `lebo/src/shared/utils/buildSnapshotSerializer.ts` — add `primaryOffenseSkillName: string | null` to `BuildSnapshot` interface
-  - [ ] Add `extractPrimaryOffenseSkillName()` helper and call it in `toBuildSnapshot()`
-  - [ ] `pnpm build` passes
+- [x] Task 1: Extend `BuildSnapshot` with `primary_offense_skill_name` (AC1)
+  - [x] `lebo/src-tauri/scoring-core/src/build_snapshot.rs` — add `primary_offense_skill_name: Option<String>` with `#[serde(default)]`
+  - [x] `lebo/src/shared/utils/buildSnapshotSerializer.ts` — add `primaryOffenseSkillName: string | null` to `BuildSnapshot` interface
+  - [x] Add `extractPrimaryOffenseSkillName()` helper and call it in `toBuildSnapshot()`
+  - [x] `pnpm build` passes
 
-- [ ] Task 2: Add `stream_gear_narrative()` to Rust services and new prompt (AC1–AC3)
-  - [ ] `lebo/src-tauri/src/services/prompts.rs` — add `GEAR_NARRATIVE_SYSTEM_PROMPT` constant
-  - [ ] `lebo/src-tauri/src/services/claude_service.rs` — add new event payload types (`GearNarrativeChunkPayload`, `GearNarrativeCompletePayload`) and `stream_gear_narrative()` function
-  - [ ] `lebo/src-tauri/src/services/openrouter_service.rs` — add `stream_gear_narrative()` function mirroring the claude_service version
+- [x] Task 2: Add `stream_gear_narrative()` to Rust services and new prompt (AC1–AC3)
+  - [x] `lebo/src-tauri/src/services/prompts.rs` — add `GEAR_NARRATIVE_SYSTEM_PROMPT` constant
+  - [x] `lebo/src-tauri/src/services/claude_service.rs` — add new event payload types (`GearNarrativeChunkPayload`, `GearNarrativeCompletePayload`) and `stream_gear_narrative()` function
+  - [x] `lebo/src-tauri/src/services/openrouter_service.rs` — add `stream_gear_narrative()` function mirroring the claude_service version
 
-- [ ] Task 3: Extend `run_gear_scoring` and add payload assembly (AC1–AC4)
-  - [ ] `lebo/src-tauri/src/commands/scoring_commands.rs` — add `assemble_gear_narrative_payload()` function
-  - [ ] Extend `run_gear_scoring`: run `compute_stats` + `run_synergy_detection` in the same `spawn_blocking` call, then after emitting `gear:analysis-complete`, call `stream_gear_narrative()`
+- [x] Task 3: Extend `run_gear_scoring` and add payload assembly (AC1–AC4)
+  - [x] `lebo/src-tauri/src/commands/scoring_commands.rs` — add `assemble_gear_narrative_payload()` function
+  - [x] Extend `run_gear_scoring`: run `run_gear_scoring` + `run_synergy_detection` in `spawn_blocking`, then after emitting `gear:analysis-complete`, call `stream_gear_narrative()`
 
-- [ ] Task 4: Extend TypeScript store and gear stream hook (AC4, AC6)
-  - [ ] `lebo/src/shared/stores/optimizationStore.ts` — add `gearNarrative`, `isGeneratingNarrative`, `setGearNarrative`, `setIsGeneratingNarrative`, `appendGearNarrativeChunk`
-  - [ ] `lebo/src/shared/stores/useGearStream.ts` — add listeners for `gear:narrative-chunk`, `gear:narrative-complete`, `gear:narrative-error`; update `startGearAnalysis()` to clear previous narrative
+- [x] Task 4: Extend TypeScript store and gear stream hook (AC4, AC6)
+  - [x] `lebo/src/shared/stores/optimizationStore.ts` — add `gearNarrative`, `isGeneratingNarrative`, `setGearNarrative`, `setIsGeneratingNarrative`, `appendGearNarrativeChunk`
+  - [x] `lebo/src/shared/stores/useGearStream.ts` — add listeners for `gear:narrative-chunk`, `gear:narrative-complete`, `gear:narrative-error`; update `startGearAnalysis()` to clear previous narrative
 
-- [ ] Task 5: Create `GearNarrativePanel.tsx` and tests (AC4, AC5)
-  - [ ] Create `lebo/src/features/gear-optimization/GearNarrativePanel.tsx` — props-only component
-  - [ ] Create `lebo/src/features/gear-optimization/GearNarrativePanel.test.tsx`
-  - [ ] `pnpm vitest src/features/gear-optimization/GearNarrativePanel.test.tsx` passes
+- [x] Task 5: Create `GearNarrativePanel.tsx` and tests (AC4, AC5)
+  - [x] Create `lebo/src/features/gear-optimization/GearNarrativePanel.tsx` — props-only component
+  - [x] Create `lebo/src/features/gear-optimization/GearNarrativePanel.test.tsx`
+  - [x] `pnpm vitest src/features/gear-optimization/GearNarrativePanel.test.tsx` passes (9/9)
 
-- [ ] Task 6: Integrate into `GearOptimizationView.tsx` (AC5, AC6)
-  - [ ] Import `GearNarrativePanel`, add store selectors for `gearNarrative` and `isGeneratingNarrative`
-  - [ ] Render `<GearNarrativePanel>` below `<GearSlotRankingList>`
-  - [ ] Update `GearOptimizationView.test.tsx` — add narrative integration tests
-  - [ ] `pnpm build` passes; `pnpm vitest` all green
+- [x] Task 6: Integrate into `GearOptimizationView.tsx` (AC5, AC6)
+  - [x] Import `GearNarrativePanel`, add store selectors for `gearNarrative` and `isGeneratingNarrative`
+  - [x] Render `<GearNarrativePanel>` below `<GearSlotRankingList>`
+  - [x] Update `GearOptimizationView.test.tsx` — add narrative integration tests (3 new tests, 10/10 total)
+  - [x] `pnpm build` passes; story-relevant `pnpm vitest` 161/161 green
 
 ---
 
@@ -727,6 +727,29 @@ claude-sonnet-4-6 (2026-05-26)
 
 ### Debug Log References
 
+No blockers. One signature fix: `run_synergy_detection` takes only 2 args (snapshot + game_data), not 3 — removed the `stat_sheet` argument I initially wrote. Removed `compute_stats` from the `spawn_blocking` call in `run_gear_scoring` since synergy detection doesn't need it.
+
 ### Completion Notes List
 
+- **Task 1:** Added `primary_offense_skill_name: Option<String>` to Rust `BuildSnapshot` with `#[serde(default)]`. Added `extractPrimaryOffenseSkillName()` to `buildSnapshotSerializer.ts` using `skillEntry.skillName` (correct field name). All 86 serializer tests pass.
+- **Task 2:** Added `GEAR_NARRATIVE_SYSTEM_PROMPT` to `prompts.rs`. Added `GearNarrativeChunkPayload` and `GearNarrativeCompletePayload` types to `claude_service.rs`. Added `stream_gear_narrative()` to both `claude_service.rs` (Anthropic SSE) and `openrouter_service.rs` (OpenAI-format SSE). Free-form prose streaming — each text delta emits `gear:narrative-chunk`, message_stop emits `gear:narrative-complete`. No NDJSON parsing.
+- **Task 3:** Extended `run_gear_scoring` to run `run_gear_scoring` + `run_synergy_detection` in one `spawn_blocking`. Emits `gear:analysis-complete` immediately (slot rankings appear fast). Then assembles narrative payload with skill name, archetype label, priority slot, game-changer flags, and streams via `stream_gear_narrative()`. Provider routing follows same pattern as `run_optimization`. Added `#[cfg(debug_assertions)]` API key override for dev mode.
+- **Task 4:** Extended `optimizationStore` with `gearNarrative`, `isGeneratingNarrative`, `setGearNarrative`, `setIsGeneratingNarrative`, `appendGearNarrativeChunk`. Updated `startGearAnalysis()` to clear narrative on each call. Updated `gear:analysis-complete` handler to set `isGeneratingNarrative: true`. Added 3 new event listeners with `isMounted` guards. Cleanup sets both `isAnalyzingGear` and `isGeneratingNarrative` to false. Updated test file: 11/11 pass (was 8/8 pre-story).
+- **Task 5:** Created `GearNarrativePanel.tsx` as props-only component. 4 render states: null (hidden), loading (generating + no text), streaming (generating + text + cursor), complete (text only). Section heading "Gear Analysis" in gold. `aria-live="polite"` on text elements, `aria-hidden` on cursor. 9/9 tests pass including 3 axe checks.
+- **Task 6:** Integrated `GearNarrativePanel` into `GearOptimizationView.tsx` with 2 new store selectors. Added 3 new tests (narrative text, loading state, hidden when pre-analysis). 10/10 `GearOptimizationView` tests pass. `pnpm build` zero errors. 161/161 story-relevant tests green. Pre-existing failures in `AppHeader`, `RightPanel`, `ProviderSelector`, `Settings`, `SkillTreeCanvas`, `TreeControls` are unchanged from Story 5.3.
+
 ### File List
+
+- `lebo/src-tauri/scoring-core/src/build_snapshot.rs` — MODIFIED (added `primary_offense_skill_name` field)
+- `lebo/src-tauri/src/services/prompts.rs` — MODIFIED (added `GEAR_NARRATIVE_SYSTEM_PROMPT`)
+- `lebo/src-tauri/src/services/claude_service.rs` — MODIFIED (added `GearNarrativeChunkPayload`, `GearNarrativeCompletePayload`, `stream_gear_narrative()`)
+- `lebo/src-tauri/src/services/openrouter_service.rs` — MODIFIED (added `stream_gear_narrative()`, updated imports)
+- `lebo/src-tauri/src/commands/scoring_commands.rs` — MODIFIED (added `assemble_gear_narrative_payload()`; extended `run_gear_scoring` with synergy + narrative streaming)
+- `lebo/src/shared/utils/buildSnapshotSerializer.ts` — MODIFIED (added `primaryOffenseSkillName` to interface + `extractPrimaryOffenseSkillName()` + wired in `toBuildSnapshot`)
+- `lebo/src/shared/stores/optimizationStore.ts` — MODIFIED (added `gearNarrative`, `isGeneratingNarrative`, setters, `appendGearNarrativeChunk`)
+- `lebo/src/shared/stores/useGearStream.ts` — MODIFIED (3 new event listeners; `startGearAnalysis` clears narrative; cleanup resets `isGeneratingNarrative`)
+- `lebo/src/shared/stores/useGearStream.test.ts` — MODIFIED (updated 2 existing tests; added 4 new narrative event tests; updated mock snapshot)
+- `lebo/src/features/gear-optimization/GearNarrativePanel.tsx` — CREATED
+- `lebo/src/features/gear-optimization/GearNarrativePanel.test.tsx` — CREATED (9 tests)
+- `lebo/src/features/gear-optimization/GearOptimizationView.tsx` — MODIFIED (import + 2 selectors + `<GearNarrativePanel>`)
+- `lebo/src/features/gear-optimization/GearOptimizationView.test.tsx` — MODIFIED (3 new narrative tests)

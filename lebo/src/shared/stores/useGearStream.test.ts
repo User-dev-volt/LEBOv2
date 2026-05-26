@@ -22,6 +22,7 @@ vi.mock('../utils/buildSnapshotSerializer', () => ({
     skillRoles: { 'slot-0': 'primary_offense' },
     primaryOffenseDeliveryType: 'spell',
     primaryOffenseDamageElements: [],
+    primaryOffenseSkillName: null,
   })),
 }))
 
@@ -87,17 +88,20 @@ describe('useGearStream', () => {
     vi.restoreAllMocks()
   })
 
-  it('registers two event listeners on mount', async () => {
+  it('registers five event listeners on mount', async () => {
     await act(async () => {
       renderHook(() => useGearStream())
     })
-    expect(mockListen).toHaveBeenCalledTimes(2)
+    expect(mockListen).toHaveBeenCalledTimes(5)
     expect(mockListen).toHaveBeenCalledWith('gear:analysis-complete', expect.any(Function))
     expect(mockListen).toHaveBeenCalledWith('gear:error', expect.any(Function))
+    expect(mockListen).toHaveBeenCalledWith('gear:narrative-chunk', expect.any(Function))
+    expect(mockListen).toHaveBeenCalledWith('gear:narrative-complete', expect.any(Function))
+    expect(mockListen).toHaveBeenCalledWith('gear:narrative-error', expect.any(Function))
   })
 
-  it('calls unlisten for both listeners on unmount', async () => {
-    const unlistenFns = [vi.fn(), vi.fn()]
+  it('calls unlisten for all five listeners on unmount', async () => {
+    const unlistenFns = [vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn()]
     let callCount = 0
     mockListen.mockImplementation(() => Promise.resolve(unlistenFns[callCount++]))
 
@@ -108,8 +112,9 @@ describe('useGearStream', () => {
 
     unmount()
 
-    expect(unlistenFns[0]).toHaveBeenCalled()
-    expect(unlistenFns[1]).toHaveBeenCalled()
+    for (const fn of unlistenFns) {
+      expect(fn).toHaveBeenCalled()
+    }
   })
 
   it('sets isAnalyzingGear(false) on unmount', async () => {
@@ -150,6 +155,72 @@ describe('useGearStream', () => {
 
     expect(useOptimizationStore.getState().gearAnalysis).toEqual(gearAnalysis)
     expect(useOptimizationStore.getState().isAnalyzingGear).toBe(false)
+    expect(useOptimizationStore.getState().isGeneratingNarrative).toBe(true)
+  })
+
+  it('appends chunks to gearNarrative on gear:narrative-chunk', async () => {
+    let capturedChunkCallback: ((event: { payload: { chunk: string } }) => void) | null = null
+    mockListen.mockImplementation((event: string, callback: (e: unknown) => void) => {
+      if (event === 'gear:narrative-chunk') capturedChunkCallback = callback as typeof capturedChunkCallback
+      return Promise.resolve(vi.fn())
+    })
+
+    renderHook(() => useGearStream())
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    await act(async () => {
+      capturedChunkCallback!({ payload: { chunk: 'Your Poison' } })
+      capturedChunkCallback!({ payload: { chunk: ' Eruption build' } })
+    })
+
+    expect(useOptimizationStore.getState().gearNarrative).toBe('Your Poison Eruption build')
+  })
+
+  it('sets isGeneratingNarrative false on gear:narrative-complete', async () => {
+    let capturedCompleteCallback: ((event: unknown) => void) | null = null
+    mockListen.mockImplementation((event: string, callback: (e: unknown) => void) => {
+      if (event === 'gear:narrative-complete') capturedCompleteCallback = callback as typeof capturedCompleteCallback
+      return Promise.resolve(vi.fn())
+    })
+
+    renderHook(() => useGearStream())
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    useOptimizationStore.getState().setIsGeneratingNarrative(true)
+
+    await act(async () => {
+      capturedCompleteCallback!({})
+    })
+
+    expect(useOptimizationStore.getState().isGeneratingNarrative).toBe(false)
+  })
+
+  it('sets streamError and clears isGeneratingNarrative on gear:narrative-error', async () => {
+    let capturedNarrativeErrorCallback: ((event: { payload: { error_type: string; message: string } }) => void) | null = null
+    mockListen.mockImplementation((event: string, callback: (e: unknown) => void) => {
+      if (event === 'gear:narrative-error') capturedNarrativeErrorCallback = callback as typeof capturedNarrativeErrorCallback
+      return Promise.resolve(vi.fn())
+    })
+
+    renderHook(() => useGearStream())
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    useOptimizationStore.getState().setIsGeneratingNarrative(true)
+
+    await act(async () => {
+      capturedNarrativeErrorCallback!({
+        payload: { error_type: 'API_ERROR', message: 'rate limit reached' },
+      })
+    })
+
+    expect(useOptimizationStore.getState().streamError).not.toBeNull()
+    expect(useOptimizationStore.getState().isGeneratingNarrative).toBe(false)
   })
 
   it('sets streamError and clears isAnalyzingGear on gear:error', async () => {
@@ -199,11 +270,12 @@ describe('startGearAnalysis', () => {
     )
   })
 
-  it('sets isAnalyzingGear true before command and clears gearAnalysis', async () => {
+  it('sets isAnalyzingGear true before command, clears gearAnalysis and gearNarrative', async () => {
     useOptimizationStore.getState().setGearAnalysis({
       slot_rankings: [],
       priority_slot: '',
     })
+    useOptimizationStore.getState().setGearNarrative('old narrative')
 
     let stateBeforeCommand = false
     mockInvokeCommand.mockImplementationOnce(() => {
@@ -215,6 +287,7 @@ describe('startGearAnalysis', () => {
 
     expect(stateBeforeCommand).toBe(true)
     expect(useOptimizationStore.getState().gearAnalysis).toBeNull()
+    expect(useOptimizationStore.getState().gearNarrative).toBeNull()
   })
 
   it('sets streamError and clears isAnalyzingGear on IPC error', async () => {

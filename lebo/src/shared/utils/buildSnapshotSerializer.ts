@@ -58,6 +58,8 @@ export interface BuildSnapshot {
   skillRoles: Record<string, string>
   primaryOffenseDeliveryType: string | null
   primaryOffenseDamageElements: string[]
+  // Added in Story 5.5 — human-readable skill name for Claude gear narrative
+  primaryOffenseSkillName: string | null
 }
 
 function extractPrimaryOffenseDeliveryType(
@@ -84,6 +86,27 @@ function extractPrimaryOffenseDeliveryType(
   return skillEntry.type === 'unknown' ? null : skillEntry.type
 }
 
+function extractPrimaryOffenseSkillName(
+  build: BuildState,
+  gameData: GameData,
+): string | null {
+  if (!build.skillRoles) return null
+
+  const primarySlotId = Object.entries(build.skillRoles).find(
+    ([, role]) => role === 'primary_offense',
+  )?.[0]
+  if (!primarySlotId) return null
+
+  const activeSkill = build.contextData.skills.find((s) => s.slotId === primarySlotId)
+  if (!activeSkill) return null
+
+  const classData = gameData.classes?.[build.classId]
+  if (!classData) return null
+
+  const skillEntry = classData.skills.find((s) => s.skillId === activeSkill.skillId)
+  return skillEntry?.skillName ?? null
+}
+
 // Pattern 1: ONLY conversion point from BuildState → BuildSnapshot.
 // Never pass BuildState directly to invokeCommand('compute_stats', ...).
 export function toBuildSnapshot(build: BuildState, gameData: GameData): BuildSnapshot {
@@ -108,6 +131,7 @@ export function toBuildSnapshot(build: BuildState, gameData: GameData): BuildSna
     skillRoles: { ...(build.skillRoles ?? {}) },
     primaryOffenseDeliveryType: extractPrimaryOffenseDeliveryType(build, gameData),
     primaryOffenseDamageElements: [], // No element data in SkillEntry for Phase 3; scorer degrades gracefully
+    primaryOffenseSkillName: extractPrimaryOffenseSkillName(build, gameData),
   }
 }
 

@@ -5,6 +5,7 @@ import { useOptimizationStore } from '../../shared/stores/optimizationStore'
 import { useGearStream, startGearAnalysis } from '../../shared/stores/useGearStream'
 import { SkillRoleDesignator } from './SkillRoleDesignator'
 import { GearSlotRankingList } from './GearSlotRankingList'
+import { GearNarrativePanel } from './GearNarrativePanel'
 
 export function GearOptimizationView() {
   useGearStream()
@@ -13,6 +14,8 @@ export function GearOptimizationView() {
   const activeBuild = useBuildStore((s) => s.activeBuild)
   const isAnalyzingGear = useOptimizationStore((s) => s.isAnalyzingGear)
   const gearAnalysis = useOptimizationStore((s) => s.gearAnalysis)
+  const gearNarrative = useOptimizationStore((s) => s.gearNarrative)
+  const isGeneratingNarrative = useOptimizationStore((s) => s.isGeneratingNarrative)
   const [analyzeError, setAnalyzeError] = useState<string | null>(null)
 
   const skillRoles = activeBuild?.skillRoles ?? {}
@@ -111,6 +114,12 @@ export function GearOptimizationView() {
             prioritySlot={gearAnalysis.priority_slot}
           />
         )}
+
+        {/* Claude gear narrative — appears below slot ranking */}
+        <GearNarrativePanel
+          narrative={gearNarrative}
+          isGenerating={isGeneratingNarrative}
+        />
       </div>
     </div>
   )

@@ -1,4 +1,4 @@
-use scoring_core::{BuildSnapshot, ComputeOptions, StatSheet};
+use scoring_core::{BuildSnapshot, ComputeOptions, StatSheet, SynergyFlag};
 use tauri::Emitter;
 use crate::ScoringState;
 
@@ -130,9 +130,10 @@ pub async fn run_optimization(
     Ok(())
 }
 
-/// Async Tauri command — gear slot affix analysis (~10–50ms).
+/// Async Tauri command — gear slot affix analysis + Claude gear narrative.
 /// Pattern 3: clone game_data BEFORE spawn_blocking; never hold a read lock across await.
-/// Emits gear:analysis-complete on success, gear:error on failure (Pattern 6 — NOT optimization:*).
+/// Emits gear:analysis-complete immediately after scoring, then streams narrative via gear:narrative-* events.
+/// Pattern 6: all events use gear:* namespace (NOT optimization:*).
 #[tauri::command]
 pub async fn run_gear_scoring(
     app_handle: tauri::AppHandle,
@@ -153,9 +154,13 @@ pub async fn run_gear_scoring(
         })?
         .clone();
 
-    let gear_result =
+    let snapshot_for_engine = snapshot.clone();
+
+    let (gear_result, synergy_flags) =
         tauri::async_runtime::spawn_blocking(move || {
-            scoring_core::run_gear_scoring(&snapshot, &game_data)
+            let gear = scoring_core::run_gear_scoring(&snapshot_for_engine, &game_data);
+            let synergy = scoring_core::run_synergy_detection(&snapshot_for_engine, &game_data);
+            (gear, synergy)
         })
         .await
         .map_err(|e| {
@@ -170,8 +175,158 @@ pub async fn run_gear_scoring(
             err
         })?;
 
+    // Emit analysis results immediately — UI shows slot rankings without waiting for narrative
     let _ = app_handle.emit("gear:analysis-complete", &gear_result);
+
+    // Assemble gear narrative payload and stream via Claude
+    let game_changers: Vec<&SynergyFlag> = synergy_flags
+        .iter()
+        .filter(|f| f.flag_type == "game_changer")
+        .collect();
+
+    let narrative_payload = match assemble_gear_narrative_payload(&snapshot, &gear_result, &game_changers) {
+        Ok(p) => p,
+        Err(e) => {
+            let _ = app_handle.emit(
+                "gear:narrative-error",
+                &crate::services::claude_service::OptimizationErrorPayload {
+                    error_type: "SCORING_ERROR".to_string(),
+                    message: e.clone(),
+                },
+            );
+            return Err(e);
+        }
+    };
+
+    // Provider routing — same pattern as run_optimization
+    let provider = match crate::services::keychain_service::get_llm_provider(&app_handle).await {
+        Ok(p) => p,
+        Err(e) => {
+            let err = format!("STORAGE_ERROR: failed to read provider setting: {e}");
+            let _ = app_handle.emit(
+                "gear:narrative-error",
+                &crate::services::claude_service::OptimizationErrorPayload {
+                    error_type: "STORAGE_ERROR".to_string(),
+                    message: err.clone(),
+                },
+            );
+            return Err(err);
+        }
+    };
+
+    let stream_result = if provider == "openrouter" {
+        let or_key = match crate::services::keychain_service::get_openrouter_api_key(&app_handle).await {
+            Ok(k) => k,
+            Err(e) => {
+                let err = format!("AUTH_ERROR: No OpenRouter API key configured. Add your key in Settings. ({})", e);
+                let _ = app_handle.emit(
+                    "gear:narrative-error",
+                    &crate::services::claude_service::OptimizationErrorPayload {
+                        error_type: "AUTH_ERROR".to_string(),
+                        message: "No OpenRouter API key configured. Add your key in Settings.".to_string(),
+                    },
+                );
+                return Err(err);
+            }
+        };
+        crate::services::openrouter_service::stream_gear_narrative(&app_handle, &or_key, narrative_payload).await
+    } else {
+        let api_key = match crate::services::keychain_service::get_api_key(&app_handle).await {
+            Ok(k) => k,
+            Err(e) => {
+                let err = format!("AUTH_ERROR: No Anthropic API key configured. Add your key in Settings. ({})", e);
+                let _ = app_handle.emit(
+                    "gear:narrative-error",
+                    &crate::services::claude_service::OptimizationErrorPayload {
+                        error_type: "AUTH_ERROR".to_string(),
+                        message: "No Anthropic API key configured. Add your key in Settings.".to_string(),
+                    },
+                );
+                return Err(err);
+            }
+        };
+        #[cfg(debug_assertions)]
+        let api_key = std::env::var("ANTHROPIC_API_KEY").unwrap_or(api_key);
+        crate::services::claude_service::stream_gear_narrative(&app_handle, &api_key, narrative_payload).await
+    };
+
+    if let Err(err) = stream_result {
+        let _ = app_handle.emit(
+            "gear:narrative-error",
+            &crate::services::claude_service::OptimizationErrorPayload {
+                error_type: extract_optimization_error_type(&err),
+                message: err.clone(),
+            },
+        );
+        return Err(err);
+    }
+
     Ok(())
+}
+
+fn assemble_gear_narrative_payload(
+    snapshot: &scoring_core::BuildSnapshot,
+    gear_analysis: &scoring_core::GearAnalysis,
+    game_changers: &[&SynergyFlag],
+) -> Result<String, String> {
+    let archetype_label = match snapshot.slider_position {
+        0..=25 => "Glass Cannon",
+        26..=74 => "Balanced",
+        _ => "Juggernaut",
+    };
+
+    let skill_name = snapshot.primary_offense_skill_name
+        .as_deref()
+        .unwrap_or("your Primary Offense skill");
+
+    let priority_slot_info = gear_analysis.slot_rankings
+        .iter()
+        .max_by(|a, b| a.upgrade_score.partial_cmp(&b.upgrade_score).unwrap_or(std::cmp::Ordering::Equal))
+        .map(|r| {
+            let top_affix = r.ideal_prefix.first().or_else(|| r.ideal_suffix.first())
+                .map(|a| serde_json::json!({
+                    "name": a.display_name,
+                    "targetTier": a.target_tier,
+                    "reason": a.mechanical_reason
+                }));
+            serde_json::json!({
+                "slot": r.slot,
+                "upgradeScore": r.upgrade_score,
+                "efficiencyPercent": r.efficiency_percent,
+                "topWishlistAffix": top_affix
+            })
+        });
+
+    let game_changer_list: Vec<serde_json::Value> = game_changers.iter().map(|f| serde_json::json!({
+        "description": f.description,
+        "deltaBuildScore": f.delta_build_score
+    })).collect();
+
+    let slot_summary: Vec<serde_json::Value> = gear_analysis.slot_rankings.iter().take(4).map(|r| {
+        serde_json::json!({
+            "slot": r.slot,
+            "efficiencyPercent": r.efficiency_percent,
+            "upgradeScore": r.upgrade_score
+        })
+    }).collect();
+
+    let payload = serde_json::json!({
+        "buildContext": {
+            "primaryOffenseSkillName": skill_name,
+            "classId": snapshot.class_id,
+            "masteryId": snapshot.mastery_id,
+            "sliderPosition": snapshot.slider_position,
+            "archetypeLabel": archetype_label,
+            "characterLevel": snapshot.character_level
+        },
+        "prioritySlot": priority_slot_info,
+        "worstFourSlots": slot_summary,
+        "gameChangers": game_changer_list,
+        "instruction": "Write a personalized gear narrative following the system prompt rules."
+    });
+
+    serde_json::to_string(&payload)
+        .map_err(|e| format!("SCORING_ERROR: failed to serialize gear narrative payload: {e}"))
 }
 
 fn extract_optimization_error_type(err: &str) -> String {

@@ -2,7 +2,7 @@ use futures_util::StreamExt;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use tauri::Emitter;
-use crate::services::prompts::OPTIMIZATION_SYSTEM_PROMPT;
+use crate::services::prompts::{GEAR_NARRATIVE_SYSTEM_PROMPT, OPTIMIZATION_SYSTEM_PROMPT};
 
 pub const CLAUDE_API_URL: &str = "https://api.anthropic.com/v1/messages";
 pub const CLAUDE_MODEL: &str = "claude-sonnet-4-6";
@@ -76,6 +76,16 @@ pub struct OptimizationErrorPayload {
     pub error_type: String,
     pub message: String,
 }
+
+// ── Gear narrative event payloads ───────────────────────────────────────────
+
+#[derive(Serialize, Clone)]
+pub struct GearNarrativeChunkPayload {
+    pub chunk: String,
+}
+
+#[derive(Serialize, Clone)]
+pub struct GearNarrativeCompletePayload {}
 
 impl From<&SuggestionEvent> for SuggestionReceivedPayload {
     fn from(s: &SuggestionEvent) -> Self {
@@ -246,6 +256,93 @@ pub async fn stream_optimization(
             "optimization:complete",
             &OptimizationCompletePayload { suggestion_count },
         )
+        .map_err(|e| format!("APP_ERROR: emit complete failed: {}", e))?;
+
+    Ok(())
+}
+
+// ── Gear narrative streaming (free-form prose, not NDJSON) ───────────────────
+
+pub async fn stream_gear_narrative(
+    app_handle: &tauri::AppHandle,
+    api_key: &str,
+    user_message: String,
+) -> Result<(), String> {
+    let client = Client::builder()
+        .timeout(std::time::Duration::from_secs(TIMEOUT_SECS))
+        .build()
+        .map_err(|e| format!("NETWORK_ERROR: failed to build HTTP client: {}", e))?;
+
+    let request_body = ClaudeRequest {
+        model: CLAUDE_MODEL,
+        max_tokens: 1024,
+        stream: true,
+        system: GEAR_NARRATIVE_SYSTEM_PROMPT.to_string(),
+        messages: vec![ClaudeMessage {
+            role: "user",
+            content: user_message,
+        }],
+    };
+
+    let send_result = client
+        .post(CLAUDE_API_URL)
+        .header("x-api-key", api_key)
+        .header("anthropic-version", "2023-06-01")
+        .header("content-type", "application/json")
+        .json(&request_body)
+        .send()
+        .await;
+
+    let response = match send_result {
+        Ok(r) => r,
+        Err(e) => {
+            return Err(if e.is_timeout() {
+                format!("TIMEOUT: request exceeded {} seconds", TIMEOUT_SECS)
+            } else {
+                format!("NETWORK_ERROR: {}", e)
+            });
+        }
+    };
+
+    let status = response.status();
+    if !status.is_success() {
+        let body = response.text().await.unwrap_or_default();
+        return Err(match status.as_u16() {
+            401 => "AUTH_ERROR: invalid API key".to_string(),
+            429 => "API_ERROR: rate limit reached — wait a moment and retry".to_string(),
+            _ => format!("API_ERROR: Claude API server error (HTTP {}): {}", status, body),
+        });
+    }
+
+    let mut stream = response.bytes_stream();
+    let mut sse_buffer = String::new();
+
+    while let Some(chunk_result) = stream.next().await {
+        let chunk = chunk_result
+            .map_err(|e| format!("NETWORK_ERROR: stream read error: {}", e))?;
+        let text = String::from_utf8_lossy(&chunk);
+        sse_buffer.push_str(&text);
+
+        while let Some(frame_end) = sse_buffer.find("\n\n") {
+            let frame = sse_buffer[..frame_end].to_string();
+            sse_buffer = sse_buffer[frame_end + 2..].to_string();
+
+            if let Some(text_delta) = extract_text_delta(&frame) {
+                app_handle
+                    .emit("gear:narrative-chunk", &GearNarrativeChunkPayload { chunk: text_delta })
+                    .map_err(|e| format!("APP_ERROR: emit failed: {}", e))?;
+            } else if is_message_stop(&frame) {
+                app_handle
+                    .emit("gear:narrative-complete", &GearNarrativeCompletePayload {})
+                    .map_err(|e| format!("APP_ERROR: emit complete failed: {}", e))?;
+                return Ok(());
+            }
+        }
+    }
+
+    // Stream ended without explicit message_stop
+    app_handle
+        .emit("gear:narrative-complete", &GearNarrativeCompletePayload {})
         .map_err(|e| format!("APP_ERROR: emit complete failed: {}", e))?;
 
     Ok(())

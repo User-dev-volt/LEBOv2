@@ -25,6 +25,8 @@ export async function startGearAnalysis(): Promise<void> {
 
   useOptimizationStore.getState().setIsAnalyzingGear(true)
   useOptimizationStore.getState().setGearAnalysis(null)
+  useOptimizationStore.getState().setGearNarrative(null)
+  useOptimizationStore.getState().setIsGeneratingNarrative(false)
 
   try {
     await invokeCommand('run_gear_scoring', { snapshot })
@@ -47,6 +49,7 @@ export function useGearStream(): void {
         (event) => {
           useOptimizationStore.getState().setGearAnalysis(event.payload)
           useOptimizationStore.getState().setIsAnalyzingGear(false)
+          useOptimizationStore.getState().setIsGeneratingNarrative(true)
         },
       )
       if (!isMounted) { unlisten1(); return }
@@ -63,6 +66,36 @@ export function useGearStream(): void {
       )
       if (!isMounted) { unlisten2(); return }
       unlisteners.push(unlisten2)
+
+      const unlisten3 = await listen<{ chunk: string }>(
+        'gear:narrative-chunk',
+        (event) => {
+          useOptimizationStore.getState().appendGearNarrativeChunk(event.payload.chunk)
+        },
+      )
+      if (!isMounted) { unlisten3(); return }
+      unlisteners.push(unlisten3)
+
+      const unlisten4 = await listen(
+        'gear:narrative-complete',
+        () => {
+          useOptimizationStore.getState().setIsGeneratingNarrative(false)
+        },
+      )
+      if (!isMounted) { unlisten4(); return }
+      unlisteners.push(unlisten4)
+
+      const unlisten5 = await listen<GearErrorPayload>(
+        'gear:narrative-error',
+        (event) => {
+          const { error_type, message } = event.payload
+          const appError = normalizeAppError(`${error_type}: ${message}`)
+          useOptimizationStore.getState().setStreamError(appError)
+          useOptimizationStore.getState().setIsGeneratingNarrative(false)
+        },
+      )
+      if (!isMounted) { unlisten5(); return }
+      unlisteners.push(unlisten5)
     }
 
     registerListeners().catch(console.error)
@@ -73,6 +106,7 @@ export function useGearStream(): void {
         unlisten()
       }
       useOptimizationStore.getState().setIsAnalyzingGear(false)
+      useOptimizationStore.getState().setIsGeneratingNarrative(false)
     }
   }, [])
 }
