@@ -142,3 +142,9 @@
 ## Deferred from: code review of 5-3-run-gear-scoring-tauri-command-and-typescript-wiring (2026-05-24)
 
 - **`priority_slot` may be empty string in degraded mode** [`scoring-core/src/gear.rs`] — When `gear_affixes` is empty, all 12 slots return `upgrade_score: 0.0`. The `priority_slot` selection logic in `gear.rs` was not inspected in this review. Story 5.4 should guard against `gearAnalysis.priority_slot === ""` when rendering the priority slot display.
+
+## Deferred from: code review of 5-4-gear-optimization-view-priority-ranking-and-wishlists (2026-05-26)
+
+- **`initialOptimizationState` shares mutable object references in test setup** [`GearOptimizationView.test.tsx`] — Pre-existing pattern used consistently for `initialBuildState`/`initialAppState`; nested object mutations in a test would corrupt subsequent tests. Address in a dedicated test-cleanup story.
+- **AC7 "correct — keep" tooltip obligation not captured in TODO comment** [`GearSlotRankingList.tsx`] — TODO comment defers the badge itself but omits the tooltip requirement from AC7. Story 5.5 should capture both the badge and the tooltip when wiring the "correct — keep" signal.
+- **No test for ranking list visibility during re-analysis** [`GearOptimizationView.test.tsx`] — `isAnalyzingGear: true` + non-null `gearAnalysis` (list stays visible) is intentional per Story 5.3 notes but untested. Add to a future test-coverage story.
