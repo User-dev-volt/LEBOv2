@@ -3,7 +3,7 @@ title: 'Gear Optimization View — Priority Ranking & Wishlists'
 story_id: '5.4'
 story_key: '5-4-gear-optimization-view-priority-ranking-and-wishlists'
 epic: 5
-status: review
+status: done
 created: '2026-05-26'
 ---
 
@@ -577,9 +577,9 @@ No blockers. Implementation matched story spec on first attempt.
 ### Review Findings
 
 - [ ] [Review][Decision] AC3 — Client-side wishlist cap not enforced — `WishlistSection` renders `affixes.map(...)` with no `.slice(0, 2)`. AC3 specifies "up to 2 prefix and up to 2 suffix recommendations". Unclear whether Rust already caps output at 2 per type, or whether the UI must enforce the cap defensively. Needs decision before patch.
-- [ ] [Review][Patch] Duplicate `slot` values cause silent React key collision — `GearSlotRankingList.tsx:163` uses `key={ranking.slot}`. If backend emits two entries for the same slot, React silently drops one row. Fix: use `key={`${ranking.slot}-${index}`}` as a fallback.
-- [ ] [Review][Patch] Duplicate `affix_id` values within a WishlistSection cause silent row drop — `GearSlotRankingList.tsx` `WishlistSection` uses `key={affix.affix_id}`. If the same affix ID appears twice in `ideal_prefix` or `ideal_suffix`, one row is silently dropped. Fix: use composite key `key={`${affix.affix_id}-${index}`}`.
-- [ ] [Review][Patch] AC10 — Slot rows are non-interactive `<div>` elements without `tabIndex="0"`, not keyboard-navigable — `SlotRow` in `GearSlotRankingList.tsx` renders a plain `<div>`. AC10 requires all slot rows to be keyboard-navigable. Fix: add `tabIndex={0}` to the slot row container `<div>`.
+- [x] [Review][Patch] Duplicate `slot` values cause silent React key collision — `GearSlotRankingList.tsx:163` uses `key={ranking.slot}`. If backend emits two entries for the same slot, React silently drops one row. Fix: use `key={`${ranking.slot}-${index}`}` as a fallback.
+- [x] [Review][Patch] Duplicate `affix_id` values within a WishlistSection cause silent row drop — `GearSlotRankingList.tsx` `WishlistSection` uses `key={affix.affix_id}`. If the same affix ID appears twice in `ideal_prefix` or `ideal_suffix`, one row is silently dropped. Fix: use composite key `key={`${affix.affix_id}-${index}`}`.
+- [x] [Review][Patch] AC10 — Slot rows are non-interactive `<div>` elements without `tabIndex="0"`, not keyboard-navigable — `SlotRow` in `GearSlotRankingList.tsx` renders a plain `<div>`. AC10 requires all slot rows to be keyboard-navigable. Fix: add `tabIndex={0}` to the slot row container `<div>`.
 - [x] [Review][Defer] `initialOptimizationState` captures mutable object references in test setup — `GearOptimizationView.test.tsx` uses the same shared-reference pattern as `initialBuildState` / `initialAppState`. Pre-existing pattern in this file; not caused by this story.
 - [x] [Review][Defer] AC7 "correct — keep" tooltip obligation not captured in TODO comment — The TODO comment in `SlotRow` defers the badge itself but does not mention the tooltip requirement from AC7. Story dev notes explicitly permit this deferral; low risk for Story 5.5 to pick up.
 - [x] [Review][Defer] No test for ranking list visibility during re-analysis (`isAnalyzingGear: true` + non-null `gearAnalysis`) — Implied by AC9 "after analysis completes" framing. The behaviour (list stays visible during re-analysis) is intentional per Story 5.3 notes; not an explicit AC requirement.

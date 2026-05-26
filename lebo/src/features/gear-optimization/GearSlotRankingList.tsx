@@ -86,8 +86,8 @@ function WishlistSection({ label, affixes }: WishlistSectionProps) {
         {label}
       </p>
       <div className="flex flex-col gap-1.5 text-xs">
-        {affixes.map((affix) => (
-          <WishlistRow key={affix.affix_id} affix={affix} />
+        {affixes.map((affix, i) => (
+          <WishlistRow key={`${affix.affix_id}-${i}`} affix={affix} />
         ))}
       </div>
     </div>
@@ -107,6 +107,7 @@ function SlotRow({ ranking, isPriority }: SlotRowProps) {
     <div
       className="flex flex-col gap-2 p-3 rounded"
       style={{ backgroundColor: 'var(--color-bg-surface)' }}
+      tabIndex={0}
     >
       {/* Slot header */}
       <div className="flex items-center gap-2">
@@ -161,9 +162,9 @@ export function GearSlotRankingList({ rankings, prioritySlot }: Props) {
       <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>
         Upgrade Priority
       </p>
-      {rankings.map((ranking) => (
+      {rankings.map((ranking, i) => (
         <SlotRow
-          key={ranking.slot}
+          key={`${ranking.slot}-${i}`}
           ranking={ranking}
           isPriority={prioritySlot !== '' && ranking.slot === prioritySlot}
         />
