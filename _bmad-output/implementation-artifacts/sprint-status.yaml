@@ -25,7 +25,7 @@
 # - Developer typically creates next story after previous one is 'done' to incorporate learnings
 
 generated: 2026-05-20
-last_updated: 2026-05-24 (story 5-3 done)
+last_updated: 2026-05-26 (UI redesign + story 5-3 done)
 project: LEBOv2 Phase 3
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
@@ -76,6 +76,10 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6: Visual Fidelity & UX Polish
+  # NOTE (2026-05-26): UI redesign (center-canvas 5-tab layout) implemented outside story flow.
+  # Keys 1-5 (center tab switching) and [/] (panel collapse) are ALREADY LIVE in App.tsx.
+  # Story 6.3 scope is now: undo/redo buttons + undo/redo key bindings only (C/S/P shortcuts
+  # are superseded by the 1-5 tab model; update epics.md Story 6.3 ACs before creating story).
   epic-6: backlog
   6-1-item-rarity-and-damage-type-color-systems: backlog
   6-2-tree-background-textures: backlog

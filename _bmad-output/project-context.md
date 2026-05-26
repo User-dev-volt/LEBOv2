@@ -209,9 +209,15 @@ Each feature folder is self-contained: component, hook, data file, and test co-l
 - axe-core CI: any new `axe` violation fails CI. Run `vitest-axe` checks on all new views/components.
 
 **Panel system:**
-- Left panel = 260px (collapsible to 48px icon rail). Right panel = 320px (collapsible to 48px). Center = flex-grow.
+- Left panel = 260px (collapsible to 48px icon rail). Right panel = 340px (collapsible to 48px). Center = flex-grow.
 - `SkillTreeCanvas` uses `ResizeObserver` to re-fit the PixiJS viewport on container resize — do not trigger resize via direct dimension props.
 - `SkillTreeCanvasHandle.fitToTree()` is the only external resize trigger. Call it after tab switches or panel expand/collapse.
+
+**Center canvas tabs:**
+- `appStore.centerTab: CenterTab` where `CenterTab = 'tree' | 'gear' | 'skill' | 'idol' | 'blessing'`. Keys 1–5 switch tabs; `setCenterTab()` is the action.
+- `SkillTreeView` is **always mounted** inside `CenterCanvas` — it is shown/hidden via `display: 'none'` style, never unmounted. This preserves the PixiJS WebGL context across tab switches.
+- Tab content components live in `src/features/layout/tabs/`: `GearTab.tsx`, `SkillTab.tsx`, `IdolTab.tsx`, `BlessingTab.tsx`.
+- The left panel is a **navigator only** (no ContextPanel accordion). Gear/idols/blessings/skills are center tabs, not left-panel sections.
 
 **Item database:**
 - `itemDatabase` in `gameDataStore` is separate from game data — it has its own staleness flags (`isItemDataStale`, `itemDataStaleAcknowledged`, `isItemDataUpdating`). Do not conflate with the game data staleness flags.

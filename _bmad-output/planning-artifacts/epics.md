@@ -387,7 +387,7 @@ FR-F4: Epic 6 — Passive tree: dark stone TilingSprite background (`bg_stone_ti
 FR-F5: Epic 6 — Skill tree canvases: damage-type tint overlay on stone base texture (palette per FR-F5)
 FR-F6: Epic 6 — Weaver Tree tab: void/crystalline purple aesthetic (`bg_weaver_tile.webp`) on WeaverTreePlaceholder
 FR-F7: Epic 6 — Ctrl+Z/Y (Win) and Cmd+Z/Y (Mac) undo/redo; visible ↩/↪ buttons in tree controls bar
-FR-F8: Epic 6 — Global keyboard shortcuts: C = context panel, S = skill tree, P = passive tree
+FR-F8: Epic 6 — [REVISED 2026-05-26] Keys 1-5 switch center tabs (tree/gear/skill/idol/blessing) and [/] collapse left/right panels — ALREADY IMPLEMENTED in App.tsx via UI redesign. Original C/S/P shortcuts superseded by the 5-tab model.
 FR-F9: Epic 6 — Node tooltips overflowing viewport are scrollable in place (mouse wheel)
 FR-F10: Epic 6 — Shift+click allocates multiple points in one action (up to node max or budget)
 
@@ -1311,11 +1311,13 @@ So that the tree UI feels immersive and visually connected to the game.
 
 ### Story 6.3: Keyboard Shortcuts & Undo/Redo Controls
 
-> **Quick Dev candidate** — Global event listeners + two icon buttons in the tree controls bar. Self-contained, no cross-system dependencies. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
+> **Quick Dev candidate** — Two icon buttons in the tree controls bar + Ctrl+Z/Y key bindings. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
+
+> **REVISED 2026-05-26:** Keys 1–5 (center tab switching) and `[`/`]` (panel collapse) are ALREADY LIVE in `App.tsx` from the UI redesign. The original C/S/P panel-focus shortcuts are superseded by the 5-tab model. This story's remaining scope is undo/redo only.
 
 As a player,
-I want Ctrl+Z/Y (Win) and Cmd+Z/Y (Mac) for undo/redo with visible ↩/↪ buttons in the tree controls bar, and global C/S/P shortcuts to focus context panel, skill tree, and passive tree respectively,
-So that keyboard-driven workflow matches the conventions I'm used to from other build planning tools.
+I want Ctrl+Z/Y (Win) and Cmd+Z/Y (Mac) for undo/redo with visible ↩/↪ buttons in the tree controls bar,
+So that I can quickly reverse accidental passive tree allocations with familiar keyboard conventions.
 
 **Acceptance Criteria:**
 
@@ -1334,14 +1336,9 @@ So that keyboard-driven workflow matches the conventions I'm used to from other 
 **And** both buttons are disabled when no undo/redo history is available (respectively)
 **And** both buttons have accessible `aria-label` attributes and meet the 2px solid accent-gold focus ring standard
 
-**Given** no text input has focus
-**When** the user presses `C`
-**Then** the context panel (gear / idols / blessings section) receives keyboard focus with a visible focus ring
-**And** `S` focuses the active skill tree tab, `P` focuses the passive tree tab
-
 **Given** a text input (affix search, blessing search, etc.) is focused
-**When** the user types `C`, `S`, or `P`
-**Then** the global panel shortcuts are NOT triggered — the character is entered into the text input normally
+**When** the user presses `Ctrl+Z` or `Ctrl+Y`
+**Then** undo/redo is NOT triggered — the browser's native text undo behavior runs normally
 
 ### Story 6.4: Tooltip Polish & Multi-Point Allocation
 

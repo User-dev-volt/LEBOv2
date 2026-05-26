@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Test keyboard shortcuts end-to-end (1→tree, 2→gear, 3→skill, 4→idols, 5→blessings); verify all five tabs render correctly with sample data; then move to optimization panel integration or build import flow.
+Run `[CS] Create Story` for story 5-4 (`gear-optimization-view-priority-ranking-and-wishlists`) in a fresh context window. UI redesign is complete and verified — all 5 center tabs working.
 
 ---
 
@@ -31,6 +31,7 @@ Test keyboard shortcuts end-to-end (1→tree, 2→gear, 3→skill, 4→idols, 5�
 ## Mental RAM
 
 - PRD is at `_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/prd.md` — status: final
+- UI redesign complete: `appStore.centerTab: CenterTab` (`'tree'|'gear'|'skill'|'idol'|'blessing'`) drives center canvas. SkillTreeView always mounted (display:none when inactive). Tab components in `src/features/layout/tabs/`. Right panel 340px. Keys 1-5 and [/] live.
 - All 5 OQs from PRD are resolved (see `.decision-log.md`)
 - Epic A (Rust scoring engine) is the most complex — 6-stage pipeline. Architecture doc should nail the module structure before stories are written
 - Data ingestion prerequisite: `modifierType` annotation + affix `scope` field — NOT in current `affixes.json`. Must be sourced from lastepochtools.com DB. This is a blocking prerequisite for Epic A
@@ -42,7 +43,8 @@ Test keyboard shortcuts end-to-end (1→tree, 2→gear, 3→skill, 4→idols, 5�
 
 ## Open Loops
 
-- [ ] Architecture session: Rust scoring engine module, IPC surface, data ingestion pipeline
+- [x] UI redesign: 5-tab center canvas, navigator left panel, reorganized right panel — DONE 2026-05-26
+- [ ] Architecture session: Rust scoring engine module, IPC surface, data ingestion pipeline (resolved — Epics 1-4 done)
 - [ ] Epic C (idol grid): needs idol grid layout data authored from lastepochtools.com/guide/section/idols
 - [ ] Epic F (tree backgrounds): needs `bg_stone_tile.webp` + `bg_weaver_tile.webp` assets — check icon pipeline first, Perlin noise fallback
 - [ ] Epic G (Season 4 data): `modifierType` + affix `scope` ingestion from lastepochtools.com (prerequisite for Epic A)
@@ -65,6 +67,7 @@ Test keyboard shortcuts end-to-end (1→tree, 2→gear, 3→skill, 4→idols, 5�
 | Date | What I Did | Where I Left Off |
 |------|------------|------------------|
 | 2026-05-19 | Full Phase 3 PRD via /bmad-prd — research, discovery, all 5 OQs resolved, rubric review, finalized | PRD final; architecture next |
+| 2026-05-26 | UI/UX redesign from Claude Design handoff — 5-tab center canvas (tree/gear/skill/idol/blessing), left panel as navigator, right panel reorganized (score gauge at top, 340px), keyboard shortcuts 1-5 and [/] | Story 5-4 next |
 
 ---
 
