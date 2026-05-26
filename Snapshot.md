@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Test the compiled fix end-to-end: load app → select class → select sub-class → verify no crash and data loads
+Test keyboard shortcuts end-to-end (1→tree, 2→gear, 3→skill, 4→idols, 5→blessings); verify all five tabs render correctly with sample data; then move to optimization panel integration or build import flow.
 
 ---
 
