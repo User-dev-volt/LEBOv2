@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
--
+Await parallel review layer results, then triage findings by severity/actionability and present final report
 
 ---
 
