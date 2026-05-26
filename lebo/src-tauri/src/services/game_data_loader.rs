@@ -115,8 +115,10 @@ pub fn build_scoring_game_data(app_handle: &tauri::AppHandle) -> Result<GameData
         "archetype_weights must be sorted ascending with unique slider_upper values"
     );
 
-    // Load idol affix scoring data from idol-data.json
-    let idol_data = super::context_data_service::load_idol_data_from_dir(&data_dir)
+    // Load idol affix scoring data from idol-data.json (lives in context-data dir, not game-data dir)
+    let context_data_dir = super::context_data_service::copy_bundled_context_resources(app_handle)
+        .map_err(|e| format!("idol-data load failed: {e}"))?;
+    let idol_data = super::context_data_service::load_idol_data_from_dir(&context_data_dir)
         .map_err(|e| format!("idol-data load failed: {e}"))?;
     let mut idol_affixes: HashMap<String, IdolAffixEffect> = HashMap::new();
     for idol_type in &idol_data.idol_types {
@@ -137,7 +139,7 @@ pub fn build_scoring_game_data(app_handle: &tauri::AppHandle) -> Result<GameData
     }
 
     // Load blessing scoring effects from blessings.json
-    let blessings_db = super::context_data_service::load_blessings_from_dir(&data_dir)
+    let blessings_db = super::context_data_service::load_blessings_from_dir(&context_data_dir)
         .map_err(|e| format!("blessings load failed: {e}"))?;
     let mut blessing_effects: HashMap<String, Vec<NodeEffect>> = HashMap::new();
     for blessing in &blessings_db {
