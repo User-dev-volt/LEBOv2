@@ -137,4 +137,16 @@ describe('GearOptimizationView', () => {
     expect(screen.queryByTestId('gear-narrative-loading')).toBeNull()
     expect(screen.queryByTestId('gear-narrative-text')).toBeNull()
   })
+
+  it('shows narrative error when streamError is set and no narrative or generation in progress', () => {
+    useOptimizationStore.setState({
+      gearNarrative: null,
+      isGeneratingNarrative: false,
+      streamError: { type: 'API_ERROR', message: 'rate limit reached — wait a moment and retry' },
+    })
+    useBuildStore.setState({ activeBuild: makeBuild() })
+    render(<GearOptimizationView />)
+    expect(screen.getByTestId('gear-narrative-error')).toBeInTheDocument()
+    expect(screen.getByTestId('gear-narrative-error')).toHaveTextContent('rate limit reached')
+  })
 })

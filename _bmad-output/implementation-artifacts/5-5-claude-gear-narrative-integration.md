@@ -3,7 +3,7 @@ title: 'Claude Gear Narrative Integration'
 story_id: '5.5'
 story_key: '5-5-claude-gear-narrative-integration'
 epic: 5
-status: review
+status: done
 created: '2026-05-26'
 ---
 
@@ -737,6 +737,20 @@ No blockers. One signature fix: `run_synergy_detection` takes only 2 args (snaps
 - **Task 4:** Extended `optimizationStore` with `gearNarrative`, `isGeneratingNarrative`, `setGearNarrative`, `setIsGeneratingNarrative`, `appendGearNarrativeChunk`. Updated `startGearAnalysis()` to clear narrative on each call. Updated `gear:analysis-complete` handler to set `isGeneratingNarrative: true`. Added 3 new event listeners with `isMounted` guards. Cleanup sets both `isAnalyzingGear` and `isGeneratingNarrative` to false. Updated test file: 11/11 pass (was 8/8 pre-story).
 - **Task 5:** Created `GearNarrativePanel.tsx` as props-only component. 4 render states: null (hidden), loading (generating + no text), streaming (generating + text + cursor), complete (text only). Section heading "Gear Analysis" in gold. `aria-live="polite"` on text elements, `aria-hidden` on cursor. 9/9 tests pass including 3 axe checks.
 - **Task 6:** Integrated `GearNarrativePanel` into `GearOptimizationView.tsx` with 2 new store selectors. Added 3 new tests (narrative text, loading state, hidden when pre-analysis). 10/10 `GearOptimizationView` tests pass. `pnpm build` zero errors. 161/161 story-relevant tests green. Pre-existing failures in `AppHeader`, `RightPanel`, `ProviderSelector`, `Settings`, `SkillTreeCanvas`, `TreeControls` are unchanged from Story 5.3.
+
+### Review Findings
+
+- [x] [Review][Patch] Narrative errors invisible in Gear Optimization view — FIXED: added `streamError` selector to `GearOptimizationView`; renders error message below `GearNarrativePanel` when `streamError` is set and no narrative/generation is active. New test added (11/11 pass). [`lebo/src/features/gear-optimization/GearOptimizationView.tsx`]
+
+- [x] [Review][Defer] NaN in `max_by` for priority slot selection [`lebo/src-tauri/src/commands/scoring_commands.rs`] — deferred, pre-existing pattern in scoring_commands.rs
+- [x] [Review][Defer] `MODELS[0]` hardcoded — no bounds check [`lebo/src-tauri/src/services/openrouter_service.rs`] — deferred, spec-intentional design choice
+- [x] [Review][Defer] Composite key `${affix_id}-${i}` — index defeats key stability [`lebo/src/features/gear-optimization/GearSlotRankingList.tsx`] — deferred, story 5.4 retrospective fix, acceptable workaround
+- [x] [Review][Defer] In-flight narrative chunks can pollute re-triggered run — no stream cancellation [`lebo/src/shared/stores/useGearStream.ts`] — deferred, architectural limitation shared with optimization streaming
+- [x] [Review][Defer] Empty `slot_rankings` yields no priority slot in narrative payload — deferred, degenerate case not reachable with current Phase 3 game data
+- [x] [Review][Defer] Payload provides BuildScore weight deltas, not raw stat deltas — AC1 "specific delta values" can't be fully demonstrated in Phase 3 (empty `gear_affixes`) — deferred, Phase 3 data limitation acknowledged in Dev Notes
+- [x] [Review][Defer] Game-changer payload lacks current-stat proximity — `description` has threshold + delta%, but not "you currently have X vs required Y" — deferred, Phase 3 limitation; acceptable for current scope
+- [x] [Review][Defer] Slider boundary: Rust `26..=74` → Balanced maps `75` to Juggernaut; may diverge from UI label thresholds — deferred, pre-existing, QA concern
+- [x] [Review][Defer] Stale `assert_eq!(MODELS.len(), 4)` Rust unit test in `openrouter_service.rs` (MODELS has 7 entries) — deferred, pre-existing bug not introduced by this story; not run by `pnpm vitest`
 
 ### File List
 

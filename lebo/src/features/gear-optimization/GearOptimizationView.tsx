@@ -16,6 +16,7 @@ export function GearOptimizationView() {
   const gearAnalysis = useOptimizationStore((s) => s.gearAnalysis)
   const gearNarrative = useOptimizationStore((s) => s.gearNarrative)
   const isGeneratingNarrative = useOptimizationStore((s) => s.isGeneratingNarrative)
+  const streamError = useOptimizationStore((s) => s.streamError)
   const [analyzeError, setAnalyzeError] = useState<string | null>(null)
 
   const skillRoles = activeBuild?.skillRoles ?? {}
@@ -120,6 +121,17 @@ export function GearOptimizationView() {
           narrative={gearNarrative}
           isGenerating={isGeneratingNarrative}
         />
+
+        {/* Narrative generation error */}
+        {streamError && !isGeneratingNarrative && !gearNarrative && (
+          <p
+            data-testid="gear-narrative-error"
+            className="text-xs"
+            style={{ color: 'var(--color-data-negative)' }}
+          >
+            {streamError.message}
+          </p>
+        )}
       </div>
     </div>
   )
