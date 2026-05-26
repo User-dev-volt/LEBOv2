@@ -14,13 +14,15 @@ export function ContextPanel() {
   const idolGrid = useBuildStore((s) => s.activeBuild?.idolGrid ?? [])
   const blessings = useBuildStore((s) => s.activeBuild?.blessings ?? {})
   const activeBlessingsCount = Object.values(blessings).filter((v) => v !== null).length
-  const conditionValues = useBuildStore((s) => s.activeBuild?.conditionValues ?? {})
-  const activeConditionsCount = Object.values(conditionValues).filter((v) => {
-    if (typeof v === 'boolean') return v === true
-    if (typeof v === 'number') return v !== 0
-    if (typeof v === 'string') return v !== '' && v !== 'standard_mob'
-    return false
-  }).length
+  const conditionValues = useBuildStore((s) => s.activeBuild?.conditionValues)
+  const activeConditionsCount = conditionValues
+    ? Object.values(conditionValues).filter((v) => {
+        if (typeof v === 'boolean') return v === true
+        if (typeof v === 'number') return v !== 0
+        if (typeof v === 'string') return v !== '' && v !== 'standard_mob'
+        return false
+      }).length
+    : 0
 
   const filledGearCount = gear.filter((g) => g.itemName.trim() !== '').length
   const filledSkillCount = skills.filter((s) => s.skillName.trim() !== '').length

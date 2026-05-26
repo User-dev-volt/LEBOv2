@@ -31,7 +31,7 @@ export function ClassMasterySelector() {
         Class
       </p>
 
-      <Listbox value={selectedClassId ?? undefined} onChange={(id: string) => setSelectedClass(id)}>
+      <Listbox value={selectedClassId ?? ''} onChange={(id: string) => setSelectedClass(id)}>
         <ListboxButton
           id="class-selector-btn"
           className="w-full px-3 py-2 text-sm text-left rounded flex justify-between items-center"
@@ -85,7 +85,7 @@ export function ClassMasterySelector() {
           </p>
 
           <Listbox
-            value={selectedMasteryId ?? undefined}
+            value={selectedMasteryId ?? ''}
             onChange={(id: string) => {
               setSelectedMastery(id)
               const masteryName = selectedClass?.masteries[id]?.masteryName ?? id
