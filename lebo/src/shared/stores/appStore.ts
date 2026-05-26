@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
 export type PanelCollapseState = 'expanded' | 'collapsed'
+export type CenterTab = 'tree' | 'gear' | 'skill' | 'idol' | 'blessing'
 
 interface PanelState {
   left: PanelCollapseState
@@ -11,6 +12,7 @@ interface AppStore {
   isOnline: boolean
   isOnlineChecked: boolean
   currentView: 'main' | 'settings' | 'gear-optimization'
+  centerTab: CenterTab
   activePanel: PanelState
   isApiKeyConfigured: boolean | null
   isOpenRouterConfigured: boolean | null
@@ -23,6 +25,7 @@ interface AppStore {
   selectedNodeId: string | null
   setOnline: (online: boolean) => void
   setCurrentView: (view: 'main' | 'settings' | 'gear-optimization') => void
+  setCenterTab: (tab: CenterTab) => void
   setPanelState: (panel: 'left' | 'right', state: PanelCollapseState) => void
   setApiKeyConfigured: (v: boolean | null) => void
   setOpenRouterConfigured: (v: boolean | null) => void
@@ -39,6 +42,7 @@ export const useAppStore = create<AppStore>()((set) => ({
   isOnline: false,
   isOnlineChecked: false,
   currentView: 'main',
+  centerTab: 'tree',
   activePanel: { left: 'expanded', right: 'expanded' },
   isApiKeyConfigured: null,
   isOpenRouterConfigured: null,
@@ -51,6 +55,7 @@ export const useAppStore = create<AppStore>()((set) => ({
   selectedNodeId: null,
   setOnline: (online) => set({ isOnline: online, isOnlineChecked: true }),
   setCurrentView: (view) => set({ currentView: view }),
+  setCenterTab: (tab) => set({ centerTab: tab }),
   setPanelState: (panel, state) =>
     set((s) => ({ activePanel: { ...s.activePanel, [panel]: state } })),
   setApiKeyConfigured: (v) => set({ isApiKeyConfigured: v }),

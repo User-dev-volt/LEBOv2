@@ -1,0 +1,107 @@
+[      74ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:20102
+[     172ms] [ERROR] TypeError: Cannot read properties of undefined (reading 'transformCallback')
+    at transformCallback (http://localhost:1420/node_modules/.vite/deps/chunk-ES5NGWZA.js?v=cbd6f291:22:37)
+    at listen (http://localhost:1420/node_modules/.vite/deps/@tauri-apps_api_event.js?v=cbd6f291:38:14)
+    at registerListeners (http://localhost:1420/src/shared/stores/useGearStream.ts:30:31)
+    at http://localhost:1420/src/shared/stores/useGearStream.ts:57:5
+    at Object.react_stack_bottom_frame (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:18567:20)
+    at runWithFiberInDEV (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:997:72)
+    at commitHookEffectListMount (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:9411:163)
+    at commitHookPassiveMountEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:9465:60)
+    at commitPassiveMountOnFiber (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11040:29)
+    at recursivelyTraversePassiveMountEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11010:13) @ :0
+[     172ms] [ERROR] TypeError: Cannot read properties of undefined (reading 'transformCallback')
+    at transformCallback (http://localhost:1420/node_modules/.vite/deps/chunk-ES5NGWZA.js?v=cbd6f291:22:37)
+    at listen (http://localhost:1420/node_modules/.vite/deps/@tauri-apps_api_event.js?v=cbd6f291:38:14)
+    at http://localhost:1420/src/features/icon-pipeline/useIconTextures.ts:15:5
+    at Object.react_stack_bottom_frame (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:18567:20)
+    at runWithFiberInDEV (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:997:72)
+    at commitHookEffectListMount (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:9411:163)
+    at commitHookPassiveMountEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:9465:60)
+    at commitPassiveMountOnFiber (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11040:29)
+    at recursivelyTraversePassiveMountEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11010:13)
+    at commitPassiveMountOnFiber (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11201:13) @ :0
+[     172ms] [ERROR] TypeError: Cannot read properties of undefined (reading 'transformCallback')
+    at transformCallback (http://localhost:1420/node_modules/.vite/deps/chunk-ES5NGWZA.js?v=cbd6f291:22:37)
+    at listen (http://localhost:1420/node_modules/.vite/deps/@tauri-apps_api_event.js?v=cbd6f291:38:14)
+    at registerListeners (http://localhost:1420/src/shared/stores/useOptimizationStream.ts:34:31)
+    at http://localhost:1420/src/shared/stores/useOptimizationStream.ts:136:5
+    at Object.react_stack_bottom_frame (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:18567:20)
+    at runWithFiberInDEV (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:997:72)
+    at commitHookEffectListMount (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:9411:163)
+    at commitHookPassiveMountEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:9465:60)
+    at commitPassiveMountOnFiber (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11040:29)
+    at recursivelyTraversePassiveMountEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11010:13) @ :0
+[     172ms] [ERROR] TypeError: Cannot read properties of undefined (reading 'transformCallback')
+    at transformCallback (http://localhost:1420/node_modules/.vite/deps/chunk-ES5NGWZA.js?v=cbd6f291:22:37)
+    at listen (http://localhost:1420/node_modules/.vite/deps/@tauri-apps_api_event.js?v=cbd6f291:38:14)
+    at registerListeners (http://localhost:1420/src/shared/stores/useGearStream.ts:30:31)
+    at http://localhost:1420/src/shared/stores/useGearStream.ts:57:5
+    at Object.react_stack_bottom_frame (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:18567:20)
+    at runWithFiberInDEV (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:997:72)
+    at commitHookEffectListMount (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:9411:163)
+    at commitHookPassiveMountEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:9465:60)
+    at reconnectPassiveEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11273:13)
+    at recursivelyTraverseReconnectPassiveEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11240:11) @ :0
+[     173ms] [ERROR] TypeError: Cannot read properties of undefined (reading 'transformCallback')
+    at transformCallback (http://localhost:1420/node_modules/.vite/deps/chunk-ES5NGWZA.js?v=cbd6f291:22:37)
+    at listen (http://localhost:1420/node_modules/.vite/deps/@tauri-apps_api_event.js?v=cbd6f291:38:14)
+    at http://localhost:1420/src/features/icon-pipeline/useIconTextures.ts:15:5
+    at Object.react_stack_bottom_frame (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:18567:20)
+    at runWithFiberInDEV (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:997:72)
+    at commitHookEffectListMount (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:9411:163)
+    at commitHookPassiveMountEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:9465:60)
+    at reconnectPassiveEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11273:13)
+    at recursivelyTraverseReconnectPassiveEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11240:11)
+    at reconnectPassiveEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11317:13) @ :0
+[     173ms] [ERROR] TypeError: Cannot read properties of undefined (reading 'transformCallback')
+    at transformCallback (http://localhost:1420/node_modules/.vite/deps/chunk-ES5NGWZA.js?v=cbd6f291:22:37)
+    at listen (http://localhost:1420/node_modules/.vite/deps/@tauri-apps_api_event.js?v=cbd6f291:38:14)
+    at registerListeners (http://localhost:1420/src/shared/stores/useOptimizationStream.ts:34:31)
+    at http://localhost:1420/src/shared/stores/useOptimizationStream.ts:136:5
+    at Object.react_stack_bottom_frame (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:18567:20)
+    at runWithFiberInDEV (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:997:72)
+    at commitHookEffectListMount (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:9411:163)
+    at commitHookPassiveMountEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:9465:60)
+    at reconnectPassiveEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11273:13)
+    at recursivelyTraverseReconnectPassiveEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11240:11) @ :0
+[     198ms] [ERROR] {type: UNKNOWN, message: An unexpected error occurred. Please try again., detail: Cannot read properties of undefined (reading 'invoke')} @ :0
+[     198ms] [ERROR] {type: UNKNOWN, message: An unexpected error occurred. Please try again., detail: Cannot read properties of undefined (reading 'invoke')} @ :0
+[     198ms] [ERROR] {type: UNKNOWN, message: An unexpected error occurred. Please try again., detail: Cannot read properties of undefined (reading 'invoke')} @ :0
+[     198ms] [ERROR] {type: UNKNOWN, message: An unexpected error occurred. Please try again., detail: Cannot read properties of undefined (reading 'invoke')} @ :0
+[     198ms] [ERROR] {type: UNKNOWN, message: An unexpected error occurred. Please try again., detail: Cannot read properties of undefined (reading 'invoke')} @ :0
+[     198ms] [ERROR] {type: UNKNOWN, message: An unexpected error occurred. Please try again., detail: Cannot read properties of undefined (reading 'invoke')} @ :0
+[     198ms] [ERROR] {type: UNKNOWN, message: An unexpected error occurred. Please try again., detail: Cannot read properties of undefined (reading 'invoke')} @ :0
+[     198ms] [ERROR] {type: UNKNOWN, message: An unexpected error occurred. Please try again., detail: Cannot read properties of undefined (reading 'invoke')} @ :0
+[     198ms] [ERROR] {type: UNKNOWN, message: An unexpected error occurred. Please try again., detail: Cannot read properties of undefined (reading 'invoke')} @ :0
+[     198ms] [ERROR] {type: UNKNOWN, message: An unexpected error occurred. Please try again., detail: Cannot read properties of undefined (reading 'invoke')} @ :0
+[     198ms] [ERROR] {type: UNKNOWN, message: An unexpected error occurred. Please try again., detail: Cannot read properties of undefined (reading 'invoke')} @ :0
+[     198ms] [ERROR] {type: UNKNOWN, message: An unexpected error occurred. Please try again., detail: Cannot read properties of undefined (reading 'invoke')} @ :0
+[     262ms] TypeError: Cannot read properties of undefined (reading 'transformCallback')
+    at transformCallback (http://localhost:1420/node_modules/.vite/deps/chunk-ES5NGWZA.js?v=cbd6f291:22:37)
+    at listen (http://localhost:1420/node_modules/.vite/deps/@tauri-apps_api_event.js?v=cbd6f291:38:14)
+    at http://localhost:1420/src/shared/hooks/useConnectivity.ts:11:5
+    at Object.react_stack_bottom_frame (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:18567:20)
+    at runWithFiberInDEV (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:997:72)
+    at commitHookEffectListMount (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:9411:163)
+    at commitHookPassiveMountEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:9465:60)
+    at commitPassiveMountOnFiber (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11040:29)
+    at recursivelyTraversePassiveMountEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11010:13)
+    at commitPassiveMountOnFiber (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11201:13)
+[     262ms] TypeError: Cannot read properties of undefined (reading 'transformCallback')
+    at transformCallback (http://localhost:1420/node_modules/.vite/deps/chunk-ES5NGWZA.js?v=cbd6f291:22:37)
+    at listen (http://localhost:1420/node_modules/.vite/deps/@tauri-apps_api_event.js?v=cbd6f291:38:14)
+    at http://localhost:1420/src/shared/hooks/useConnectivity.ts:11:5
+    at Object.react_stack_bottom_frame (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:18567:20)
+    at runWithFiberInDEV (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:997:72)
+    at commitHookEffectListMount (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:9411:163)
+    at commitHookPassiveMountEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:9465:60)
+    at reconnectPassiveEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11273:13)
+    at recursivelyTraverseReconnectPassiveEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11240:11)
+    at reconnectPassiveEffects (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=cbd6f291:11317:13)
+[     237ms] [WARNING] Failed to decode downloaded font: http://localhost:1420/fonts/InterVariable.woff2 @ http://localhost:1420/:0
+[     237ms] [WARNING] OTS parsing error: invalid sfntVersion: 1008821359 @ http://localhost:1420/:0
+[     237ms] [WARNING] Failed to decode downloaded font: http://localhost:1420/fonts/JetBrainsMonoVariable.woff2 @ http://localhost:1420/:0
+[     237ms] [WARNING] OTS parsing error: invalid sfntVersion: 1008821359 @ http://localhost:1420/:0
+[     261ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:1420/:0
+[     261ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:1420/:0

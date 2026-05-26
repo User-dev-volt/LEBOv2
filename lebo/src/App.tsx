@@ -119,6 +119,27 @@ export function App() {
       // Skip bare-key shortcuts when modifier keys are held (avoid hijacking Ctrl+O, Alt+I, etc.)
       if (e.ctrlKey || e.metaKey || e.altKey) return
 
+      // Center tab shortcuts: 1-5
+      if (e.key === '1') { e.preventDefault(); useAppStore.getState().setCenterTab('tree'); return }
+      if (e.key === '2') { e.preventDefault(); useAppStore.getState().setCenterTab('gear'); return }
+      if (e.key === '3') { e.preventDefault(); useAppStore.getState().setCenterTab('skill'); return }
+      if (e.key === '4') { e.preventDefault(); useAppStore.getState().setCenterTab('idol'); return }
+      if (e.key === '5') { e.preventDefault(); useAppStore.getState().setCenterTab('blessing'); return }
+
+      // Panel collapse shortcuts
+      if (e.key === '[') {
+        e.preventDefault()
+        const { activePanel, setPanelState } = useAppStore.getState()
+        setPanelState('left', activePanel.left === 'collapsed' ? 'expanded' : 'collapsed')
+        return
+      }
+      if (e.key === ']') {
+        e.preventDefault()
+        const { activePanel, setPanelState } = useAppStore.getState()
+        setPanelState('right', activePanel.right === 'collapsed' ? 'expanded' : 'collapsed')
+        return
+      }
+
       if (e.key === 'o' || e.key === 'O') {
         e.preventDefault()
         document.getElementById('optimize-button')?.focus()

@@ -6,6 +6,8 @@ import { invokeCommand } from '../../shared/utils/invokeCommand'
 export function AppHeader() {
   const currentView = useAppStore((s) => s.currentView)
   const setCurrentView = useAppStore((s) => s.setCurrentView)
+  const isOnline = useAppStore((s) => s.isOnline)
+  const isOnlineChecked = useAppStore((s) => s.isOnlineChecked)
   const activeBuild = useBuildStore((s) => s.activeBuild)
   const updateInfo = useAppStore((s) => s.updateInfo)
   const updateStatus = useAppStore((s) => s.updateStatus)
@@ -45,67 +47,93 @@ export function AppHeader() {
     await invokeCommand('restart_app')
   }
 
+  const navItems: Array<{ id: 'main' | 'gear-optimization' | 'settings'; label: string; requiresBuild?: boolean }> = [
+    { id: 'main', label: 'Builder' },
+    { id: 'gear-optimization', label: 'Gear Optimization', requiresBuild: true },
+    { id: 'settings', label: 'Settings' },
+  ]
+
   return (
     <header
-      className="h-10 flex items-center px-4 border-b border-bg-elevated shrink-0"
-      style={{ backgroundColor: 'var(--color-bg-elevated)' }}
+      className="shrink-0 flex items-center px-3.5 border-b gap-4"
+      style={{
+        height: '44px',
+        backgroundColor: 'var(--color-bg-surface)',
+        borderColor: 'var(--color-bg-elevated)',
+      }}
     >
-      <span className="font-semibold text-sm tracking-wide" style={{ color: 'var(--color-accent-gold)' }}>
-        LEBOv2
-      </span>
-      <span className="ml-2 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-        Last Epoch Build Optimizer
-      </span>
+      {/* Logo */}
+      <div className="flex items-baseline gap-2 shrink-0">
+        <span className="font-mono font-bold text-sm tracking-wider" style={{ color: 'var(--color-accent-gold)' }}>
+          LEBO
+        </span>
+        <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+          Last Epoch Build Optimizer
+        </span>
+      </div>
 
+      {/* Nav */}
+      <nav className="flex items-center gap-0.5 ml-2">
+        {navItems.map(({ id, label, requiresBuild }) => {
+          if (requiresBuild && !activeBuild) return null
+          const isActive = currentView === id
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setCurrentView(id)}
+              data-testid={id === 'settings' ? 'settings-button' : id === 'gear-optimization' ? 'gear-optimization-button' : undefined}
+              className="flex items-center h-7 px-3 rounded text-xs font-medium"
+              style={{
+                color: isActive ? 'var(--color-accent-gold)' : 'var(--color-text-secondary)',
+                backgroundColor: isActive ? 'rgba(201,168,76,0.12)' : 'transparent',
+                transition: 'background-color 120ms, color 120ms',
+              }}
+            >
+              {label}
+            </button>
+          )
+        })}
+      </nav>
+
+      {/* Update banner */}
       {updateInfo && !updateDismissed && (
         <div
-          className="ml-4 flex items-center gap-2 text-xs"
+          className="flex items-center gap-2 text-xs"
           style={{ color: 'var(--color-text-secondary)' }}
           data-testid="update-banner"
         >
           {updateStatus === 'idle' && (
             <>
               <span data-testid="update-version-text">
-                LEBOv2 {updateInfo.version} is available.
+                {updateInfo.version} available.
               </span>
               <button
                 onClick={startDownload}
                 data-testid="install-update-button"
                 className="px-2 py-0.5 rounded text-xs"
-                style={{
-                  backgroundColor: 'var(--color-accent-gold)',
-                  color: 'var(--color-bg-base)',
-                }}
+                style={{ backgroundColor: 'var(--color-accent-gold)', color: 'var(--color-bg-base)' }}
               >
-                Install Update
+                Install
               </button>
             </>
           )}
           {updateStatus === 'downloading' && (
-            <span data-testid="download-progress-text">
-              Downloading... {updateProgress}%
-            </span>
+            <span data-testid="download-progress-text">Downloading {updateProgress}%</span>
           )}
           {updateStatus === 'error' && (
-            <span data-testid="update-error-text">
-              Update failed.
-            </span>
+            <span data-testid="update-error-text">Update failed.</span>
           )}
           {updateStatus === 'ready' && (
             <>
-              <span data-testid="update-ready-text">
-                Update ready. Restart LEBOv2 to apply?
-              </span>
+              <span data-testid="update-ready-text">Ready to restart</span>
               <button
                 onClick={installAndRestart}
                 data-testid="restart-now-button"
                 className="px-2 py-0.5 rounded text-xs"
-                style={{
-                  backgroundColor: 'var(--color-accent-gold)',
-                  color: 'var(--color-bg-base)',
-                }}
+                style={{ backgroundColor: 'var(--color-accent-gold)', color: 'var(--color-bg-base)' }}
               >
-                Restart Now
+                Restart
               </button>
             </>
           )}
@@ -113,7 +141,7 @@ export function AppHeader() {
             <button
               onClick={() => setUpdateDismissed(true)}
               data-testid="dismiss-update-button"
-              className="ml-1 text-xs"
+              className="text-xs ml-1"
               style={{ color: 'var(--color-text-muted)' }}
               aria-label="Dismiss update notification"
             >
@@ -123,33 +151,23 @@ export function AppHeader() {
         </div>
       )}
 
-      <div className="ml-auto flex gap-2">
-        {currentView === 'main' && activeBuild && (
-          <button
-            onClick={() => setCurrentView('gear-optimization')}
-            data-testid="gear-optimization-button"
-            className="text-xs px-3 py-1 rounded"
-            style={{
-              backgroundColor: 'var(--color-bg-hover)',
-              color: 'var(--color-text-secondary)',
-            }}
-          >
-            Gear Optimization
-          </button>
+      <div className="ml-auto flex items-center gap-3.5">
+        {/* Online indicator */}
+        {isOnlineChecked && (
+          <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+            <span
+              className="w-1.5 h-1.5 rounded-full"
+              style={{
+                backgroundColor: isOnline ? 'var(--color-data-positive)' : 'var(--color-data-negative)',
+                boxShadow: isOnline ? '0 0 5px rgba(94,189,120,0.6)' : 'none',
+              }}
+            />
+            {isOnline ? 'Online' : 'Offline'}
+          </div>
         )}
-        {currentView !== 'settings' && (
-          <button
-            onClick={() => setCurrentView('settings')}
-            data-testid="settings-button"
-            className="text-xs px-3 py-1 rounded"
-            style={{
-              backgroundColor: 'var(--color-bg-hover)',
-              color: 'var(--color-text-secondary)',
-            }}
-          >
-            Settings
-          </button>
-        )}
+        <span className="font-mono text-xs" style={{ color: 'var(--color-text-muted)' }}>
+          v2
+        </span>
       </div>
     </header>
   )

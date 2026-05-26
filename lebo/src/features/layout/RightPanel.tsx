@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useAppStore } from '../../shared/stores/appStore'
 import { useBuildStore } from '../../shared/stores/buildStore'
 import { useOptimizationStore } from '../../shared/stores/optimizationStore'
-import { useGameDataStore } from '../../shared/stores/gameDataStore'
 import { startOptimization } from '../../shared/stores/useOptimizationStream'
 import { PanelCollapseToggle } from './PanelCollapseToggle'
 import { ScoreGauge } from '../optimization/ScoreGauge'
@@ -10,8 +9,6 @@ import { OptimizationSlider } from '../optimization/OptimizationSlider'
 import { FineTunePanel } from '../optimization/FineTunePanel'
 import { OptimizeButton } from '../optimization/OptimizeButton'
 import { SuggestionsList } from '../optimization/SuggestionsList'
-import { GearSlot } from '../item-database/GearSlot'
-import { GEAR_SLOTS } from '../context-panel/gearData'
 import { StatSheetPanel } from '../stat-sheet/StatSheetPanel'
 
 export function RightPanel() {
@@ -25,7 +22,6 @@ export function RightPanel() {
   const currentModel = useOptimizationStore((s) => s.currentModel)
   const previewSuggestionRank = useOptimizationStore((s) => s.previewSuggestionRank)
   const suggestions = useOptimizationStore((s) => s.suggestions)
-  const itemDatabase = useGameDataStore((s) => s.itemDatabase)
 
   const previewScore =
     previewSuggestionRank !== null
@@ -46,11 +42,44 @@ export function RightPanel() {
 
   const showContextNote = isEmptyContext && !isBannerDismissed
 
+  if (isCollapsed) {
+    return (
+      <aside
+        className="relative shrink-0 flex flex-col border-l overflow-hidden"
+        style={{
+          width: '48px',
+          backgroundColor: 'var(--color-bg-surface)',
+          borderColor: 'var(--color-bg-elevated)',
+        }}
+        aria-label="Right panel"
+      >
+        <PanelCollapseToggle
+          side="right"
+          isCollapsed={isCollapsed}
+          onToggle={() => setPanelState('right', 'expanded')}
+        />
+        <div className="flex flex-col items-center pt-10 gap-3 px-2">
+          {scores && (
+            <span
+              className="text-[11px] font-mono"
+              title="Build Score"
+              style={{ color: 'var(--color-accent-gold)' }}
+            >
+              {Math.round(((scores.damage ?? 0) + (scores.survivability ?? 0) + (scores.speed ?? 0)) / 3)}
+            </span>
+          )}
+          <span title="Suggestions" style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>⚡</span>
+          <span title="Stats" style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>≡</span>
+        </div>
+      </aside>
+    )
+  }
+
   return (
     <aside
-      className="relative shrink-0 flex flex-col border-l overflow-hidden transition-[width] duration-200"
+      className="relative shrink-0 flex flex-col border-l overflow-hidden"
       style={{
-        width: isCollapsed ? '48px' : '320px',
+        width: '340px',
         backgroundColor: 'var(--color-bg-surface)',
         borderColor: 'var(--color-bg-elevated)',
       }}
@@ -59,117 +88,95 @@ export function RightPanel() {
       <PanelCollapseToggle
         side="right"
         isCollapsed={isCollapsed}
-        onToggle={() => setPanelState('right', isCollapsed ? 'expanded' : 'collapsed')}
+        onToggle={() => setPanelState('right', 'collapsed')}
       />
 
-      {isCollapsed ? (
-        <div className="flex flex-col items-center pt-3 gap-3 px-2">
-          <span
-            className="text-xs"
-            title="Optimization"
-            style={{ color: 'var(--color-text-muted)' }}
-          >
-            ✦
-          </span>
-        </div>
-      ) : (
-        <div className="flex flex-col h-full overflow-hidden">
-          {/* Upper: Gear Context — independently scrollable */}
-          <div className="overflow-y-auto flex-1 min-h-0 flex flex-col gap-0 pt-3 pb-1">
-            <p
-              className="px-4 pb-2 text-[11px] font-semibold uppercase tracking-wide"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
-              Gear
+      <div className="flex-1 overflow-y-auto flex flex-col gap-0">
+        {/* Score section */}
+        <div className="px-4 pt-4 pb-3">
+          {activeBuild ? (
+            <ScoreGauge baselineScore={scores} previewScore={previewScore} />
+          ) : (
+            <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+              Select a build to see scores
             </p>
-            {GEAR_SLOTS.map(({ slotId, label }) => (
-              <GearSlot
-                key={slotId}
-                slotId={slotId}
-                slotName={label}
-                itemDatabase={itemDatabase}
-              />
-            ))}
-          </div>
-
-          {/* Middle: Stat Sheet */}
-          <div
-            className="shrink-0 overflow-y-auto border-t"
-            style={{ borderColor: 'var(--color-bg-elevated)', maxHeight: '280px' }}
-          >
-            <StatSheetPanel />
-          </div>
-
-          {/* Lower: Optimization — pinned, never scrolls off */}
-          <div
-            className="shrink-0 flex flex-col gap-4 p-4 overflow-y-auto border-t"
-            style={{ borderColor: 'var(--color-bg-elevated)' }}
-          >
-            {activeBuild ? (
-              <>
-                <ScoreGauge baselineScore={scores} previewScore={previewScore} />
-                <OptimizationSlider />
-                <FineTunePanel />
-              </>
-            ) : (
-              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                Select a build to see scores
-              </p>
-            )}
-
-            <OptimizeButton
-              onOptimize={startOptimization}
-              disabled={!activeBuild || !isOnline}
-              isOptimizing={isOptimizing}
-            />
-
-            {isOptimizing && currentModel && (
-              <p
-                className="text-xs"
-                style={{ color: 'var(--color-text-muted)' }}
-                data-testid="current-model-indicator"
-              >
-                Using: {currentModel}
-              </p>
-            )}
-
-            {isOnlineChecked && !isOnline && (
-              <p
-                className="text-xs"
-                style={{ color: 'var(--color-text-muted)' }}
-                data-testid="offline-note"
-              >
-                AI optimization requires internet connectivity. Connect to the internet and retry.
-              </p>
-            )}
-
-            {showContextNote && (
-              <div
-                className="flex items-start gap-2 px-3 py-2 rounded text-xs"
-                style={{
-                  backgroundColor: 'var(--color-bg-elevated)',
-                  color: 'var(--color-text-muted)',
-                }}
-                data-testid="context-note"
-              >
-                <span className="flex-1">
-                  Add gear, skills, and idols in the context panel for more relevant suggestions.
-                </span>
-                <button
-                  onClick={() => setIsBannerDismissed(true)}
-                  aria-label="Dismiss"
-                  className="shrink-0 leading-none"
-                  style={{ color: 'var(--color-text-muted)' }}
-                >
-                  ×
-                </button>
-              </div>
-            )}
-
-            <SuggestionsList onRetry={startOptimization} />
-          </div>
+          )}
         </div>
-      )}
+
+        <div style={{ height: 1, backgroundColor: 'var(--color-bg-elevated)', margin: '0 16px' }} />
+
+        {/* Optimization controls */}
+        <div className="px-4 py-3 flex flex-col gap-3" id="suggestion-panel">
+          <OptimizationSlider />
+          <FineTunePanel />
+
+          <OptimizeButton
+            onOptimize={startOptimization}
+            disabled={!activeBuild || !isOnline}
+            isOptimizing={isOptimizing}
+          />
+
+          {isOptimizing && currentModel && (
+            <p
+              className="text-xs"
+              style={{ color: 'var(--color-text-muted)' }}
+              data-testid="current-model-indicator"
+            >
+              Using: {currentModel}
+            </p>
+          )}
+
+          {isOnlineChecked && !isOnline && (
+            <p
+              className="text-xs"
+              style={{ color: 'var(--color-text-muted)' }}
+              data-testid="offline-note"
+            >
+              AI optimization requires internet. Connect and retry.
+            </p>
+          )}
+
+          {showContextNote && (
+            <div
+              className="flex items-start gap-2 px-3 py-2 rounded text-xs"
+              style={{
+                backgroundColor: 'var(--color-bg-elevated)',
+                color: 'var(--color-text-muted)',
+              }}
+              data-testid="context-note"
+            >
+              <span className="flex-1">
+                Add gear, skills, and idols for more relevant suggestions.
+              </span>
+              <button
+                onClick={() => setIsBannerDismissed(true)}
+                aria-label="Dismiss"
+                className="shrink-0 leading-none"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                ×
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div style={{ height: 1, backgroundColor: 'var(--color-bg-elevated)', margin: '0 16px' }} />
+
+        {/* AI Suggestions */}
+        <div className="px-4 py-3">
+          <SuggestionsList onRetry={startOptimization} />
+        </div>
+
+        <div style={{ height: 1, backgroundColor: 'var(--color-bg-elevated)', margin: '0 16px' }} />
+
+        {/* Stat sheet */}
+        <div
+          className="overflow-y-auto"
+          style={{ maxHeight: '320px' }}
+        >
+          <StatSheetPanel />
+        </div>
+      </div>
     </aside>
   )
 }
