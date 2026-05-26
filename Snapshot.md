@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Begin Story 5.3 implementation: start with Rust `run_gear_scoring` command in `scoring_commands.rs`, then TypeScript serializer extensions, then hook + UI wiring.
+Test the compiled fix end-to-end: load app → select class → select sub-class → verify no crash and data loads
 
 ---
 
