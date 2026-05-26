@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Run `[CS] Create Story` for story 5-4 (`gear-optimization-view-priority-ranking-and-wishlists`) in a fresh context window. UI redesign is complete and verified — all 5 center tabs working.
+Answer the D1 question (Rust caps or UI caps for wishlist affixes?) so findings can be finalized and story moved to `in-progress`.
 
 ---
 
