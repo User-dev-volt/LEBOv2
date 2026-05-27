@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Start story 6.5 (Real Game Art Assets)
+Run `/code-review` on all 7 changed files (or use a different LLM for review) before merging to main.
 
 ---
 
