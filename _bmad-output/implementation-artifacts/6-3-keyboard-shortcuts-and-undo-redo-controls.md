@@ -3,7 +3,7 @@ title: 'Keyboard Shortcuts & Undo/Redo Controls'
 story_id: '6.3'
 story_key: '6-3-keyboard-shortcuts-and-undo-redo-controls'
 epic: 6
-status: review
+status: done
 created: '2026-05-27'
 ---
 
@@ -638,7 +638,13 @@ claude-sonnet-4-6 (2026-05-27)
 - **Results:** `pnpm build` ✅ zero TS errors. Full suite: 1007/1021 pass (14 pre-existing failures, unchanged from Story 6.2).
 
 ### Review Findings
-_To be filled in after code review_
+
+_Reviewed 2026-05-27 — 3 layers (Blind Hunter, Edge Case Hunter, Acceptance Auditor). 14 raw findings → 0 decision-needed, 0 patch, 4 deferred, 10 dismissed._
+
+- [x] [Review][Defer] `canUndo`/`canRedo` co-provision not type-enforced [`lebo/src/features/skill-tree/TreeControls.tsx`] — deferred, pre-existing; all current callers supply all four props; fix requires discriminated union type
+- [x] [Review][Defer] `redoStack` not cleared on `setSelectedMastery` [`lebo/src/shared/stores/buildStore.ts`] — deferred, mirrors pre-existing `undoStack` behavior; not in spec's required 7 sites; architecturally ambiguous
+- [x] [Review][Defer] `activeBuild` null guard in undo/redo creates stack asymmetry [`lebo/src/shared/stores/buildStore.ts`] — deferred, theoretically unreachable in practice (stack only populated via paths that require non-null activeBuild)
+- [x] [Review][Defer] `isPersisted` flag snapshotted into `BuildState` — undo may restore stale "saved" appearance [`lebo/src/shared/stores/buildStore.ts`] — deferred, pre-existing design concern not introduced by this story
 
 ### File List
 
