@@ -179,16 +179,19 @@ export function SkillTreeView() {
 
   // Fetch icon URLs for all class skills. Used by SkillTreeTabBar for <img src>.
   // getIconCachePath returns OS paths; convertFileSrc makes them WebView-loadable.
+  // cancelled guard prevents a stale classData's results from overwriting the new class's state.
   useEffect(() => {
     if (!classData) {
       setSkillIconUrls(new Map())
       return
     }
+    let cancelled = false
     void Promise.allSettled(
       classData.skills.map(skill =>
         getIconCachePath(skill.skillId).then(path => [skill.skillId, path] as [string, string | null])
       )
     ).then(results => {
+      if (cancelled) return
       const pairs: [string, string][] = []
       for (const r of results) {
         if (r.status === 'fulfilled' && r.value[1] !== null) {
@@ -197,6 +200,7 @@ export function SkillTreeView() {
       }
       setSkillIconUrls(new Map(pairs))
     })
+    return () => { cancelled = true }
   }, [classData])
 
   const allGameNodes = useMemo<Record<string, GameNode>>(() => {

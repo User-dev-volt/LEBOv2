@@ -3,7 +3,7 @@ title: 'Real Game Art Assets'
 story_id: '6.5'
 story_key: '6-5-real-game-art-assets'
 epic: 6
-status: review
+status: done
 created: '2026-05-27'
 ---
 
@@ -614,8 +614,8 @@ claude-sonnet-4-6
 
 ### Review Findings
 
-- [ ] [Review][Patch] Stale `skillIconUrls` race condition on class switch [`lebo/src/features/skill-tree/SkillTreeView.tsx` — `skillIconUrls` useEffect]
-- [ ] [Review][Patch] Duplicate `expect(img?.alt).toBe('')` assertion — copy-paste artifact [`lebo/src/features/skill-tree/SkillTreeTabBar.test.tsx` — first test in `icon rendering` describe block]
+- [x] [Review][Patch] Stale `skillIconUrls` race condition on class switch [`lebo/src/features/skill-tree/SkillTreeView.tsx` — `skillIconUrls` useEffect] — fixed: added `cancelled` guard + cleanup return
+- [x] [Review][Patch] Duplicate `expect(img?.alt).toBe('')` assertion — copy-paste artifact [`lebo/src/features/skill-tree/SkillTreeTabBar.test.tsx` — first test in `icon rendering` describe block] — not present on disk (false positive from diff viewer)
 - [x] [Review][Defer] Inconsistent filename casing in icon map (`Lightning Bolt.png`, `Divine bolt.png`) [`lebo/src-tauri/resources/icons/skill-icon-map.json`] — deferred, pre-existing; Windows+macOS targets are case-insensitive
 - [x] [Review][Defer] Space characters in icon filenames (`skillIcon-Lightning Bolt.png`) [`lebo/src-tauri/resources/icons/skill-icon-map.json`] — deferred, pre-existing pattern (`rip blood.png` already existed)
 - [x] [Review][Defer] `skillCanvasIconTextures` allocates new inner `Map` per recompute when textures arrive incrementally [`lebo/src/features/skill-tree/SkillTreeView.tsx`] — deferred, correct behavior; perf concern only
