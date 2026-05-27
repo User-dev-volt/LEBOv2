@@ -8,9 +8,13 @@ interface TreeControlsProps {
   hasOverlay?: boolean
   showOverlay?: boolean
   onToggleOverlay?: () => void
+  onUndo?: () => void
+  onRedo?: () => void
+  canUndo?: boolean
+  canRedo?: boolean
 }
 
-export function TreeControls({ searchQuery, onSearchChange, onReset, onFit, hasOverlay, showOverlay, onToggleOverlay }: TreeControlsProps) {
+export function TreeControls({ searchQuery, onSearchChange, onReset, onFit, hasOverlay, showOverlay, onToggleOverlay, onUndo, onRedo, canUndo, canRedo }: TreeControlsProps) {
   const [focused, setFocused] = useState(false)
   const [confirming, setConfirming] = useState(false)
 
@@ -61,6 +65,46 @@ export function TreeControls({ searchQuery, onSearchChange, onReset, onFit, hasO
             No
           </button>
         </>
+      )}
+
+      {onUndo && (
+        <button
+          type="button"
+          aria-label="Undo"
+          onClick={onUndo}
+          disabled={!canUndo}
+          style={{
+            ...btnBase,
+            border: `1px solid ${canUndo ? 'var(--color-accent-gold-soft)' : 'var(--color-bg-elevated)'}`,
+            color: canUndo ? 'var(--color-accent-gold-soft)' : 'var(--color-text-muted)',
+            cursor: canUndo ? 'pointer' : 'not-allowed',
+            outline: 'none',
+          }}
+          onFocus={(e) => { e.currentTarget.style.outline = '2px solid var(--color-accent-gold)' }}
+          onBlur={(e) => { e.currentTarget.style.outline = 'none' }}
+        >
+          ↩
+        </button>
+      )}
+
+      {onRedo && (
+        <button
+          type="button"
+          aria-label="Redo"
+          onClick={onRedo}
+          disabled={!canRedo}
+          style={{
+            ...btnBase,
+            border: `1px solid ${canRedo ? 'var(--color-accent-gold-soft)' : 'var(--color-bg-elevated)'}`,
+            color: canRedo ? 'var(--color-accent-gold-soft)' : 'var(--color-text-muted)',
+            cursor: canRedo ? 'pointer' : 'not-allowed',
+            outline: 'none',
+          }}
+          onFocus={(e) => { e.currentTarget.style.outline = '2px solid var(--color-accent-gold)' }}
+          onBlur={(e) => { e.currentTarget.style.outline = 'none' }}
+        >
+          ↪
+        </button>
       )}
 
       {onFit && (

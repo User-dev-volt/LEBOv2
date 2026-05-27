@@ -104,6 +104,20 @@ export function App() {
         return
       }
 
+      // Undo/Redo — skip if text input focused (preserve native browser text undo/redo)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'y')) {
+        const target = e.target as HTMLElement
+        if (
+          target instanceof HTMLInputElement ||
+          target instanceof HTMLTextAreaElement ||
+          target.isContentEditable
+        ) return
+        e.preventDefault()
+        if (e.key === 'z') useBuildStore.getState().undoNodeChange()
+        else useBuildStore.getState().redoNodeChange()
+        return
+      }
+
       // Guard bare-key shortcuts: skip when typing in an input/textarea/contenteditable
       const target = e.target as HTMLElement
       const isInputTarget =

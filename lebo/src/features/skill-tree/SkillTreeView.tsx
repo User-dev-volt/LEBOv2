@@ -84,6 +84,9 @@ export function SkillTreeView() {
   const selectedMasteryId = useBuildStore((s) => s.selectedMasteryId)
   const activeBuild = useBuildStore((s) => s.activeBuild)
   const undoNodeChange = useBuildStore((s) => s.undoNodeChange)
+  const redoNodeChange = useBuildStore((s) => s.redoNodeChange)
+  const canUndo = useBuildStore((s) => s.undoStack.length > 0)
+  const canRedo = useBuildStore((s) => s.redoStack.length > 0)
   const assignSkillToSlot = useBuildStore((s) => s.assignSkillToSlot)
   const resetActiveTree = useBuildStore((s) => s.resetActiveTree)
   const applyWeaverNodeChange = useBuildStore((s) => s.applyWeaverNodeChange)
@@ -402,17 +405,6 @@ export function SkillTreeView() {
     }
   }, [safeTabIndex, activeSkills])
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault()
-        undoNodeChange()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [undoNodeChange])
-
   if (isWeaverTab) {
     const {
       hoveredNodeId: weaverHoveredNodeId,
@@ -461,6 +453,10 @@ export function SkillTreeView() {
             onSearchChange={setSearchQuery}
             onReset={() => { resetActiveTree('weaver'); setSearchQuery('') }}
             onFit={() => weaverCanvasRef.current?.fitToTree()}
+            onUndo={undoNodeChange}
+            onRedo={redoNodeChange}
+            canUndo={canUndo}
+            canRedo={canRedo}
           />
         )}
 
@@ -652,6 +648,10 @@ export function SkillTreeView() {
           hasOverlay={isPassiveTab && !!effectiveNodeEfficiencies && effectiveNodeEfficiencies.length > 0}
           showOverlay={showOverlay}
           onToggleOverlay={() => setShowOverlay((v) => !v)}
+          onUndo={undoNodeChange}
+          onRedo={redoNodeChange}
+          canUndo={canUndo}
+          canRedo={canRedo}
         />
       )}
 

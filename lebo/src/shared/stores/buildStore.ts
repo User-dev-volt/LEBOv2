@@ -14,6 +14,7 @@ export interface BuildStore {
   selectedClassId: string | null
   selectedMasteryId: string | null
   undoStack: BuildState[]
+  redoStack: BuildState[]
   setActiveBuild: (build: BuildState | null) => void
   setSavedBuilds: (builds: BuildMeta[]) => void
   setIsImporting: (importing: boolean) => void
@@ -44,6 +45,7 @@ export interface BuildStore {
   ) => ApplyNodeResult
   resetActiveTree: (treeType: 'passive' | 'skill' | 'weaver', slotId?: string) => void
   undoNodeChange: () => void
+  redoNodeChange: () => void
   updateContextGear: (gear: GearItemV2[]) => void
   updateContextSkills: (skills: ActiveSkill[]) => void
   updateContextIdols: (idols: IdolItem[]) => void
@@ -74,15 +76,16 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
   selectedClassId: null,
   selectedMasteryId: null,
   undoStack: [],
+  redoStack: [],
   setActiveBuild: (build) => set({ activeBuild: build }),
   setSavedBuilds: (builds) => set({ savedBuilds: builds }),
   setIsImporting: (importing) => set({ isImporting: importing }),
-  setSelectedClass: (classId) => set({ selectedClassId: classId, selectedMasteryId: null, activeBuild: null, undoStack: [] }),
+  setSelectedClass: (classId) => set({ selectedClassId: classId, selectedMasteryId: null, activeBuild: null, undoStack: [], redoStack: [] }),
   setSelectedMastery: (masteryId) => set({ selectedMasteryId: masteryId }),
   setActiveBuildPersisted: () =>
     set((s) => s.activeBuild ? { activeBuild: { ...s.activeBuild, isPersisted: true } } : {}),
   clearActiveBuild: () =>
-    set({ activeBuild: null, selectedClassId: null, selectedMasteryId: null, undoStack: [] }),
+    set({ activeBuild: null, selectedClassId: null, selectedMasteryId: null, undoStack: [], redoStack: [] }),
   createBuild: (masteryName) => {
     const { selectedClassId, selectedMasteryId, activeBuild } = get()
     if (!selectedClassId || !selectedMasteryId) return
@@ -113,6 +116,7 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
         updatedAt: now,
       },
       undoStack: [],
+      redoStack: [],
     })
   },
 
@@ -230,7 +234,7 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
     }
 
     const newUndoStack = [...state.undoStack, activeBuild].slice(-MAX_UNDO_STACK)
-    set({ activeBuild: newActiveBuild, undoStack: newUndoStack })
+    set({ activeBuild: newActiveBuild, undoStack: newUndoStack, redoStack: [] })
     return { success: true }
   },
 
@@ -290,7 +294,7 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
     }
 
     const newUndoStack = [...state.undoStack, activeBuild].slice(-MAX_UNDO_STACK)
-    set({ activeBuild: newActiveBuild, undoStack: newUndoStack })
+    set({ activeBuild: newActiveBuild, undoStack: newUndoStack, redoStack: [] })
     return { success: true }
   },
 
@@ -307,6 +311,7 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
           updatedAt: new Date().toISOString(),
         },
         undoStack: [...undoStack, activeBuild].slice(-MAX_UNDO_STACK),
+        redoStack: [],
       })
     } else if (treeType === 'skill' && slotId) {
       if (Object.keys(activeBuild.skillNodeAllocations[slotId] ?? {}).length === 0) return
@@ -318,6 +323,7 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
           updatedAt: new Date().toISOString(),
         },
         undoStack: [...undoStack, activeBuild].slice(-MAX_UNDO_STACK),
+        redoStack: [],
       })
     } else if (treeType === 'weaver') {
       if (Object.keys(activeBuild.weaverAllocations).length === 0) return
@@ -329,15 +335,31 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
           updatedAt: new Date().toISOString(),
         },
         undoStack: [...undoStack, activeBuild].slice(-MAX_UNDO_STACK),
+        redoStack: [],
       })
     }
   },
 
   undoNodeChange: () => {
-    const { undoStack } = get()
+    const { undoStack, activeBuild, redoStack } = get()
     if (undoStack.length === 0) return
     const previous = undoStack[undoStack.length - 1]
-    set({ activeBuild: previous, undoStack: undoStack.slice(0, -1) })
+    set({
+      activeBuild: previous,
+      undoStack: undoStack.slice(0, -1),
+      redoStack: activeBuild ? [...redoStack, activeBuild].slice(-MAX_UNDO_STACK) : redoStack,
+    })
+  },
+
+  redoNodeChange: () => {
+    const { redoStack, activeBuild, undoStack } = get()
+    if (redoStack.length === 0) return
+    const next = redoStack[redoStack.length - 1]
+    set({
+      activeBuild: next,
+      redoStack: redoStack.slice(0, -1),
+      undoStack: activeBuild ? [...undoStack, activeBuild].slice(-MAX_UNDO_STACK) : undoStack,
+    })
   },
 
   assignSkillToSlot: (slotId, skill) => {
@@ -428,7 +450,7 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
     }
 
     const newUndoStack = [...state.undoStack, activeBuild].slice(-MAX_UNDO_STACK)
-    set({ activeBuild: newActiveBuild, undoStack: newUndoStack })
+    set({ activeBuild: newActiveBuild, undoStack: newUndoStack, redoStack: [] })
     return { success: true }
   },
 

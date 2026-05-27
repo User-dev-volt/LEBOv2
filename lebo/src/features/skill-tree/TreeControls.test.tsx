@@ -136,4 +136,69 @@ describe('TreeControls', () => {
     )
     expect(btn).toHaveAttribute('aria-pressed', 'true')
   })
+
+  // ── Story 6.3: Undo/Redo buttons ─────────────────────────────────────────────
+
+  it('Undo button is absent when onUndo is not provided', () => {
+    render(<TreeControls searchQuery="" onSearchChange={vi.fn()} onReset={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument()
+  })
+
+  it('Redo button is absent when onRedo is not provided', () => {
+    render(<TreeControls searchQuery="" onSearchChange={vi.fn()} onReset={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: 'Redo' })).not.toBeInTheDocument()
+  })
+
+  it('Undo button is rendered and calls onUndo when clicked', () => {
+    const onUndo = vi.fn()
+    render(
+      <TreeControls searchQuery="" onSearchChange={vi.fn()} onReset={vi.fn()} onUndo={onUndo} canUndo={true} />
+    )
+    const btn = screen.getByRole('button', { name: 'Undo' })
+    expect(btn).toBeInTheDocument()
+    expect(btn).not.toBeDisabled()
+    fireEvent.click(btn)
+    expect(onUndo).toHaveBeenCalledTimes(1)
+  })
+
+  it('Undo button is disabled when canUndo is false', () => {
+    render(
+      <TreeControls searchQuery="" onSearchChange={vi.fn()} onReset={vi.fn()} onUndo={vi.fn()} canUndo={false} />
+    )
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
+  })
+
+  it('Redo button is rendered and calls onRedo when clicked', () => {
+    const onRedo = vi.fn()
+    render(
+      <TreeControls searchQuery="" onSearchChange={vi.fn()} onReset={vi.fn()} onRedo={onRedo} canRedo={true} />
+    )
+    const btn = screen.getByRole('button', { name: 'Redo' })
+    expect(btn).toBeInTheDocument()
+    expect(btn).not.toBeDisabled()
+    fireEvent.click(btn)
+    expect(onRedo).toHaveBeenCalledTimes(1)
+  })
+
+  it('Redo button is disabled when canRedo is false', () => {
+    render(
+      <TreeControls searchQuery="" onSearchChange={vi.fn()} onReset={vi.fn()} onRedo={vi.fn()} canRedo={false} />
+    )
+    expect(screen.getByRole('button', { name: 'Redo' })).toBeDisabled()
+  })
+
+  it('passes accessibility check with undo and redo buttons', async () => {
+    const { container } = render(
+      <TreeControls
+        searchQuery=""
+        onSearchChange={vi.fn()}
+        onReset={vi.fn()}
+        onUndo={vi.fn()}
+        onRedo={vi.fn()}
+        canUndo={true}
+        canRedo={false}
+      />
+    )
+    expect(await axe(container)).toHaveNoViolations()
+  })
 })

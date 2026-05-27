@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Complete the parallel review layer execution and triage findings into actionable categories
+- Dev reads story file `6-3-keyboard-shortcuts-and-undo-redo-controls.md` and implements the 7 redo-stack clears + `App.tsx` keyboard handlers + `buildStore.ts` modifications in sequence
 
 ---
 

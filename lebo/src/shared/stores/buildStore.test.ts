@@ -406,6 +406,63 @@ describe('buildStore — applyNodeChange', () => {
   })
 })
 
+describe('buildStore — redoNodeChange', () => {
+  beforeEach(() => {
+    useBuildStore.setState(initialState, true)
+    useBuildStore.getState().setSelectedClass('sentinel')
+    useBuildStore.getState().setSelectedMastery('void_knight')
+  })
+
+  it('redoNodeChange is a no-op when redoStack is empty', () => {
+    useBuildStore.getState().redoNodeChange()
+    expect(useBuildStore.getState().activeBuild).toBeNull()
+  })
+
+  it('undoNodeChange pushes current state to redoStack', () => {
+    useBuildStore.getState().applyNodeChange('root', 1, mockTreeData)
+    const afterAlloc = useBuildStore.getState().activeBuild
+    useBuildStore.getState().undoNodeChange()
+    expect(useBuildStore.getState().redoStack).toHaveLength(1)
+    expect(useBuildStore.getState().redoStack[0]).toEqual(afterAlloc)
+  })
+
+  it('redoNodeChange restores the undone allocation', () => {
+    useBuildStore.getState().applyNodeChange('root', 1, mockTreeData)
+    const afterAlloc = useBuildStore.getState().activeBuild
+    useBuildStore.getState().undoNodeChange()
+    useBuildStore.getState().redoNodeChange()
+    expect(useBuildStore.getState().activeBuild?.nodeAllocations['root']).toBe(1)
+    expect(useBuildStore.getState().activeBuild).toEqual(afterAlloc)
+  })
+
+  it('new allocation clears redoStack', () => {
+    useBuildStore.getState().applyNodeChange('root', 1, mockTreeData)
+    useBuildStore.getState().undoNodeChange()
+    expect(useBuildStore.getState().redoStack).toHaveLength(1)
+    useBuildStore.getState().applyNodeChange('root', 1, mockTreeData)
+    expect(useBuildStore.getState().redoStack).toHaveLength(0)
+  })
+
+  it('redo pushes current state to undoStack (redo is undoable)', () => {
+    useBuildStore.getState().applyNodeChange('root', 1, mockTreeData)
+    useBuildStore.getState().undoNodeChange()
+    const beforeRedo = useBuildStore.getState().activeBuild
+    useBuildStore.getState().redoNodeChange()
+    expect(useBuildStore.getState().undoStack).toHaveLength(1)
+    expect(useBuildStore.getState().undoStack[0]).toEqual(beforeRedo)
+  })
+
+  it('redoNodeChange clears redoStack entry after restoring', () => {
+    useBuildStore.getState().applyNodeChange('root', 1, mockTreeData)
+    useBuildStore.getState().applyNodeChange('root', 1, mockTreeData)
+    useBuildStore.getState().undoNodeChange()
+    useBuildStore.getState().undoNodeChange()
+    expect(useBuildStore.getState().redoStack).toHaveLength(2)
+    useBuildStore.getState().redoNodeChange()
+    expect(useBuildStore.getState().redoStack).toHaveLength(1)
+  })
+})
+
 describe('buildStore — updateContextGear', () => {
   beforeEach(() => {
     useBuildStore.setState(initialState, true)

@@ -3,7 +3,7 @@ title: 'Keyboard Shortcuts & Undo/Redo Controls'
 story_id: '6.3'
 story_key: '6-3-keyboard-shortcuts-and-undo-redo-controls'
 epic: 6
-status: ready-for-dev
+status: review
 created: '2026-05-27'
 ---
 
@@ -124,12 +124,12 @@ The correct position for Ctrl+Z/Y in `App.tsx`:
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Add `redoStack` and `redoNodeChange` to `buildStore.ts`**
-- [ ] **Task 2: Remove old Ctrl+Z handler from `SkillTreeView.tsx`; add undo/redo props to TreeControls**
-- [ ] **Task 3: Add global Ctrl+Z/Y handler with text-input guard in `App.tsx`**
-- [ ] **Task 4: Update `TreeControls.tsx` — add ↩ and ↪ buttons**
-- [ ] **Task 5: Update `buildStore.test.ts` — add redo tests**
-- [ ] **Task 6: Update `TreeControls.test.tsx` — add undo/redo button tests**
+- [x] **Task 1: Add `redoStack` and `redoNodeChange` to `buildStore.ts`**
+- [x] **Task 2: Remove old Ctrl+Z handler from `SkillTreeView.tsx`; add undo/redo props to TreeControls**
+- [x] **Task 3: Add global Ctrl+Z/Y handler with text-input guard in `App.tsx`**
+- [x] **Task 4: Update `TreeControls.tsx` — add ↩ and ↪ buttons**
+- [x] **Task 5: Update `buildStore.test.ts` — add redo tests**
+- [x] **Task 6: Update `TreeControls.test.tsx` — add undo/redo button tests**
 
 ---
 
@@ -622,10 +622,29 @@ pnpm vitest                                              # Full suite — story-
 claude-sonnet-4-6 (2026-05-27)
 
 ### Completion Notes List
-_To be filled in by dev agent after implementation_
+
+- **Task 1:** Added `redoStack: BuildState[]` and `redoNodeChange: () => void` to `BuildStore` interface and implementation. Modified `undoNodeChange` to push current `activeBuild` to `redoStack` before restoring previous state. Added `redoNodeChange` that pops from `redoStack`, restores as `activeBuild`, and pushes pre-redo state to `undoStack`. Added `redoStack: []` clear to all 7 mutation sites: `applyNodeChange`, `applyWeaverNodeChange`, `applySkillNodeChange`, all 3 `resetActiveTree` branches, `setSelectedClass`, `clearActiveBuild`, and `createBuild`.
+
+- **Task 2:** Removed the old Ctrl+Z `useEffect` handler from `SkillTreeView.tsx` (it lacked a text-input guard). Added `redoNodeChange`, `canUndo` (derived from `undoStack.length > 0`), and `canRedo` (derived from `redoStack.length > 0`) store subscriptions. Passed all four props (`onUndo`, `onRedo`, `canUndo`, `canRedo`) to both `<TreeControls>` instances (weaver and passive/skill).
+
+- **Task 3:** Added global Ctrl+Z/Y handler in `App.tsx` with text-input guard. Placed after the Escape block and before the bare-key input guard. Uses `useBuildStore.getState()` for imperative access (consistent with existing Ctrl+S pattern). Guard checks `HTMLInputElement | HTMLTextAreaElement | isContentEditable` — falls through to native browser undo/redo behavior when input is focused.
+
+- **Task 4:** Added `onUndo?`, `onRedo?`, `canUndo?`, `canRedo?` props to `TreeControlsProps` interface and function signature. Added ↩ and ↪ buttons after the Reset/confirm block, before the Fit button. Buttons disabled when `!canUndo`/`!canRedo` respectively. Focus ring implemented via `onFocus`/`onBlur` setting `outline: 2px solid var(--color-accent-gold)` (Tailwind v4 inline style pattern). Conditional render via `{onUndo && (...)}` so existing callers without the prop are unaffected.
+
+- **Task 5:** Added `describe('buildStore — redoNodeChange', ...)` with 6 tests covering: no-op on empty stack, undo pushes to redoStack, redo restores allocation, new allocation clears redoStack, redo is itself undoable, and redoStack shrinks after each redo.
+
+- **Task 6:** Added 7 TreeControls tests: absent when not provided (×2), rendered + clickable when enabled (×2), disabled when `canUndo/canRedo = false` (×2), and accessibility check with both buttons present.
+
+- **Results:** `pnpm build` ✅ zero TS errors. Full suite: 1007/1021 pass (14 pre-existing failures, unchanged from Story 6.2).
 
 ### Review Findings
 _To be filled in after code review_
 
 ### File List
-_To be filled in by dev agent after implementation_
+
+- `lebo/src/shared/stores/buildStore.ts` — MODIFIED (redoStack field + redoNodeChange action; undoNodeChange updated; 7 redoStack clear sites)
+- `lebo/src/features/skill-tree/TreeControls.tsx` — MODIFIED (4 new props; ↩ undo + ↪ redo buttons with disabled state + focus ring)
+- `lebo/src/features/skill-tree/SkillTreeView.tsx` — MODIFIED (removed old Ctrl+Z effect; added redoNodeChange/canUndo/canRedo subscriptions; both TreeControls callers updated)
+- `lebo/src/App.tsx` — MODIFIED (Ctrl+Z/Y global handler with text-input guard added)
+- `lebo/src/shared/stores/buildStore.test.ts` — MODIFIED (6 redoNodeChange tests added)
+- `lebo/src/features/skill-tree/TreeControls.test.tsx` — MODIFIED (7 undo/redo button tests added)
