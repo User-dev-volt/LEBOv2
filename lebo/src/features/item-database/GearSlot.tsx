@@ -154,6 +154,7 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
   }
 
   function handleTierChange(affixId: string, tier: number) {
+    if (selectedItem?.type === 'unique') return
     const nextTiers = { ...affixTiersRef.current, [affixId]: tier }
     setAffixTiers(nextTiers)
     writeToStore(selectedItem, [...resolvedAffixes, ...customResolvedAffixes], nextTiers)

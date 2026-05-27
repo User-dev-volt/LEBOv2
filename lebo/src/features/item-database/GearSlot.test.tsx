@@ -415,6 +415,68 @@ describe('GearSlot', () => {
     })
   })
 
+  // Story 6.1 review patches
+
+  it('unique item name renders in unique orange (#E87722)', async () => {
+    render(
+      <GearSlot slotId="body" slotName="Body" itemDatabase={mockItemDatabase} />
+    )
+    const input = screen.getByPlaceholderText('Search items…')
+    await userEvent.type(input, 'Solar')
+
+    await waitFor(() => expect(screen.getByText('Solarum Plate')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('Solarum Plate'))
+
+    await waitFor(() => {
+      const nameSpan = screen.getByText('Solarum Plate')
+      expect(nameSpan).toHaveStyle({ color: '#E87722' })
+    })
+  })
+
+  it('base item name renders in common light gray (#E8E8E8)', async () => {
+    render(
+      <GearSlot slotId="helmet" slotName="Helmet" itemDatabase={mockItemDatabase} />
+    )
+    const input = screen.getByPlaceholderText('Search items…')
+    await userEvent.type(input, 'Iron Helm')
+
+    await waitFor(() => expect(screen.getByText('Iron Helm')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('Iron Helm'))
+
+    await waitFor(() => {
+      const nameSpan = screen.getAllByText('Iron Helm')[0]
+      expect(nameSpan).toHaveStyle({ color: '#E8E8E8' })
+    })
+  })
+
+  it('axe accessibility: zero violations with unique item selected (AC4)', async () => {
+    const { container } = render(
+      <GearSlot slotId="body" slotName="Body" itemDatabase={mockItemDatabase} />
+    )
+    const input = screen.getByPlaceholderText('Search items…')
+    await userEvent.type(input, 'Solar')
+
+    await waitFor(() => expect(screen.getByText('Solarum Plate')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('Solarum Plate'))
+
+    await waitFor(() => expect(screen.getByText('Increased Health')).toBeInTheDocument())
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('axe accessibility: zero violations with base item selected (AC4)', async () => {
+    const { container } = render(
+      <GearSlot slotId="helmet" slotName="Helmet" itemDatabase={mockItemDatabase} />
+    )
+    const input = screen.getByPlaceholderText('Search items…')
+    await userEvent.type(input, 'Iron Helm')
+
+    await waitFor(() => expect(screen.getByText('Iron Helm')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('Iron Helm'))
+
+    await waitFor(() => expect(screen.getByRole('slider', { name: 'Added Armor tier' })).toBeInTheDocument())
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
   it('"+ Add affix" button is visible in populated-database state', async () => {
     render(
       <GearSlot slotId="helmet" slotName="Helmet" itemDatabase={mockItemDatabase} />

@@ -3,7 +3,7 @@ title: 'Item Rarity & Damage-Type Color Systems'
 story_id: '6.1'
 story_key: '6-1-item-rarity-and-damage-type-color-systems'
 epic: 6
-status: review
+status: done
 created: '2026-05-26'
 ---
 
@@ -546,7 +546,16 @@ No blockers. All tasks completed without issues. Pre-existing test failures in `
 
 ### Review Findings
 
-_To be filled after code review_
+Reviewed 2026-05-26. 3 patch, 4 defer, 9 dismiss. All patches applied.
+
+- [x] [Review][Patch] handleTierChange has no guard against being called on a unique item [lebo/src/features/item-database/GearSlot.tsx:156] — FIXED: added `if (selectedItem?.type === 'unique') return` guard
+- [x] [Review][Patch] No GearSlot axe test for populated item states (AC4 gap) [lebo/src/features/item-database/GearSlot.test.tsx] — FIXED: added axe tests for base-item-selected and unique-item-selected states
+- [x] [Review][Patch] No GearSlot test asserts item-name color values (AC1 gap) [lebo/src/features/item-database/GearSlot.test.tsx] — FIXED: added toHaveStyle assertions for unique (#E87722) and base (#E8E8E8) item name spans
+
+- [x] [Review][Defer] warningGap === 0 triggers warning UI unnecessarily [lebo/src/features/stat-sheet/StatSheetPanel.tsx] — deferred, pre-existing
+- [x] [Review][Defer] SetItem silently absent from search results [lebo/src/features/item-database/GearSlot.tsx] — deferred, pre-existing; set item support deferred to future story
+- [x] [Review][Defer] Unique item affix with missing affixId silently dropped from read-only list [lebo/src/features/item-database/GearSlot.tsx] — deferred, pre-existing
+- [x] [Review][Defer] delta cast `as number | undefined` bypasses TypeScript for resistance rows [lebo/src/features/stat-sheet/StatSheetPanel.tsx] — deferred, pre-existing
 
 ### File List
 

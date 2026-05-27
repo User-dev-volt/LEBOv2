@@ -161,3 +161,10 @@
 - Game-changer payload lacks current-stat proximity — `description` covers threshold + delta%, but not current stat value vs threshold; acceptable for Phase 3; add current stat values to payload when Phase 4 stat sheet is available.
 - Slider boundary: Rust `26..=74` maps Balanced; `75` is Juggernaut — verify against UI slider label thresholds to ensure consistent archetype labeling at the 75 boundary.
 - Stale `assert_eq!(MODELS.len(), 4)` Rust test in `openrouter_service.rs` — `MODELS` has 7 entries; test will fail on `cargo test`; not caught by `pnpm vitest`; fix when Rust tests are next run.
+
+## Deferred from: code review of 6-1-item-rarity-and-damage-type-color-systems (2026-05-26)
+
+- `warningGap === 0` triggers warning UI — StatSheetPanel RESISTANCES map passes `warn?.gap` as `warningGap`; a gap of 0 (resistance exactly at cap) renders red warning text unnecessarily. Fix: change guard to `warningGap !== undefined && warningGap > 0` in StatRow or filter at the call site.
+- SetItem silently absent from item search — `itemSearch.ts` only iterates `baseItems` and `uniqueItems`; set items are never searchable. Pre-existing; set item support is explicitly deferred to a future story.
+- Unique item affix with missing affixId silently dropped — `resolveAffixes` flatMaps over affix IDs and drops any whose entry is not found in `itemDatabase.affixes`. The unique item renders with fewer affixes than intended with no error indicator. Pre-existing data-integrity gap.
+- `delta` cast `as number | undefined` bypasses TypeScript for resistance rows — `deltas?.[field as keyof StatDeltas] as number | undefined` skips exhaustiveness checking; a future nullable field with a matching key name would silently pass `null` through. Pre-existing; currently safe because resistance fields are all non-nullable in StatDeltas.
