@@ -3,7 +3,7 @@ title: 'Tree Background Textures'
 story_id: '6.2'
 story_key: '6-2-tree-background-textures'
 epic: 6
-status: review
+status: done
 created: '2026-05-26'
 ---
 
@@ -648,11 +648,11 @@ No blockers. Pillow not available for WebP generation — used pure-Python PNG e
 ### Review Findings
 
 **Decision-needed (1):**
-- [ ] [Review][Decision] `.png` extension used throughout — spec AC1/AC3/AC4 require `.webp` — Agent intentionally chose `.png` (Pillow unavailable for WebP generation); code is internally consistent (all references updated). Accept this deviation and mark done, or rename files + update 3 code references to `.webp`? [`lebo/public/backgrounds/bg_stone_tile.png`, `bg_weaver_tile.png`]
+- [x] [Review][Decision] `.png` extension used throughout — spec AC1/AC3/AC4 require `.webp` — Accepted: solid-color `.png` placeholders are functionally correct. Real game-authentic art deferred to new Story 6.x (backlog research session pending). No code change.
 
 **Patch (2):**
-- [ ] [Review][Patch] `hasOverlay` regressed to raw `nodeEfficiencies` — should stay on `effectiveNodeEfficiencies` [`lebo/src/features/skill-tree/SkillTreeView.tsx:652`]
-- [ ] [Review][Patch] `deriveSkillDamageType` sort is non-deterministic on equal tag counts — add secondary alphabetical sort key [`lebo/src/features/skill-tree/SkillTreeView.tsx:38`]
+- [x] [Review][Patch] `hasOverlay` regressed to raw `nodeEfficiencies` — reverted to `effectiveNodeEfficiencies` [`lebo/src/features/skill-tree/SkillTreeView.tsx:652`]
+- [x] [Review][Patch] `deriveSkillDamageType` sort is non-deterministic on equal tag counts — added secondary `localeCompare` sort key [`lebo/src/features/skill-tree/SkillTreeView.tsx:39`]
 
 **Deferred (3):**
 - [x] [Review][Defer] New `setShowOverlay(false)` branch overrides user's manual toggle when efficiencies clear between runs [`SkillTreeView.tsx:135`] — deferred, intentional out-of-scope behavior addition; low UX impact

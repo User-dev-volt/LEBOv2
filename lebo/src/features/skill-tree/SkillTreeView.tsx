@@ -36,7 +36,7 @@ function deriveSkillDamageType(nodes: GameNode[]): string | undefined {
   }
   const entries = Object.entries(tagCounts)
   if (entries.length === 0) return undefined
-  entries.sort((a, b) => b[1] - a[1])
+  entries.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
   return entries[0][0]
 }
 
@@ -649,7 +649,7 @@ export function SkillTreeView() {
           onSearchChange={setSearchQuery}
           onReset={handleReset}
           onFit={() => activeCanvasRef.current?.fitToTree()}
-          hasOverlay={isPassiveTab && nodeEfficiencies !== null && nodeEfficiencies.length > 0}
+          hasOverlay={isPassiveTab && !!effectiveNodeEfficiencies && effectiveNodeEfficiencies.length > 0}
           showOverlay={showOverlay}
           onToggleOverlay={() => setShowOverlay((v) => !v)}
         />
