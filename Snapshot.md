@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Run `/bmad-dev-story 6-2-tree-background-textures.md` to activate the dev agent with the completed story file.
+Complete the parallel review layer execution and triage findings into actionable categories
 
 ---
 

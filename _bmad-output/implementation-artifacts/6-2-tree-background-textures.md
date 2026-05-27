@@ -646,7 +646,18 @@ No blockers. Pillow not available for WebP generation — used pure-Python PNG e
 - **Results:** `pnpm build` ✅ zero TS errors. Full suite: 994/1008 pass (14 pre-existing failures, unchanged from Story 6.1).
 
 ### Review Findings
-_To be filled in after review_
+
+**Decision-needed (1):**
+- [ ] [Review][Decision] `.png` extension used throughout — spec AC1/AC3/AC4 require `.webp` — Agent intentionally chose `.png` (Pillow unavailable for WebP generation); code is internally consistent (all references updated). Accept this deviation and mark done, or rename files + update 3 code references to `.webp`? [`lebo/public/backgrounds/bg_stone_tile.png`, `bg_weaver_tile.png`]
+
+**Patch (2):**
+- [ ] [Review][Patch] `hasOverlay` regressed to raw `nodeEfficiencies` — should stay on `effectiveNodeEfficiencies` [`lebo/src/features/skill-tree/SkillTreeView.tsx:652`]
+- [ ] [Review][Patch] `deriveSkillDamageType` sort is non-deterministic on equal tag counts — add secondary alphabetical sort key [`lebo/src/features/skill-tree/SkillTreeView.tsx:38`]
+
+**Deferred (3):**
+- [x] [Review][Defer] New `setShowOverlay(false)` branch overrides user's manual toggle when efficiencies clear between runs [`SkillTreeView.tsx:135`] — deferred, intentional out-of-scope behavior addition; low UX impact
+- [x] [Review][Defer] Stone tile loads on all renderer instances including weaver canvas [`pixiRenderer.ts:initRenderer`] — deferred, latent; weaver SkillTreeCanvas never renders currently
+- [x] [Review][Defer] `node.tags` missing guard in `deriveSkillDamageType` — deferred, theoretical; game data is loader-validated
 
 ### File List
 

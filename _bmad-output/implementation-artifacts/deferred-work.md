@@ -168,3 +168,9 @@
 - SetItem silently absent from item search — `itemSearch.ts` only iterates `baseItems` and `uniqueItems`; set items are never searchable. Pre-existing; set item support is explicitly deferred to a future story.
 - Unique item affix with missing affixId silently dropped — `resolveAffixes` flatMaps over affix IDs and drops any whose entry is not found in `itemDatabase.affixes`. The unique item renders with fewer affixes than intended with no error indicator. Pre-existing data-integrity gap.
 - `delta` cast `as number | undefined` bypasses TypeScript for resistance rows — `deltas?.[field as keyof StatDeltas] as number | undefined` skips exhaustiveness checking; a future nullable field with a matching key name would silently pass `null` through. Pre-existing; currently safe because resistance fields are all non-nullable in StatDeltas.
+
+## Deferred from: code review of 6-2-tree-background-textures (2026-05-26)
+
+- **New `setShowOverlay(false)` branch overrides user's manual toggle** [`SkillTreeView.tsx:135`] — Intentional out-of-scope addition (reset overlay between optimization runs). Side effect: if user manually toggled overlay off before a run, it turns back on when results arrive. Low UX impact; address as part of overlay UX polish.
+- **Stone tile loads on weaver canvas renderer instance** [`pixiRenderer.ts:initRenderer`] — `initRenderer` unconditionally loads `bg_stone_tile.png` regardless of `treeLayout`. Weaver canvas (when eventually wired) will show stone tile instead of weaver tile. Latent; weaver `SkillTreeCanvas` never renders currently. Address when implementing weaver tree data.
+- **`node.tags` undefined guard missing in `deriveSkillDamageType`** [`SkillTreeView.tsx:31`] — Theoretical crash if a game node arrives without a `tags` field. Data is loader-validated; guard only needed if external/user-supplied node data is ever introduced.
