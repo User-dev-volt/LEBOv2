@@ -24,4 +24,10 @@ describe('WeaverTreePlaceholder', () => {
     const { container } = render(<WeaverTreePlaceholder />)
     expect(await axe(container)).toHaveNoViolations()
   })
+
+  it('has CSS background-image for weaver texture', () => {
+    const { container } = render(<WeaverTreePlaceholder />)
+    const root = container.firstElementChild as HTMLElement
+    expect(root.style.backgroundImage).toContain('bg_weaver_tile')
+  })
 })

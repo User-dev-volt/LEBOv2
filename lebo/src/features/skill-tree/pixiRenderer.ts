@@ -1,4 +1,4 @@
-import { Application, Circle, Container, Graphics, Sprite, Text } from 'pixi.js'
+import { Application, Assets, Circle, Container, Graphics, Sprite, Text, TilingSprite } from 'pixi.js'
 import type { Texture } from 'pixi.js'
 import type { TreeData, TreeNode, HighlightedNodes, RendererCallbacks, RendererInstance } from './types'
 import type { NodeEfficiency } from '../../shared/types/statSheet'
@@ -38,6 +38,15 @@ import type { NodeEfficiency } from '../../shared/types/statSheet'
 })()
 
 export const NODE_RADIUS = { small: 12, medium: 18, large: 26 }
+
+// Damage-type tint overlays for skill tree canvases (ARGB color + alpha)
+const DAMAGE_TYPE_TINTS: Record<string, { color: number; alpha: number }> = {
+  FIRE:      { color: 0xb45014, alpha: 0.18 },  // rgba(180,  80,  20, 0.18)
+  COLD:      { color: 0x2864b4, alpha: 0.18 },  // rgba( 40, 100, 180, 0.18)
+  LIGHTNING: { color: 0xb4a014, alpha: 0.18 },  // rgba(180, 160,  20, 0.18)
+  VOID:      { color: 0x50148c, alpha: 0.18 },  // rgba( 80,  20, 140, 0.18)
+  POISON:    { color: 0x1e7828, alpha: 0.18 },  // rgba( 30, 120,  40, 0.18)
+}
 
 function drawAllocated(g: Graphics, x: number, y: number, r: number) {
   g.circle(x, y, r).fill(0xc9a84c)
@@ -116,11 +125,24 @@ export async function initRenderer(
   const app = new Application()
   await app.init({
     canvas,
-    background: 0x0a0a0b,
+    backgroundAlpha: 0,  // TilingSprite handles the entire background
     antialias: true,
     autoDensity: true,
     resolution: window.devicePixelRatio || 1,
   })
+
+  // Background tile — 20000×20000 world-space TilingSprite centered at origin
+  const BG_SIZE = 20000
+  let bgSprite: TilingSprite | null = null
+  try {
+    const stoneTileTexture = await Assets.load<Texture>('/backgrounds/bg_stone_tile.png')
+    bgSprite = new TilingSprite({ texture: stoneTileTexture, width: BG_SIZE, height: BG_SIZE })
+    bgSprite.x = -BG_SIZE / 2
+    bgSprite.y = -BG_SIZE / 2
+  } catch {
+    // Graceful degradation: stone texture unavailable; canvas background stays transparent
+  }
+  const bgTintGraphics = new Graphics()
 
   // Prevent browser context menu on right-click so right-click node action works
   const onContextMenu = (e: Event) => e.preventDefault()
@@ -151,6 +173,10 @@ export async function initRenderer(
   // Pure interaction layer — no rendering, just hitArea containers
   const hitAreaContainer = new Container()
 
+  if (bgSprite) {
+    worldContainer.addChild(bgSprite)       // first child — stone TilingSprite
+  }
+  worldContainer.addChild(bgTintGraphics)   // tint overlay (second, or first if no sprite)
   worldContainer.addChild(
     edgeGraphics,
     lockedGraphics,
@@ -262,8 +288,20 @@ export async function initRenderer(
     iconTextures: Map<string, Texture>,
     selectedNodeId?: string | null,
     nodeEfficiencies?: NodeEfficiency[] | null,
-    showOverlay?: boolean
+    showOverlay?: boolean,
+    primaryDamageType?: string
   ) {
+    // Background tint overlay — cleared and redrawn once per renderTree call (not per frame)
+    bgTintGraphics.clear()
+    if (primaryDamageType) {
+      const tint = DAMAGE_TYPE_TINTS[primaryDamageType]
+      if (tint) {
+        bgTintGraphics
+          .rect(-BG_SIZE / 2, -BG_SIZE / 2, BG_SIZE, BG_SIZE)
+          .fill({ color: tint.color, alpha: tint.alpha })
+      }
+    }
+
     iconTexturesMap = iconTextures
     lastRenderedNodeMap = new Map(data.nodes.map((n) => [n.id, n]))
 

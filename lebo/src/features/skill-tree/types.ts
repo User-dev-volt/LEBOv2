@@ -19,7 +19,8 @@ export interface RendererInstance {
     iconTextures: Map<string, Texture>,
     selectedNodeId?: string | null,
     nodeEfficiencies?: NodeEfficiency[] | null,
-    showOverlay?: boolean
+    showOverlay?: boolean,
+    primaryDamageType?: string
   ): void
   resize(w: number, h: number): void
   destroy(): void
@@ -41,6 +42,7 @@ export interface SkillTreeCanvasHandle {
 export interface SkillTreeCanvasProps {
   treeData: TreeData
   treeLayout?: 'standard' | 'weaver'
+  primaryDamageType?: string
   nodeAllocations: Record<string, number>
   highlightedNodes: HighlightedNodes
   iconTextures: Map<string, Texture>

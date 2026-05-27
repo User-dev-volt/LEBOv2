@@ -4,7 +4,7 @@ import type { TreeData, RendererCallbacks } from './types'
 import { mockTreeData } from './mockTreeData'
 
 // Use vi.hoisted so these refs are available inside the vi.mock factory
-const { mockApp, mockRendererResize, mockAppDestroy, MockSprite } = vi.hoisted(() => {
+const { mockApp, mockRendererResize, mockAppDestroy, MockSprite, MockTilingSprite } = vi.hoisted(() => {
   const mockRendererResize = vi.fn()
   const mockAppDestroy = vi.fn()
 
@@ -21,11 +21,15 @@ const { mockApp, mockRendererResize, mockAppDestroy, MockSprite } = vi.hoisted((
     }
   }
   const MockSprite = vi.fn(function () { return makeSprite() })
+  const MockTilingSprite = vi.fn(function () {
+    return { x: 0, y: 0, width: 0, height: 0, alpha: 1 }
+  })
 
   return {
     mockRendererResize,
     mockAppDestroy,
     MockSprite,
+    MockTilingSprite,
     mockApp: {
       init: vi.fn().mockResolvedValue(undefined),
       stage: {
@@ -94,7 +98,11 @@ vi.mock('pixi.js', () => {
     return { x, y, radius: r, type: 'circle' }
   }
 
-  return { Application, Container, Graphics, Text, Sprite: MockSprite, Circle }
+  const Assets = {
+    load: vi.fn().mockResolvedValue({}),
+  }
+
+  return { Application, Container, Graphics, Text, Sprite: MockSprite, TilingSprite: MockTilingSprite, Assets, Circle }
 })
 
 function makeCallbacksRef(): { current: RendererCallbacks } {
@@ -268,5 +276,27 @@ describe('initRenderer', () => {
     ).not.toThrow()
     // The Sprite constructor must not have been called (icon rendering is separate, but we verify no crash)
     expect(MockSprite).not.toHaveBeenCalled()
+  })
+
+  it('renderTree with primaryDamageType COLD does not throw', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    const emptyHighlight = {
+      glowing: new Set<string>(), dimmed: new Set<string>(), previewRemoved: new Set<string>(),
+      previewAdded: new Set<string>(), searchHighlighted: new Set<string>(), searchDimmed: new Set<string>(),
+    }
+    expect(() =>
+      renderer.renderTree(emptyTree, {}, emptyHighlight, new Map(), null, null, false, 'COLD')
+    ).not.toThrow()
+  })
+
+  it('renderTree without primaryDamageType does not throw', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    const emptyHighlight = {
+      glowing: new Set<string>(), dimmed: new Set<string>(), previewRemoved: new Set<string>(),
+      previewAdded: new Set<string>(), searchHighlighted: new Set<string>(), searchDimmed: new Set<string>(),
+    }
+    expect(() =>
+      renderer.renderTree(emptyTree, {}, emptyHighlight, new Map())
+    ).not.toThrow()
   })
 })

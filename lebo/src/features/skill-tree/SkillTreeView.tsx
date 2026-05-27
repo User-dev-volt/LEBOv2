@@ -23,6 +23,23 @@ import { SkillLevelInput } from './SkillLevelInput'
 import { calculateSkillPoints, calculateWeaverPoints } from '../../shared/utils/budgetCalculator'
 import { WeaverTreePlaceholder } from '../weaver-tree/WeaverTreePlaceholder'
 
+const DAMAGE_TYPE_TAGS = ['FIRE', 'COLD', 'LIGHTNING', 'VOID', 'POISON'] as const
+
+function deriveSkillDamageType(nodes: GameNode[]): string | undefined {
+  const tagCounts: Record<string, number> = {}
+  for (const node of nodes) {
+    for (const tag of node.tags) {
+      if ((DAMAGE_TYPE_TAGS as readonly string[]).includes(tag)) {
+        tagCounts[tag] = (tagCounts[tag] ?? 0) + 1
+      }
+    }
+  }
+  const entries = Object.entries(tagCounts)
+  if (entries.length === 0) return undefined
+  entries.sort((a, b) => b[1] - a[1])
+  return entries[0][0]
+}
+
 const EMPTY_ALLOCATED: Record<string, number> = {}
 const EMPTY_SKILL_ALLOC: Record<string, Record<string, number>> = {}
 const EMPTY_SET = new Set<string>()
@@ -182,6 +199,12 @@ export function SkillTreeView() {
   const slotId = isPassiveTab || isWeaverTab ? null : `slot-${safeTabIndex - 1}`
   const activeSkill = slotId ? activeSkills.find((s) => s.slotId === slotId) ?? null : null
   const skillNodes = activeSkill ? classData?.skillTrees[activeSkill.skillId] : undefined
+
+  const skillPrimaryDamageType = useMemo<string | undefined>(() => {
+    if (!activeSkill || !classData) return undefined
+    const nodes = Object.values(classData.skillTrees[activeSkill.skillId] ?? {})
+    return deriveSkillDamageType(nodes)
+  }, [activeSkill, classData])
   const slotAllocations = slotId ? (skillNodeAllocations[slotId] ?? EMPTY_ALLOCATED) : EMPTY_ALLOCATED
   const skillLevel = useBuildStore(
     (s) => slotId ? (s.activeBuild?.activeSkillLevels[slotId] ?? 1) : 1
@@ -695,6 +718,7 @@ export function SkillTreeView() {
             <SkillTreeCanvas
               ref={skillCanvasRef}
               treeData={skillTreeData}
+              primaryDamageType={skillPrimaryDamageType}
               nodeAllocations={slotAllocations}
               highlightedNodes={skillHighlightedNodes}
               iconTextures={iconTextures}

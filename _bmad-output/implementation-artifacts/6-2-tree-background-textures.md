@@ -3,7 +3,7 @@ title: 'Tree Background Textures'
 story_id: '6.2'
 story_key: '6-2-tree-background-textures'
 epic: 6
-status: ready-for-dev
+status: review
 created: '2026-05-26'
 ---
 
@@ -87,40 +87,40 @@ This is Story 6.2 — second story in Epic 6 (Visual Fidelity & UX Polish). Stor
 
 ## Tasks / Subtasks
 
-- [ ] **Task 0: Create texture files** (AC4)
+- [x] **Task 0: Create texture files** (AC4)
   - Create `lebo/public/backgrounds/` directory
-  - Place `bg_stone_tile.webp` (256×256 dark stone) and `bg_weaver_tile.webp` (256×256 void purple) there
-  - See Texture File Creation section below for the Python generation script (placeholder tiles for testing)
+  - Place `bg_stone_tile.png` (256×256 dark stone #1a1a1f) and `bg_weaver_tile.png` (256×256 void purple #140a1e) there
+  - PNG format used for placeholders (568/569 bytes each); swap for real `.png` or `.webp` tiles without code changes
 
-- [ ] **Task 1: Update `pixiRenderer.ts`** (AC1, AC2, AC5)
-  - Add `Assets`, `TilingSprite` to imports
-  - Change `app.init()` options: remove `background: 0x0a0a0b`, add `backgroundAlpha: 0`
-  - Await `Assets.load<Texture>('/backgrounds/bg_stone_tile.webp')` before worldContainer children setup
-  - Insert `bgSprite` (TilingSprite) as first `worldContainer` child; insert `bgTintGraphics` (Graphics) after it
-  - Add `DAMAGE_TYPE_TINTS` const mapping damage tag → `{ color: number; alpha: number }`
-  - In `renderTree()`: add optional 8th param `primaryDamageType?: string`; at the top of renderTree, clear and conditionally redraw `bgTintGraphics`
+- [x] **Task 1: Update `pixiRenderer.ts`** (AC1, AC2, AC5)
+  - Added `Assets`, `TilingSprite` to imports
+  - Changed `app.init()`: removed `background: 0x0a0a0b`, added `backgroundAlpha: 0`
+  - Awaits `Assets.load<Texture>('/backgrounds/bg_stone_tile.png')` with try/catch for graceful degradation
+  - Inserts `bgSprite` (TilingSprite, 20000×20000, centered at world origin) as first `worldContainer` child
+  - Inserts `bgTintGraphics` as second child
+  - Added `DAMAGE_TYPE_TINTS` module-level const (FIRE/COLD/LIGHTNING/VOID/POISON)
+  - In `renderTree()`: 8th optional param `primaryDamageType?`; clears and redraws `bgTintGraphics` once per call
 
-- [ ] **Task 2: Update `types.ts`** (AC2)
-  - Add `primaryDamageType?: string` to `SkillTreeCanvasProps`
-  - Add `primaryDamageType?: string` as 8th optional param to `RendererInstance.renderTree`
+- [x] **Task 2: Update `types.ts`** (AC2)
+  - Added `primaryDamageType?: string` to `SkillTreeCanvasProps`
+  - Added `primaryDamageType?: string` as 8th optional param to `RendererInstance.renderTree`
 
-- [ ] **Task 3: Update `SkillTreeCanvas.tsx`** (AC2)
-  - Destructure `primaryDamageType` from props
-  - Add `primaryDamageType` to `dataRef.current` type and initialization
-  - Pass `primaryDamageType` in all `renderTree` calls (init call at line ~183, and the re-render effect at line ~207)
+- [x] **Task 3: Update `SkillTreeCanvas.tsx`** (AC2)
+  - Destructured `primaryDamageType` from props
+  - Added `primaryDamageType` to `dataRef.current` (initial + sync useEffect + all three renderTree call sites)
 
-- [ ] **Task 4: Update `SkillTreeView.tsx`** (AC2)
-  - Add `deriveSkillDamageType(nodes: GameNode[])` local helper function (see Technical Requirements)
-  - Compute `skillPrimaryDamageType` via `useMemo` from `activeSkill` and `classData`
-  - Pass `primaryDamageType={skillPrimaryDamageType}` to the skill `SkillTreeCanvas` (the conditional render around `activeSkill && skillTreeData`)
+- [x] **Task 4: Update `SkillTreeView.tsx`** (AC2)
+  - Added `DAMAGE_TYPE_TAGS` const + `deriveSkillDamageType(nodes: GameNode[])` helper before component
+  - Added `skillPrimaryDamageType` `useMemo` inside component (from `activeSkill` + `classData`)
+  - Passed `primaryDamageType={skillPrimaryDamageType}` to skill `SkillTreeCanvas`; passive + weaver canvases unchanged
 
-- [ ] **Task 5: Update `WeaverTreePlaceholder.tsx`** (AC3)
-  - Add inline `style` with `backgroundImage`, `backgroundRepeat`, `backgroundSize` to the outer `<div>`
+- [x] **Task 5: Update `WeaverTreePlaceholder.tsx`** (AC3)
+  - Added inline `style={{ backgroundImage: 'url("/backgrounds/bg_weaver_tile.png")', backgroundRepeat: 'repeat', backgroundSize: '256px 256px' }}` to outer `<div>`
 
-- [ ] **Task 6: Update tests** (all ACs)
-  - `pixiRenderer.test.ts`: Add `TilingSprite` mock + `Assets.load` mock to the `vi.mock('pixi.js', ...)` factory; add test that `renderTree` with `primaryDamageType: 'COLD'` calls `bgTintGraphics.rect` and `.fill`
-  - `SkillTreeCanvas.test.tsx`: Add `setBackgroundTint` is NOT needed (no new method); update `mockRenderer` if TypeScript requires 8-param renderTree
-  - `WeaverTreePlaceholder.test.tsx`: Add test for CSS background-image presence
+- [x] **Task 6: Update tests** (all ACs)
+  - `pixiRenderer.test.ts`: Added `MockTilingSprite` to `vi.hoisted`; added `TilingSprite: MockTilingSprite` + `Assets.load` mock to `vi.mock('pixi.js', ...)`; added 2 new renderTree tests (with/without `primaryDamageType`)
+  - `SkillTreeCanvas.test.tsx`: No changes needed — `vi.fn()` satisfies updated optional-8th-param signature
+  - `WeaverTreePlaceholder.test.tsx`: Added `has CSS background-image for weaver texture` test
 
 ---
 
@@ -622,16 +622,40 @@ pnpm vitest                                              # Full suite — story-
 ## Dev Agent Record
 
 ### Agent Model Used
-_To be filled in by dev agent_
+claude-sonnet-4-6 (2026-05-26)
 
 ### Debug Log References
-_To be filled in by dev agent_
+No blockers. Pillow not available for WebP generation — used pure-Python PNG encoder instead. Created valid 256×256 solid-color PNG tiles (568 bytes each) with `.png` extension; all code references updated accordingly. Pre-existing test failures in SkillTreeCanvas, TreeControls, AppHeader, RightPanel, ProviderSelector, Settings (14 total) unchanged from Story 6.1.
 
 ### Completion Notes List
-_To be filled in by dev agent_
+
+- **Task 0:** Created `lebo/public/backgrounds/` with `bg_stone_tile.png` (dark stone #1a1a1f, 568 bytes) and `bg_weaver_tile.png` (void purple #140a1e, 569 bytes). Valid 256×256 PNG placeholders generated via pure Python. Used `.png` extension (not `.webp`) — correct content type, swap for real tiles without code changes.
+
+- **Task 1:** Updated `pixiRenderer.ts` — added `Assets` + `TilingSprite` imports; changed `backgroundAlpha: 0`; async `Assets.load` with try/catch for graceful degradation; `TilingSprite` (20000×20000, centered at -10000,-10000) inserted as first `worldContainer` child; `bgTintGraphics` as second child; `DAMAGE_TYPE_TINTS` module-level const; `renderTree()` 8th optional `primaryDamageType` param with single `bgTintGraphics.clear()` + conditional `.rect().fill()` at start of function (not per-frame). WebGL null info-log patch IIFE preserved at module load.
+
+- **Task 2:** Updated `types.ts` — added `primaryDamageType?: string` to both `SkillTreeCanvasProps` and `RendererInstance.renderTree` (8th optional param).
+
+- **Task 3:** Updated `SkillTreeCanvas.tsx` — destructured `primaryDamageType` prop; added to `dataRef.current` initialization, sync `useEffect` assignment, and all three `renderTree` call sites (init, re-render effect, reducedMotion effect).
+
+- **Task 4:** Updated `SkillTreeView.tsx` — added `DAMAGE_TYPE_TAGS` const and `deriveSkillDamageType()` helper before component; added `skillPrimaryDamageType` `useMemo`; passed to skill canvas only (passive + weaver canvases intentionally omitted).
+
+- **Task 5:** Updated `WeaverTreePlaceholder.tsx` — added `backgroundImage: 'url("/backgrounds/bg_weaver_tile.png")'`, `backgroundRepeat: 'repeat'`, `backgroundSize: '256px 256px'` via inline `style` on outer `<div>`. Preserved `role="region"` and `aria-label="Weaver Tree"`.
+
+- **Task 6:** Updated `pixiRenderer.test.ts` — added `MockTilingSprite` to `vi.hoisted`, added `TilingSprite` + `Assets.load` mock to `vi.mock('pixi.js', ...)`; 2 new tests (COLD tint, no tint). `SkillTreeCanvas.test.tsx` — no changes needed. Updated `WeaverTreePlaceholder.test.tsx` — 1 new test for CSS background-image.
+
+- **Results:** `pnpm build` ✅ zero TS errors. Full suite: 994/1008 pass (14 pre-existing failures, unchanged from Story 6.1).
 
 ### Review Findings
 _To be filled in after review_
 
 ### File List
-_To be filled in by dev agent_
+
+- `lebo/public/backgrounds/bg_stone_tile.png` — CREATED (256×256 dark stone placeholder PNG)
+- `lebo/public/backgrounds/bg_weaver_tile.png` — CREATED (256×256 void purple placeholder PNG)
+- `lebo/src/features/skill-tree/pixiRenderer.ts` — MODIFIED (TilingSprite bg, tint overlay, backgroundAlpha:0, DAMAGE_TYPE_TINTS, renderTree 8th param)
+- `lebo/src/features/skill-tree/types.ts` — MODIFIED (primaryDamageType in SkillTreeCanvasProps + RendererInstance.renderTree)
+- `lebo/src/features/skill-tree/SkillTreeCanvas.tsx` — MODIFIED (primaryDamageType prop + dataRef + all renderTree call sites)
+- `lebo/src/features/skill-tree/SkillTreeView.tsx` — MODIFIED (deriveSkillDamageType helper + skillPrimaryDamageType memo + prop pass to skill canvas)
+- `lebo/src/features/weaver-tree/WeaverTreePlaceholder.tsx` — MODIFIED (CSS backgroundImage via inline style)
+- `lebo/src/features/skill-tree/pixiRenderer.test.ts` — MODIFIED (MockTilingSprite + Assets mock + 2 new tests)
+- `lebo/src/features/weaver-tree/WeaverTreePlaceholder.test.tsx` — MODIFIED (1 new background-image test)
