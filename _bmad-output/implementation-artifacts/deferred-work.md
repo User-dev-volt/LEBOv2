@@ -181,3 +181,10 @@
 - **`redoStack` not cleared on `setSelectedMastery`** [`buildStore.ts`] — Mirrors pre-existing `undoStack` behavior. Stale redo entries survive mastery changes; redoing could restore allocations from previous mastery. Spec doesn't list this as a required clear-site; architecturally ambiguous.
 - **`activeBuild` null guard creates stack asymmetry** [`buildStore.ts`, `undoNodeChange`/`redoNodeChange`] — If `activeBuild` is null when undo/redo fires, the current state is not pushed to the opposite stack (asymmetric undo/redo). Theoretically unreachable since stacks only populated via paths requiring non-null `activeBuild`.
 - **`isPersisted` flag snapshotted into `BuildState`** [`buildStore.ts`] — Undo may restore a snapshot that had `isPersisted: true`, making the build appear saved when it may not match disk state. Pre-existing design concern not introduced by this story.
+
+
+## Deferred from: code review of 6-4-tooltip-polish-and-multi-point-allocation (2026-05-27)
+
+- **Tooltip→node cursor flicker** [`useSkillTree.ts`, `handleTooltipLeave`] — `handleTooltipLeave` clears hover immediately (per spec), creating a transient null before PixiJS fires `pointerover` on the re-entered node. React 18 batching likely mitigates in practice; only observable when moving cursor from tooltip back onto its originating node.
+- **Shallow prerequisite check in `applyNodeChangeBulk`** [`buildStore.ts`] — Only direct edge predecessors checked; transitive path prerequisites not validated. Pre-existing behavior identical to `applyNodeChange`. Revisit if deep-tree bulk allocation causes unexpected unlocks.
+- **Stale `treeData` closure during game-data reload** [`useSkillTree.ts`, `handleNodeClick`] — `treeData` captured in `useCallback` closure may be stale during concurrent game-data reload. Pre-existing: same pattern in `applyNodeChange`. Low risk; game data reloads are infrequent and user-initiated.

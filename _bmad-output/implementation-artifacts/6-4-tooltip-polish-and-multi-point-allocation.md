@@ -3,7 +3,7 @@ title: 'Tooltip Polish & Multi-Point Allocation'
 story_id: '6.4'
 story_key: '6-4-tooltip-polish-and-multi-point-allocation'
 epic: 6
-status: review
+status: done
 created: '2026-05-27'
 ---
 
@@ -772,6 +772,12 @@ claude-sonnet-4-6 (2026-05-27)
 - **Results:** `pnpm build` ✅ zero TS errors. Full suite: 1020/1034 pass (14 pre-existing failures, unchanged from Story 6.3).
 
 ### Review Findings
+
+_Reviewed 2026-05-27 — Blind Hunter + Edge Case Hunter (Acceptance Auditor failed: session rate limit; ACs manually verified — all 4 pass). 0 patches, 0 decisions, 3 deferred, 10 dismissed._
+
+- [x] [Review][Defer] Tooltip→node cursor path may produce a brief hover flicker [useSkillTree.ts handleTooltipLeave] — deferred, follows spec intent ("clear hover immediately"); React 18 batching likely mitigates; only affects re-entering the originating node from its tooltip
+- [x] [Review][Defer] `applyNodeChangeBulk` prerequisite check is shallow (no transitive validation) [buildStore.ts] — deferred, pre-existing: same shallow check in `applyNodeChange`
+- [x] [Review][Defer] Stale `treeData` closure possible during game-data reload [useSkillTree.ts handleNodeClick] — deferred, pre-existing: same pattern in `applyNodeChange`
 
 ### File List
 
