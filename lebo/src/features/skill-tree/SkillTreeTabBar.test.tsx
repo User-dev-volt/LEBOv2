@@ -79,3 +79,64 @@ describe('SkillTreeTabBar', () => {
     expect(onSkillTabClick).not.toHaveBeenCalled()
   })
 })
+
+describe('SkillTreeTabBar icon rendering', () => {
+  const mockActiveSkill: ActiveSkill = {
+    slotId: 'slot-0',
+    skillId: 'mage-fireball',
+    skillName: 'Fireball',
+  }
+
+  it('renders img with aria-hidden when iconUrls has a URL for the assigned skill', () => {
+    const iconUrls = new Map([['mage-fireball', 'asset://localhost/icons/skillIcon-fireball.png']])
+    render(
+      <SkillTreeTabBar
+        activeSkills={[mockActiveSkill]}
+        selectedIndex={0}
+        onChange={vi.fn()}
+        iconUrls={iconUrls}
+      />
+    )
+    const img = document.querySelector('img[aria-hidden="true"]') as HTMLImageElement | null
+    expect(img).not.toBeNull()
+    expect(img?.src).toContain('skillIcon-fireball.png')
+    expect(img?.alt).toBe('')
+  })
+
+  it('renders no img when iconUrls prop is omitted', () => {
+    render(
+      <SkillTreeTabBar
+        activeSkills={[mockActiveSkill]}
+        selectedIndex={0}
+        onChange={vi.fn()}
+      />
+    )
+    expect(document.querySelector('img[aria-hidden="true"]')).toBeNull()
+  })
+
+  it('renders no img for skill tabs with no assigned skill', () => {
+    const iconUrls = new Map([['mage-fireball', 'asset://localhost/icons/skillIcon-fireball.png']])
+    render(
+      <SkillTreeTabBar
+        activeSkills={[]}
+        selectedIndex={0}
+        onChange={vi.fn()}
+        iconUrls={iconUrls}
+      />
+    )
+    expect(document.querySelector('img[aria-hidden="true"]')).toBeNull()
+  })
+
+  it('renders no img when iconUrls does not contain the assigned skill', () => {
+    const iconUrls = new Map<string, string>()
+    render(
+      <SkillTreeTabBar
+        activeSkills={[mockActiveSkill]}
+        selectedIndex={0}
+        onChange={vi.fn()}
+        iconUrls={iconUrls}
+      />
+    )
+    expect(document.querySelector('img[aria-hidden="true"]')).toBeNull()
+  })
+})

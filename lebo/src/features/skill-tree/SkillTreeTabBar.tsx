@@ -8,9 +8,10 @@ interface SkillTreeTabBarProps {
   selectedIndex: number
   onChange: (index: number) => void
   onSkillTabClick?: (slotIndex: number, element: HTMLButtonElement) => void
+  iconUrls?: Map<string, string>   // skillId -> asset:// URL; absent means no icons shown
 }
 
-export function SkillTreeTabBar({ activeSkills, selectedIndex, onChange, onSkillTabClick }: SkillTreeTabBarProps) {
+export function SkillTreeTabBar({ activeSkills, selectedIndex, onChange, onSkillTabClick, iconUrls }: SkillTreeTabBarProps) {
   const tabs = [
     { id: '__passive__', label: 'Passive Tree' },
     ...SKILL_SLOT_LABELS.map((fallback, i) => {
@@ -46,9 +47,24 @@ export function SkillTreeTabBar({ activeSkills, selectedIndex, onChange, onSkill
                   ? '2px solid var(--color-accent-gold)'
                   : '2px solid transparent',
                 marginBottom: '-1px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
               }}
               onClick={isSkillTab ? (e) => onSkillTabClick?.(i - 1, e.currentTarget as HTMLButtonElement) : undefined}
             >
+              {isSkillTab && (() => {
+                const assignedSkill = activeSkills.find((s) => s.slotId === `slot-${i - 1}`)
+                const iconUrl = assignedSkill ? iconUrls?.get(assignedSkill.skillId) : undefined
+                return iconUrl ? (
+                  <img
+                    src={iconUrl}
+                    alt=""
+                    aria-hidden="true"
+                    style={{ width: 20, height: 20, objectFit: 'cover', borderRadius: 2, flexShrink: 0 }}
+                  />
+                ) : null
+              })()}
               {tab.label}
             </Tab>
           )

@@ -3,7 +3,7 @@ title: 'Real Game Art Assets'
 story_id: '6.5'
 story_key: '6-5-real-game-art-assets'
 epic: 6
-status: ready-for-dev
+status: review
 created: '2026-05-27'
 ---
 
@@ -108,13 +108,13 @@ The `skillIconUrls` state (for the tab bar) is populated via a single `useEffect
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: `skill-icon-map.json` — Add 3 missing entries**
-- [ ] **Task 2: `SkillPickerGrid.tsx` — Fix `convertFileSrc` omission**
-- [ ] **Task 3: `SkillTreeView.tsx` — Derive root node ID map + transformed icon texture maps**
-- [ ] **Task 4: `SkillTreeView.tsx` — Fetch and pass icon URLs to SkillTreeTabBar**
-- [ ] **Task 5: `SkillTreeTabBar.tsx` — Add `iconUrls` prop and icon rendering**
-- [ ] **Task 6: `SkillTreeTabBar.test.tsx` — Add icon display tests**
-- [ ] **Task 7: `SkillPickerGrid.test.tsx` — Add `convertFileSrc` test**
+- [x] **Task 1: `skill-icon-map.json` — Add 3 missing entries**
+- [x] **Task 2: `SkillPickerGrid.tsx` — Fix `convertFileSrc` omission**
+- [x] **Task 3: `SkillTreeView.tsx` — Derive root node ID map + transformed icon texture maps**
+- [x] **Task 4: `SkillTreeView.tsx` — Fetch and pass icon URLs to SkillTreeTabBar**
+- [x] **Task 5: `SkillTreeTabBar.tsx` — Add `iconUrls` prop and icon rendering**
+- [x] **Task 6: `SkillTreeTabBar.test.tsx` — Add icon display tests**
+- [x] **Task 7: `SkillPickerGrid.test.tsx` — Add `convertFileSrc` test**
 
 ---
 
@@ -598,13 +598,37 @@ pnpm vitest                                                        # Full suite 
 ## Dev Agent Record
 
 ### Agent Model Used
-_To be filled by dev agent_
+claude-sonnet-4-6
 
 ### Completion Notes List
-_To be filled by dev agent_
+
+- **Task 1:** Added 3 missing entries to `skill-icon-map.json`: `sentinel-smite` → `skillIcon-Divine bolt.png`, `mage-lightning-blast` → `skillIcon-Lightning Bolt.png`, `primalist-storm-totem` → `skillIcon-storm_totem.png`. All 3 icon files verified present in `resources/icons/skills/`.
+- **Task 2:** Added `convertFileSrc` import from `@tauri-apps/api/core` to `SkillPickerGrid.tsx`. Wrapped `path` in `convertFileSrc()` inside the `useEffect` that fetches icon paths, converting raw OS paths to Tauri `asset://localhost/...` URLs.
+- **Task 3:** Added `skillRootNodeIds` useMemo (finds root node at position 0,0 per skill) and `skillCanvasIconTextures` useMemo (maps rootNodeId→Texture per skill) to `SkillTreeView.tsx`. Skill tree canvas now passes `skillCanvasIconTextures.get(activeSkill.skillId) ?? EMPTY_TEXTURES` instead of the skill-keyed `iconTextures`, resolving the ID mismatch that prevented icons from rendering on root nodes.
+- **Task 4:** Added `skillIconUrls` state and a `useEffect` (keyed on `classData`) that fetches all class skill icon paths via `getIconCachePath` and converts them with `convertFileSrc`. Passed `iconUrls={skillIconUrls}` to all 4 `SkillTreeTabBar` instances in `SkillTreeView.tsx`.
+- **Task 5:** Updated `SkillTreeTabBar.tsx` with optional `iconUrls?: Map<string, string>` prop. Tab buttons now use `display: flex`, `alignItems: center`, `gap: 4` inline styles, and render a 20×20px icon `<img>` with `alt=""` + `aria-hidden="true"` for assigned skill tabs when a URL is available.
+- **Task 6:** Added 4-test `describe('SkillTreeTabBar icon rendering')` block covering: icon renders with aria-hidden, no icon when prop omitted, no icon for empty slots, no icon when skill not in map. All 11 tests pass.
+- **Task 7:** Added `vi.mock('@tauri-apps/api/core')` with `convertFileSrc` mock and a test verifying `convertFileSrc` is called with the raw path. All 10 tests pass.
+- **Regression:** Full suite: 14 failed (pre-existing, unchanged) | 1025 passed. Zero new failures.
+- **Build:** `pnpm build` passes with zero TypeScript errors.
 
 ### Review Findings
 _To be filled by code review_
 
 ### File List
-_To be filled by dev agent after implementation_
+
+- `lebo/src-tauri/resources/icons/skill-icon-map.json`
+- `lebo/src/features/skill-picker/SkillPickerGrid.tsx`
+- `lebo/src/features/skill-picker/SkillPickerGrid.test.tsx`
+- `lebo/src/features/skill-tree/SkillTreeView.tsx`
+- `lebo/src/features/skill-tree/SkillTreeTabBar.tsx`
+- `lebo/src/features/skill-tree/SkillTreeTabBar.test.tsx`
+
+### Change Log
+
+- Added 3 missing skill icon map entries (sentinel-smite, mage-lightning-blast, primalist-storm-totem) (Date: 2026-05-27)
+- Fixed convertFileSrc omission in SkillPickerGrid so icons display in Tauri WebView (Date: 2026-05-27)
+- Resolved icon ID mismatch in SkillTreeView — root node now receives correct skill icon texture (Date: 2026-05-27)
+- Added skillIconUrls pipeline in SkillTreeView — tab bar icons fetched and passed down (Date: 2026-05-27)
+- SkillTreeTabBar renders 20×20px skill icon to the left of the tab label (Date: 2026-05-27)
+- Added icon rendering tests (4 cases) and convertFileSrc call verification test (Date: 2026-05-27)

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { convertFileSrc } from '@tauri-apps/api/core'
 import type { SkillEntry } from '../../shared/types/gameData'
 import { invokeCommand } from '../../shared/utils/invokeCommand'
 
@@ -83,7 +84,7 @@ export function SkillPickerGrid({
       const pairs: [string, string][] = []
       for (const result of results) {
         if (result.status === 'fulfilled' && result.value[1] !== null) {
-          pairs.push([result.value[0], result.value[1]])
+          pairs.push([result.value[0], convertFileSrc(result.value[1])])
         }
       }
       setIconPaths(new Map(pairs))

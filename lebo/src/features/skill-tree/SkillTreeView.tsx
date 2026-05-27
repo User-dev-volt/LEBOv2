@@ -1,5 +1,6 @@
 import { useMemo, useEffect, useState, useCallback, useRef } from 'react'
 import type { Texture } from 'pixi.js'
+import { convertFileSrc } from '@tauri-apps/api/core'
 import type { GameNode } from '../../shared/types/gameData'
 import type { ActiveSkill } from '../../shared/types/build'
 import type { NodeChange } from '../../shared/types/optimization'
@@ -22,6 +23,7 @@ import { UnspentCounter } from './UnspentCounter'
 import { SkillLevelInput } from './SkillLevelInput'
 import { calculateSkillPoints, calculateWeaverPoints } from '../../shared/utils/budgetCalculator'
 import { WeaverTreePlaceholder } from '../weaver-tree/WeaverTreePlaceholder'
+import { getIconCachePath } from '../../shared/commands/iconCommands'
 
 const DAMAGE_TYPE_TAGS = ['FIRE', 'COLD', 'LIGHTNING', 'VOID', 'POISON'] as const
 
@@ -144,6 +146,58 @@ export function SkillTreeView() {
 
   const skillIds = useMemo(() => classData?.skills.map((s) => s.skillId) ?? [], [classData])
   const iconTextures = useIconTextures(skillIds)
+
+  // Maps each skillId to the ID of its root node (position 0,0) for icon texture lookup.
+  // pixiRenderer looks up icons by node.id, but iconTextures is keyed by skillId.
+  // This bridge resolves the ID mismatch so the root node gets its skill icon.
+  const skillRootNodeIds = useMemo(() => {
+    const map = new Map<string, string>()  // skillId -> rootNodeId
+    if (!classData) return map
+    for (const skill of classData.skills) {
+      const treeNodes = classData.skillTrees[skill.skillId]
+      if (!treeNodes) continue
+      const entry =
+        Object.entries(treeNodes).find(([_, n]) => n.position.x === 0 && n.position.y === 0) ??
+        Object.entries(treeNodes)[0]
+      if (entry) map.set(skill.skillId, entry[0])
+    }
+    return map
+  }, [classData])
+
+  // For each skill, a single-entry map { rootNodeId -> texture } for the skill tree canvas.
+  // SkillTreeCanvas receives this instead of the full skill-keyed iconTextures.
+  const skillCanvasIconTextures = useMemo(() => {
+    const result = new Map<string, Map<string, Texture>>()
+    for (const [skillId, rootNodeId] of skillRootNodeIds) {
+      const texture = iconTextures.get(skillId)
+      result.set(skillId, texture ? new Map([[rootNodeId, texture]]) : EMPTY_TEXTURES)
+    }
+    return result
+  }, [skillRootNodeIds, iconTextures])
+
+  const [skillIconUrls, setSkillIconUrls] = useState<Map<string, string>>(new Map())
+
+  // Fetch icon URLs for all class skills. Used by SkillTreeTabBar for <img src>.
+  // getIconCachePath returns OS paths; convertFileSrc makes them WebView-loadable.
+  useEffect(() => {
+    if (!classData) {
+      setSkillIconUrls(new Map())
+      return
+    }
+    void Promise.allSettled(
+      classData.skills.map(skill =>
+        getIconCachePath(skill.skillId).then(path => [skill.skillId, path] as [string, string | null])
+      )
+    ).then(results => {
+      const pairs: [string, string][] = []
+      for (const r of results) {
+        if (r.status === 'fulfilled' && r.value[1] !== null) {
+          pairs.push([r.value[0], convertFileSrc(r.value[1])])
+        }
+      }
+      setSkillIconUrls(new Map(pairs))
+    })
+  }, [classData])
 
   const allGameNodes = useMemo<Record<string, GameNode>>(() => {
     if (!classData) return {}
@@ -442,6 +496,7 @@ export function SkillTreeView() {
           selectedIndex={safeTabIndex}
           onChange={handleTabChange}
           onSkillTabClick={handleSkillTabClick}
+          iconUrls={skillIconUrls}
         />
 
         {activeBuild && (
@@ -543,6 +598,7 @@ export function SkillTreeView() {
           selectedIndex={safeTabIndex}
           onChange={handleTabChange}
           onSkillTabClick={handleSkillTabClick}
+          iconUrls={skillIconUrls}
         />
         <div className="flex-1 min-h-0">
           <EmptyTreeState />
@@ -560,6 +616,7 @@ export function SkillTreeView() {
           selectedIndex={safeTabIndex}
           onChange={handleTabChange}
           onSkillTabClick={handleSkillTabClick}
+          iconUrls={skillIconUrls}
         />
         <div className="flex-1 min-h-0 flex items-center justify-center">
           <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Select a class to continue</p>
@@ -612,6 +669,7 @@ export function SkillTreeView() {
         selectedIndex={safeTabIndex}
         onChange={handleTabChange}
         onSkillTabClick={handleSkillTabClick}
+        iconUrls={skillIconUrls}
       />
 
       {!isPassiveTab && activeSkill && (
@@ -729,7 +787,7 @@ export function SkillTreeView() {
               primaryDamageType={skillPrimaryDamageType}
               nodeAllocations={slotAllocations}
               highlightedNodes={skillHighlightedNodes}
-              iconTextures={iconTextures}
+              iconTextures={skillCanvasIconTextures.get(activeSkill.skillId) ?? EMPTY_TEXTURES}
               selectedNodeId={selectedNodeId}
               onNodeClick={handleNodeClick}
               onNodeHover={handleNodeHover}

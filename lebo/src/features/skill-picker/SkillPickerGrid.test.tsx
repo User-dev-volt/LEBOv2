@@ -9,6 +9,14 @@ vi.mock('../../shared/utils/invokeCommand', () => ({
   invokeCommand: vi.fn().mockResolvedValue(null),
 }))
 
+vi.mock('@tauri-apps/api/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tauri-apps/api/core')>()
+  return {
+    ...actual,
+    convertFileSrc: vi.fn((path: string) => `asset://localhost/${path}`),
+  }
+})
+
 const baseSkills: SkillEntry[] = [
   { skillId: 'skill-1', skillName: 'Forge Strike', masteryId: null, masteryName: null, masteryGatePoints: null, type: 'unknown' },
   { skillId: 'skill-2', skillName: 'Warpath', masteryId: null, masteryName: null, masteryGatePoints: null, type: 'unknown' },
@@ -165,5 +173,25 @@ describe('SkillPickerGrid', () => {
     )
     await act(async () => {})
     expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('converts icon path with convertFileSrc before storing', async () => {
+    const mockPath = '/cache/icons/skills/skillIcon-fireball.png'
+    const { invokeCommand } = await import('../../shared/utils/invokeCommand')
+    const { convertFileSrc } = await import('@tauri-apps/api/core')
+    vi.mocked(invokeCommand).mockResolvedValueOnce(mockPath)
+
+    render(
+      <SkillPickerGrid
+        baseClassName="Sentinel"
+        skills={[baseSkills[0]]}
+        selectedSkillId={null}
+        onSelect={onSelect}
+        onClose={onClose}
+      />
+    )
+    await act(async () => {})
+
+    expect(convertFileSrc).toHaveBeenCalledWith(mockPath)
   })
 })

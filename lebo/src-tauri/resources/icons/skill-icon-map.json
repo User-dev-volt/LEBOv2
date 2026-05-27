@@ -2,10 +2,13 @@
   "acolyte-harvest": "skillIcon-harvest.png",
   "acolyte-rip-blood": "skillIcon-rip blood.png",
   "mage-fireball": "skillIcon-fireball.png",
+  "mage-lightning-blast": "skillIcon-Lightning Bolt.png",
   "primalist-fury-leap": "skillIcon-fury leap.png",
+  "primalist-storm-totem": "skillIcon-storm_totem.png",
   "rogue-dancing-strikes": "skillIcon-dancing-strikes.png",
   "rogue-puncture": "skillIcon-puncture.png",
   "sentinel-anomaly": "skillIcon-anomaly.png",
   "sentinel-forge-strike": "skillIcon-forge-strike.png",
-  "sentinel-judgement": "skillIcon-judgement.png"
+  "sentinel-judgement": "skillIcon-judgement.png",
+  "sentinel-smite": "skillIcon-Divine bolt.png"
 }
