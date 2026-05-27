@@ -188,3 +188,12 @@
 - **Tooltip→node cursor flicker** [`useSkillTree.ts`, `handleTooltipLeave`] — `handleTooltipLeave` clears hover immediately (per spec), creating a transient null before PixiJS fires `pointerover` on the re-entered node. React 18 batching likely mitigates in practice; only observable when moving cursor from tooltip back onto its originating node.
 - **Shallow prerequisite check in `applyNodeChangeBulk`** [`buildStore.ts`] — Only direct edge predecessors checked; transitive path prerequisites not validated. Pre-existing behavior identical to `applyNodeChange`. Revisit if deep-tree bulk allocation causes unexpected unlocks.
 - **Stale `treeData` closure during game-data reload** [`useSkillTree.ts`, `handleNodeClick`] — `treeData` captured in `useCallback` closure may be stale during concurrent game-data reload. Pre-existing: same pattern in `applyNodeChange`. Low risk; game data reloads are infrequent and user-initiated.
+
+## Deferred from: code review of 6-5-real-game-art-assets (2026-05-27)
+
+- **Inconsistent filename casing in icon map** [`skill-icon-map.json`] — `skillIcon-Lightning Bolt.png` and `skillIcon-Divine bolt.png` use mixed case. No impact on Windows+macOS (case-insensitive FS). Flag if Linux CI is ever added.
+- **Spaces in icon filenames** [`skill-icon-map.json`] — `skillIcon-Lightning Bolt.png` contains a space. Pre-existing pattern (`skillIcon-rip blood.png`). Tauri asset protocol handles encoding; no current breakage.
+- **`skillCanvasIconTextures` allocates new inner `Map` per memo recompute** [`SkillTreeView.tsx`] — Each texture that loads triggers a full rebuild of all per-skill Maps. Correct behavior (canvas must update); perf concern only at high skill counts.
+- **Test mock `convertFileSrc` omits URL encoding** [`SkillPickerGrid.test.tsx`] — Mock returns raw concatenation; real Tauri API encodes spaces etc. Current test paths are space-free so assertions pass. Risk emerges if tests are added for Lightning Bolt icon path.
+- **No retry mechanism for `getIconCachePath` returning null** [`SkillTreeView.tsx`, `skillIconUrls` useEffect] — Icons whose cache files aren't ready at class-load time are permanently absent from the tab bar until the user switches classes. Pre-existing limitation from `useIconTextures`.
+- **`convertFileSrc` test verifies call but not stored value** [`SkillPickerGrid.test.tsx`] — `expect(convertFileSrc).toHaveBeenCalledWith(mockPath)` would pass even if the return value was discarded before storage. Minor coverage gap.

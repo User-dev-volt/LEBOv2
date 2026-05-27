@@ -613,7 +613,15 @@ claude-sonnet-4-6
 - **Build:** `pnpm build` passes with zero TypeScript errors.
 
 ### Review Findings
-_To be filled by code review_
+
+- [ ] [Review][Patch] Stale `skillIconUrls` race condition on class switch [`lebo/src/features/skill-tree/SkillTreeView.tsx` — `skillIconUrls` useEffect]
+- [ ] [Review][Patch] Duplicate `expect(img?.alt).toBe('')` assertion — copy-paste artifact [`lebo/src/features/skill-tree/SkillTreeTabBar.test.tsx` — first test in `icon rendering` describe block]
+- [x] [Review][Defer] Inconsistent filename casing in icon map (`Lightning Bolt.png`, `Divine bolt.png`) [`lebo/src-tauri/resources/icons/skill-icon-map.json`] — deferred, pre-existing; Windows+macOS targets are case-insensitive
+- [x] [Review][Defer] Space characters in icon filenames (`skillIcon-Lightning Bolt.png`) [`lebo/src-tauri/resources/icons/skill-icon-map.json`] — deferred, pre-existing pattern (`rip blood.png` already existed)
+- [x] [Review][Defer] `skillCanvasIconTextures` allocates new inner `Map` per recompute when textures arrive incrementally [`lebo/src/features/skill-tree/SkillTreeView.tsx`] — deferred, correct behavior; perf concern only
+- [x] [Review][Defer] Test mock `convertFileSrc` doesn't URL-encode paths like real Tauri API does [`lebo/src/features/skill-picker/SkillPickerGrid.test.tsx`] — deferred, current test paths have no spaces; doesn't affect assertions
+- [x] [Review][Defer] No retry for `getIconCachePath` returning null on first load — icons silently missing if cache not ready [`lebo/src/features/skill-tree/SkillTreeView.tsx`] — deferred, pre-existing async-loading limitation not introduced by this story
+- [x] [Review][Defer] `convertFileSrc` test only asserts call occurred, not that the result is stored [`lebo/src/features/skill-picker/SkillPickerGrid.test.tsx`] — deferred, minor coverage gap
 
 ### File List
 

@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Run `/code-review` on all 7 changed files (or use a different LLM for review) before merging to main.
+Await completion of the Acceptance Auditor layer and present triage results (findings grouped by severity/actionability).
 
 ---
 
