@@ -3,7 +3,7 @@ title: 'Tooltip Polish & Multi-Point Allocation'
 story_id: '6.4'
 story_key: '6-4-tooltip-polish-and-multi-point-allocation'
 epic: 6
-status: ready-for-dev
+status: review
 created: '2026-05-27'
 ---
 
@@ -94,15 +94,15 @@ The bulk action is for **passive tree only** — it modifies `nodeAllocations` o
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: `NodeTooltip.tsx` — Scrollable tooltip with pointer event capture**
-- [ ] **Task 2: `useSkillTree.ts` — Grace timer + tooltip enter/leave callbacks**
-- [ ] **Task 3: `SkillTreeView.tsx` — Thread `onMouseEnter`/`onMouseLeave` to hover tooltips**
-- [ ] **Task 4: `types.ts` — Add `shiftKey?` to `onNodeClick` signatures**
-- [ ] **Task 5: `pixiRenderer.ts` — Pass `e.shiftKey` in `pointerup` handler**
-- [ ] **Task 6: `buildStore.ts` — Add `applyNodeChangeBulk` action**
-- [ ] **Task 7: `useSkillTree.ts` — Route Shift+click to `applyNodeChangeBulk`**
-- [ ] **Task 8: `buildStore.test.ts` — `applyNodeChangeBulk` tests**
-- [ ] **Task 9: `NodeTooltip.test.tsx` — Scrollable container CSS tests**
+- [x] **Task 1: `NodeTooltip.tsx` — Scrollable tooltip with pointer event capture**
+- [x] **Task 2: `useSkillTree.ts` — Grace timer + tooltip enter/leave callbacks**
+- [x] **Task 3: `SkillTreeView.tsx` — Thread `onMouseEnter`/`onMouseLeave` to hover tooltips**
+- [x] **Task 4: `types.ts` — Add `shiftKey?` to `onNodeClick` signatures**
+- [x] **Task 5: `pixiRenderer.ts` — Pass `e.shiftKey` in `pointerup` handler**
+- [x] **Task 6: `buildStore.ts` — Add `applyNodeChangeBulk` action**
+- [x] **Task 7: `useSkillTree.ts` — Route Shift+click to `applyNodeChangeBulk`**
+- [x] **Task 8: `buildStore.test.ts` — `applyNodeChangeBulk` tests**
+- [x] **Task 9: `NodeTooltip.test.tsx` — Scrollable container CSS tests**
 
 ---
 
@@ -749,6 +749,38 @@ claude-sonnet-4-6 (2026-05-27)
 
 ### Completion Notes List
 
+- **Task 1 (NodeTooltip.tsx):** Added `maxHeight: '60vh'`, `overflowY: 'auto'`, removed `pointerEvents: 'none'`, added `onWheel` stopPropagation on both tooltip variants (normal and error). Added optional `onMouseEnter?` and `onMouseLeave?` props.
+
+- **Task 2 (useSkillTree.ts):** Added `clearHoverTimerRef` for 50ms grace delay before clearing `hoveredNodeId`. This lets the mouse travel from a node to the tooltip without the tooltip disappearing. Added `handleTooltipEnter` (cancels timer) and `handleTooltipLeave` (immediate clear). Added `applyNodeChangeBulk` store subscription. Updated `handleNodeClick` to route Shift+left-click on passive tree to `applyNodeChangeBulk`. Added cleanup `useEffect` for unmount timer safety. Updated `SkillTreeInteraction` interface to add new members and the `shiftKey?` parameter.
+
+- **Task 3 (SkillTreeView.tsx):** Destructured `handleTooltipEnter`/`handleTooltipLeave` from `passiveInteraction`/`skillInteraction` and `handleWeaverTooltipEnter`/`handleWeaverTooltipLeave` from `weaverInteraction`. Threaded callbacks to the 3 hover-state `NodeTooltip` instances (passive hover, skill hover, weaver hover). Error and keyboard tooltips intentionally not given callbacks.
+
+- **Task 4 (types.ts):** Added `shiftKey?: boolean` to `RendererCallbacks.onNodeClick` and `SkillTreeCanvasProps.onNodeClick`. Optional parameter preserves backward compatibility with all existing call sites.
+
+- **Task 5 (pixiRenderer.ts):** Updated `pointerup` handler to pass `e.shiftKey` to `callbacksRef.current.onNodeClick`. PixiJS `FederatedPointerEvent` inherits `shiftKey` from native pointer events.
+
+- **Task 6 (buildStore.ts):** Added `applyNodeChangeBulk` to `BuildStore` interface and implementation. Action auto-creates build (same logic as `applyNodeChange`), validates prerequisites, calculates `min(nodeSpace, budget)` when enforced, allocates all points in a single `set()` call with ONE undo snapshot and redoStack clear.
+
+- **Task 7:** Implemented in Task 2 above (`useSkillTree.ts`).
+
+- **Task 8 (buildStore.test.ts):** Added 7 tests for `applyNodeChangeBulk`: unlimited budget fills to maxPoints, enforced budget limits allocation, returns false at max, prerequisite not met error, single undo snapshot, clears redoStack, partial fill from existing allocation. All 106 buildStore tests pass.
+
+- **Task 9 (NodeTooltip.test.tsx):** Added 6 new tests: maxHeight 60vh, overflowY auto, no pointerEvents:none, onMouseEnter fires, onMouseLeave fires, error variant has maxHeight. All 11 NodeTooltip tests pass.
+
+- **useSkillTree.test.ts fix:** Updated `clears hoveredNodeId and nodeError on handleNodeHover(null)` test to advance fake timers (`vi.runAllTimers()`) after `handleNodeHover(null)` since the clear is now deferred 50ms. Tests already had `vi.useFakeTimers()` setup in `beforeEach`.
+
+- **Results:** `pnpm build` ✅ zero TS errors. Full suite: 1020/1034 pass (14 pre-existing failures, unchanged from Story 6.3).
+
 ### Review Findings
 
 ### File List
+
+- `lebo/src/features/skill-tree/NodeTooltip.tsx` — MODIFIED (maxHeight, overflowY, removed pointerEvents:none, onWheel stopPropagation, onMouseEnter/onMouseLeave props)
+- `lebo/src/features/skill-tree/useSkillTree.ts` — MODIFIED (grace timer, handleTooltipEnter/Leave, applyNodeChangeBulk subscription, shiftKey routing in handleNodeClick, SkillTreeInteraction interface updated)
+- `lebo/src/features/skill-tree/SkillTreeView.tsx` — MODIFIED (destructure new callbacks from all 3 interactions, pass to 3 hover NodeTooltip instances)
+- `lebo/src/features/skill-tree/types.ts` — MODIFIED (shiftKey? added to RendererCallbacks.onNodeClick and SkillTreeCanvasProps.onNodeClick)
+- `lebo/src/features/skill-tree/pixiRenderer.ts` — MODIFIED (e.shiftKey passed in pointerup handler)
+- `lebo/src/shared/stores/buildStore.ts` — MODIFIED (applyNodeChangeBulk added to interface and implementation)
+- `lebo/src/shared/stores/buildStore.test.ts` — MODIFIED (7 applyNodeChangeBulk tests added)
+- `lebo/src/features/skill-tree/NodeTooltip.test.tsx` — MODIFIED (6 scroll/pointer/callback tests added)
+- `lebo/src/features/skill-tree/useSkillTree.test.ts` — MODIFIED (handleNodeHover(null) test updated to advance fake timers)

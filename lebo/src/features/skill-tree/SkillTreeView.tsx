@@ -336,6 +336,8 @@ export function SkillTreeView() {
     handleNodeContextMenu,
     handlePointerMove,
     handleKeyboardNavigate,
+    handleTooltipEnter,
+    handleTooltipLeave,
   } = isPassiveTab ? passiveInteraction : skillInteraction
 
   const handleTabChange = useCallback((index: number) => {
@@ -417,6 +419,8 @@ export function SkillTreeView() {
       handleNodeContextMenu: handleWeaverNodeContextMenu,
       handlePointerMove: handleWeaverPointerMove,
       handleKeyboardNavigate: handleWeaverKeyboardNavigate,
+      handleTooltipEnter: handleWeaverTooltipEnter,
+      handleTooltipLeave: handleWeaverTooltipLeave,
     } = weaverInteraction
 
     const weaverHoveredGameNode = weaverHoveredNodeId ? weaverGameNodes[weaverHoveredNodeId] ?? null : null
@@ -486,6 +490,8 @@ export function SkillTreeView() {
                   allocatedPoints={weaverAllocations[weaverHoveredNodeId!] ?? 0}
                   position={weaverMousePosition}
                   prerequisiteNames={getWeaverPrereqNames(weaverHoveredGameNode)}
+                  onMouseEnter={handleWeaverTooltipEnter}
+                  onMouseLeave={handleWeaverTooltipLeave}
                 />
               )}
 
@@ -683,6 +689,8 @@ export function SkillTreeView() {
                 allocatedPoints={nodeAllocations[hoveredNodeId!] ?? 0}
                 position={mousePosition}
                 prerequisiteNames={getPrerequisiteNames(hoveredGameNode)}
+                onMouseEnter={handleTooltipEnter}
+                onMouseLeave={handleTooltipLeave}
               />
             )}
 
@@ -738,6 +746,8 @@ export function SkillTreeView() {
                 allocatedPoints={activeAllocations[hoveredNodeId!] ?? 0}
                 position={mousePosition}
                 prerequisiteNames={getPrerequisiteNames(hoveredGameNode)}
+                onMouseEnter={handleTooltipEnter}
+                onMouseLeave={handleTooltipLeave}
               />
             )}
 

@@ -5,7 +5,7 @@ import type { NodeEfficiency } from '../../shared/types/statSheet'
 export type { NodeSize, NodeState, HighlightedNodes, TreeNode, TreeEdge, TreeData } from '../../shared/types/treeData'
 
 export interface RendererCallbacks {
-  onNodeClick: (nodeId: string, button: 0 | 2) => void
+  onNodeClick: (nodeId: string, button: 0 | 2, shiftKey?: boolean) => void
   onNodeHover: (nodeId: string | null) => void
   onNodeSelect?: (nodeId: string) => void
   onNodeContextMenu?: (nodeId: string, screenX: number, screenY: number) => void
@@ -47,7 +47,7 @@ export interface SkillTreeCanvasProps {
   highlightedNodes: HighlightedNodes
   iconTextures: Map<string, Texture>
   selectedNodeId?: string | null
-  onNodeClick: (nodeId: string, button: 0 | 2) => void
+  onNodeClick: (nodeId: string, button: 0 | 2, shiftKey?: boolean) => void
   onNodeHover: (nodeId: string | null) => void
   onNodeSelect?: (nodeId: string) => void
   onNodeContextMenu?: (nodeId: string, screenX: number, screenY: number) => void

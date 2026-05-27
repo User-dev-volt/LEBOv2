@@ -25,7 +25,7 @@
 # - Developer typically creates next story after previous one is 'done' to incorporate learnings
 
 generated: 2026-05-20
-last_updated: 2026-05-27 (story 6-4 ready-for-dev)
+last_updated: 2026-05-27 (story 6-4 review)
 project: LEBOv2 Phase 3
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
@@ -84,6 +84,6 @@ development_status:
   6-1-item-rarity-and-damage-type-color-systems: done
   6-2-tree-background-textures: done
   6-3-keyboard-shortcuts-and-undo-redo-controls: done
-  6-4-tooltip-polish-and-multi-point-allocation: ready-for-dev
+  6-4-tooltip-polish-and-multi-point-allocation: review
   6-5-real-game-art-assets: backlog
   epic-6-retrospective: optional

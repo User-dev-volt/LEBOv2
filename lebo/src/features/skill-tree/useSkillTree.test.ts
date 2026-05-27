@@ -37,7 +37,10 @@ describe('useSkillTree', () => {
   it('clears hoveredNodeId and nodeError on handleNodeHover(null)', () => {
     const { result } = renderHook(() => useSkillTree(mockTreeData))
     act(() => result.current.handleNodeHover('root'))
-    act(() => result.current.handleNodeHover(null))
+    act(() => {
+      result.current.handleNodeHover(null)
+      vi.runAllTimers()
+    })
     expect(result.current.hoveredNodeId).toBeNull()
     expect(result.current.nodeError).toBeNull()
   })

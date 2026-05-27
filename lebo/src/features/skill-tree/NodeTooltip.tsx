@@ -11,9 +11,11 @@ interface NodeTooltipProps {
   position: { x: number; y: number }
   errorMessage?: string
   prerequisiteNames?: string[]
+  onMouseEnter?: () => void
+  onMouseLeave?: () => void
 }
 
-export function NodeTooltip({ gameNode, allocatedPoints, position, errorMessage, prerequisiteNames }: NodeTooltipProps) {
+export function NodeTooltip({ gameNode, allocatedPoints, position, errorMessage, prerequisiteNames, onMouseEnter, onMouseLeave }: NodeTooltipProps) {
   const viewportWidth = window.innerWidth || 10000
   const viewportHeight = window.innerHeight || 10000
 
@@ -33,8 +35,9 @@ export function NodeTooltip({ gameNode, allocatedPoints, position, errorMessage,
     top,
     zIndex: 1000,
     borderRadius: '4px',
-    pointerEvents: 'none',
     maxWidth: `${TOOLTIP_WIDTH}px`,
+    maxHeight: '60vh',
+    overflowY: 'auto',
   }
 
   if (errorMessage) {
@@ -48,6 +51,9 @@ export function NodeTooltip({ gameNode, allocatedPoints, position, errorMessage,
           backgroundColor: 'var(--color-bg-elevated)',
           border: '1px solid var(--color-accent-gold)',
         }}
+        onWheel={(e) => e.stopPropagation()}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
       >
         {errorMessage}
       </div>,
@@ -63,6 +69,9 @@ export function NodeTooltip({ gameNode, allocatedPoints, position, errorMessage,
         backgroundColor: 'var(--color-bg-elevated)',
         border: '1px solid var(--color-bg-base)',
       }}
+      onWheel={(e) => e.stopPropagation()}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
       <p
         style={{

@@ -463,6 +463,77 @@ describe('buildStore — redoNodeChange', () => {
   })
 })
 
+describe('buildStore — applyNodeChangeBulk', () => {
+  beforeEach(() => {
+    useBuildStore.setState(initialState, true)
+    useBuildStore.getState().setSelectedClass('sentinel')
+    useBuildStore.getState().setSelectedMastery('void_knight')
+  })
+
+  it('allocates all node points when budget is unlimited (budgetEnforced: false)', () => {
+    // root has maxPoints: 5 and no prerequisites
+    useBuildStore.getState().applyNodeChangeBulk('root', mockTreeData)
+    expect(useBuildStore.getState().activeBuild?.nodeAllocations['root']).toBe(5)
+  })
+
+  it('allocates up to budget when budgetEnforced: true and budget < node max', () => {
+    // Level 6 → calculatePassivePoints(6) = 4 passive points; root.maxPoints = 5
+    useBuildStore.getState().setActiveBuild({
+      ...mockBuild,
+      characterLevel: 6,
+      budgetEnforced: true,
+      nodeAllocations: {},
+    })
+    useBuildStore.getState().applyNodeChangeBulk('root', mockTreeData)
+    // 4 budget < 5 maxPoints → allocates 4
+    expect(useBuildStore.getState().activeBuild?.nodeAllocations['root']).toBe(4)
+  })
+
+  it('returns success: false when node is already at max', () => {
+    // First call: fill root to maxPoints (5)
+    useBuildStore.getState().applyNodeChangeBulk('root', mockTreeData)
+    expect(useBuildStore.getState().activeBuild?.nodeAllocations['root']).toBe(5)
+    // Second Shift+click: already at max → no change
+    const result = useBuildStore.getState().applyNodeChangeBulk('root', mockTreeData)
+    expect(result.success).toBe(false)
+    expect(useBuildStore.getState().activeBuild?.nodeAllocations['root']).toBe(5)
+  })
+
+  it('returns Prerequisite not met when prereq is unallocated (AC4)', () => {
+    // child requires root; root is not allocated
+    const result = useBuildStore.getState().applyNodeChangeBulk('child', mockTreeData)
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('Prerequisite not met')
+    expect(useBuildStore.getState().activeBuild).toBeNull()
+  })
+
+  it('pushes exactly ONE snapshot to undoStack regardless of points allocated', () => {
+    // Allocates 5 points but should produce only 1 undo entry
+    useBuildStore.getState().applyNodeChangeBulk('root', mockTreeData)
+    expect(useBuildStore.getState().undoStack).toHaveLength(1)
+  })
+
+  it('clears redoStack', () => {
+    // Set up a redo entry
+    useBuildStore.getState().applyNodeChange('root', 1, mockTreeData)
+    useBuildStore.getState().undoNodeChange()
+    expect(useBuildStore.getState().redoStack).toHaveLength(1)
+    // Bulk allocation clears redo
+    useBuildStore.getState().applyNodeChangeBulk('root', mockTreeData)
+    expect(useBuildStore.getState().redoStack).toHaveLength(0)
+  })
+
+  it('allocates remaining node points when partially allocated', () => {
+    // Allocate 2 of 5 first via single clicks
+    useBuildStore.getState().applyNodeChange('root', 1, mockTreeData)
+    useBuildStore.getState().applyNodeChange('root', 1, mockTreeData)
+    expect(useBuildStore.getState().activeBuild?.nodeAllocations['root']).toBe(2)
+    // Shift+click: should fill remaining 3
+    useBuildStore.getState().applyNodeChangeBulk('root', mockTreeData)
+    expect(useBuildStore.getState().activeBuild?.nodeAllocations['root']).toBe(5)
+  })
+})
+
 describe('buildStore — updateContextGear', () => {
   beforeEach(() => {
     useBuildStore.setState(initialState, true)

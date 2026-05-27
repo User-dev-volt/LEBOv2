@@ -31,6 +31,10 @@ export interface BuildStore {
     delta: number,
     treeData: TreeData
   ) => ApplyNodeResult
+  applyNodeChangeBulk: (
+    nodeId: string,
+    treeData: TreeData
+  ) => ApplyNodeResult
   applySkillNodeChange: (
     slotId: string,
     nodeId: string,
@@ -233,6 +237,76 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
       updatedAt: new Date().toISOString(),
     }
 
+    const newUndoStack = [...state.undoStack, activeBuild].slice(-MAX_UNDO_STACK)
+    set({ activeBuild: newActiveBuild, undoStack: newUndoStack, redoStack: [] })
+    return { success: true }
+  },
+
+  applyNodeChangeBulk: (nodeId, treeData) => {
+    const state = get()
+    let activeBuild = state.activeBuild
+
+    // Auto-create build on first allocation (same as applyNodeChange)
+    if (!activeBuild) {
+      if (!state.selectedClassId || !state.selectedMasteryId) {
+        return { success: false, error: 'No class/mastery selected' }
+      }
+      const now = new Date().toISOString()
+      activeBuild = {
+        schemaVersion: 2,
+        sliderPosition: 50,
+        fineTuneWeights: null,
+        id: crypto.randomUUID(),
+        name: state.selectedMasteryId,
+        classId: state.selectedClassId,
+        masteryId: state.selectedMasteryId,
+        characterLevel: 1,
+        budgetEnforced: false,
+        nodeAllocations: {},
+        skillNodeAllocations: {},
+        activeSkillLevels: {},
+        weaverAllocations: {},
+        contextData: { gear: [], skills: [], idols: [] },
+        isPersisted: false,
+        createdAt: now,
+        updatedAt: now,
+      }
+    }
+
+    const nodeMap = new Map(treeData.nodes.map((n) => [n.id, n]))
+    const node = nodeMap.get(nodeId)
+    if (!node) return { success: false }
+
+    const current = activeBuild.nodeAllocations[nodeId] ?? 0
+    const nodeSpace = node.maxPoints - current
+    if (nodeSpace <= 0) return { success: false }
+
+    // Validate prerequisites (same check as applyNodeChange for delta > 0)
+    const prerequisites = treeData.edges.filter((e) => e.toId === nodeId).map((e) => e.fromId)
+    const prereqsMet = prerequisites.every(
+      (prereqId) => (activeBuild!.nodeAllocations[prereqId] ?? 0) > 0
+    )
+    if (!prereqsMet) {
+      return { success: false, error: 'Prerequisite not met' }
+    }
+
+    // Calculate allocatable points — bounded by budget if enforced
+    let toAllocate = nodeSpace
+    if (activeBuild.budgetEnforced) {
+      const available = calculatePassivePoints(activeBuild.characterLevel)
+      const allocated = Object.values(activeBuild.nodeAllocations).reduce((sum, v) => sum + v, 0)
+      const budget = available - allocated
+      if (budget <= 0) return { success: false }
+      toAllocate = Math.min(nodeSpace, budget)
+    }
+
+    const newPoints = current + toAllocate
+    const newNodeAllocations = { ...activeBuild.nodeAllocations, [nodeId]: newPoints }
+    const newActiveBuild: BuildState = {
+      ...activeBuild,
+      nodeAllocations: newNodeAllocations,
+      updatedAt: new Date().toISOString(),
+    }
     const newUndoStack = [...state.undoStack, activeBuild].slice(-MAX_UNDO_STACK)
     set({ activeBuild: newActiveBuild, undoStack: newUndoStack, redoStack: [] })
     return { success: true }

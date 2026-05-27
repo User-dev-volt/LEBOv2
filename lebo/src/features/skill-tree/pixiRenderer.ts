@@ -464,7 +464,7 @@ export async function initRenderer(
         if (e.button !== 0) return
         // Only allocate+select if this was a clean click (no drag exceeded threshold)
         if (!dragging) {
-          callbacksRef.current.onNodeClick(node.id, 0)
+          callbacksRef.current.onNodeClick(node.id, 0, e.shiftKey)
           callbacksRef.current.onNodeSelect?.(node.id)
         }
       })

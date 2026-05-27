@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-- Dev reads story file `6-3-keyboard-shortcuts-and-undo-redo-controls.md` and implements the 7 redo-stack clears + `App.tsx` keyboard handlers + `buildStore.ts` modifications in sequence
+Dev agent executes story 6.4 starting with `NodeTooltip.tsx` (pointerEvents, maxHeight, onWheel stopPropagation, grace timer wiring). This unblocks AC1 testing before touching
 
 ---
 
