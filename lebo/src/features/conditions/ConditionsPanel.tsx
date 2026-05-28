@@ -2,6 +2,10 @@ import { useMemo, useEffect } from 'react'
 import { useBuildStore } from '../../shared/stores/buildStore'
 import { useGameDataStore } from '../../shared/stores/gameDataStore'
 import type { ConditionEntry } from '../../shared/types/contextDatabase'
+import type { ActiveSkill } from '../../shared/types/build'
+
+const EMPTY_SKILLS: ActiveSkill[] = []
+const EMPTY_CONDITION_VALUES: Record<string, string | number | boolean> = {}
 
 function ConditionRow({
   entry,
@@ -72,10 +76,10 @@ function ConditionRow({
 
 export function ConditionsPanel() {
   const conditionsDatabase = useGameDataStore((s) => s.conditionsDatabase)
-  const conditionValues = useBuildStore((s) => s.activeBuild?.conditionValues ?? {})
+  const conditionValues = useBuildStore((s) => s.activeBuild?.conditionValues ?? EMPTY_CONDITION_VALUES)
   const setConditionValue = useBuildStore((s) => s.setConditionValue)
   const classId = useBuildStore((s) => s.activeBuild?.classId ?? '')
-  const activeSkills = useBuildStore((s) => s.activeBuild?.contextData.skills ?? [])
+  const activeSkills = useBuildStore((s) => s.activeBuild?.contextData.skills ?? EMPTY_SKILLS)
 
   const visibleConditions = useMemo(() => {
     if (!conditionsDatabase) return []

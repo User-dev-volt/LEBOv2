@@ -3,8 +3,10 @@ import { useBuildStore } from '../../shared/stores/buildStore'
 import type { IdolItem } from '../../shared/types/build'
 import { IDOL_SLOTS } from './idolData'
 
+const EMPTY_IDOLS: IdolItem[] = []
+
 export function IdolInput() {
-  const idols = useBuildStore((s) => s.activeBuild?.contextData.idols ?? [])
+  const idols = useBuildStore((s) => s.activeBuild?.contextData.idols ?? EMPTY_IDOLS)
   const activeBuildId = useBuildStore((s) => s.activeBuild?.id ?? null)
   const [pendingModifiers, setPendingModifiers] = useState<Record<string, string>>({})
 

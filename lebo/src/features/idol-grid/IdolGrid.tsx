@@ -6,9 +6,11 @@ import type { PlacedIdol } from '../../shared/types/build'
 import { validatePlacement, getOccupantAt } from './idolGridUtils'
 import { IdolAffixPicker } from './IdolAffixPicker'
 
+const EMPTY_IDOL_GRID: PlacedIdol[] = []
+
 export function IdolGrid() {
   const idolData = useGameDataStore((s) => s.idolData)
-  const idolGrid = useBuildStore((s) => s.activeBuild?.idolGrid ?? [])
+  const idolGrid = useBuildStore((s) => s.activeBuild?.idolGrid ?? EMPTY_IDOL_GRID)
 
   const [pendingCell, setPendingCell] = useState<{ row: number; col: number } | null>(null)
   const [configuringNew, setConfiguringNew] = useState<{

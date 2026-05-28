@@ -1,5 +1,11 @@
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/react'
 import { useBuildStore } from '../../shared/stores/buildStore'
+import type { GearItemV2, ActiveSkill, PlacedIdol } from '../../shared/types/build'
+
+const EMPTY_GEAR: GearItemV2[] = []
+const EMPTY_SKILLS: ActiveSkill[] = []
+const EMPTY_IDOL_GRID: PlacedIdol[] = []
+const EMPTY_BLESSINGS: Record<string, string | null> = {}
 import { GEAR_SLOTS } from './gearData'
 import { SKILL_SLOTS } from './skillData'
 import { GearInput } from './GearInput'
@@ -9,10 +15,10 @@ import { BlessingsPanel } from '../blessings/BlessingsPanel'
 import { ConditionsPanel } from '../conditions/ConditionsPanel'
 
 export function ContextPanel() {
-  const gear = useBuildStore((s) => s.activeBuild?.contextData.gear ?? [])
-  const skills = useBuildStore((s) => s.activeBuild?.contextData.skills ?? [])
-  const idolGrid = useBuildStore((s) => s.activeBuild?.idolGrid ?? [])
-  const blessings = useBuildStore((s) => s.activeBuild?.blessings ?? {})
+  const gear = useBuildStore((s) => s.activeBuild?.contextData.gear ?? EMPTY_GEAR)
+  const skills = useBuildStore((s) => s.activeBuild?.contextData.skills ?? EMPTY_SKILLS)
+  const idolGrid = useBuildStore((s) => s.activeBuild?.idolGrid ?? EMPTY_IDOL_GRID)
+  const blessings = useBuildStore((s) => s.activeBuild?.blessings ?? EMPTY_BLESSINGS)
   const activeBlessingsCount = Object.values(blessings).filter((v) => v !== null).length
   const conditionValues = useBuildStore((s) => s.activeBuild?.conditionValues)
   const activeConditionsCount = conditionValues

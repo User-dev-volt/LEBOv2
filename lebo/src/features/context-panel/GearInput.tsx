@@ -3,8 +3,10 @@ import { useBuildStore } from '../../shared/stores/buildStore'
 import type { GearItemV2, AffixEntryV2 } from '../../shared/types/build'
 import { GEAR_SLOTS } from './gearData'
 
+const EMPTY_GEAR: GearItemV2[] = []
+
 export function GearInput() {
-  const gear = useBuildStore((s) => s.activeBuild?.contextData.gear ?? [])
+  const gear = useBuildStore((s) => s.activeBuild?.contextData.gear ?? EMPTY_GEAR)
   const activeBuildId = useBuildStore((s) => s.activeBuild?.id ?? null)
   const [pendingAffixes, setPendingAffixes] = useState<Record<string, string>>({})
 

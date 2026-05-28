@@ -3,6 +3,9 @@ import type { BlessingEntry } from '../../shared/types/contextDatabase'
 import { useGameDataStore } from '../../shared/stores/gameDataStore'
 import { useBuildStore } from '../../shared/stores/buildStore'
 
+const EMPTY_BLESSINGS_DB: BlessingEntry[] = []
+const EMPTY_BLESSINGS: Record<string, string | null> = {}
+
 interface TimelineGroup {
   timelineId: string
   timelineName: string
@@ -82,12 +85,12 @@ function TimelineRow({
 }
 
 export function BlessingsPanel() {
-  const blessingsDatabase = useGameDataStore((s) => s.blessingsDatabase ?? [])
+  const blessingsDatabase = useGameDataStore((s) => s.blessingsDatabase ?? EMPTY_BLESSINGS_DB)
   const isBlessingsDataStale = useGameDataStore((s) => s.isBlessingsDataStale)
   const blessingsDataStaleAcknowledged = useGameDataStore((s) => s.blessingsDataStaleAcknowledged)
   const acknowledgeBlessingsDataStaleness = useGameDataStore((s) => s.acknowledgeBlessingsDataStaleness)
 
-  const blessings = useBuildStore((s) => s.activeBuild?.blessings ?? {})
+  const blessings = useBuildStore((s) => s.activeBuild?.blessings ?? EMPTY_BLESSINGS)
   const setBlessing = useBuildStore((s) => s.setBlessing)
 
   const timelineGroups = useMemo<TimelineGroup[]>(() => {
