@@ -1,8 +1,11 @@
 import { useBuildStore } from '../../shared/stores/buildStore'
+import type { ActiveSkill } from '../../shared/types/build'
 import { SKILL_SLOTS } from './skillData'
 
+const EMPTY_SKILLS: ActiveSkill[] = []
+
 export function SkillInput() {
-  const skills = useBuildStore((s) => s.activeBuild?.contextData.skills ?? [])
+  const skills = useBuildStore((s) => s.activeBuild?.contextData.skills ?? EMPTY_SKILLS)
 
   return (
     <div className="flex flex-col gap-3 px-1 pt-1">
