@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Await completion of the Acceptance Auditor layer and present triage results (findings grouped by severity/actionability).
+- Run `bmad-retrospective` in a fresh context window to analyze patterns in the Phase 3 deferred-work backlog and extract Phase 4 story candidates
 
 ---
 
