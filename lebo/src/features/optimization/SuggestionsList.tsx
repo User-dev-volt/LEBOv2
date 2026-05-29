@@ -34,7 +34,14 @@ function isSyntheticNodeId(id: string): boolean {
   return id.startsWith('warning:') || id.startsWith('unique:') || id.startsWith('synergy:')
 }
 
-/** Convert a synthetic node ID like "warning:fire_resistance" into a readable label. */
+/** Derive the informational variant from the synthetic node ID prefix. */
+function getSyntheticVariant(id: string): 'warning' | 'unique' | 'synergy' {
+  if (id.startsWith('warning:')) return 'warning'
+  if (id.startsWith('unique:')) return 'unique'
+  return 'synergy'
+}
+
+/** Convert a synthetic node ID like "warning:fire_resistance_uncapped" into a readable label. */
 function formatSyntheticLabel(id: string): string {
   const parts = id.split(':')
   const body = parts.slice(1).join(' ').replace(/_/g, ' ')
@@ -322,6 +329,7 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
         toNodeName={toNodeName}
         fromNodeName={fromNodeName}
         isInformational={syntheticTo}
+        informationalVariant={syntheticTo ? getSyntheticVariant(suggestion.nodeChange.toNodeId) : undefined}
         isApplied={appliedRanks.includes(suggestion.rank)}
         applyError={applyErrors[suggestion.rank] ?? null}
         isPreviewActive={previewSuggestionRank === suggestion.rank}
