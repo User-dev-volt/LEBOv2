@@ -58,6 +58,9 @@ interface SuggestionCardProps {
   suggestion: SuggestionResult
   toNodeName: string
   fromNodeName?: string
+  /** True when the suggestion's node ID is synthetic (warning/unique/synergy context).
+   *  No passive tree change can be applied; Apply/Preview buttons are hidden. */
+  isInformational?: boolean
   isApplied?: boolean
   applyError?: string | null
   isPreviewActive?: boolean
@@ -75,6 +78,7 @@ export const SuggestionCard = forwardRef<HTMLDivElement, SuggestionCardProps>(
     {
       suggestion,
       toNodeName,
+      isInformational = false,
       isApplied = false,
       applyError,
       isPreviewActive = false,
@@ -207,7 +211,32 @@ export const SuggestionCard = forwardRef<HTMLDivElement, SuggestionCardProps>(
           </p>
         )}
 
-        {!isApplied && (
+        {isInformational && (
+          <div className="flex items-center gap-2 mt-2">
+            <span
+              data-testid="suggestion-informational-badge"
+              className="text-xs px-2 py-0.5 rounded"
+              style={{
+                color: 'var(--color-text-muted)',
+                border: '1px solid var(--color-bg-hover)',
+              }}
+            >
+              ℹ Context only
+            </span>
+            <button
+              onClick={onSkip}
+              data-testid="suggestion-skip-btn"
+              className="text-xs px-2 py-0.5 rounded"
+              style={{
+                color: 'var(--color-data-negative)',
+                border: '1px solid var(--color-data-negative)',
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+        {!isInformational && !isApplied && (
           <div className="flex items-center gap-2 mt-2">
             <button
               onClick={onPreview}

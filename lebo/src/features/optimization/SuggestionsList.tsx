@@ -28,6 +28,19 @@ function getNodeName(
   )
 }
 
+/** Synthetic node IDs are used for informational suggestions (warnings, unique/synergy context).
+ *  They are not real passive tree nodes and cannot be applied to the tree. */
+function isSyntheticNodeId(id: string): boolean {
+  return id.startsWith('warning:') || id.startsWith('unique:') || id.startsWith('synergy:')
+}
+
+/** Convert a synthetic node ID like "warning:fire_resistance" into a readable label. */
+function formatSyntheticLabel(id: string): string {
+  const parts = id.split(':')
+  const body = parts.slice(1).join(' ').replace(/_/g, ' ')
+  return body.charAt(0).toUpperCase() + body.slice(1)
+}
+
 
 const GOAL_LABELS: Record<string, string> = {
   maximize_damage: 'Maximize Damage',
@@ -178,6 +191,9 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
   )
 
   async function handleHoverEnter(suggestion: SuggestionResult) {
+    // Synthetic IDs are informational context — no tree node to highlight or preview
+    if (isSyntheticNodeId(suggestion.nodeChange.toNodeId)) return
+
     setHighlightedNodeIds({
       glowing: new Set([suggestion.nodeChange.toNodeId]),
       dimmed: suggestion.nodeChange.fromNodeId
@@ -226,6 +242,14 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
   }
 
   function handleApply(suggestion: SuggestionResult) {
+    const { nodeChange, rank } = suggestion
+
+    // Synthetic IDs are informational context — they do not represent passive tree nodes
+    if (isSyntheticNodeId(nodeChange.toNodeId)) {
+      setApplyErrors((prev) => ({ ...prev, [rank]: 'This is an informational suggestion — no passive tree change to apply.' }))
+      return
+    }
+
     const currentBuild = useBuildStore.getState().activeBuild
     if (!currentBuild) return
 
@@ -236,8 +260,6 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
     }
 
     const treeData = buildTreeData(classData, currentBuild.masteryId, currentBuild.nodeAllocations)
-    const { nodeChange } = suggestion
-    const { rank } = suggestion
 
     let fromRemovedPoints: number | null = null
 
@@ -282,6 +304,13 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
 
   function renderCard(suggestion: SuggestionResult, allowInteraction: boolean, index?: number) {
     const isFocused = index !== undefined && focusedCardIndex === index
+    const syntheticTo = isSyntheticNodeId(suggestion.nodeChange.toNodeId)
+    const toNodeName = syntheticTo
+      ? formatSyntheticLabel(suggestion.nodeChange.toNodeId)
+      : getNodeName(suggestion.nodeChange.toNodeId, gameData, classId, masteryId)
+    const fromNodeName = suggestion.nodeChange.fromNodeId
+      ? getNodeName(suggestion.nodeChange.fromNodeId, gameData, classId, masteryId)
+      : undefined
     return (
       <SuggestionCard
         key={`${suggestion.rank}-${suggestion.nodeChange.toNodeId}`}
@@ -290,12 +319,9 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
           else cardRefs.current.delete(suggestion.rank)
         }}
         suggestion={suggestion}
-        toNodeName={getNodeName(suggestion.nodeChange.toNodeId, gameData, classId, masteryId)}
-        fromNodeName={
-          suggestion.nodeChange.fromNodeId
-            ? getNodeName(suggestion.nodeChange.fromNodeId, gameData, classId, masteryId)
-            : undefined
-        }
+        toNodeName={toNodeName}
+        fromNodeName={fromNodeName}
+        isInformational={syntheticTo}
         isApplied={appliedRanks.includes(suggestion.rank)}
         applyError={applyErrors[suggestion.rank] ?? null}
         isPreviewActive={previewSuggestionRank === suggestion.rank}
