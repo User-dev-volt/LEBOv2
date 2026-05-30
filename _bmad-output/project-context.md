@@ -1,11 +1,11 @@
 ---
 project_name: 'LEBOv2'
 user_name: 'Alec'
-date: '2026-05-18'
+date: '2026-05-30'
 sections_completed:
   ['technology_stack', 'language_rules', 'framework_rules', 'testing_rules', 'quality_rules', 'workflow_rules', 'anti_patterns']
 status: 'complete'
-rule_count: 60
+rule_count: 85
 optimized_for_llm: true
 ---
 
@@ -42,6 +42,10 @@ _Critical rules and patterns that AI agents must follow when implementing code i
 - **`BuildState.schemaVersion` is `1 | 2`** — new builds always use `schemaVersion: 2`. The `migrateBuildState` function in `buildPersistence.ts` upgrades v1 persisted builds on load. Never create a new build with `schemaVersion: 1`.
 - **Allocation records omit zero-value keys** — `nodeAllocations`, `skillNodeAllocations[slotId]`, and `weaverAllocations` delete keys when the value reaches 0 (they do NOT store `{ nodeId: 0 }`). All reads should use `?? 0` as the default.
 - **`GearItem` is deprecated** — all new code uses `GearItemV2` with `AffixEntryV2[]`. Never reference the old `GearItem` interface.
+- **`BuildState` has several optional fields** added in Phase 3 — `idolGrid?: IdolGridState`, `blessings?: Record<string, string | null>`, `activeConditions?: string[]`, `conditionValues?: Record<string, string | number | boolean>`, `skillRoles?: Record<string, SkillRole>`, `sliderPosition?: number`, `fineTuneWeights?: FineTuneWeights | null`. Always default with `?? {}` / `?? []` / `?? 50` when reading these.
+- **`conditionValues` → `activeConditions` encoding** is handled exclusively by `encodeConditionValues()` in `buildSnapshotSerializer.ts`. Never manually build the `activeConditions` array from `conditionValues`. Encoding rules: `boolean true` → `id`, `string` (non-empty) → `on_${value}`, `number !== 0` → `${id}_${value}`.
+- **`toBuildSnapshot()` in `buildSnapshotSerializer.ts` is the ONLY conversion point** from `BuildState` to `BuildSnapshot`. Never pass `BuildState` directly to `invokeCommand('compute_stats', ...)` or `invokeCommand('run_gear_scoring', ...)` — always call `toBuildSnapshot(build, gameData)` first.
+- **Rust output types use snake_case field names** — `StatSheet`, `OffenseStats`, `DefenseStats`, `NodeEfficiency`, `GearAnalysis`, `GearSlotRanking`, `WishlistAffix`, `SynergyFlag` all mirror Rust serde output with snake_case keys (e.g. `damage_score`, `effective_hp`, `node_id`). Do NOT camelCase these field accesses.
 
 ### Framework-Specific Rules
 
@@ -50,10 +54,13 @@ _Critical rules and patterns that AI agents must follow when implementing code i
 - All Tauri command names are snake_case strings (matching Rust function names). All must be registered in `lib.rs` `invoke_handler!`.
 - **Vault (Stronghold) reads must be sequential, not concurrent.** Never `Promise.all()` multiple vault reads — see `App.tsx` startup: vault reads are chained with `.then()`.
 - The `ANTHROPIC_API_KEY` environment variable override in `claude_commands.rs` (`#[cfg(debug_assertions)]`) must be removed before any public release build.
+- **`compute_stats` returns a `StatSheet` directly** — no events. Always call via `invokeCommand<StatSheet>('compute_stats', { snapshot })`.
+- **`run_gear_scoring` returns no value** — result arrives via `gear:analysis-complete` event. Call it fire-and-forget; listen for the event separately.
+- **`run_optimization` returns no value** — result arrives via `optimization:*` events.
 
 **React / Zustand:**
 - **Four domain stores only:** `useBuildStore`, `useGameDataStore`, `useOptimizationStore`, `useAppStore`. Do not create new top-level stores; extend existing ones.
-- **No React Router** — view switching is `appStore.currentView: 'main' | 'settings'`. Never add a router.
+- **No React Router** — view switching is `appStore.currentView: 'main' | 'settings' | 'gear-optimization'`. Never add a router.
 - Zustand stores use `create<Interface>()((set, get) => ...)` pattern with inline function bodies. Do not use `immer` middleware.
 - `useBuildStore.undoStack` caps at 10 snapshots (MAX_UNDO_STACK = 10). Undo snapshots the entire `BuildState`, tracking all three allocation namespaces.
 - **`SkillTreeCanvas` is props-only** — it receives `treeData`, `nodeAllocations`, `highlightedNodes`, `iconTextures`, and more via props. It does NOT access any Zustand store internally.
@@ -102,13 +109,42 @@ _Critical rules and patterns that AI agents must follow when implementing code i
 
 **Tauri Event Streaming (Claude API):**
 - Claude API streams via Tauri events — never via a direct return value from `invoke_claude_api`.
-- Three event names: `optimization:suggestion-received`, `optimization:complete`, `optimization:error`.
-- The `useOptimizationStream` hook subscribes to these events and populates `optimizationStore`.
+- Three optimization event names: `optimization:suggestion-received`, `optimization:complete`, `optimization:error`.
+- Five gear event names: `gear:analysis-complete`, `gear:error`, `gear:narrative-chunk`, `gear:narrative-complete`, `gear:narrative-error`.
+- The `useOptimizationStream` hook subscribes to optimization events and populates `optimizationStore`.
+- The `useGearStream` hook subscribes to gear events. Call it at the top of `GearOptimizationView` (it registers/unregisters on mount/unmount).
+- `startGearAnalysis()` is a plain async function (not a hook) in `useGearStream.ts` — call it in event handlers, not at render time.
+
+**Scoring engine / stat sheet:**
+- `useStatSheet` hook in `shared/stores/useStatSheet.ts` subscribes to build + game-data changes and calls `compute_stats`. Uses `requestAnimationFrame` debounce + generation counter to discard stale IPC results — never duplicate this pattern inline.
+- `optimizationStore.statSheet` holds the current `StatSheet | null`. `isComputingStats` is true while an IPC call is in flight.
+- `optimizationStore.nodeEfficiencies: NodeEfficiency[] | null` holds the node efficiency overlay data. `NodeEfficiency.tier` is `'gold' | 'silver' | 'dim'`.
+- `optimizationStore.previewStatSheet` replaces `statSheet` in the stat sheet display when a suggestion is being previewed.
+- `clearSuggestions()` clears optimization stream state (`suggestions`, `scores`, `nodeEfficiencies`, `previewStatSheet`, etc.) but does **NOT** clear gear state (`gearAnalysis`, `gearNarrative`, `isAnalyzingGear`, `isGeneratingNarrative`).
+
+**Gear Optimization view:**
+- `GearOptimizationView` is a full-screen view (`height: 100dvh`), not a center tab. Navigate to it via `setCurrentView('gear-optimization')` and back with `setCurrentView('main')`.
+- Gear analysis requires at least one skill designated as `primary_offense` in `BuildState.skillRoles` before `startGearAnalysis()` can be called.
+- `SkillRole` type: `'primary_offense' | 'secondary_offense' | 'defensive' | 'utility'`.
+- `BuildState.skillRoles` is optional (`Record<string, SkillRole> | undefined`). Default with `?? {}`.
+
+**Idol grid:**
+- `IdolGridState = PlacedIdol[]` — stored in `BuildState.idolGrid` (optional, default `[]`).
+- `PlacedIdol` has `{ id, row, col, idolTypeId, prefixId?, prefixTier?, suffixId?, suffixTier? }`.
+- All idol placement validation goes through `validatePlacement()` in `idol-grid/idolGridUtils.ts`. Never inline placement collision logic.
+- Idol grid config (rows, cols, blocked cells) comes from `contextDatabase` (`IdolGrid` type). Grid dimensions and blocked cells vary by game version — never hardcode them.
+- `toBuildSnapshot` converts `idolGrid` via `toIdolPlacements()` (internal) — the `idolTypeId` field maps to `idolSize` in the snapshot sent to Rust.
+
+**Blessings and conditions:**
+- `BuildState.blessings?: Record<string, string | null>` — keys are blessing slot IDs, values are blessing IDs or `null`. The snapshot serializer extracts non-null values as a flat `string[]`.
+- `BuildState.conditionValues?: Record<string, string | number | boolean>` — structured condition state. Never write to `activeConditions` directly; it is a computed field derived by `encodeConditionValues()` in `buildSnapshotSerializer.ts`.
 
 **Tailwind v4:**
 - CSS-first config — no `tailwind.config.js`. All custom tokens are CSS variables defined in the global stylesheet.
 - **Never use `@apply`** — Tailwind v4 dropped reliable `@apply` support for custom properties.
 - Design tokens use `var(--color-*)` CSS variables: `--color-bg-base`, `--color-bg-surface`, `--color-bg-elevated`, `--color-bg-hover`, `--color-accent-gold`, `--color-accent-gold-soft`, `--color-accent-gold-dim`, `--color-data-damage`, `--color-data-surv`, `--color-data-speed`, `--color-node-allocated`, `--color-node-available`, `--color-node-locked`, `--color-node-suggested`, `--color-text-primary`, `--color-text-secondary`, `--color-text-muted`.
+- **Damage type color CSS variables**: `--color-dmg-physical`, `--color-dmg-fire`, `--color-dmg-cold`, `--color-dmg-lightning`, `--color-dmg-void`, `--color-dmg-poison`, `--color-dmg-bleed`.
+- **`rarityColors.ts`** provides `RARITY_COLORS` (keyed by rarity name) and `DAMAGE_TYPE_COLORS` (keyed by `DamageType`). Always use these utilities — never hardcode rarity or damage-type hex colors inline.
 
 ### Testing Rules
 
@@ -188,7 +224,7 @@ Each feature folder is self-contained: component, hook, data file, and test co-l
 **Store action rules:**
 - `applyNodeChange` / `applySkillNodeChange` / `applyWeaverNodeChange` validate prerequisites and budget before allocating. **Never bypass with direct `set()`.**
 - `applyNodeChange` auto-creates a build when `activeBuild` is null (if class and mastery are selected). `applySkillNodeChange` and `applyWeaverNodeChange` do NOT — they return `{ success: false }` if `activeBuild` is null.
-- `useOptimizationStore.clearSuggestions()` must be called before starting a new optimization run (handled in `useOptimizationStream` — do not call again).
+- `useOptimizationStore.clearSuggestions()` must be called before starting a new optimization run (handled in `useOptimizationStream` — do not call again). It clears `suggestions`, `scores`, `nodeEfficiencies`, `previewStatSheet`, and stream state but does **NOT** clear gear analysis state (`gearAnalysis`, `gearNarrative`, `isAnalyzingGear`, `isGeneratingNarrative`).
 - `useAppStore.isOnlineChecked` starts `false` — AI optimization must check both `isOnline` AND `isOnlineChecked` before enabling.
 
 **Skill/tab rules:**
@@ -200,6 +236,10 @@ Each feature folder is self-contained: component, hook, data file, and test co-l
 - `invoke_claude_api` emits events AND may return `Err()` — this double-emit pattern is pre-existing. Do not "fix" it by removing the event emit.
 - Suggestions are streamed incrementally via `optimization:suggestion-received`. The suggestion list must handle partial state (items arriving one by one).
 - `previewSuggestionRank` in `optimizationStore` drives the preview overlay on the passive tree. A non-null rank means `previewAllocatedNodes` replaces `baseAllocatedNodes` for the canvas render.
+- `optimizationStore.statSheet` is populated by `useStatSheet` (continuous background hook). Do not read `statSheet` before calling `toBuildSnapshot` for the scoring engine — they use different data shapes.
+- `previewStatSheet` replaces `statSheet` in the stat sheet display while a suggestion is being previewed. Reset it by calling `setPreviewStatSheet(null)` when the preview ends.
+- `useStatSheet` uses `requestAnimationFrame` debouncing with a generation counter. Do not attempt to debounce stat sheet computation manually outside this hook.
+- Gear analysis state in `optimizationStore` (`gearAnalysis`, `gearNarrative`, `isAnalyzingGear`, `isGeneratingNarrative`) persists across optimization runs. It is only cleared by starting a new gear analysis via `startGearAnalysis()`.
 
 **Accessibility:**
 - All interactive elements must have a `2px solid accent-gold` focus ring — never `outline: none` without a replacement.
@@ -233,6 +273,9 @@ Each feature folder is self-contained: component, hook, data file, and test co-l
 - When adding a Tauri command: implement in Rust → register in `lib.rs` invoke_handler → call via `invokeCommand<T>()` in TypeScript.
 - When adding a new view: add it to `appStore.currentView` union type and route in `App.tsx`. Never add React Router.
 - When working with trees: use the correct allocation namespace and store action for the tree type (passive/skill/weaver).
+- When passing build data to Rust scoring commands: always call `toBuildSnapshot(build, gameData)` first. Never pass `BuildState` directly.
+- When reading Rust-output types (`StatSheet`, `GearAnalysis`, etc.): field names are snake_case — never camelCase them.
+- When reading optional `BuildState` fields (Phase 3 additions): always default with `?? {}` / `?? []` / `?? 50`.
 - **PHASE BOUNDARY — NEVER MODIFY Phase 1 files.** This is Phase 2 (LEBOv2). Files outside the `LEBOv2/` directory are Phase 1 artifacts. Read them for context only — never write, edit, or commit changes to them.
 
 **For Humans:**
@@ -240,4 +283,4 @@ Each feature folder is self-contained: component, hook, data file, and test co-l
 - Add to Critical Don't-Miss Rules when a new non-obvious constraint is discovered.
 - Review after each epic completion for stale rules.
 
-Last Updated: 2026-05-18
+Last Updated: 2026-05-30
