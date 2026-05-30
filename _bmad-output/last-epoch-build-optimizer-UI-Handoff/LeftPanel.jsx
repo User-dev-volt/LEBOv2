@@ -114,12 +114,9 @@ function LeftPanel({ state, dispatch, collapsed, onToggleCollapsed }) {
 
         <details className="lp-section" open={false}>
           <summary style={{ cursor: "pointer", color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", padding: "6px 0" }}>
-            Import Build Code
+            Import Character
           </summary>
-          <textarea className="input" rows={3} placeholder="Paste build code…" style={{ marginTop: 6 }} />
-          <button className="btn btn-sm btn-full" style={{ marginTop: 6 }}>
-            <Icon name="import" size={12} /> Import
-          </button>
+          <ImportCharacter dispatch={dispatch} />
         </details>
 
         <div className="divider" />
@@ -136,6 +133,145 @@ function LeftPanel({ state, dispatch, collapsed, onToggleCollapsed }) {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   Import Character — lastepochtools.com–style lookup
+   Enter account + (optional) character, choose Online API or
+   Offline save folder, fetch characters, pick one to import.
+   ============================================================ */
+
+const IMPORT_DB = {
+  // account (lowercased) -> characters
+  "alec#1842": [
+    { name: "GravesongLich",   cls: "Acolyte",   mastery: "Lich",        level: 92, glyph: "glyph-skull" },
+    { name: "FrostWeaver",     cls: "Mage",      mastery: "Sorcerer",    level: 78, glyph: "glyph-acolyte" },
+    { name: "PackLeader",      cls: "Primalist", mastery: "Beastmaster", level: 64, glyph: "glyph-acolyte" },
+  ],
+  "demo#0001": [
+    { name: "VoidPullKnight",  cls: "Sentinel",  mastery: "Void Knight", level: 100, glyph: "glyph-acolyte" },
+    { name: "ShadowDaggers",   cls: "Rogue",     mastery: "Bladedancer", level: 88,  glyph: "glyph-acolyte" },
+  ],
+};
+
+function ImportCharacter({ dispatch }) {
+  const [source, setSource] = useState("online"); // online | offline
+  const [account, setAccount] = useState("");
+  const [character, setCharacter] = useState("");
+  const [status, setStatus] = useState("idle");   // idle | loading | done | empty
+  const [results, setResults] = useState([]);
+  const [imported, setImported] = useState(null);
+
+  const fetchChars = () => {
+    if (!account.trim()) return;
+    setStatus("loading");
+    setResults([]);
+    setImported(null);
+    setTimeout(() => {
+      const key = account.trim().toLowerCase();
+      let chars = IMPORT_DB[key] || [
+        // fallback: synthesize a couple from the account name so the demo always returns something
+        { name: account.trim().replace(/[^a-z0-9]/gi, "") || "Hero", cls: "Acolyte", mastery: "Lich", level: 90, glyph: "glyph-skull" },
+        { name: "AltCharacter", cls: "Sentinel", mastery: "Paladin", level: 55, glyph: "glyph-acolyte" },
+      ];
+      if (character.trim()) {
+        chars = chars.filter((c) => c.name.toLowerCase().includes(character.trim().toLowerCase()));
+      }
+      setResults(chars);
+      setStatus(chars.length ? "done" : "empty");
+    }, 850);
+  };
+
+  const importChar = (c) => {
+    setImported(c.name);
+    dispatch({ type: "import:character", character: c });
+  };
+
+  return (
+    <div className="import-card">
+      <div className="source-seg">
+        <div className={`source-seg-opt ${source === "online" ? "on" : ""}`} onClick={() => setSource("online")}>
+          <Icon name="globe" size={12} /> Online
+        </div>
+        <div className={`source-seg-opt ${source === "offline" ? "on" : ""}`} onClick={() => setSource("offline")}>
+          <Icon name="folder" size={12} /> Offline
+        </div>
+      </div>
+
+      <div className="import-field">
+        <span className="import-field-label">Account Name</span>
+        <input
+          className="input"
+          placeholder={source === "online" ? "name#0000" : "save file account"}
+          value={account}
+          onChange={(e) => setAccount(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && fetchChars()}
+        />
+      </div>
+      <div className="import-field">
+        <span className="import-field-label">Character Name <span style={{ textTransform: "none", letterSpacing: 0 }}>(optional)</span></span>
+        <input
+          className="input"
+          placeholder="filter by character…"
+          value={character}
+          onChange={(e) => setCharacter(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && fetchChars()}
+        />
+      </div>
+
+      <button className="btn btn-sm btn-gold-outline btn-full" onClick={fetchChars} disabled={!account.trim()}>
+        <Icon name="search" size={12} />
+        {source === "online" ? "Look up online" : "Scan save folder"}
+      </button>
+
+      {source === "offline" && status === "idle" && (
+        <div className="import-status">
+          <Icon name="folder" size={11} /> Reads characters from your local save directory.
+        </div>
+      )}
+
+      {status === "loading" && (
+        <div className="import-status">
+          <span className="import-spinner" />
+          {source === "online" ? "Querying online database…" : "Reading save files…"}
+        </div>
+      )}
+
+      {status === "empty" && (
+        <div className="import-status" style={{ color: "var(--data-negative)" }}>
+          <Icon name="x" size={11} /> No characters found for that account.
+        </div>
+      )}
+
+      {status === "done" && (
+        <div className="char-results">
+          <div className="char-results-head">
+            <span>{results.length} character{results.length !== 1 ? "s" : ""}</span>
+            {source === "online" && (
+              <span className="import-online-dot"><span className="dot" style={{ width: 5, height: 5 }} /> live</span>
+            )}
+          </div>
+          {results.map((c) => (
+            <div key={c.name} className="char-result" onClick={() => importChar(c)}>
+              <div className="char-result-icon">
+                <Icon name={c.glyph} size={15} color="var(--accent-gold)" />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div className="char-result-name">{c.name}</div>
+                <div className="char-result-meta">{c.cls} · {c.mastery}</div>
+              </div>
+              <div className="char-result-lvl">L{c.level}</div>
+            </div>
+          ))}
+          {imported && (
+            <div className="import-status" style={{ color: "var(--data-positive)" }}>
+              <Icon name="check" size={11} /> Imported {imported}.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

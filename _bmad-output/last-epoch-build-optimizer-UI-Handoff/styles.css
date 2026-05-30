@@ -583,6 +583,91 @@ textarea.input { padding: 8px 10px; height: auto; resize: vertical; font-family:
 .saved-build-name { flex: 1; font-size: 12px; color: var(--text-primary); }
 .saved-build-meta { font-size: 10px; color: var(--text-muted); letter-spacing: 0.05em; text-transform: uppercase; }
 
+/* ---------- Import Character (lastepochtools-style) ---------- */
+.import-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  padding: 10px;
+  margin-top: 8px;
+}
+.source-seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  background: var(--bg-base);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  padding: 3px;
+  margin-bottom: 8px;
+}
+.source-seg-opt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 26px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.source-seg-opt:hover { color: var(--text-primary); }
+.source-seg-opt.on { background: var(--accent-gold-tint); color: var(--accent-gold); }
+
+.import-field { margin-bottom: 7px; }
+.import-field .input { height: 28px; font-size: 11px; }
+.import-field-label {
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 3px; display: block;
+}
+
+.char-results { margin-top: 8px; display: flex; flex-direction: column; gap: 3px; }
+.char-results-head {
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-muted); margin: 4px 0 2px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.char-result {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--hairline);
+  background: var(--bg-surface);
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.char-result:hover { border-color: var(--accent-gold-dim); background: var(--bg-hover); }
+.char-result-icon {
+  width: 28px; height: 28px;
+  border-radius: var(--r-sm);
+  background: var(--bg-base);
+  border: 1px solid var(--accent-gold-dim);
+  display: flex; align-items: center; justify-content: center;
+}
+.char-result-name { font-size: 12px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.char-result-meta { font-size: 10px; color: var(--text-muted); }
+.char-result-lvl { font-family: var(--font-mono); font-size: 10px; color: var(--accent-gold-soft); }
+
+.import-status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; color: var(--text-muted);
+  padding: 8px 4px;
+}
+.import-spinner {
+  width: 12px; height: 12px;
+  border: 2px solid var(--hairline-strong);
+  border-top-color: var(--accent-gold);
+  border-radius: 50%;
+  animation: orb-spin 0.7s linear infinite;
+}
+.import-online-dot { display: inline-flex; align-items: center; gap: 4px; font-size: 9px; color: var(--text-muted); }
+
 /* ============================================================
    Center tabs
    ============================================================ */

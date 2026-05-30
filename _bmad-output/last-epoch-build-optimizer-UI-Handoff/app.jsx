@@ -131,6 +131,18 @@ function reducer(state, action) {
     case "save":
       return { ...state, unsaved: false };
 
+    case "import:character": {
+      const c = action.character;
+      const found = CLASSES_APP.find((cl) => cl.name.toLowerCase() === (c.cls || "").toLowerCase());
+      return {
+        ...state,
+        buildName: c.name,
+        classId: found ? found.id : state.classId,
+        mastery: c.mastery || state.mastery,
+        unsaved: true,
+      };
+    }
+
     case "allocate":
       return { ...state, allocated: [...state.allocated, action.id], unsaved: true };
     case "deallocate":

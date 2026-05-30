@@ -105,7 +105,7 @@ function GearOptScreen({ state, dispatch, onBack }) {
         </div>
         <div style={{ width: 1, height: 18, background: "var(--hairline)" }} />
         <div>
-          <div className="gearopt-title" data-comment-anchor="0383f3342c-div-87-11">Gear Optimization</div>
+          <div className="gearopt-title">Gear Optimization</div>
           <div className="gearopt-sub">Drag gear from the database onto your character, tune affixes, and let AI rank upgrades per slot.</div>
         </div>
         <div style={{ flex: 1 }} />
