@@ -242,9 +242,24 @@ window.LEBO_DATA = (function () {
     { id: "bs5", title: "The Last Ruin",            options: ["Stone Memory (+8% phys res)", "Ruin's Echo (+12 mana)", "Lost Lineage (+18% rare drop)"] },
   ];
 
+  // Popular Builds Database (curated skill sets) — generic, attribution to community sites
+  const POPULAR_BUILDS = [
+    { mastery: "Lich", name: "Bone Curse Lich", source: "maxroll.gg", skills: ["bone_curse", "rip_blood", "transplant", "marrow", "soul_feast"], tags: ["necrotic", "dot", "caster"] },
+    { mastery: "Lich", name: "Reaper Form Melee", source: "lastepochtools.com", skills: ["harvest", "transplant", "soul_feast", "rip_blood", "bone_curse"], tags: ["melee", "necrotic"] },
+    { mastery: "Lich", name: "Wraith Caller", source: "maxroll.gg", skills: ["wraith", "skel_mage", "bone_curse", "transplant", "soul_feast"], tags: ["minion", "necrotic"] },
+    { mastery: "Necromancer", name: "Skeleton Swarm", source: "maxroll.gg", skills: ["skel_mage", "wraith", "bone_curse", "transplant", "marrow"], tags: ["minion"] },
+    { mastery: "Warlock", name: "Chaos Bolt DoT", source: "lastepochtools.com", skills: ["rip_blood", "soul_feast", "bone_curse", "transplant", "marrow"], tags: ["dot", "void"] },
+  ];
+
+  // Idol AI suggestion candidates (for Complete Build Optimizer)
+  const IDOL_SUGGESTIONS = [
+    { def: "i_1x2_a", name: "Slender Idol of Marrow", shape: "1x2", r: 0, c: 3, affix: "+14% Bone Spell Damage (T6)", delta: 5.4 },
+    { def: "i_1x1_b", name: "Lesser Idol of Vigor",   shape: "1x1", r: 0, c: 4, affix: "+20 Health (T7)",            delta: 2.1 },
+  ];
+
   return {
     CLASSES, GEAR_SLOTS, ITEMS_BY_SLOT, AFFIX_POOL,
     SKILLS_BY_CLASS, PASSIVE_NODES, SAVED_BUILDS,
-    IDOL_DEFS, BLESSING_SLOTS,
+    IDOL_DEFS, BLESSING_SLOTS, POPULAR_BUILDS, IDOL_SUGGESTIONS,
   };
 })();

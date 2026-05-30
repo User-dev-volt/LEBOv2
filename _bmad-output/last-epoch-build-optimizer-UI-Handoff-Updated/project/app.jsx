@@ -65,6 +65,7 @@ const initialState = {
 
   allocated: ["n_origin", "n_inner_0", "n_inner_2", "n_outer_0", "n_outer_2"],
   suggestedNodes: [],
+  suggestedTiers: {},
   weaver: 0,
 
   archetype: 65,
@@ -187,11 +188,13 @@ function reducer(state, action) {
       next[action.index] = null;
       return { ...state, skills: next, unsaved: true };
     }
+    case "skills:setAll":
+      return { ...state, skills: action.skills, unsaved: true };
 
     case "optimize":
       return { ...state, optimizing: true };
     case "optimize:done":
-      return { ...state, optimizing: false, suggestions: action.suggestions, suggestedNodes: action.nodes };
+      return { ...state, optimizing: false, suggestions: action.suggestions, suggestedNodes: action.nodes, suggestedTiers: action.tiers || {} };
     case "suggestion:focus":
       return { ...state, activeSuggestion: action.id };
 
@@ -233,12 +236,12 @@ function App() {
     if (!state.optimizing) return;
     const t = setTimeout(() => {
       const suggestions = [
-        { id: "n_outer_1", name: "Death Magic",        delta: +4.2, text: "+22% Necrotic & Cold damage. Best gain for your Rip Blood loop." },
-        { id: "n_outer_4", name: "Aspect of Decay",    delta: +3.1, text: "Converts 18% damage taken to delayed necrotic — strong synergy with leech." },
-        { id: "n_outer_5", name: "Wraithwalk",         delta: +1.8, text: "Move speed + dodge improves clear without hurting damage." },
-        { id: "n_far_0",   name: "Keystone Path",      delta: -0.4, text: "Costs 6 points to reach; minor score gain on its own." },
+        { id: "n_outer_1", name: "Death Magic",        tier: "gold",   delta: +4.2, text: "+22% Necrotic & Cold damage. Best gain for your Rip Blood loop.", cost: "2 pts / 4 pts to reach" },
+        { id: "n_outer_4", name: "Aspect of Decay",    tier: "gold",   delta: +3.1, text: "Converts 18% damage taken to delayed necrotic — strong synergy with leech.", cost: "1 pt / 3 pts to reach" },
+        { id: "n_outer_5", name: "Wraithwalk",         tier: "silver", delta: +1.8, text: "Move speed + dodge improves clear without hurting damage.", cost: "1 pt / 1 pt to reach" },
+        { id: "n_far_0",   name: "Keystone Path",      tier: "dim",    delta: -0.4, text: "Costs 6 points to reach; minor score gain on its own.", cost: "1 pt / 6 pts to reach" },
       ];
-      dispatch({ type: "optimize:done", suggestions, nodes: suggestions.map((s) => s.id) });
+      dispatch({ type: "optimize:done", suggestions, nodes: suggestions.map((s) => s.id), tiers: Object.fromEntries(suggestions.map((s) => [s.id, s.tier])) });
     }, 1200);
     return () => clearTimeout(t);
   }, [state.optimizing]);
@@ -257,6 +260,7 @@ function App() {
       if (k === "[") dispatch({ type: "leftCollapsed" });
       if (k === "]") dispatch({ type: "rightCollapsed" });
       if (k === "o") dispatch({ type: "optimize" });
+      if (e.key === "Escape") dispatch({ type: "view", value: "main" });
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -322,6 +326,9 @@ function App() {
           <div className={`header-nav-item ${state.view === "main" ? "active" : ""}`} onClick={() => dispatch({ type: "view", value: "main" })}>
             Builder
           </div>
+          <div className={`header-nav-item ${state.view === "complete" ? "active" : ""}`} onClick={() => dispatch({ type: "view", value: "complete" })}>
+            Complete Build Optimizer
+          </div>
           <div className={`header-nav-item ${state.view === "gearopt" ? "active" : ""}`} onClick={() => dispatch({ type: "view", value: "gearopt" })}>
             Gear Optimization
           </div>
@@ -341,6 +348,11 @@ function App() {
       </header>
 
       {state.view === "main"     && mainBody}
+      {state.view === "complete" && <div className="body" style={{ gridTemplateColumns: "1fr" }}>
+        <div className="center"><CompleteOptimizer state={state} dispatch={dispatch}
+          onBack={() => dispatch({ type: "view", value: "main" })}
+          goToSection={(tab) => dispatch({ type: "tab", value: tab })} /></div>
+      </div>}
       {state.view === "gearopt"  && <div className="body" style={{ gridTemplateColumns: "1fr" }}>
         <div className="center"><GearOptScreen state={state} dispatch={dispatch} onBack={() => dispatch({ type: "view", value: "main" })} /></div>
       </div>}
@@ -366,6 +378,7 @@ function App() {
           />
         </TweakSection>
         <TweakSection title="Quick actions">
+          <TweakButton onClick={() => dispatch({ type: "view", value: "complete" })}>Open Complete Build Optimizer</TweakButton>
           <TweakButton onClick={() => dispatch({ type: "view", value: "gearopt" })}>Open Gear Optimization</TweakButton>
           <TweakButton onClick={() => dispatch({ type: "view", value: "settings" })}>Open Settings</TweakButton>
           <TweakButton onClick={() => dispatch({ type: "optimize" })}>Run Optimize</TweakButton>

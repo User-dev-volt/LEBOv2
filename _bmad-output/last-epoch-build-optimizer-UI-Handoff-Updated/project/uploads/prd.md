@@ -386,7 +386,7 @@ The left panel is updated to:
 - **Class / Mastery selectors** (existing, restyled).
 - **Build Sections navigator:** A list of clickable rows for each center-canvas tab (Passive Tree, Weaver, Active Skills, Gear, Idols, Blessings), each showing its current fill count (e.g., "Gear — 8/11", "Blessings — 3/5"). Active tab is highlighted. Completed sections show a gold checkmark. [ASSUMPTION: completion indicators are based on the same gates defined in FR-21]
 - **Save Build button** (gold when unsaved changes).
-- **Import Character button** — opens the Character Import Modal (FR-46). Replaces the former "Paste build code" input, which is removed; Last Epoch has no build code system.
+- **Import Build Code** (collapsible).
 - **Saved Builds list** (existing, restyled).
 
 #### FR-35: Right panel — Score gauge, archetype, optimizer
@@ -467,63 +467,6 @@ The Skills tab (center canvas) shows a full skill picker grid with icon, name, a
 
 ---
 
-### 4.10 Character Import
-
-**Description:** The "Import Build Code" input in the left panel is removed — Last Epoch has no build code system. It is replaced by a **Character Import** button that opens a two-tab modal: **Offline** (reads local save files from known paths on the user's machine) and **Online** (fetches character data from EHG's API by account + character name). Offline import is the primary implementation target for Phase 4; online import is fully specced but gated on EHG API access (see OQ-7). Since LEBO is a Tauri desktop app, offline import has no external dependencies and is always available to the user.
-
-**Functional Requirements:**
-
-#### FR-46: Character Import Modal
-The left panel gains an "Import Character" button. Clicking it opens a modal with two tabs: **Offline** and **Online**. The modal is dismissible via an ✕ button or clicking outside.
-
-#### FR-47: Offline import — save file detection and selection
-The Offline tab:
-- On open, the Rust backend scans both known save file locations and lists found character save files:
-  - Steam path: `[STEAM_GAME_FOLDER]/steamapps/userdata/[STEAM_USER_ID]/899770/ac/WinAppDataLocalLow/Eleventh Hour Games/Last Epoch/Saves/`
-  - AppData path: `[DRIVE]:/Users/[USER_NAME]/AppData/LocalLow/Eleventh Hour Games/Last Epoch/Saves/`
-- Detected files (format: `1CHARACTERSLOT_BETA_###`) are listed with the character name and class extracted from the file header.
-- A "Browse" button allows manual path selection if auto-detection finds nothing.
-- Selecting a character file and clicking "Import" triggers FR-48.
-
-**Consequences:**
-- If neither default path exists (e.g., game not installed), the tab shows a "No save files detected" state with the Browse fallback.
-- Only offline character save files are shown; online characters do not have local files.
-
-#### FR-48: Offline save file parsing
-The Rust backend parses the selected save file to extract the full character state. Required extracted fields:
-
-| Field | Description |
-|-------|-------------|
-| `charClass` | Class and mastery |
-| `level` | Character level |
-| `charTree` | Passive node allocations (node ID → points allocated) |
-| `skillTrees` | Per-skill tree node allocations (tree ID → node ID → points) |
-| `equipment` | Per-slot item data: item ID, base type, rarity, affixes (affix ID + tier per slot) |
-
-On successful parse, LEBO populates the active build with the extracted data, overwriting current state after a confirmation prompt ("This will replace your current build. Continue?").
-
-**Consequences:**
-- Unknown item IDs or node IDs (e.g., from a newer game version than the bundled data) are flagged in a post-import summary: "3 items could not be resolved — their slots have been imported as empty."
-- The import creates a new named build (character name as default) in the Saved Builds list; the prior build is preserved.
-
-[ASSUMPTION: The save file binary format can be reverse-engineered from community save editor projects (e.g., gaconvt159/last-epoch-save-editor on GitHub). A Rust parsing spike is required before this story can be written.]
-
-#### FR-49: Online import (gated — requires EHG API partnership)
-The Online tab mirrors the lastepochtools.com Character Import UI:
-- **Account Name** field
-- **Character Name** field
-- **Import** button
-
-On submit, the Tauri backend calls EHG's character API with the provided account and character name and receives the character JSON payload (`equipment`, `skillTrees`, `charTree`). The same parse-and-populate flow as FR-48 applies.
-
-**Consequences:**
-- If the API returns a "character not found" or "account not found" error, the modal displays the error inline (not as a toast).
-- If the character is set to private in-game, the API returns an appropriate error which is surfaced as "This character's profile is private."
-
-**Note:** This FR is fully specced but cannot be implemented until EHG API access is granted (see OQ-7). The UI should be built and the Tauri command wired to a stub; the actual API endpoint and auth headers are substituted once access is confirmed.
-
----
-
 ## 5. Non-Goals (Explicit)
 
 - **Passive/skill tree node artwork matching Last Epoch's asset style** — node shapes, textures, and visual fidelity to the game's art assets are Phase 5.
@@ -550,10 +493,7 @@ On submit, the Tauri backend calls EHG's character API with the provided account
 - Full UI/UX revamp per Claude Design (FR-33 through FR-39)
 - Complete skills + icons database and Popular Builds Database (FR-40 through FR-43)
 - Skill suggestion flow from Popular Builds Database when < 2 skills assigned (FR-23)
-- Multi-allocate fix: Shift+click fill, right-click remove-all (FR-44, FR-45)
-- Character Import — Offline import from local save files (FR-46, FR-47, FR-48)
-- Character Import — Online import UI built as stub; live when EHG partnership granted (FR-49)
-- Remove "Paste build code" input (no build code system exists in Last Epoch)
+- Multi-allocate fix: Shift+click fill, Shift+right-click remove-all (FR-44, FR-45)
 
 ### 6.2 Out of Scope for MVP
 
@@ -563,7 +503,6 @@ On submit, the Tauri backend calls EHG's character API with the provided account
 - Build sharing to external sites — Phase 5+
 - Trading/market integration — Phase 5+
 - Attribute-to-secondary-stat full conversion tables — [ASSUMPTION: attribute totals are shown; full secondary-stat derivation from attributes is complex and deferred unless architecture team judges it straightforward]
-- Online character import fully live — blocked on EHG API partnership (OQ-7); UI and stub are in scope
 
 ---
 
@@ -597,8 +536,6 @@ On submit, the Tauri backend calls EHG's character API with the provided account
 4. ~~**Complete Build Optimizer placement**~~ — **Resolved:** Header nav confirmed. The Complete Build Optimizer is a header nav item alongside Builder, Gear Optimization, and Settings (not a center-canvas tab).
 5. **Popular Builds Database curation workflow** — FR-42 requires manual curation per patch. Is there a scraping/automation approach worth exploring, or is manual curation the correct Phase 4 approach?
 6. **Idol AI suggestion scope** — FR-26 says the AI recommends idol placements including specific affix IDs and tiers. This requires the Claude payload to include the full idol database (or a filtered subset). Token budget implications for the optimization payload need architecture review.
-7. **EHG API partnership for online character import** — FR-49 (Online import) requires access to EHG's character data API, which is currently partner-only (confirmed by EHG on the official forums). lastepochtools.com has this access. To unlock FR-49: contact EHG (community@elevenhourgames.com) to request API partnership. Until access is granted, FR-49 is built as a stub (UI wired, Tauri command returns "API access pending"). Offline import (FR-47, FR-48) has no dependency on this and ships regardless.
-8. **Offline save file binary format** — FR-48 requires parsing the `1CHARACTERSLOT_BETA_###` binary format. Community save editors (gaconvt159/last-epoch-save-editor on GitHub) have reverse-engineered this; a Rust parsing spike against that codebase is required before the story can be sized. If the format proves too complex to reverse-engineer cleanly, a fallback is to shell-invoke the community Java tool and parse its JSON output.
 
 ---
 
@@ -609,4 +546,3 @@ On submit, the Tauri backend calls EHG's character API with the provided account
 - **§4.7 / FR-34** — Build Sections navigator completion indicators use the same gate thresholds as the Complete Build Optimizer (FR-21).
 - **§4.8 / FR-41** — Skill icons can be sourced from the same Rust icon pipeline established in Phase 2/3; no new icon pipeline work is required beyond expanding the source set.
 - **§6.2** — Attribute-to-secondary-stat full conversion tables are architecturally complex; attribute totals are shown but downstream conversion is deferred unless the architecture team judges it low-effort.
-- **§4.10 / FR-48** — The `1CHARACTERSLOT_BETA_###` save file binary format can be reverse-engineered from community save editor source code. A Rust parsing spike is required before this story is written.

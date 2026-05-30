@@ -14,6 +14,7 @@ function PassiveTree({ state, dispatch }) {
 
   const allocated = state.allocated;
   const suggested = state.suggestedNodes;
+  const tiers = state.suggestedTiers || {};
 
   const adjacency = useMemo(() => {
     const map = {};
@@ -60,12 +61,50 @@ function PassiveTree({ state, dispatch }) {
     setZoom((z) => Math.max(0.4, Math.min(2.5, z + (e.deltaY < 0 ? 0.1 : -0.1))));
   };
 
-  const onNodeClick = (n) => {
+  const onNodeClick = (n, e) => {
     if (allocated.includes(n.id)) {
+      // Shift+click on allocated = remove all (also handled by right-click)
+      if (e && e.shiftKey) { removeWithChildren(n); return; }
       dispatch({ type: "deallocate", id: n.id });
     } else if (isAvailable(n.id)) {
       dispatch({ type: "allocate", id: n.id });
+    } else if (e && e.shiftKey) {
+      // Shift+click on a reachable-but-locked node: allocate the path toward it
+      allocatePath(n);
     }
+  };
+
+  // Allocate every unallocated node on the chain from an allocated node to target
+  const allocatePath = (target) => {
+    // BFS from target back to nearest allocated node through parent links
+    const path = [];
+    let cur = target;
+    const byId = Object.fromEntries(PASSIVE_NODES.map((n) => [n.id, n]));
+    while (cur && !allocated.includes(cur.id)) {
+      path.unshift(cur.id);
+      cur = cur.parent ? byId[cur.parent] : null;
+    }
+    if (!cur) return; // no allocated root on this chain
+    path.forEach((id) => dispatch({ type: "allocate", id }));
+  };
+
+  // Right-click / shift+click remove: deallocate node + any orphaned allocated children
+  const removeWithChildren = (n) => {
+    const children = (adjacency[n.id] || []).filter((cid) => {
+      const child = PASSIVE_NODES.find((x) => x.id === cid);
+      return child && child.parent === n.id && allocated.includes(cid);
+    });
+    if (children.length) {
+      const names = children.map((cid) => PASSIVE_NODES.find((x) => x.id === cid)?.name).join(", ");
+      if (!window.confirm(`Removing "${n.name}" will also deallocate: ${names}. Continue?`)) return;
+      children.forEach((cid) => dispatch({ type: "deallocate", id: cid }));
+    }
+    dispatch({ type: "deallocate", id: n.id });
+  };
+
+  const onNodeContext = (n, e) => {
+    e.preventDefault();
+    if (allocated.includes(n.id)) removeWithChildren(n);
   };
 
   const onNodeEnter = (n, e) => {
@@ -99,6 +138,7 @@ function PassiveTree({ state, dispatch }) {
       onMouseUp={onMouseUp}
       onMouseLeave={onMouseUp}
       onWheel={onWheel}
+      onContextMenu={(e) => e.preventDefault()}
     >
       <div className="tree-bg-grid" />
 
@@ -130,15 +170,26 @@ function PassiveTree({ state, dispatch }) {
             const r = n.type === "keystone" ? 16 : n.type === "notable" ? 11 : 7;
             const isAlloc = allocated.includes(n.id);
             const isSugg = suggested.includes(n.id);
+            const tier = tiers[n.id];
+            const tierScale = tier === "gold" ? 1.4 : tier === "silver" ? 1.2 : 1.05;
+            const tierColor = tier === "gold" ? "var(--accent-gold)" : tier === "silver" ? "#9FB0C0" : "var(--node-available)";
             return (
               <g key={n.id}>
                 {isAlloc && (
                   <circle cx={n.x} cy={n.y} r={r + 4} fill="none" stroke="var(--accent-gold)" strokeOpacity={0.25} strokeWidth={2} />
                 )}
                 {isSugg && (
-                  <circle cx={n.x} cy={n.y} r={r + 5} fill="none" stroke="var(--node-suggested)" strokeOpacity={0.5} strokeWidth={1.5} strokeDasharray="3,2">
-                    <animateTransform attributeName="transform" type="rotate" from={`0 ${n.x} ${n.y}`} to={`360 ${n.x} ${n.y}`} dur="14s" repeatCount="indefinite" />
-                  </circle>
+                  <>
+                    <circle cx={n.x} cy={n.y} r={r * tierScale + 4} fill="none" stroke={tierColor} strokeOpacity={tier === "dim" ? 0.5 : 0.85} strokeWidth={tier === "gold" ? 2.5 : 2}>
+                      {tier === "gold" && <animate attributeName="stroke-opacity" values="0.85;0.3;0.85" dur="1.8s" repeatCount="indefinite" />}
+                      {tier === "gold" && <animate attributeName="r" values={`${r*tierScale+4};${r*tierScale+8};${r*tierScale+4}`} dur="1.8s" repeatCount="indefinite" />}
+                    </circle>
+                    {tier !== "dim" && (
+                      <circle cx={n.x} cy={n.y} r={r * tierScale + 9} fill="none" stroke={tierColor} strokeOpacity={tier === "gold" ? 0.4 : 0.25} strokeWidth={1} strokeDasharray="3,3">
+                        <animateTransform attributeName="transform" type="rotate" from={`0 ${n.x} ${n.y}`} to={`360 ${n.x} ${n.y}`} dur="12s" repeatCount="indefinite" />
+                      </circle>
+                    )}
+                  </>
                 )}
                 <circle
                   className="tree-node"
@@ -148,10 +199,11 @@ function PassiveTree({ state, dispatch }) {
                   strokeWidth={n.type === "keystone" ? 2.5 : 1.5}
                   onMouseEnter={(e) => onNodeEnter(n, e)}
                   onMouseLeave={() => setHover(null)}
-                  onClick={() => onNodeClick(n)}
+                  onClick={(e) => onNodeClick(n, e)}
+                  onContextMenu={(e) => onNodeContext(n, e)}
                 />
                 {n.type === "keystone" && (
-                  <text x={n.x} y={n.y + 4} textAnchor="middle" fill="#1A1308" fontFamily="var(--font-mono)" fontSize="11" fontWeight="700">K</text>
+                  <text x={n.x} y={n.y + 4} textAnchor="middle" fill="#1A1308" fontFamily="var(--font-mono)" fontSize="11" fontWeight="700" style={{ pointerEvents: "none" }}>K</text>
                 )}
               </g>
             );
@@ -202,6 +254,13 @@ function PassiveTree({ state, dispatch }) {
         <div className="zoom-btn" onClick={() => setZoom((z) => Math.min(2.5, z + 0.15))}>+</div>
         <div className="zoom-btn" onClick={() => setZoom((z) => Math.max(0.4, z - 0.15))}>−</div>
         <div className="zoom-btn" onClick={() => { setZoom(1); setPan({x:0,y:0}); }}><Icon name="fit" size={12} /></div>
+      </div>
+
+      {/* Controls hint */}
+      <div style={{ position: "absolute", bottom: 16, left: 16, display: "flex", gap: 14, fontSize: 10, color: "var(--text-muted)", background: "rgba(20,20,23,0.7)", backdropFilter: "blur(6px)", padding: "6px 10px", borderRadius: 5, border: "1px solid var(--hairline)" }}>
+        <span><span className="mono" style={{ color: "var(--text-secondary)" }}>click</span> allocate</span>
+        <span><span className="mono" style={{ color: "var(--text-secondary)" }}>shift+click</span> fill path</span>
+        <span><span className="mono" style={{ color: "var(--text-secondary)" }}>right-click</span> remove</span>
       </div>
     </div>
   );

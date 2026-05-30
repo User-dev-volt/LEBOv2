@@ -42,12 +42,12 @@ function LeftPanel({ state, dispatch, collapsed, onToggleCollapsed }) {
   const blessingCount = Object.values(state.blessings).filter(Boolean).length;
 
   const contextRows = [
-    { id: "tree",     icon: "tree",     name: "Passive Tree",   count: `${state.allocated.length} pts` },
-    { id: "weave",    icon: "weave",    name: "Weaver Tree",    count: `${state.weaver} pts` },
-    { id: "skill",    icon: "skill",    name: "Active Skills",  count: `${skillCount}/5`, full: skillCount === 5 },
-    { id: "gear",     icon: "gear",     name: "Gear",           count: `${gearCount}/11`, full: gearCount === 11 },
-    { id: "idol",     icon: "idol",     name: "Idols",          count: `${idolCount} placed` },
-    { id: "blessing", icon: "blessing", name: "Blessings",      count: `${blessingCount}/5`, full: blessingCount === 5 },
+    { id: "tree",     icon: "tree",     name: "Passive Tree",   count: `${state.allocated.length} pts`, done: state.allocated.length >= 1 },
+    { id: "weave",    icon: "weave",    name: "Weaver Tree",    count: `${state.weaver} pts`, done: state.weaver > 0 },
+    { id: "skill",    icon: "skill",    name: "Active Skills",  count: `${skillCount}/5`, full: skillCount === 5, done: skillCount >= 2 },
+    { id: "gear",     icon: "gear",     name: "Gear",           count: `${gearCount}/11`, full: gearCount === 11, done: gearCount === 11 },
+    { id: "idol",     icon: "idol",     name: "Idols",          count: `${idolCount} placed`, done: idolCount >= 1 },
+    { id: "blessing", icon: "blessing", name: "Blessings",      count: `${blessingCount}/5`, full: blessingCount === 5, done: blessingCount >= 1 },
   ];
 
   return (
@@ -94,6 +94,7 @@ function LeftPanel({ state, dispatch, collapsed, onToggleCollapsed }) {
             >
               <div className="context-icon"><Icon name={row.icon} size={15} /></div>
               <div className="context-name">{row.name}</div>
+              {row.done && <div className="context-check"><Icon name="check" size={12} color="var(--accent-gold)" stroke={2.4} /></div>}
               <div className={`context-count ${row.full ? "full" : ""}`}>{row.count}</div>
             </div>
           ))}

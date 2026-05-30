@@ -74,6 +74,15 @@ const Icon = ({ name, size = 16, color = "currentColor", stroke = 1.6 }) => {
     case "chevron-down": return (
       <svg {...props}><path d="M6 9l6 6 6-6" /></svg>
     );
+    case "check": return (
+      <svg {...props}><path d="M5 12l4 5L19 6" /></svg>
+    );
+    case "alert": return (
+      <svg {...props}><path d="M12 4l9 16H3z" /><path d="M12 10v5M12 18v0.5" /></svg>
+    );
+    case "minion": return (
+      <svg {...props}><circle cx="12" cy="8" r="3.5" /><path d="M6 21c0-4 2.5-7 6-7s6 3 6 7" /><path d="M9 11l-2 3M15 11l2 3" opacity="0.5" /></svg>
+    );
     case "save": return (
       <svg {...props}>
         <path d="M5 4h11l3 3v13H5z" />
