@@ -64,15 +64,25 @@ Matching logic for FR-23: filter by `mastery` exact match, then sort by count of
 
 ---
 
-## D. Optimization Orb — Design Intent
+## D. Optimization Orb — Design Implementation
 
-The orb is a premium feel moment, not a loading spinner. The intent:
-- Each checked section has a token: a small icon (tree icon for passive, gear icon for gear, etc.) that orbits the outer ring of the orb at a randomized speed and radius.
-- As backend analysis progresses, tokens are "absorbed" (animate inward, fade into the orb) one by one.
-- The orb itself glows gold, with a void-purple inner crystalline texture (matching the game's aesthetic).
-- Total animation budget: CSS/SVG preferred for performance; PixiJS is acceptable if the implementation team judges it easier to match the aesthetic.
+**Confirmed CSS-based** (from `CompleteOptimizer.jsx` in the Claude Design handoff). The orb is an overlay (`orb-overlay` full-screen div) containing:
 
-This does not need to be photorealistic — the Phase 3 design language (dark stone, gold, monospaced type) already establishes the right tone.
+- `orb-stage` — relative-positioned container, 280px
+- `orb-ring` — two concentric CSS rings (280px outer, 200px inner) with gold border animation
+- `orb-core` — central gold glowing circle
+- `orb-token` — one per checked section; positioned via `transform: translate(x, y)` on a circle of radius 130px. When `absorbed` (step > token index), transitions to `translate(0,0) scale(0.4)` — shrinks into the core. Each token shows the section icon + label.
+- `orb-status` — text block beneath with phrase, sub-text ("Analyzing N sections · X%"), and a progress bar fill
+
+Phrase sequence (canonical from code):
+1. "Ingesting build state…"
+2. "Evaluating passive efficiency…"
+3. "Scoring gear upgrade paths…"
+4. "Cross-referencing idol affixes…"
+5. "Weighing blessing timelines…"
+6. "Assembling narrative…"
+
+Timing: one token absorbed per 620ms interval. Total animation ~= (N sections + 2) × 620ms before results render.
 
 ---
 

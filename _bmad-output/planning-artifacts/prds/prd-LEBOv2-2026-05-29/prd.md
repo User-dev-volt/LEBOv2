@@ -281,7 +281,7 @@ While the Complete Build Optimization analysis runs (backend computation + Claud
 
 - A central orb renders in gold/void crystalline aesthetics.
 - Each checked section is represented by a token (icon + label) that orbits inward at a randomized rate, "absorbed" into the orb as that section's data is ingested.
-- A status text beneath the orb cycles through contextual phrases (e.g., "Evaluating passive efficiency…", "Scoring gear upgrade paths…", "Assembling narrative…").
+- A status text beneath the orb cycles through these phrases in order: "Ingesting build state…" → "Evaluating passive efficiency…" → "Scoring gear upgrade paths…" → "Cross-referencing idol affixes…" → "Weighing blessing timelines…" → "Assembling narrative…"
 - Animation is CSS/SVG or PixiJS — implementation team's choice, but must run at 60fps without blocking the IPC responses.
 
 **Consequences:**
@@ -593,7 +593,7 @@ On submit, the Tauri backend calls EHG's character API with the provided account
 
 1. **Parry mechanics** — Parry is present in the tunklab EHP calculator as a defensive layer. Does Parry exist as a player-accessible stat in Season 4, or is it enemy-only? If player-inaccessible, drop from FR-5. [Architecture team to verify against game data.]
 2. **Affix prefix/suffix discriminator** — `GearItemV2.affixes` currently has no prefix/suffix field (deferred from Phase 3). FR-28 (Affix Picker) and the gear scoring engine both need this. Is adding a `position: 'prefix' | 'suffix'` field to `GearAffixV2` the right fix, or does the architecture team prefer a separate `prefixes[]` + `suffixes[]` structure?
-3. **Optimization Orb implementation** — CSS/SVG vs PixiJS for the orb animation (FR-24). PixiJS is already loaded for the passive tree; using it for the orb avoids a second animation library but adds coupling. Architecture team to decide.
+3. ~~**Optimization Orb implementation**~~ — **Resolved:** CSS-based animation confirmed by the Claude Design implementation (`CompleteOptimizer.jsx`). Uses `.orb-overlay`, `.orb-ring`, `.orb-core`, `.orb-token` CSS classes. No PixiJS dependency for the orb.
 4. ~~**Complete Build Optimizer placement**~~ — **Resolved:** Header nav confirmed. The Complete Build Optimizer is a header nav item alongside Builder, Gear Optimization, and Settings (not a center-canvas tab).
 5. **Popular Builds Database curation workflow** — FR-42 requires manual curation per patch. Is there a scraping/automation approach worth exploring, or is manual curation the correct Phase 4 approach?
 6. **Idol AI suggestion scope** — FR-26 says the AI recommends idol placements including specific affix IDs and tiers. This requires the Claude payload to include the full idol database (or a filtered subset). Token budget implications for the optimization payload need architecture review.
