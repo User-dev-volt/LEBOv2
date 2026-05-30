@@ -1,6 +1,6 @@
 ---
 title: "LEBOv2 Phase 4 — Complete Build Tool"
-status: draft
+status: final
 created: 2026-05-29
 updated: 2026-05-30
 ---
@@ -9,7 +9,7 @@ updated: 2026-05-30
 
 ## 0. Document Purpose
 
-This PRD defines Phase 4 of the Last Epoch Build Optimizer (LEBO), a Tauri 2 desktop application (React + TypeScript frontend, Rust backend). It is written for the downstream architecture and epics/stories workflow. Phase 3 shipped a deterministic scoring engine, gear system, idol/blessing context, optimization suggestions, and a UI aligned to the Claude Design language. Phase 4 transforms LEBO from a capable companion tool into the definitive Last Epoch build tool — completing the stat engine to full game parity, adding Stat Source Attribution, replacing the partial optimizer with two purpose-built optimization flows, and shipping the full UI/UX from the Claude Design handoff. The Claude Design prototype (`_bmad-output/last-epoch-build-optimizer-UI-Handoff/`) is the primary UX reference and must be integrated seamlessly with the existing Tauri/PixiJS architecture. The Phase 3 architecture document at `_bmad-output/planning-artifacts/architecture.md` and epics at `_bmad-output/planning-artifacts/epics.md` are authoritative technical context.
+This PRD defines Phase 4 of the Last Epoch Build Optimizer (LEBO), a Tauri 2 desktop application (React + TypeScript frontend, Rust backend). It is written for the downstream architecture and epics/stories workflow. Phase 3 shipped a deterministic scoring engine, gear system, idol/blessing context, optimization suggestions, and a UI aligned to the Claude Design language. Phase 4 transforms LEBO from a capable companion tool into the definitive Last Epoch build tool. It completes the stat engine to full game parity, adds Stat Source Attribution, replaces the partial optimizer with two purpose-built optimization flows, and ships the full UI/UX from the Claude Design handoff. The Claude Design prototype (`_bmad-output/last-epoch-build-optimizer-UI-Handoff/`) is the primary UX reference and must be integrated seamlessly with the existing Tauri/PixiJS architecture. The Phase 3 architecture document at `_bmad-output/planning-artifacts/architecture.md` and epics at `_bmad-output/planning-artifacts/epics.md` are authoritative technical context.
 
 ---
 
@@ -59,6 +59,8 @@ Phase 4 is the version a player would pay for.
 - **Build** — A saved character configuration comprising class, mastery, passive node allocations, skill assignments and specialization nodes, gear, idols, blessings, and conditions.
 - **Modifier** — A single stat contribution with a value, type (flat / increased / more), and source.
 - **ModifierSource** — The identified origin of a Modifier: passive node name, gear slot + affix name, idol placement + affix name, blessing name, or condition name.
+- **Stable HP** — The Health value at equilibrium when a build uses Ward as a buffer: the HP floor the character stabilizes at once Ward generation and decay reach steady state.
+- **Evade / Dodge** — In Last Epoch these are the same mechanic. "Evade" is used colloquially; the game stat is Dodge Chance (%) and Dodge Rating. LEBO uses "Dodge" throughout.
 - **Stat Sheet** — The computed aggregate of all Modifiers for the active Build, displayed in the right panel across five tabs (General, Offense, Defense, Minion, Other).
 - **Stat Source Breakdown** — A tooltip displayed on any Stat Sheet row listing every ModifierSource contributing to that stat, showing name and contribution amount.
 - **Passive Tree Optimizer** — The single-domain optimization flow targeting passive node allocations only, constrained to the build's current unspent point budget.
@@ -107,9 +109,9 @@ The engine computes each of the following as an independent value:
 
 | Stat | Notes |
 |------|-------|
-| Health (raw), Health Regen, Health Leech | Sustain layer 1 |
+| Health (raw), Health Regen, Health Leech (Life Steal) | Sustain layer 1 |
 | Increased Healing Effectiveness | Multiplies all healing received |
-| Ward (current pool), Ward Retention (%), Ward Decay Threshold, Ward/sec | Sustain layer 2 |
+| Ward (current pool), Ward Retention (%), Ward Decay Threshold (displayed as flat HP value), Ward/sec | Sustain layer 2 |
 | Armor, Armor Mitigation (%) | Physical hit reduction |
 | Endurance (%), Endurance Threshold | Reduces all damage below threshold |
 | Dodge Chance (%), Dodge Rating | Hit avoidance |
@@ -132,13 +134,13 @@ EHP is computed as three separate values: **EHP vs Hits**, **EHP vs DoTs**, and 
 - EHP vs DoTs reflects that Dodge/Block do not reduce DoT damage.
 
 #### FR-7: Stable Ward computation
-Stable Ward is computed from: Ward Retention (%), Ward Decay Threshold, Ward generation per second, Health Regen, % Current Health Lost/sec, and % Missing Health → Ward/sec conversion (where present in passives/gear). Both Stable Ward and Stable HP at equilibrium are shown on the Defense tab.
+Stable Ward is computed from: Ward Retention (%), Ward Decay Threshold, Ward generation per second, Health Regen, % Current Health Lost/sec, and % Missing Health → Ward/sec conversion (where present in passives/gear). Both Stable Ward and Stable HP at equilibrium are shown on the Defense tab. [ASSUMPTION: % Current Health Lost/sec and % Missing Health → Ward/sec exist as parseable stats in the Season 4 game data]
 
 #### FR-8: Ailment stats
 The engine computes Bleed Chance, Ignite Chance, Poison Chance, Freeze Rate, Shock Chance, and Armor Shred Chance as separate offensive stats. Ailment avoidance (Chill immunity, Stun immunity, Bleed immunity) is computed as separate defensive stats. All appear in the Offense and Defense tabs respectively.
 
 #### FR-9: Attribute-derived stats
-Strength, Dexterity, Intelligence, and Attunement are tracked as primary stats. Attributes feed secondary stat calculations where the game specifies the conversion (e.g., Attunement → Ward per second on certain builds). Attribute totals appear on the General tab.
+Strength, Dexterity, Intelligence, and Attunement are tracked as primary stats and shown on the General tab. Phase 4 scope: attribute totals are computed from all sources (passives, gear, idols) and displayed. Direct attribute-to-secondary-stat conversion (e.g., every 8 Attunement → +1 Ward/sec) is implemented only where the conversion ratio exists in game data as a parseable rule. Complex per-class-subskill conversions are deferred to Phase 5. [ASSUMPTION: at least the well-known Attunement → Ward/sec and Strength → armor conversions are in game data in a parseable form]
 
 #### FR-10: Minion stats
 Minion Count, Minion Damage Multiplier, Minion HP Multiplier, and Minion Speed are computed from all sources. The Minion tab of the stat sheet is visible only for builds with at least one active minion skill assigned.
@@ -277,7 +279,7 @@ When the Active Skills section is checked and fewer than 2 skill slots are fille
 #### FR-24: Optimization Orb animation
 While the Complete Build Optimization analysis runs (backend computation + Claude narrative), a full-screen animated graphic occupies the center pane:
 
-- A central orb rendered in gold/void crystalline aesthetics.
+- A central orb renders in gold/void crystalline aesthetics.
 - Each checked section is represented by a token (icon + label) that orbits inward at a randomized rate, "absorbed" into the orb as that section's data is ingested.
 - A status text beneath the orb cycles through contextual phrases (e.g., "Evaluating passive efficiency…", "Scoring gear upgrade paths…", "Assembling narrative…").
 - Animation is CSS/SVG or PixiJS — implementation team's choice, but must run at 60fps without blocking the IPC responses.
@@ -329,7 +331,7 @@ Clicking an empty gear slot or "Swap item" on an equipped slot opens the Item Pi
 Clicking "Add Affix" or an existing affix row opens the Affix Picker Modal:
 
 - **Search bar:** Filters affixes by stat name in real time.
-- **Grouped list:** Affixes organized under Offense / Defense / Utility section headers. Each affix row shows: name, category tag (e.g., "Defense · max T7"), and the stat range across all tiers (min–max with unit).
+- **Grouped list:** Affixes organized under Offense / Defense / Utility section headers. Each affix row shows: name, category tag (e.g., "Defense · max T7"), stat range across all tiers (min–max with unit), and a one-line description of what the affix does (e.g., "Reduces damage taken from critical strikes"). The description must be present for every affix entry in the database.
 - **Tier selector:** When an affix is selected, a Tier Pip row appears showing T1–Tmax pips; clicking a pip sets the tier. The live value for the selected tier is displayed (e.g., "T5 → 48–64%").
 - **Apply button:** Adds or replaces the affix at the selected tier.
 
@@ -361,7 +363,11 @@ Items in the gear database are draggable onto paper-doll slots. Dragging an item
 An "Optimize Gear" button triggers the AI gear analysis:
 - The payload includes current gear configuration, build score, skill role designations, and archetype weights.
 - Results appear in a slide-in panel from the right edge showing ranked gear swap recommendations: current item → recommended item, `ΔBuildScore`, and Claude's mechanical reason per slot.
-- Recommendations include only items that exist in the gear database (no hallucinated items).
+- Recommendations include only items that exist in the bundled gear database. The optimization payload must include the relevant item catalog subset, and Claude's output is constrained to recommend only item IDs present in that payload.
+
+**Consequences:**
+- A gear recommendation that references an item ID not in the payload is rejected by the frontend before display.
+- If no database items represent a meaningful upgrade for a slot, that slot is omitted from the recommendation list rather than generating a placeholder suggestion.
 
 ---
 
@@ -378,7 +384,7 @@ The app header gains top-level navigation items: **Builder** | **Complete Build 
 The left panel is updated to:
 - **Active Build card:** Class glyph icon (gold, class-specific), build name, class · mastery subtitle.
 - **Class / Mastery selectors** (existing, restyled).
-- **Build Sections navigator:** A list of clickable rows for each center-canvas tab (Passive Tree, Weaver, Active Skills, Gear, Idols, Blessings), each showing its current fill count (e.g., "Gear — 8/11", "Blessings — 3/5"). Active tab is highlighted. Full sections show a gold checkmark. [ASSUMPTION: completion indicators are based on the same gates defined in FR-21]
+- **Build Sections navigator:** A list of clickable rows for each center-canvas tab (Passive Tree, Weaver, Active Skills, Gear, Idols, Blessings), each showing its current fill count (e.g., "Gear — 8/11", "Blessings — 3/5"). Active tab is highlighted. Completed sections show a gold checkmark. [ASSUMPTION: completion indicators are based on the same gates defined in FR-21]
 - **Save Build button** (gold when unsaved changes).
 - **Import Build Code** (collapsible).
 - **Saved Builds list** (existing, restyled).
@@ -404,6 +410,7 @@ The Idol tab renders a side-by-side layout:
 - **Left: Idol Grid** — 5×4 cell grid with placement rules. Empty cells show "+" on hover when an idol is selected from the tray. Occupied cells show the idol name (abbreviated) in a colored tile scaled to its shape. Clicking an occupied idol removes it.
 - **Right: Idol Tray** — Scrollable list of all available idol definitions from the idol database. Each entry shows a shape visualization (proportional rectangle with `W×H` label), idol name, and stat description. A filter input narrows the list. Clicking an idol in the tray selects it as the "placing" idol; subsequent grid cell hover shows a live placement preview overlay. A gold hint bar appears at the bottom of the tray while an idol is selected.
 - **Active Idol Stats summary** below the grid.
+- **Size-aware cell highlighting:** When an idol is selected from the tray, only cells where the idol physically fits (given its shape and the current grid occupancy) are highlighted as valid drop targets. Cells that would cause an overflow or collision are rendered in the invalid/greyed state and are not clickable while that idol is selected.
 
 **Consequences:**
 - The placement preview overlay shows which cells will be occupied before the user commits.
@@ -484,10 +491,9 @@ The Skills tab (center canvas) shows a full skill picker grid with icon, name, a
 - Gear Item Picker Modal and Affix Picker Modal (FR-27 through FR-29)
 - Gear Optimization Screen — three-column, drag-drop, AI analysis (FR-30 through FR-32)
 - Full UI/UX revamp per Claude Design (FR-33 through FR-39)
-- Complete skills + icons database (FR-40 through FR-43)
-- Multi-allocate fix: Shift+click fill, right-click remove-all (FR-44, FR-45)
-- Popular Builds Database (FR-42, FR-43)
+- Complete skills + icons database and Popular Builds Database (FR-40 through FR-43)
 - Skill suggestion flow from Popular Builds Database when < 2 skills assigned (FR-23)
+- Multi-allocate fix: Shift+click fill, right-click remove-all (FR-44, FR-45)
 
 ### 6.2 Out of Scope for MVP
 
@@ -517,7 +523,7 @@ The Skills tab (center canvas) shows a full skill picker grid with icon, name, a
 
 **Counter-metrics (do not optimize)**
 
-- **SM-C1:** Optimization orb animation does not delay result rendering — results must appear within 500ms of the backend returning data regardless of animation state. Counterbalances SM-4.
+- **SM-C1:** Optimization Orb animation does not delay result rendering — results must appear within 500ms of the backend returning data regardless of animation state. Counterbalances SM-4.
 - **SM-C2:** Stat Source Attribution must not increase `compute_stats` IPC round-trip time by more than 20ms. Counterbalances SM-1, SM-2.
 
 ---
@@ -527,7 +533,7 @@ The Skills tab (center canvas) shows a full skill picker grid with icon, name, a
 1. **Parry mechanics** — Parry is present in the tunklab EHP calculator as a defensive layer. Does Parry exist as a player-accessible stat in Season 4, or is it enemy-only? If player-inaccessible, drop from FR-5. [Architecture team to verify against game data.]
 2. **Affix prefix/suffix discriminator** — `GearItemV2.affixes` currently has no prefix/suffix field (deferred from Phase 3). FR-28 (Affix Picker) and the gear scoring engine both need this. Is adding a `position: 'prefix' | 'suffix'` field to `GearAffixV2` the right fix, or does the architecture team prefer a separate `prefixes[]` + `suffixes[]` structure?
 3. **Optimization Orb implementation** — CSS/SVG vs PixiJS for the orb animation (FR-24). PixiJS is already loaded for the passive tree; using it for the orb avoids a second animation library but adds coupling. Architecture team to decide.
-4. **Complete Build Optimizer placement** — FR-20 puts it in the header nav. Should it instead be a center-canvas tab (tab 7) to keep the header nav minimal? Alec confirmed header nav; flagging for architecture review given the panel collapse model.
+4. ~~**Complete Build Optimizer placement**~~ — **Resolved:** Header nav confirmed. The Complete Build Optimizer is a header nav item alongside Builder, Gear Optimization, and Settings (not a center-canvas tab).
 5. **Popular Builds Database curation workflow** — FR-42 requires manual curation per patch. Is there a scraping/automation approach worth exploring, or is manual curation the correct Phase 4 approach?
 6. **Idol AI suggestion scope** — FR-26 says the AI recommends idol placements including specific affix IDs and tiers. This requires the Claude payload to include the full idol database (or a filtered subset). Token budget implications for the optimization payload need architecture review.
 
@@ -536,6 +542,7 @@ The Skills tab (center canvas) shows a full skill picker grid with icon, name, a
 ## 9. Assumptions Index
 
 - **§4.1 / FR-5** — Parry is a player-accessible stat in Season 4. [See OQ-1]
+- **§4.1 / FR-7** — % Current Health Lost/sec and % Missing Health → Ward/sec exist as parseable stats in the Season 4 game data.
 - **§4.7 / FR-34** — Build Sections navigator completion indicators use the same gate thresholds as the Complete Build Optimizer (FR-21).
 - **§4.8 / FR-41** — Skill icons can be sourced from the same Rust icon pipeline established in Phase 2/3; no new icon pipeline work is required beyond expanding the source set.
 - **§6.2** — Attribute-to-secondary-stat full conversion tables are architecturally complex; attribute totals are shown but downstream conversion is deferred unless the architecture team judges it low-effort.
