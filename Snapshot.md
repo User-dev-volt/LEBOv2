@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-- Run `bmad-retrospective` in a fresh context window to analyze patterns in the Phase 3 deferred-work backlog and extract Phase 4 story candidates
+- Execute the surgical move: relocate Phase 3 artifacts to `_phase3-archive/` per the folder-by-folder list, then verify Phase 4 PRD references still resolve
 
 ---
 
