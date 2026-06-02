@@ -15,10 +15,13 @@ pub struct OffenseStats {
     pub aoe_modifier: f64,
     /// Stun chance %, clamped to [0, 100] (FR-2).
     pub stun_chance: f64,
-    /// Combined fire/cold/lightning penetration figure (sum of the three) (FR-4).
+    /// Combined fire/cold/lightning penetration figure (sum of the three, plus any generic
+    /// elemental penetration) (FR-4).
     pub elemental_penetration: f64,
     /// Physical penetration figure (FR-4).
     pub physical_penetration: f64,
+    /// Void penetration figure — Void is a modeled LE type with shipped pen sources (FR-4).
+    pub void_penetration: f64,
     /// Per-damage-type Increased%/More% breakdown, one entry per LE damage type
     /// in a fixed order (FR-1). Independent of the aggregate `damage_score`.
     pub damage_types: Vec<DamageTypeBreakdown>,

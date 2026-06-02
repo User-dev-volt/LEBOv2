@@ -1,6 +1,6 @@
 # Story 1.2: Offense stats — damage types, crit, speed, penetration
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -83,22 +83,22 @@ This story fills the `compute/offense.rs` and `compute/penetration.rs` modules t
 
 > **Why this is here:** the 2026-06-02 code review found AC4's penetration is *computed* but never *sourced* — no loader path produces any `*Penetration` StatKey, so `pen_mult` is always `1.0` in production. The negative-pen clamp was patched in review; the sourcing work below was deferred and is now folded back into this story. **Read the `### Review Findings` decision bullet and the `deferred-work.md` story-1.2 entry first — they contain the full constraint analysis.** Two hard constraints drive the task order below: (1) the loader is **one-stat + one-value per effect**, and (2) the dominant pen tags (Void/Holy/Chaos/Elemental) have **no StatKeys**.
 
-- [ ] **Task 9 — Multi-stat effect parser split (prerequisite, highest risk)** — `src-tauri/src/services/game_data_loader.rs` (`parse_node_effects`, `extract_value`)
-  - [ ] Today each effect entry → exactly one `StatKey` (`tags_to_stat_key`) + the **first** number (`extract_value`). A single effect like `"+4% Void Damage. +2% Void Penetration per point. +3% Crit Chance"` (one shared `tags` array `[VOID,DAMAGE,PENETRATION]`) must split into multiple modifiers — one per clause — each with its own stat key **and its own value parsed from that clause**.
-  - [ ] Note the data shape: the `tags` array is a **superset** spanning all clauses, so per-clause stat identification must parse the **description prose** (e.g. "Void Penetration" → `VoidPenetration`, "Void Damage" → `IncreasedVoidDamage`), not just the shared tags. Decide the segmentation approach (clause split on `". "` + per-clause keyword+value extraction) and document it.
-  - [ ] **Regression-guard:** single-stat nodes must parse byte-identically to today. Re-run the golden effect-count test after.
-- [ ] **Task 10 — Penetration StatKeys + model decisions** — `modifier.rs`, `compute/penetration.rs`, `stat_sheet.rs`, `statSheet.ts`
-  - [ ] Add the missing pen keys to cover the 7 modeled LE types (at minimum `VoidPenetration`; decide `Necrotic`/`Poison` for symmetry). Decide `ELEMENTAL` penetration handling (generic elemental key applied to fire/cold/lightning). Decide `HOLY`/`CHAOS` — not modeled LE types (same class as the dropped "Corruption"): map to nearest type or drop-with-doc. Record each decision in a code comment (the *why*).
-  - [ ] Extend `compute_penetration` to **filter `ModifierType`** (mirror the stun/crit `Flat` pattern — currently it sums all types) and fix the **hybrid multiplicative compounding** (a `["fire","physical"]` primary currently gets ×elem × ×phys on the whole aggregate → over-counts). The `.trim()` on the element match and the negative clamp are already handled.
-  - [ ] Keep AC4's spec contract: `elemental_penetration` (combined fire/cold/lightning) and `physical_penetration` stay surfaced on `OffenseStats`; mirror any new TS fields in snake_case.
-- [ ] **Task 11 — Loader `PENETRATION` mapping** — `game_data_loader.rs` (`tags_to_stat_key`)
-  - [ ] Add a `PENETRATION` branch mapping element tags → pen keys. After the Task 9 split, a DAMAGE+PENETRATION node's pen clause routes to a pen key while its damage clause stays a damage key (preserving aggregate parity for the damage portion).
-- [ ] **Task 12 — Golden rebaseline + Phase-3 parity** — `game_data_loader.rs` tests, `compute/mod.rs`
-  - [ ] Re-derive the golden effect-count (currently **179** — it will rise once pure-pen and split clauses are captured). Update the assertion with a comment explaining the new baseline and why it changed.
-  - [ ] Re-verify every Phase-3 offense/crit/build-score parity test stays byte-identical for **no-penetration** builds (those must not move).
-- [ ] **Task 13 — Tests + verify (AC: 4)**
-  - [ ] End-to-end: a pure-pen node sources a `*Penetration` modifier and scales `damage_score` for a matching primary; a multi-stat node split yields both a damage and a pen modifier; hybrid model behaves per the Task 10 decision.
-  - [ ] `cargo test -p scoring-core`, `cargo test -p lebo game_data_loader`, `pnpm build`, `pnpm vitest run` all green (no new failures beyond the documented 14-failure Story-1.1 baseline).
+- [x] **Task 9 — Multi-stat effect parser split (prerequisite, highest risk)** — `src-tauri/src/services/game_data_loader.rs` (`parse_node_effects`, `extract_value`)
+  - [x] **Segmentation approach (DECIDED — additive hybrid, not full clause-split):** `parse_node_effects` now emits up to two modifiers per effect entry. (1) The historical single-stat path (`tags_to_stat_key(tags)` + first-number `extract_value(whole desc)`) is preserved **verbatim** — so the damage clause of a `DAMAGE`+`PENETRATION` node parses byte-identically (#5 void-mastery → `IncreasedVoidDamage=4`, #2 sorcerer → `IncreasedDamage=4`). (2) A penetration modifier is added only when the effect carries a `PENETRATION` tag, parsed from the **pen clause prose** via new `parse_penetration_clause` (split on `". "`, find the clause containing "penetration", read its element + own value). This is lower-risk than splitting every clause — non-pen contributions are provably unchanged.
+  - [x] Per-clause value: the pen value is read from the pen clause (e.g. `+2%`), never the leading damage number (`+4%`). Element identified from the clause prose ("Void Penetration" → `VoidPenetration`), not the shared superset tags.
+  - [x] **Regression-guard:** single-stat (and the damage half of multi-stat) nodes parse byte-identically. Golden re-run: 185 (was 179).
+- [x] **Task 10 — Penetration StatKeys + model decisions** — `modifier.rs`, `compute/penetration.rs`, `stat_sheet.rs`, `statSheet.ts`
+  - [x] **Keys added:** `VoidPenetration` (sourced by void-erosion/void-mastery) and `ElementalPenetration` (sourced by sorcerer; folds into the elemental figure as it applies to fire/cold/lightning). **`Necrotic`/`Poison` pen NOT added** — no shipped node produces them; the project forbids unsourced (dead) StatKey variants. **`HOLY`/`CHAOS` dropped-with-doc** in `parse_penetration_clause` — not modeled LE types (same class as "Corruption"). Each decision recorded in code comments (the *why*).
+  - [x] `compute_penetration` now **filters `ModifierType::Flat`** (loader emits pen as `Flat`; mirrors crit/stun). **Hybrid compounding fixed:** channel multipliers are **averaged** (equal-split assumption), not multiplied — a `["fire","physical"]` primary no longer gets ×elem×phys on the whole aggregate. Negative clamp retained.
+  - [x] AC4 contract kept: `elemental_penetration` (fire/cold/lightning + generic elemental) and `physical_penetration` surfaced; added `void_penetration` (new field, mirrored to TS) since Void is a modeled type with shipped sources and now scales void-primary damage.
+- [x] **Task 11 — Loader `PENETRATION` mapping** — `game_data_loader.rs`
+  - [x] **Decision:** folded into the prose-based `parse_penetration_clause` rather than a `tags_to_stat_key` `PENETRATION` branch. A tags branch cannot work for the dominant `DAMAGE`+`PENETRATION` nodes — the `has("DAMAGE")` branch short-circuits to the damage key first, and `tags_to_stat_key` returns a single key, so the co-tagged pen clause is unreachable. The prose parser routes the pen clause to its pen key while the damage clause keeps its damage key (aggregate parity preserved). Documented in `parse_node_effects` doc comment.
+- [x] **Task 12 — Golden rebaseline + Phase-3 parity** — `game_data_loader.rs` tests, `compute/mod.rs`
+  - [x] Golden effect-count re-derived **179 → 185** (+6: sorcerer elemental, lightning-blast, void-erosion, void-mastery, forge-incandescent, forge-mastery; Holy/Chaos not counted). Assertion updated with a comment explaining the new baseline.
+  - [x] Every Phase-3 offense/crit/build-score parity test stays byte-identical (no-pen builds → multiplier 1.0). All green, unchanged expected values.
+- [x] **Task 13 — Tests + verify (AC: 4)**
+  - [x] End-to-end coverage: loader test `penetration_clause_parses_per_clause_value_and_element` (pure-pen sourcing, multi-stat damage+pen split, generic elemental, Holy/Chaos drop); compute test `void_penetration_scales_void_primary_damage` (×1.30 through `compute_stats`); penetration.rs `hybrid_primary_averages_channels_not_multiplies`, `void_penetration_applies_to_void_primary`, `increased_typed_pen_is_ignored`, `generic_elemental_pen_folds_into_the_elemental_figure`, `void_penetration_is_summed_separately`.
+  - [x] `cargo test -p scoring-core` → 88 passed; `cargo test -p lebo game_data_loader` → 3 passed (golden 185 + remap + pen); `pnpm build` → TS strict + vite OK; `pnpm vitest run` → 1026 passed / 14 failed (documented Story-1.1 baseline; no new failures).
 
 ## Dev Notes
 
@@ -217,17 +217,28 @@ claude-opus-4-8 (Amelia, BMAD dev-story workflow)
 - **Loader remap (AC1):** `tags_to_stat_key` now splits `POISON`/`NECROTIC` and routes `BLEED`→bleed, `IGNITE`→ignite, all inside the `has("DAMAGE")` branch (every branch returns `Some`), so the golden count is preserved by construction. Confirmed: 179 unchanged.
 - **TS mirror note for Story 1.6:** `DamageTypeBreakdown.damage_type` is a plain `string`. The existing `DAMAGE_TYPE_COLORS` map (in `rarityColors.ts`) keys on the Phase-1 `DamageType` union, which has `bleed` but **not** `necrotic`. The 1.6 UI will need a color token / mapping for `necrotic` (and to decide how to surface the Bleed/Ignite DoT split). No color/type-union changes made in this story (out of scope).
 
+#### Penetration sourcing pass (2026-06-02, Tasks 9–13 — second dev-story pass)
+
+- **Root cause closed (AC4 "applied to score"):** before this pass, no loader path produced any `*Penetration` StatKey, so `pen_mult` was always `1.0` in production. Penetration is now **sourced** from the 8 shipped penetration-tagged nodes.
+- **Parser design — additive hybrid (lowest-risk for parity):** `parse_node_effects` keeps the unchanged single-stat path (byte-identical pre-1.2 mapping) and *adds* a `Flat` penetration modifier for `PENETRATION`-tagged effects, parsed from the pen clause's own prose + value via `parse_penetration_clause`. Because the non-penetration contribution of every effect runs through the original code untouched, Phase-3 aggregate parity is preserved by construction — no existing expected value moved.
+- **Sourced (6 nodes, +6 to golden 179→185):** mage sorcerer-mastery (`ElementalPenetration=2`), mage lightning-blast (`LightningPenetration=5`), sentinel void-erosion (`VoidPenetration=3`), void-mastery (`VoidPenetration=2`), forge-incandescent (`FirePenetration=3`), forge-mastery (`FirePenetration=2`). **Dropped-with-doc:** acolyte warlock (`Chaos`) and sentinel paladin (`Holy`) — not modeled LE types (same class as "Corruption"); their effect count is unchanged (no pen modifier added).
+- **New StatKeys:** `VoidPenetration`, `ElementalPenetration` — both produced (loader) AND consumed (compute), satisfying the no-dead-keys rule. `Necrotic`/`Poison` penetration deliberately **not** added (no shipped source).
+- **compute_penetration hardening:** now filters `ModifierType::Flat` (loader emits pen as `Flat`; an `Increased` value is not a pen figure and is ignored). Returns `(elemental, physical, void)`; elemental folds in the generic `ElementalPenetration`. `penetration_multiplier` gained a **void channel** and now **averages** applicable channel multipliers for hybrid primaries instead of multiplying them (fixes the `["fire","physical"]` over-count flagged in review). Negative clamp retained.
+- **New field:** `OffenseStats.void_penetration` (+ `statSheet.ts` mirror) — Void is a modeled LE type with shipped sources and now scales void-primary damage end-to-end through `compute_stats`.
+- **Verification:** `cargo test -p scoring-core` 88/88; `cargo test -p lebo game_data_loader` 3/3 (golden 185); `pnpm build` strict OK; `pnpm vitest run` 1026 pass / 14 pre-existing Story-1.1 baseline failures (no new).
+- **Review action items resolved:** the AC4 "computed but not sourced" decision item and the two sub-issues that rode along with it (`compute_penetration` `ModifierType` filter; hybrid multiplicative over-count) are now addressed. The `DAMAGE`+`PENETRATION` mis-scoring deferral is resolved for the pen portion (damage portion intentionally unchanged for parity).
+
 ### File List
 
-- `lebo/src-tauri/scoring-core/src/modifier.rs` — `StatKey`: added `IncreasedNecroticDamage`, `IncreasedBleedDamage`, `IncreasedIgniteDamage`, `StunChance`.
-- `lebo/src-tauri/scoring-core/src/stat_sheet.rs` — extended `OffenseStats`; added `DamageTypeBreakdown`.
+- `lebo/src-tauri/scoring-core/src/modifier.rs` — `StatKey`: added `IncreasedNecroticDamage`, `IncreasedBleedDamage`, `IncreasedIgniteDamage`, `StunChance`; **(pen pass)** added `VoidPenetration`, `ElementalPenetration` with a decision comment.
+- `lebo/src-tauri/scoring-core/src/stat_sheet.rs` — extended `OffenseStats`; added `DamageTypeBreakdown`; **(pen pass)** added `void_penetration` field.
 - `lebo/src-tauri/scoring-core/src/lib.rs` — exported `DamageTypeBreakdown`.
-- `lebo/src-tauri/scoring-core/src/compute/offense.rs` — per-type breakdown, stun chance, new keys in `DAMAGE_STAT_KEYS`, `increased_and_more` helper, co-located tests.
-- `lebo/src-tauri/scoring-core/src/compute/penetration.rs` — `compute_penetration` + `penetration_multiplier`, co-located tests.
-- `lebo/src-tauri/scoring-core/src/compute/mod.rs` — wired penetration into `compute_stats`; added penetration parity/linearity tests.
-- `lebo/src-tauri/src/services/game_data_loader.rs` — `tags_to_stat_key` remap (Necrotic/Poison split, Bleed, Ignite); added `damage_tag_remap_lands_on_new_keys` test.
-- `lebo/src/shared/types/statSheet.ts` — mirrored new `OffenseStats` fields + `DamageTypeBreakdown` interface.
-- `lebo/src/features/stat-sheet/StatSheetPanel.test.tsx` — extended `makeStatSheet()` offense literal with new fields.
+- `lebo/src-tauri/scoring-core/src/compute/offense.rs` — per-type breakdown, stun chance, new keys in `DAMAGE_STAT_KEYS`, `increased_and_more` helper, co-located tests; **(pen pass)** default `void_penetration: 0.0` in the struct literal.
+- `lebo/src-tauri/scoring-core/src/compute/penetration.rs` — `compute_penetration` + `penetration_multiplier`, co-located tests; **(pen pass)** `Flat` filter, elemental folds generic elemental pen, returns `(elem, phys, void)`, void channel + hybrid averaging in `penetration_multiplier`, 5 new tests.
+- `lebo/src-tauri/scoring-core/src/compute/mod.rs` — wired penetration into `compute_stats`; penetration parity/linearity tests; **(pen pass)** 3-tuple/4-arg call sites + `void_penetration_scales_void_primary_damage` test.
+- `lebo/src-tauri/src/services/game_data_loader.rs` — `tags_to_stat_key` remap (Necrotic/Poison split, Bleed, Ignite); `damage_tag_remap_lands_on_new_keys` test; **(pen pass)** rewrote `parse_node_effects` (additive hybrid), added `parse_penetration_clause`, golden 179→185 with comment, added `penetration_clause_parses_per_clause_value_and_element` test.
+- `lebo/src/shared/types/statSheet.ts` — mirrored new `OffenseStats` fields + `DamageTypeBreakdown` interface; **(pen pass)** added `void_penetration`.
+- `lebo/src/features/stat-sheet/StatSheetPanel.test.tsx` — extended `makeStatSheet()` offense literal with new fields; **(pen pass)** added `void_penetration: 0`.
 
 ## Change Log
 
@@ -235,6 +246,7 @@ claude-opus-4-8 (Amelia, BMAD dev-story workflow)
 |------|--------|
 | 2026-06-02 | Story 1.2 created (ready-for-dev): offense per-damage-type increased/more + stun + penetration, StatKey/OffenseStats extension, loader Necrotic/Bleed remap, TS type mirror. Decisions: model 7 real LE damage types with DoT split (Bleed/Ignite/Poison as DoT variants, drop "Corruption"); penetration via real LE linear mechanic against a 0%-resistance reference target (`damage × (1 + pen/100)`), which preserves Phase-3 parity for no-penetration builds. |
 | 2026-06-02 | Story 1.2 implemented (review): added `IncreasedNecroticDamage`/`IncreasedBleedDamage`/`IncreasedIgniteDamage`/`StunChance` keys; per-type `damage_types` breakdown with Ignite/Bleed DoT split; stun chance; `compute/penetration.rs` (linear, 0% reference target); loader tag remap (golden count 179 preserved); TS mirror. StunChance modeled but not loader-wired (would break golden count). Verified: scoring-core 81/81, loader golden+remap green, TS strict build green, vitest 1026 pass / 14 pre-existing baseline failures (no new). |
+| 2026-06-02 | Penetration sourcing (Tasks 9–13, 2nd dev pass): closed AC4 "applied to score". Additive-hybrid parser split (`parse_node_effects` keeps the byte-identical single-stat path; `parse_penetration_clause` adds a `Flat` pen modifier from the pen clause's prose for `PENETRATION`-tagged effects). Added `VoidPenetration`/`ElementalPenetration` StatKeys (produced+consumed); dropped Holy/Chaos with doc; Necrotic/Poison pen not added. `compute_penetration` filters `Flat`, folds generic elemental, returns `(elem,phys,void)`; `penetration_multiplier` adds a void channel and averages hybrid channels (fixes over-count). Added `OffenseStats.void_penetration` (+ TS). Golden 179→185 (6 sourced pen nodes). Verified: scoring-core 88/88, loader 3/3, TS strict build green, vitest 1026 pass / 14 pre-existing baseline (no new). |
 
 ## Review Findings
 

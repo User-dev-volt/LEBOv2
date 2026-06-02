@@ -25,13 +25,15 @@ pub fn compute_stats(
     // Penetration scales the scored damage of the build's primary type(s) against a
     // 0%-resistance reference target. No-penetration builds get multiplier 1.0, so the
     // aggregate damage_score stays byte-identical to Phase 3. (See penetration.rs.)
-    let (elemental_pen, physical_pen) = penetration::compute_penetration(&registry, active);
+    let (elemental_pen, physical_pen, void_pen) = penetration::compute_penetration(&registry, active);
     offense.elemental_penetration = elemental_pen;
     offense.physical_penetration = physical_pen;
+    offense.void_penetration = void_pen;
     let pen_mult = penetration::penetration_multiplier(
         &snapshot.primary_offense_damage_elements,
         elemental_pen,
         physical_pen,
+        void_pen,
     );
     offense.damage_score *= pen_mult;
     offense.avg_hit_damage *= pen_mult;
@@ -383,6 +385,44 @@ mod tests {
             sheet.offense.damage_score
         );
         assert!((sheet.offense.elemental_penetration - 50.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn void_penetration_scales_void_primary_damage() {
+        // 100% increased void (aggregate 200) + 30% void penetration on a void-primary build
+        // → ×1.30 → 260. Exercises the void channel end-to-end through compute_stats (the
+        // sourced pen would arrive as Flat from the loader; modeled here directly).
+        let mut node_effects = HashMap::new();
+        node_effects.insert(
+            "void_dmg".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::IncreasedVoidDamage,
+                modifier_type: ModifierType::Increased,
+                value: 100.0,
+                condition: Condition::Always,
+            }],
+        );
+        node_effects.insert(
+            "void_pen".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::VoidPenetration,
+                modifier_type: ModifierType::Flat,
+                value: 30.0,
+                condition: Condition::Always,
+            }],
+        );
+        let game_data = make_game_data_with_effects(node_effects);
+        let mut snapshot = snapshot_at(50);
+        snapshot.primary_offense_damage_elements = vec!["void".to_string()];
+        snapshot.node_allocations.insert("void_dmg".to_string(), 1);
+        snapshot.node_allocations.insert("void_pen".to_string(), 1);
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        assert!(
+            (sheet.offense.damage_score - 260.0).abs() < 0.01,
+            "expected 260 (200 × 1.30), got {}",
+            sheet.offense.damage_score
+        );
+        assert!((sheet.offense.void_penetration - 30.0).abs() < 1e-9);
     }
 
     // --- Crit tests ---

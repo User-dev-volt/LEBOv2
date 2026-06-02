@@ -174,6 +174,7 @@ pub(super) fn compute_offense(registry: &ModifierRegistry, active: &[String]) ->
         // orchestrator (it owns the build's primary-element context); default here.
         elemental_penetration: 0.0,
         physical_penetration: 0.0,
+        void_penetration: 0.0,
         damage_types,
     }
 }

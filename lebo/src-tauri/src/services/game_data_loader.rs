@@ -186,26 +186,88 @@ pub fn build_scoring_game_data(app_handle: &tauri::AppHandle) -> Result<GameData
 }
 
 /// Converts `RawGameNode.effects` + the node's `modifier_type` string into scoring-core `NodeEffect`s.
-/// One `RawGameNode` can have multiple effects. Each maps to one `NodeEffect`.
+/// One `RawGameNode` effect entry can yield **multiple** `NodeEffect`s.
 /// Unknown tag combinations produce no effect (node silently contributes nothing — FR-A6 fallback).
+///
+/// Each effect entry contributes up to two modifiers:
+///  1. The historical **single-stat** mapping: `tags_to_stat_key(tags)` + the first number in
+///     the whole description (`extract_value`). This path is byte-identical to pre-1.2 behaviour,
+///     so every non-penetration effect — including the damage clause of a `DAMAGE`+`PENETRATION`
+///     node — parses exactly as before and the Phase-3 aggregate parity is preserved by construction.
+///  2. An **additive penetration** modifier, emitted only when the effect carries a `PENETRATION`
+///     tag. Penetration cannot ride on `tags_to_stat_key`: the dominant pen nodes are co-tagged
+///     `DAMAGE` (the `has("DAMAGE")` branch short-circuits to the damage key first) and the shared
+///     `tags` array is a superset spanning every clause, so it cannot distinguish the pen clause
+///     from the damage clause. Instead `parse_penetration_clause` reads the description **prose**
+///     (e.g. "Void Penetration" → `VoidPenetration`) and parses that clause's own value.
 fn parse_node_effects(
     effects: &[crate::models::game_data::NodeEffect],
     node_modifier_type: &Option<String>,
 ) -> Vec<NodeEffect> {
     let modifier_type = ModifierType::from_data_str(node_modifier_type.as_deref());
-    effects
-        .iter()
-        .filter_map(|e| {
-            let stat_key = tags_to_stat_key(&e.tags, &modifier_type)?;
-            let value = extract_value(&e.description)?;
-            Some(NodeEffect {
-                stat_key,
-                modifier_type: modifier_type.clone(),
-                value,
-                condition: Condition::Always,
-            })
-        })
-        .collect()
+    let mut out: Vec<NodeEffect> = Vec::new();
+    for e in effects {
+        // (1) Unchanged single-stat path — byte-identical to pre-1.2 parsing.
+        if let Some(stat_key) = tags_to_stat_key(&e.tags, &modifier_type) {
+            if let Some(value) = extract_value(&e.description) {
+                out.push(NodeEffect {
+                    stat_key,
+                    modifier_type: modifier_type.clone(),
+                    value,
+                    condition: Condition::Always,
+                });
+            }
+        }
+        // (2) Additive penetration sourcing (prose-based; only for PENETRATION-tagged effects).
+        if e.tags.iter().any(|t| t.eq_ignore_ascii_case("PENETRATION")) {
+            if let Some(pen) = parse_penetration_clause(&e.description) {
+                out.push(pen);
+            }
+        }
+    }
+    out
+}
+
+/// Parses the penetration clause of an effect description into a `Flat` penetration `NodeEffect`.
+/// Returns `None` when the clause's element is not a modeled LE penetration type (Holy/Chaos are
+/// dropped — they are not modeled types, same class as "Corruption"; Necrotic/Poison have no key).
+///
+/// Penetration is always `Flat`: it is an additive percentage subtracted from enemy resistance,
+/// not an "increased" multiplier on a base. The shipped pen nodes carry `modifierType: "increased"`
+/// for their *damage* clause, so we must force `Flat` here — `compute_penetration` filters `Flat`
+/// (mirroring the crit/stun pattern), and a naive `Increased` value would be silently ignored.
+fn parse_penetration_clause(description: &str) -> Option<NodeEffect> {
+    // The pen clause is the sentence-fragment mentioning "penetration". Descriptions separate
+    // clauses with ". " (e.g. "+4% Void Damage. +2% Void Penetration per point. ..."). For a
+    // single-clause pure-pen node the whole string is the clause.
+    let clause = description
+        .split(". ")
+        .find(|c| c.to_ascii_lowercase().contains("penetration"))?;
+    let lower = clause.to_ascii_lowercase();
+    // Specific elements before the generic "elemental" keyword (no clause carries both).
+    let stat_key = if lower.contains("fire") {
+        StatKey::FirePenetration
+    } else if lower.contains("cold") {
+        StatKey::ColdPenetration
+    } else if lower.contains("lightning") {
+        StatKey::LightningPenetration
+    } else if lower.contains("void") {
+        StatKey::VoidPenetration
+    } else if lower.contains("physical") {
+        StatKey::PhysicalPenetration
+    } else if lower.contains("elemental") {
+        StatKey::ElementalPenetration
+    } else {
+        // holy / chaos / necrotic / poison / unqualified → not a modeled pen type → dropped.
+        return None;
+    };
+    let value = extract_value(clause)?;
+    Some(NodeEffect {
+        stat_key,
+        modifier_type: ModifierType::Flat,
+        value,
+        condition: Condition::Always,
+    })
 }
 
 /// Maps tag arrays to a `StatKey`. Returns `None` for unknown/unmapped combinations.
@@ -512,14 +574,21 @@ mod tests {
     /// A change to this golden number means parser behavior (or the data) changed.
     #[test]
     fn shipped_class_json_effect_count_is_stable() {
-        // Captured from the shipped data set (5 classes). All shipped modifierType values are
-        // lowercase ("flat" | "increased" | "more"), so from_data_str maps them identically to the
-        // pre-migration parse_modifier_type — this count is unchanged by the migration.
-        const GOLDEN_EFFECT_COUNT: usize = 179;
+        // Baseline history:
+        //   179 — Story 1.1 migration / 1.2 first pass (single stat + first value per effect).
+        //   185 — Story 1.2 penetration sourcing (Tasks 9-13): each PENETRATION-tagged effect now
+        //         ALSO emits an additive Flat penetration modifier parsed from its own clause. Six
+        //         shipped nodes gained a pen modifier: mage sorcerer (elemental) + lightning-blast
+        //         (lightning), sentinel void-erosion/void-mastery (void) + forge-incandescent/
+        //         forge-mastery (fire). The two Holy/Chaos pen nodes are NOT counted — those types
+        //         are not modeled (dropped at parse_penetration_clause), so their effect count is
+        //         unchanged. Every non-penetration effect still parses byte-identically (path 1 in
+        //         parse_node_effects is the unchanged pre-1.2 mapping), preserving aggregate parity.
+        const GOLDEN_EFFECT_COUNT: usize = 185;
         let total = total_parsed_effects();
         assert_eq!(
             total, GOLDEN_EFFECT_COUNT,
-            "shipped-data node-effect count drifted from the pre-migration baseline"
+            "shipped-data node-effect count drifted from the Story-1.2 penetration-sourcing baseline"
         );
     }
 
@@ -553,5 +622,76 @@ mod tests {
         );
         // A DoT tag without DAMAGE is still dropped (no spurious key, count preserved).
         assert_eq!(tags_to_stat_key(&["BLEED".to_string()], &inc), None);
+    }
+
+    /// Task 9/10/11 (penetration sourcing). Single-clause pure-pen, multi-clause split,
+    /// generic ELEMENTAL, and the not-modeled HOLY/CHAOS drop are all exercised here.
+    /// Every penetration modifier the parser emits must be `Flat` (compute_penetration filters Flat).
+    #[test]
+    fn penetration_clause_parses_per_clause_value_and_element() {
+        use crate::models::game_data::NodeEffect as RawEffect;
+        let parse = |desc: &str, tags: &[&str]| {
+            parse_node_effects(
+                &[RawEffect {
+                    description: desc.to_string(),
+                    tags: tags.iter().map(|s| s.to_string()).collect(),
+                }],
+                &Some("increased".to_string()),
+            )
+        };
+        let pen_of = |effects: &[NodeEffect]| -> Option<(StatKey, f64, ModifierType)> {
+            effects
+                .iter()
+                .find(|e| {
+                    matches!(
+                        e.stat_key,
+                        StatKey::FirePenetration
+                            | StatKey::ColdPenetration
+                            | StatKey::LightningPenetration
+                            | StatKey::VoidPenetration
+                            | StatKey::ElementalPenetration
+                            | StatKey::PhysicalPenetration
+                    )
+                })
+                .map(|e| (e.stat_key.clone(), e.value, e.modifier_type.clone()))
+        };
+
+        // Single-clause pure-pen node (no DAMAGE tag): today dropped, now sources the pen key.
+        let lightning = parse("+5% Lightning Penetration per point.", &["LIGHTNING", "PENETRATION"]);
+        assert_eq!(lightning.len(), 1, "pure-pen node yields exactly the pen modifier");
+        assert_eq!(
+            pen_of(&lightning),
+            Some((StatKey::LightningPenetration, 5.0, ModifierType::Flat))
+        );
+
+        // Multi-clause DAMAGE+PENETRATION node: damage clause keeps its key+value (parity),
+        // pen clause is sourced from its own clause value (2, not the leading 4).
+        let void = parse(
+            "+4% Void Damage. +2% Void Penetration per point. Void skills have +1% reduced cooldown.",
+            &["VOID", "DAMAGE", "PENETRATION", "MASTERY"],
+        );
+        assert_eq!(void.len(), 2, "damage + pen modifiers");
+        assert!(void.iter().any(|e| e.stat_key == StatKey::IncreasedVoidDamage && e.value == 4.0));
+        assert_eq!(pen_of(&void), Some((StatKey::VoidPenetration, 2.0, ModifierType::Flat)));
+
+        // Generic ELEMENTAL penetration → ElementalPenetration; damage clause stays generic.
+        let elemental = parse(
+            "+4% Elemental Damage. +2% Elemental Penetration. +3% Crit Chance per point.",
+            &["ELEMENTAL", "DAMAGE", "PENETRATION", "MASTERY"],
+        );
+        assert_eq!(pen_of(&elemental), Some((StatKey::ElementalPenetration, 2.0, ModifierType::Flat)));
+        assert!(elemental.iter().any(|e| e.stat_key == StatKey::IncreasedDamage && e.value == 4.0));
+
+        // HOLY / CHAOS are not modeled LE pen types → pen clause dropped (no pen modifier).
+        let holy = parse(
+            "+4% Holy Damage. +3% Block Chance. +2% Holy Penetration per point.",
+            &["HOLY", "BLOCK", "PENETRATION", "MASTERY"],
+        );
+        assert_eq!(pen_of(&holy), None, "Holy penetration must be dropped");
+        let chaos = parse(
+            "+4% Chaos Damage. +3% DoT Damage. +2% Chaos Penetration per point.",
+            &["CHAOS", "DOT", "PENETRATION", "MASTERY"],
+        );
+        assert_eq!(pen_of(&chaos), None, "Chaos penetration must be dropped");
     }
 }

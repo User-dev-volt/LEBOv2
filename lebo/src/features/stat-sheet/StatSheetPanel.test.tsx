@@ -33,6 +33,7 @@ function makeStatSheet(overrides: Partial<StatSheet> = {}): StatSheet {
       stun_chance: 0,
       elemental_penetration: 0,
       physical_penetration: 0,
+      void_penetration: 0,
       damage_types: [],
     },
     defense: {

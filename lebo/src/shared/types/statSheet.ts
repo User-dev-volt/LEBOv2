@@ -22,6 +22,7 @@ export interface OffenseStats {
   stun_chance: number
   elemental_penetration: number
   physical_penetration: number
+  void_penetration: number
   damage_types: DamageTypeBreakdown[]
 }
 

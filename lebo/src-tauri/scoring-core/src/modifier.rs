@@ -63,10 +63,16 @@ pub enum StatKey {
     // Mana
     MaxMana,
     ManaRegenPerSec,
-    // Penetration
+    // Penetration. Void is a modeled LE type with shipped pen sources; Elemental is a
+    // generic pen that applies across fire/cold/lightning. Necrotic/Poison penetration
+    // keys are intentionally omitted — no shipped node produces them, and the project
+    // forbids StatKey variants that are never sourced (dead keys). Holy/Chaos penetration
+    // are dropped at the loader (not modeled LE types — same class as "Corruption").
     FirePenetration,
     ColdPenetration,
     LightningPenetration,
+    VoidPenetration,
+    ElementalPenetration,
     PhysicalPenetration,
     // Ailments (Phase 4 placeholders)
     IgniteDuration,
