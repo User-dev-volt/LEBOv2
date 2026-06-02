@@ -405,6 +405,8 @@ So that the stat sheet covers ailment and minion builds, not just direct-hit bui
 **When** `compute_stats` runs
 **Then** Bleed/Ignite/Poison/Freeze/Shock/Armor Shred Chance appear as offense stats and Chill/Stun/Bleed immunity appear as defense avoidance stats (FR-8).
 
+> **Dev note (from Story 1.2):** Stun **Chance** (offense) is already computed — `StatKey::StunChance` + `OffenseStats.stun_chance` exist and are summed/clamped — but it has **no data source wired**. The only `STUN`-tagged passive node (`["BLOCK","MELEE","STUN"]`, Shield Bash) carries a *damage* value plus a described "apply Stun" mechanic, not a numeric stun-chance %, so the loader correctly drops it (mapping it would break the golden effect-count of 179). It surfaces `0` until a real source exists. **This story (or Epic 4 gear) should decide where stun-chance data comes from:** a gear/idol affix carries an explicit `stat_key`, so a "+X% Stun Chance" affix flows into `StunChance` with **zero loader changes** — that's the cleanest source. Also reconcile that FR-2 frames stun as an *offense chance* while FR-8 lists Stun on the *defense/immunity* side; both can coexist (stun chance dealt vs. stun avoidance taken).
+
 **Given** attribute sources across passives/gear/idols
 **When** `compute_stats` runs
 **Then** Str/Dex/Int/Att totals are computed and shown on the General tab, and attribute→secondary-stat conversion is applied only where a parseable ratio exists in game data (complex per-class conversions deferred to Phase 5) (FR-9).
