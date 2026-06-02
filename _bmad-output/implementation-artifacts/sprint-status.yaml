@@ -1,5 +1,5 @@
 # generated: 2026-06-02
-# last_updated: 2026-06-02 (1-2 → in-progress, code review: AC4 pen sourcing deferred)
+# last_updated: 2026-06-02 (1-2 → ready-for-dev, code review: AC4 pen sourcing re-opened as Tasks 9-13)
 # project: LEBOv2
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-02
-last_updated: 2026-06-02 (1-2 → in-progress, code review: AC4 pen sourcing deferred)
+last_updated: 2026-06-02 (1-2 → ready-for-dev, code review: AC4 pen sourcing re-opened as Tasks 9-13)
 project: LEBOv2
 project_key: NOKEY
 tracking_system: file-system
@@ -45,7 +45,7 @@ development_status:
   # Epic 1: Complete Stat Sheet & Source Attribution
   epic-1: in-progress
   1-1-modifiertype-enum-migration-and-compute-module-split: done
-  1-2-offense-stats-damage-types-crit-speed-penetration: in-progress
+  1-2-offense-stats-damage-types-crit-speed-penetration: ready-for-dev
   1-3-defensive-layer-computation: backlog
   1-4-ehp-triple-and-stable-ward-hp-equilibrium: backlog
   1-5-ailment-attribute-and-minion-stats: backlog
