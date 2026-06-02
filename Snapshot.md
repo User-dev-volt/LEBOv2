@@ -9,7 +9,7 @@
 
 **Phase:** `Planning`
 **Health:** `On Track`
-**Last Touched:** `2026-06-01`
+**Last Touched:** `2026-06-02`
 
 ---
 
@@ -22,7 +22,8 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Run `[CA]`
+- Validate the regenerated Phase 4 `architecture.md` against the Phase 4 PRD addendum (spot-check critical decisions: Stat Source Attribution flow, Complete Optimizer prototype integration, deferred-work elevation)
+- Trigger the next phase workflow: `bm
 
 ---
 

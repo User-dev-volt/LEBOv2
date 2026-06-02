@@ -1,19 +1,34 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
 status: complete
-completedAt: '2026-05-20'
+completedAt: '2026-06-02'
+phase: 'Phase 4 — Complete Build Tool'
+project_name: 'LEBOv2'
+user_name: 'Alec'
+date: '2026-06-02'
+supersedes: 'Phase 3 epics (frozen at _bmad-output/_phase3-archive/planning-artifacts/epics.md)'
 inputDocuments:
-  - '_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/prd.md'
-  - '_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/addendum.md'
+  - '_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-29/prd.md'
+  - '_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-29/addendum.md'
   - '_bmad-output/planning-artifacts/architecture.md'
+  - '_bmad-output/last-epoch-build-optimizer-UI-Handoff/ (Claude Design prototype)'
+  - '_bmad-output/implementation-artifacts/deferred-work.md'
   - '_bmad-output/project-context.md'
 ---
 
-# LEBOv2 - Epic Breakdown
+# LEBOv2 Phase 4 — Epic Breakdown
 
 ## Overview
 
-This document provides the complete epic and story breakdown for LEBOv2 Phase 3, decomposing the requirements from the PRD, Architecture, and Addendum into implementable stories. Phase 3 transforms LEBO from a polished companion app into the definitive Last Epoch build tool through three transformations: a deterministic scoring engine, a gear optimization screen, and full visual fidelity matching the game aesthetic.
+This document is the complete epic and story breakdown for **LEBOv2 Phase 4 — Complete Build Tool**, decomposing the requirements from the Phase 4 PRD (`prd-LEBOv2-2026-05-29`), its addendum, and the Phase 4 architecture into implementable stories with full acceptance criteria.
+
+Phase 4 transforms LEBO from a capable companion tool into the definitive Last Epoch build tool. It completes the stat engine to full game parity, adds Stat Source Attribution, replaces the partial optimizer with two purpose-built optimization flows (surgical passive-tree optimizer + holistic Complete Build Optimizer), ships the full Claude Design UI/UX, and adds character import from local save files.
+
+**Brownfield.** Every subsystem extends Phase 3 — the `scoring-core` crate, the IPC surface, the four Zustand stores, the Modifier Registry, and the `ClassModule` trait are all extended, not replaced. The Phase 3 architecture stands as the technical foundation; this breakdown covers only the ten Phase 4 subsystems.
+
+**Two critical-path data gates** precede most parallel work (mirroring how Epic G gated Phase 3):
+1. **Gate 1 — affix `position` discriminator** (D-P4-2): unblocks the gear pickers and correct suffix-side gear scoring.
+2. **Gate 2 — `ModifierType` serde enum migration** (D-P4-1): prerequisite for all `compute/*` stat-engine work.
 
 ---
 
@@ -21,1351 +36,1088 @@ This document provides the complete epic and story breakdown for LEBOv2 Phase 3,
 
 ### Functional Requirements
 
-**Section A — Deterministic Scoring Engine**
-
-FR-A1: The app computes a `DamageScore` using the Last Epoch damage formula: `Base × (1 + Σ Increased%) × Π More%` where Increased modifiers are summed additively and More modifiers are applied multiplicatively in sequence.
-
-FR-A2: The app computes crit-weighted average damage as: `Hit × [(CritMulti × CritChance) + (1 × (1 - CritChance))]` where `CritMulti = 200% + Σ AdditionalCritMulti%` and `CritChance` is capped at 100%.
-
-FR-A3: The app computes a `SurvivabilityScore` as effective HP: `HP × (1 + WardRatio) × EnduranceReduction`, with a bonus multiplier for each active defensive layer beyond 2 (endurance, Ward, resistances capped, crit avoidance capped, sustain layer).
-
-FR-A4: The app computes a `SpeedScore` from: movement speed %, attack/cast speed, and AoE coverage modifier.
-
-FR-A5: The app combines scores into a composite `BuildScore = w_dmg × DamageScore + w_surv × SurvivabilityScore + w_speed × SpeedScore` using archetype weights derived from the Glass Cannon ↔ Juggernaut slider position and fine-tune overrides.
-
-FR-A6: Every passive node effect and every affix entry in the game data includes a `modifierType` field: `"increased"`, `"more"`, or `"flat"`. This annotation drives the scoring engine — `"more"` modifiers apply multiplicatively, `"increased"` additively. Without this field the scoring engine falls back to treating the modifier as `"increased"`.
-
-FR-A7: Before generating any optimization suggestion, the app performs a defensive floor check on the current build: (1) All elemental resistances ≥ 75% (cap), (2) Crit avoidance ≥ 80%, (3) At least one active sustain mechanism (life leech, Ward generation, or life regeneration ≥ 100/s).
-
-FR-A8: Any defensive floor failure produces a `Critical`-priority suggestion that ranks above all offensive suggestions, regardless of the player's archetype weight settings. The Critical suggestion names the specific gap and the specific fix (e.g., "Fire resistance is 52% — cap requires +23%. Helm slot has room for a Fire Resistance suffix at T5").
-
-FR-A9: For every unallocated passive node, the app computes `Efficiency(node) = ΔBuildScore(path) / EffectivePointCost(path)` where `EffectivePointCost` = the node's own point cost plus the total cost of all unallocated prerequisite nodes on the shortest path from current allocation to that node.
-
-FR-A10: The path ΔBuildScore is the sum of score contributions from all nodes on the path (not just the target node), rewarding paths where intermediate nodes also have value.
-
-FR-A11: The efficiency scan is implemented as a modified shortest-path traversal on the tree graph, targeting O(N log N) for N unallocated nodes.
-
-FR-A12: `"more"` damage modifier nodes receive a 3–5× scoring weight multiplier relative to an equivalent `"increased"` node when the build already stacks significant Increased% (threshold: Σ Increased% > 200%), reflecting their exponentially higher effective value.
-
-FR-A13: Mastery depth bonus: nodes at depth 7–10 in the mastery sub-tree receive a 1.2× efficiency multiplier, reflecting that the highest-value LE nodes are concentrated in the mastery's deep tier.
-
-FR-A14: When the player has N unspent points (N > 1), the app uses a two-phase solver: (1) greedy shortlist of top 20 highest-efficiency candidate paths; (2) bounded knapsack DP over the shortlist to find the globally optimal set of path allocations within budget N.
-
-FR-A15: The solver output is an ordered list of node allocations (cheapest-first path ordering) that maximizes BuildScore for the given budget.
-
-FR-A16: The app computes a dynamic affix weight: `Weight(affix, build) = ΔBuildScore when this affix is present at T5` — injecting each affix into the current build and measuring the score delta. Weights are cached per build state and invalidated on class, mastery, skill assignment, or skill role designation change.
-
-FR-A17: For each gear slot, the app ranks all possible affixes by `Weight × TierValue` and identifies the 2 best prefix + 2 best suffix combinations as the "ideal" configuration for that slot. Rankings are skill-context-aware: affix weights account for the build's active skill damage types (e.g., a Poison build's affix scorer weights Poison-damage affixes and ailment-scaling prefixes highly regardless of generic damage score contributions).
-
-FR-A18: The gap between a slot's current affix configuration and its ideal configuration produces an `UpgradeScore` per slot. Slots are ranked by UpgradeScore to identify upgrade priority order.
-
-FR-A19: The affix scorer recognizes skill damage delivery types (melee / ranged / spell / minion) and damage element types (fire / cold / lightning / void / physical / poison / bleed) from the active skill configuration. Affixes that do not apply to the build's delivery type or damage element receive a zero weight.
-
-FR-A20: The app detects zero-value passive allocations: nodes that are allocated but whose bonuses never apply to the build's active skills. These are flagged as Medium-priority reallocation suggestions.
-
-FR-A21: The app detects mismatched affix types: gear affixes whose scope doesn't match the active skill's damage delivery type. These are flagged as High-priority replacement suggestions with the correct affix scope identified.
-
-FR-A22: The app detects synergy enabler thresholds: cases where a build-enabling unique item would change the archetype score by >30% if certain stat thresholds were met. These are surfaced as a special "Game-Changer" suggestion tier explaining what threshold is needed and how close the build is.
-
-FR-A23: The optimization payload sent to Claude includes: the full ranked suggestion list with `ΔBuildScore`, `EffectivePointCost`, synergy flags, and the specific numerical context for each suggestion.
-
-FR-A24: Claude's output is a natural-language explanation for each suggestion that references the specific delta values and explains the mechanical reason behind the priority.
-
-FR-A25: Claude's role is narrative generation only — the suggestion list, priority order, and delta values are produced deterministically by the engine. Claude does not reorder or invent suggestions.
-
-FR-A26: After an optimization run, the passive tree canvas displays a color-coded overlay on every unallocated node indicating its per-point efficiency tier: gold = top quartile (highest value), silver = second quartile, dim = third/fourth quartile (low value or unreachable within budget).
-
-FR-A27: Nodes already at the suggestion cap (no remaining unspent points) show no overlay.
-
-FR-A28: The overlay is toggleable via a button in the tree controls area; it defaults to on when suggestions are present.
-
-**Section B — Live Stat Sheet**
-
-FR-B1: The right panel adds a stat sheet section with five tabs: **General**, **Offense**, **Defense**, **Minion**, **Other**.
-
-FR-B2: **General tab** displays: character level, total passive points spent vs. available (per mastery), per-skill levels and skill points spent vs. available, class and mastery name.
-
-FR-B3: **Offense tab** displays: computed DamageScore, average hit damage (base), average hit damage (crit-weighted), critical strike chance %, critical strike multiplier %, attack speed or cast speed (per active skill), AoE modifier.
-
-FR-B4: **Defense tab** displays: effective HP, raw HP pool, Ward (if applicable), endurance % and endurance threshold, armor value, all resistances (fire, cold, lightning, void, poison, physical), crit avoidance %, dodge chance %.
-
-FR-B5: **Minion tab** displays minion-relevant stats (minion count, minion damage multiplier, minion HP multiplier) for builds with active minion skills; tab is hidden for builds with no minion skills.
-
-FR-B6: **Other tab** displays: movement speed %, cooldown recovery speed, mana pool and mana regen, resource-specific stats relevant to the active build.
-
-FR-B7: All stat sheet values recompute in real time on every state change: node allocation/deallocation, gear slot change, affix tier change, idol placement, blessing assignment, condition toggle, character level change, skill level change. No "Recalculate" button exists.
-
-FR-B8: When an AI suggestion is previewed (hover on suggestion item), all affected stat sheet values show a before/after delta: gains in green `(+X%)`, losses in red `(-X%)`, unchanged values in neutral. Delta display disappears when hover ends.
-
-**Section C — Idol Grid Builder**
-
-FR-C1: The context panel includes an idol grid that matches the Last Epoch default idol grid — a 5×5 cell space with the four corners and center cell blocked (~20 active cells). Valid idol placement positions for each idol size type are encoded in a bundled JSON data file (not hardcoded in UI logic). Idol Altar variants are out of scope for Phase 3; the data file structure must accommodate altar variants as a Phase 4 addition without breaking the grid component.
-
-FR-C2: Players can place an idol in any slot by selecting its size type (1×1, 1×2, 1×3, 2×2) and verifying it fits within the grid's valid placement rules.
-
-FR-C3: Each placed idol supports up to one prefix and one suffix affix selected from the idol affix database. Both prefix and suffix are required for idol types that mandate both (matching in-game behavior).
-
-FR-C4: Idol affix selection respects size and type restrictions — only affixes valid for that idol type and size are shown in the picker.
-
-FR-C5: Idol affix tiers are selectable (T1 through the affix's maximum tier), consistent with the gear slot tier picker pattern.
-
-FR-C6: Idol stats are included in all stat sheet calculations — HP, resistances, and damage affixes from idols contribute to the scoring engine's input.
-
-FR-C7: Full idol context (slot position, idol size, affix IDs, tiers) is passed to the AI optimization engine as structured context, enabling idol-specific suggestions.
-
-FR-C8: Players can clear individual idol slots or reset the full grid. Clearing a slot removes its stat contributions immediately.
-
-FR-C9: The idol database is bundled with the application and follows the same staleness-check pattern as the item and game data systems.
-
-**Section D — Blessings Panel**
-
-FR-D1: The context panel includes a Blessings section where players can assign up to one blessing per monolith timeline (matching in-game rules).
-
-FR-D2: The blessings database contains all current LE monolith timeline blessings with their stat effects (resistance values, damage multipliers, HP bonuses, etc.).
-
-FR-D3: Blessing selection uses a searchable dropdown organized by timeline, drawing from the blessings database.
-
-FR-D4: Active blessings contribute to the stat sheet as permanent additive bonuses — their effects are included in resistance totals, damage calculations, and EHP.
-
-FR-D5: The blessings database is updatable via the existing staleness check system when new timelines or blessing values are patched.
-
-**Section E — Conditions / Buffs Panel**
-
-FR-E1: A Conditions panel is accessible from the context panel or a dedicated tab. It allows players to set simulation context used by the scoring engine.
-
-FR-E2: Universal conditions include: enemy type (standard mob / rare / unique boss / pinnacle boss), enemy elemental resistances (as % values for relevant damage types), active charge counts (frenzy, power, endurance) up to maximum.
-
-FR-E3: Build-specific conditions are shown only when relevant passives or skills are active in the build.
-
-FR-E4: Condition values are used by the scoring engine to produce context-accurate DamageScore and SurvivabilityScore.
-
-FR-E5: Condition values are included in the Claude optimization payload so AI suggestions can reference the combat context.
-
-**Section F — Visual & UX Polish**
-
-FR-F1: All item names, item tooltips, and affix listing headers use Last Epoch's canonical rarity color system: Common (#E8E8E8), Magic (#5B9BD5), Rare (#D4AF37), Unique (#E87722), Set (#4CAF50), Exalted (#9C27B0), Legendary (#C62828).
-
-FR-F2: Unique and Set items in the gear slots display their item name in the correct rarity color. Affix entries on unique items are presented as read-only (matching in-game: unique item stats are fixed).
-
-FR-F3: All stat sheet values and tooltips that reference damage or resistance values use LE's canonical damage-type color coding: Physical (#D0D0D0), Fire (#E85D2A), Cold (#5BC8E8), Lightning (#F0D020), Void (#A050D0), Poison/Necrotic (#50B840), Bleed/Armor Shred (#A03030).
-
-FR-F4: The passive tree canvas renders a dark stone/obsidian-textured background using a PixiJS `TilingSprite` backed by a bundled 256×256 WebP stone tile texture (`bg_stone_tile.webp`). The TilingSprite is the first child of `worldContainer` (inserted before `edgeGraphics`), making it render beneath all nodes and edges.
-
-FR-F5: Each active skill tree canvas renders a background tinted by the skill's primary damage type tag: FIRE → warm amber overlay (rgba(180, 80, 20, 0.18)), COLD → cool blue overlay (rgba(40, 100, 180, 0.18)), LIGHTNING → pale yellow overlay (rgba(180, 160, 20, 0.18)), VOID → deep purple overlay (rgba(80, 20, 140, 0.18)), POISON → green overlay (rgba(30, 120, 40, 0.18)), PHYSICAL/MELEE/UNKNOWN → neutral dark (no tint). Base layer is the same dark stone texture as the passive tree.
-
-FR-F6: The Weaver Tree tab displays a void/crystalline purple aesthetic using `bg_weaver_tile.webp` as a background — applied to `WeaverTreePlaceholder` as a CSS background image in Phase 3. When community Weaver Tree node data becomes available, the placeholder is replaced by a full PixiJS canvas with the TilingSprite background.
-
-FR-F7: `Ctrl+Z` / `Ctrl+Y` (Windows) and `Cmd+Z` / `Cmd+Y` (macOS) are bound to undo/redo. Visible undo (↩) and redo (↪) icon buttons appear in the tree controls bar alongside the existing reset button.
-
-FR-F8: Keyboard shortcut `C` focuses the context panel (gear / idols / blessings), `S` focuses the active skill tree, `P` focuses the passive tree. These are global shortcuts active when no text input is focused.
-
-FR-F9: Node tooltips that overflow the visible viewport are scrollable in place (mouse wheel scrolls the tooltip content) rather than clipping or expanding the layout.
-
-FR-F10: `Shift+click` on a passive tree node allocates multiple points in one action (up to the node's maximum or remaining budget, whichever is lower), matching lastepochtools.com behavior.
-
-**Section G — Season 4 Game Data Update**
-
-FR-G1: The bundled game data is updated to Last Epoch Season 4 (Shattered Omens, released 2026-03-26). This includes: all new and updated passive tree nodes, new unique items and set items, updated affix tables (including Rune of Corruption affix entries), new and updated skill specialization tree nodes.
-
-FR-G2: The Season 4 data ingestion pipeline ensures every passive node effect and affix entry includes the `modifierType` and `scope` fields required by the scoring engine (FR-A6). Source: lastepochtools.com community DB. This must be complete before any scoring engine development begins.
-
-FR-G3: The game data version string in `manifest.json` reflects Season 4. The existing staleness check system surfaces an update prompt to players running older data.
-
-FR-G4: Season 4 idol data (if new idol types or affix entries were added in S4) is included in the idol database bundle.
-
-FR-G5: Season 4 blessings (any new monolith timelines or blessing updates in S4) are included in the blessings database bundle.
-
-**Section H — Gear Optimization Screen**
-
-FR-H1: Before the gear analysis can run, the player designates roles for their active skill slots: **Primary Offense** (required), **Secondary Offense** (optional), **Defensive** (optional), and **Utility** (optional). At minimum, one skill must be designated Primary Offense.
-
-FR-H2: Skill role designations are saved with the build and persist across sessions.
-
-FR-H3: The Gear Optimization screen prompts for skill role designations if none are set. Once set, roles are displayed and editable at the top of the screen.
-
-FR-H4: When the player opens the Gear Optimization screen (or clicks "Analyze Gear"), the app captures a full build snapshot: active skills with their role designations, passive tree allocations, current gear (all 12 slots), idols, blessings, active conditions, character level, and slider position.
-
-FR-H5: The snapshot is passed to the scoring engine to compute per-slot `UpgradeScore` (from FR-A18) and per-affix `Weight` (from FR-A16) using the skill-role-aware affix scorer.
-
-FR-H6: The app ranks all equipped gear slots by `UpgradeScore` (highest gap between current configuration and ideal). The slot with the highest UpgradeScore is flagged as the **Priority Upgrade** slot with a visual indicator.
-
-FR-H7: The upgrade priority ranking is displayed as an ordered list of all 12 gear slots, showing each slot's current score efficiency (e.g., "Weapon: 73% of ideal", "Boots: 41% of ideal").
-
-FR-H8: Unique and set items that are correct for the build (their special effects contribute positively to BuildScore) are flagged as "correct — keep" regardless of affix scores.
-
-FR-H9: For each gear slot, the app displays the ideal affix wishlist: the top 2 prefix and top 2 suffix recommendations ranked by weight, with each affix labeled by its tier target.
-
-FR-H10: Each recommended affix includes a brief mechanical reason drawn from the scoring context — why this affix specifically matters for this build.
-
-FR-H11: When the current gear item already has a recommended affix, the slot shows that affix as satisfied (checked off) and highlights which recommended affixes are still missing or below target tier.
-
-FR-H12: The wishlist distinguishes between prefix and suffix recommendations per slot, matching LE's crafting system (2 prefix + 2 suffix per item).
-
-FR-H13: Claude generates a gear analysis narrative for the full build — prioritized story across all slots, not slot-by-slot boilerplate.
-
-FR-H14: Claude's narrative references the player's designated Primary Offense skill by name throughout.
-
-FR-H15: Claude identifies any build-enabling unique items that would be upgrades given the current build state (from FR-A21's synergy enabler detection), surfaced as "Game-Changer" recommendations.
-
-FR-H16: All gear recommendations are weighted by the current Glass Cannon ↔ Juggernaut slider position.
-
-FR-H17: The gear narrative explicitly calls out the archetype context (slider position and its effect on recommendations).
-
----
+**§4.1 — Complete Stats Engine**
+
+- **FR-1:** Compute Increased% and More% multipliers for each damage type independently (Physical, Fire, Cold, Lightning, Void, Necrotic, Poison, Bleed, Corruption), with hit and DoT variants where mechanics support it. Damage-type modifiers do not bleed across types.
+- **FR-2:** Compute Critical Strike Chance (capped 100%), Critical Strike Multiplier (base 200% + additive), and Stun Chance; crit-weighted average damage uses `Hit × [(CritMulti × CritChance) + (1 × (1 − CritChance))]`.
+- **FR-3:** Compute Attack Speed and Cast Speed as separate stats from all sources; compute and display AoE Modifier.
+- **FR-4:** Compute Elemental Penetration and Physical Penetration separately; penetration reduces effective enemy resistance in score calc.
+- **FR-5:** Compute every defensive layer as an independent value (Health/Regen/Leech, Healing Effectiveness, Ward/Retention/Decay Threshold/per-sec, Armor + Mitigation%, Endurance% + Threshold, Dodge, Parry, Block, Glancing Blow, Crit Avoidance, Reduced Bonus Damage from Crits, all 7 resistances). Resistances at cap show gold; below cap show the gap.
+- **FR-6:** Compute EHP as three values — EHP vs Hits, EHP vs DoTs, EHP vs 1-shots — using tunklab-aligned multiplicative-layer methodology. DoTs exclude Dodge/Parry/Block.
+- **FR-7:** Compute Stable Ward and Stable HP at equilibrium from Ward Retention, Decay Threshold, Ward/sec, Health Regen, %Current Health Lost/sec, %Missing Health→Ward/sec. [ASSUMPTION: those last two are parseable in Season 4 data]
+- **FR-8:** Compute ailment stats (Bleed/Ignite/Poison/Freeze/Shock/Armor Shred Chance) as offense stats; ailment avoidance (Chill/Stun/Bleed immunity) as defense stats.
+- **FR-9:** Track Str/Dex/Int/Att totals from all sources on the General tab; implement attribute→secondary-stat conversion only where a parseable ratio exists in game data. Complex per-class conversions deferred to Phase 5. [ASSUMPTION]
+- **FR-10:** Compute Minion Count, Damage Multi, HP Multi, Speed; the Minion tab is visible only when ≥1 minion skill is assigned.
+- **FR-11:** All stats recompute immediately on any build-state change (node/gear/affix/idol/blessing/condition/level/skill/slider). No manual recalculate button.
+
+**§4.2 — Stat Source Attribution**
+
+- **FR-12:** `scoring-core` attaches a `ModifierSource` (source_type, source_label, value, modifier_type) to every Modifier; `compute_stats` response gains `stat_sources: HashMap<StatKey, Vec<ModifierSource>>` — additive metadata, no separate pass.
+- **FR-13:** Hovering any Stat Sheet row shows an adjacent Source Breakdown tooltip listing all sources grouped by category (Passive Nodes / Gear / Idols / Blessings / Skills / Conditions); shows pre-cap total when capped; "Base value only" when no sources; dismiss on mouse-leave.
+- **FR-14:** Resistance rows show a delta annotation in warning color when below cap (e.g., `68% (+7 to cap)`); the tooltip repeats the cap gap.
+
+**§4.3 — Passive Tree Optimizer (Refined)**
+
+- **FR-15:** The Passive Tree Optimizer produces `passive_node` suggestions only — never gear, resistance, blessing, idol, or off-tree suggestions; the defensive floor check is excluded from its output.
+- **FR-16:** With zero unspent passive points, return the message: "No unspent passive points available. Allocate additional points or use the Complete Build Optimizer for a full reallocation analysis."
+- **FR-17:** Render suggested nodes on the PixiJS canvas with unmistakable, hover-free treatment: Gold tier (1.4× ring + pulsing gold glow 1.8s), Silver tier (1.2× + steady silver glow), Dim tier (1.05× + muted blue outline, no anim); dashed gold path lines for prerequisite nodes.
+- **FR-18:** Hover/click a suggestion card → corresponding node(s) pulse with intensified highlight; a compact canvas tooltip shows node name, point cost, path cost, per-stat deltas; canvas smoothly pans/zooms to center the node if off-screen.
+- **FR-19:** Each suggestion card shows rank #, node name, score delta (e.g., `+4.2`), point cost + path cost (e.g., `2 pts / 4 pts to reach`), and a one-sentence Claude mechanical explanation citing the specific deltas.
+
+**§4.4 — Complete Build Optimizer**
+
+- **FR-20:** Header nav gains "Complete Build Optimizer"; clicking it replaces the builder with a full-screen view; a "Back to Builder" control returns.
+- **FR-21:** Scope Selector with one checkbox per section (Passive Tree, Active Skills, Gear, Idols, Blessings — checked by default; Weaver — unchecked), each showing fill status (e.g., "Gear 8/11"); completeness gate per section.
+- **FR-22:** On "Run", each checked section's completeness gate is evaluated before analysis; failed gates render inline red alert cards (icon + plain-language reason + "Go to [Section]" button); all alerts shown simultaneously; run blocked until all pass.
+- **FR-23:** When Active Skills is checked and <2 slots filled, the gate offers "Suggest skills for my build" — queries the Popular Builds Database by class/mastery + already-assigned skills, shows ranked popular skill sets, user picks one to auto-fill remaining slots without overwriting assigned skills.
+- **FR-24:** Optimization Orb animation while running — central gold/void orb, one token per checked section orbiting inward and absorbed, status text cycling 6 canonical phrases; CSS-based, 60fps, must not block IPC results.
+- **FR-25:** Unified ranked output grouped by domain section headers (Passive Tree / Gear / Idols / Blessings / Active Skills), ranked by ΔBuildScore within each, suggestion cards in FR-19 format + domain badge; sections expand/collapse; "Focus on Passive Tree" shortcut navigates with passive suggestions pre-highlighted.
+- **FR-26:** When Idols is in scope with empty cells, recommend specific idol placements (size, coordinates, affix selection, stat contribution) as cards with a grid placement preview; references real idol DB affix IDs/tiers; placements never conflict with existing idols.
+
+**§4.5 — Gear System: Item Picker & Affix Picker**
+
+- **FR-27:** Item Picker Modal — sidebar filters (Rarity, Item Level range, Required Tags), real-time search, item grid (icon in rarity color + name + base + affix slot count / unique flavor), single-click select / double-click equip, hover tooltip with full stat description.
+- **FR-28:** Affix Picker Modal — search by stat name, affixes grouped under Offense/Defense/Utility with name + category tag + full-tier stat range + one-line description (required for every affix), Tier Pip selector showing live value per tier, Apply adds/replaces; affixes filtered to valid entries for the slot type.
+- **FR-29:** Each equipped gear slot shows four affix pips below the item name; filled = present, empty = available; clicking a pip opens the Affix Picker for that position.
+
+**§4.6 — Gear Optimization Screen**
+
+- **FR-30:** Three-column layout — left paper-doll (11 slots as drop targets), center searchable gear DB (slot/rarity filter pills + search, draggable cards), right active-slot detail panel with affix list + tier pips + Affix Picker integration.
+- **FR-31:** Drag-and-drop equip — dragging over a valid slot highlights gold, invalid red; drop equips; double-click also equips to default slot type. (Native HTML5 DnD per ADR-P4-006.)
+- **FR-32:** "Optimize Gear" runs AI gear analysis (payload = current gear, build score, skill roles, archetype weights); slide-in panel shows ranked swaps (current→recommended, ΔBuildScore, Claude reason); recommendations constrained to bundled-DB item IDs; non-upgrade slots omitted.
+
+**§4.7 — UI/UX Revamp (Claude Design System)**
+
+- **FR-33:** Header nav — Builder | Complete Build Optimizer | Gear Optimization | Settings; active item highlighted; `Esc` returns to Builder from any full-screen view.
+- **FR-34:** Left panel — Active Build card (class glyph, name, class·mastery), Class/Mastery selectors (restyled), Build Sections navigator with fill counts + gold checkmarks for complete sections, Save Build button (gold when dirty), Import Character button (replaces removed "Paste build code"), Saved Builds list (restyled).
+- **FR-35:** Right panel — 3/4-arc SVG Score Gauge with delta, DMG/SURV/SPD pill trio, Optimization Intent header with Juggernaut↔Glass Cannon slider + zone label, Fine Tune Weights (collapsible), Optimize Build button (gold, pulsing when running), AI Suggestions cards, restyled Stat Sheet.
+- **FR-36:** Center canvas tab bar — Passive Tree | Weaver | Gear | Skills | Idols | Blessings with badge counts, visual divider between tree tabs and context tabs, keyboard shortcuts 1–6.
+- **FR-37:** Blessing editor — two-column card grid, one card per monolith timeline, active blessing highlighted gold with gold border, inline selection (no dropdown).
+- **FR-38:** Idol editor — tray + grid layout: 5×4 grid with hover "+", occupied cells show abbreviated name in shape-scaled colored tile (click to remove); right tray of all idol definitions with shape viz + filter + selection; live placement-preview overlay; size-aware valid-cell highlighting; Active Idol Stats summary.
+- **FR-39:** Status bar — data version (Season 4 / Shattered Omens + date), unsaved-changes gold dot, LLM provider + model name.
+
+**§4.8 — Data Completeness: Skills, Icons, Popular Builds**
+
+- **FR-40:** All 133 Season 4 skills present in the skills DB with name, class/mastery, tags, icon ref, and specialization tree node data; the Skills tab surfaces all class-appropriate skills.
+- **FR-41:** All skill icons resolved via the Rust icon pipeline (`get_icon_cache_path`); missing icons fall back to placeholder glyph. [ASSUMPTION: same pipeline as Phase 2/3]
+- **FR-42:** Bundled `popular-builds.json` with ≥3 curated builds per class/mastery (all 15 masteries; ≥45 entries), each with mastery, 5 skill IDs, build name, source URL; updated per game-data patch; queried client-side with no network.
+- **FR-43:** Skills tab shows a full skill picker grid (icon + name + tag) drawing from the complete DB; skills assignable to 5 slots; assigned skills show specialization point allocation.
+
+**§4.9 — Multi-Allocate Fix**
+
+- **FR-44:** Shift+click on a passive node fills all remaining points up to `max_points` or remaining budget (whichever is lower) in one action, recorded as a single undo step.
+- **FR-45:** Right-click removes all points from an allocated node in one action; prerequisite/orphan check runs first; orphaned children are deallocated in the same step after a confirmation prompt naming them; single undo step.
+
+**§4.10 — Character Import**
+
+- **FR-46:** Left panel "Import Character" button opens a two-tab modal (Offline / Online), dismissible via ✕ or outside click.
+- **FR-47:** Offline tab — Rust scans both known save paths (Steam userdata + AppData LocalLow), lists detected `1CHARACTERSLOT_BETA_###` files with character name + class from header; "Browse" fallback; "No save files detected" empty state.
+- **FR-48:** Rust parses the selected save file to extract charClass, level, charTree, skillTrees, equipment; populates a new named build after a replace-confirmation; unresolved item/node IDs reported in a post-import summary; prior build preserved. [ASSUMPTION + spike-gated: OQ-8]
+- **FR-49:** Online tab (gated) — Account Name + Character Name + Import; Tauri command calls EHG character API; same parse-and-populate flow; inline errors for not-found/private. Built as a wired stub returning "API access pending" until EHG partnership (OQ-7).
 
 ### NonFunctional Requirements
 
-NFR-1: The scoring engine (defensive floor check + passive tree efficiency scan + gear affix scoring + synergy detection) completes in < 100ms for a full build evaluation on target hardware. Claude API latency (2–5s) remains the only user-perceived bottleneck.
+**Primary success metrics (PRD §7):**
 
-NFR-2: Stat sheet recalculation on any single state change (node click, affix tier change, condition toggle) completes in < 16ms to support smooth 60fps updates during node allocation.
+- **NFR-1 (SM-1):** Stat Sheet displays all 40+ stats with values within ±2% of the tunklab EHP/Ward calculators for identical inputs. (Validates FR-1–7; enforced by `tests/ehp_reference.rs` CI gate.)
+- **NFR-2 (SM-2):** Stat Source Breakdown tooltip appears within 50ms of hover and lists all sources with correct values. (FR-12, FR-13.)
+- **NFR-3 (SM-3):** Passive Tree Optimizer returns no gear/resistance/off-tree suggestions when ≥1 unspent point exists. (FR-15.)
+- **NFR-4 (SM-4):** Complete Build Optimizer runs for a fully-configured build (6 sections gated) and returns suggestions across ≥3 domains. (FR-20–25.)
 
-NFR-3: Node efficiency overlay rendering adds no more than 2ms to the tree's frame render time — backgrounds and overlays are precomputed assets or display-list operations, not per-frame computation.
+**Secondary metrics:**
 
-NFR-4: All stat values, scoring weights, modifier thresholds, and defensive floor thresholds are data-driven — sourced from game data files at runtime, never as numeric constants in source code. This is the primary mechanism for season-over-season accuracy without code changes.
+- **NFR-5 (SM-5):** Item Picker search returns filtered results in <100ms over the full item DB. (FR-27; client-side prebuilt index.)
+- **NFR-6 (SM-6):** Shift+click batch allocation completes as a single undo step. (FR-44.)
+- **NFR-7 (SM-7):** Popular Builds Database covers all 15 masteries with ≥3 builds each. (FR-42.)
 
-NFR-5: The scoring engine is structured to support pluggable class-specific scoring modules. When Paradox Classes ship, adding a new class scoring module must not require modifying the base scoring engine. The interface for class modules is documented (`ClassModule` trait).
+**Counter-metrics (must not regress):**
 
-NFR-6: The idol grid layout and valid placement rules are encoded in the bundled idol data, not hardcoded in UI logic. New idol types added by EHG in future patches can be supported by updating the data file, not the component.
+- **NFR-8 (SM-C1):** Optimization Orb animation never delays result rendering — results appear within 500ms of backend return regardless of animation state.
+- **NFR-9 (SM-C2):** Stat Source Attribution must not add >20ms to `compute_stats` round-trip.
 
-NFR-7: The blessings and conditions databases follow the same staleness-check and update pipeline as the existing game data and item database systems.
+**Carried Phase 3 NFRs (still in force):**
 
-NFR-8: The damage scoring formula and crit math have dedicated unit tests verifying results against known-correct examples from Maxroll.gg. Any formula regression fails CI.
-
-NFR-9: The defensive floor check has unit tests covering all failure conditions: each uncapped resistance type, crit avoidance below threshold, and no sustain layer present.
-
-NFR-10: All new interactive UI components (idol grid, blessings picker, conditions panel, stat sheet tabs) pass axe-core accessibility checks. CI continues to fail on any new `axe` violation.
-
-NFR-11: Platform targets are maintained: Windows 10/11 (.msi) and macOS 12+ (.dmg). No new platform targets are added in Phase 3.
-
-NFR-12: All Phase 3 features must function fully offline. No network calls are required for scoring, stat display, idol/blessings input, or conditions setup. The Claude API call remains the only network operation.
-
----
+- **NFR-10:** `compute_stats` Stage-1 path < 16ms (rAF-debounced); full optimization pipeline < 100ms.
+- **NFR-11:** All values data-driven — no numeric stat constants in source; every stat computed via the Modifier Registry.
+- **NFR-12:** Pluggable class modules (`ClassModule` trait) preserved; formula regression tests fail CI on drift.
+- **NFR-13:** Offline-only except the Claude/OpenRouter API call; no server, no proxy.
+- **NFR-14:** All interactive elements keep a 2px solid accent-gold focus ring; `prefers-reduced-motion` gates all animation; new components pass `vitest-axe` (any new violation fails CI).
 
 ### Additional Requirements
 
-**From Architecture — Rust Workspace & Crate Structure (ADR-001)**
-- `scoring-core` is a separate Cargo workspace crate (`src-tauri/scoring-core/`) with NO Tauri, NO tokio dependencies. Pure Rust: serde, serde_json, rayon only.
-- `src-tauri/Cargo.toml` becomes a workspace root with two members: `.` (existing Tauri crate) and `scoring-core`.
-- `scoring_commands.rs` in the Tauri crate owns all `#[tauri::command]` handlers; `game_data_loader.rs` owns disk→`GameData` construction.
+_Technical requirements from the Phase 4 architecture that shape epics/stories but are not PRD FRs._
 
-**From Architecture — IPC Strategy (D2, D3)**
-- **Debounced rAF + Rust IPC (Path C):** State changes accumulate within a 16ms rAF window. One `invokeCommand('compute_stats', ...)` fires per frame maximum.
-- Three IPC commands registered in `lib.rs invoke_handler!`: `compute_stats` (sync, Stage 1 only, ~2ms), `run_optimization` (async, Stages 1–3 + 5–6, ~50ms), `run_gear_scoring` (async, Stages 1 + 4 + 6).
-- `useStatSheet.ts` hook in `shared/stores/` — replaces inline `calculateScore` subscribe blocks in App.tsx (lines 74–88, 100–111).
+**Critical-path data gates (sequence first):**
 
-**From Architecture — Type System (D4)**
-- New `shared/types/statSheet.ts` file: `StatSheet`, `OffenseStats`, `DefenseStats`, `ScoreComponents`, `AilmentStats` (Phase 4 placeholder), `MinionStats` (Phase 4 placeholder), `StatWarning`, `NodeEfficiency`, `GearAnalysis`, `SynergyFlag`.
+- **AR-1 (Gate 2, D-P4-1):** Migrate `ModifierType` from `Option<String>` to a serde enum (`Flat | Increased | More | Conversion`, default `Increased`); migrate `scope` and the new affix `position` by the same pattern. Closes four deferred-work items. Prerequisite for all `compute/*` work.
+- **AR-2 (Gate 1, D-P4-2):** Add `position: 'prefix' | 'suffix'` to `AffixEntryV2`/`GearAffixV2` (TS + Rust) populated by ingestion (absent → treat as prefix). Critical-path data gate for §4.5/§4.6; must be the first story of the gear epic.
 
-**From Architecture — Store Placement (D1)**
-- `optimizationStore` extended with: `statSheet: StatSheet | null`, `isComputingStats: boolean`, `setStatSheet()`, `setIsComputingStats()`.
-- `nodeEfficiencies: NodeEfficiency[] | null` also added to `optimizationStore` for overlay wiring (Gap 1 resolution).
+**Architecture decisions affecting structure:**
 
-**From Architecture — Critical Patterns (all patterns must be enforced in stories)**
-- Pattern 1: `buildSnapshotSerializer.ts` (`toBuildSnapshot()`) is the only conversion point from `BuildState` to `BuildSnapshot`. Never pass `BuildState` directly to scoring commands.
-- Pattern 2: Rust input structs use `#[serde(rename_all = "camelCase")]`; output structs use default snake_case. TypeScript interfaces mirror Rust output field names exactly.
-- Pattern 3: Sync commands — `.read().unwrap()` no clone; async commands — `.read().unwrap().clone()` then release before `spawn_blocking`.
-- Pattern 4: Generation-based cancellation in `useStatSheet` — stale results discarded via `useRef` counter.
-- Pattern 5: `SCORING_ERROR:` prefix on all scoring Rust errors. Must be added to `ErrorType` enum and `errorNormalizer.ts` before any scoring IPC story.
-- Pattern 6: Gear analysis uses `gear:analysis-complete` / `gear:error` events. Never reuse `optimization:*` namespace.
-- Pattern 7: Null `StatSheet` sub-sheets (`ailment`, `minion`) are hidden sections — never rendered as errors or empty containers.
+- **AR-3 (ADR-P4-001):** Split `compute.rs` into `compute/` submodules (offense, penetration, defense, ehp, ward, ailment, attributes, minion) before adding stat coverage; `compute/mod.rs` keeps the single `compute_stats` entry; each module maps 1:1 to a PRD sub-section.
+- **AR-4 (D-P4-3):** `compute_stats` gains `ComputeOptions.track_sources` (on only for the display call); `stat_sources: Option<HashMap<..>>` returns `None` on scan/knapsack/gear/complete-opt paths (Pattern P4-2).
+- **AR-5 (D-P4-4):** New async command `run_complete_optimization(snapshot, scope)` composing existing stage fns behind a scope mask; new `complete-opt:{suggestion-received,complete,error}` event namespace; new `useCompleteOptStream.ts` hook. No scoring-logic duplication. `run_optimization` output filtered to `passive_node` (Pattern P4-3).
+- **AR-6 (D-P4-5):** Extend `appStore.currentView` += `'complete-optimizer'`; extend `CenterTab` += `'weaver'` (keys 1–6, divider after Weaver); no React Router. `SkillTreeCanvasHandle` gains `focusNode(nodeId)` for FR-18 cross-highlight.
+- **AR-7 (ADR-P4-005):** `popular-builds.json` is a bundled Tauri resource loaded once into `gameDataStore.popularBuilds` (conditions.json pattern — bundled, never network-stale).
+- **AR-8 (ADR-P4-006):** Native HTML5 drag-and-drop for the gear paper-doll (no new frontend dependency).
+- **AR-9 (ADR-P4-007 / Pattern P4-8):** Design-token reconciliation is values-only — keep `--color-*` names, update values to the Claude palette, add `--color-bg-sunken`; route all rarity/damage colors through `rarityColors.ts`; no token renames.
+- **AR-10 (ADR-P4-010):** New Tauri module `character_import.rs` (offline scan + parse; online stub) — never in `scoring-core` (stays pure, no I/O). Add `CHARACTER_IMPORT_ERROR` to `ErrorType`/`errorNormalizer.ts`.
 
-**From Architecture — Data Gate**
-- Epic G (Season 4 data ingestion + `modifierType`/`scope` field addition) is the **sole critical-path gate** blocking all scoring engine work. All other implementation work can proceed in parallel with mock game data.
-- Three new game databases: `idol-data.json`, `blessings.json`, `conditions.json` — all following the existing staleness-check pattern.
+**Cross-cutting engine rules (Patterns P4-1…P4-8):** stat math reads the registry never the snapshot (P4-1); `track_sources` on for display call only (P4-2); warnings always compute, suggestions are scope-filtered (P4-3); `complete-opt:*` is its own namespace (P4-4); orb decoupled from results (P4-5); recommendations constrained to payload IDs (P4-6); batch allocate/remove is a single undo step (P4-7); token reconciliation values-only (P4-8).
 
-**From Architecture — Parallelism (ADR-003)**
-- `rayon` inside `scoring-core` for the passive tree efficiency scan (embarrassingly parallel per node).
-- `spawn_blocking` at the Tauri command boundary for full optimization and gear scoring runs.
-- Never hold a `RwLock` read guard across an `await` boundary.
+**Story-0 setup tasks:** add `CHARACTER_IMPORT_ERROR` (reuse `SCORING_ERROR`) to `ErrorType`/`errorNormalizer.ts` before any import/scoring IPC story.
 
-**From Architecture — Deprecation**
-- `features/optimization/scoringEngine.ts` is deprecated once `useStatSheet` is live. Deletion is a follow-up story, not in the same PR as hook addition.
-- `scores: BuildScore | null` in `optimizationStore` deprecated once Rust engine live; removed in follow-up story.
+**Spikes (resolve before sizing the affected story):**
 
----
+- **AR-11 (OQ-8):** Reverse-engineer the `1CHARACTERSLOT_BETA_###` save binary against the community save-editor (gaconvt159/last-epoch-save-editor); fallback = shell-invoke the Java tool and parse its JSON. Resolve before the FR-48 story.
+- **AR-12 (OQ-1):** Verify Parry is a player-accessible Season 4 stat; if enemy-only, drop from FR-5/`defense.rs`. Resolve during the `defense.rs` story.
+- **AR-13 (OQ-6):** Specify the filtered idol-payload subset (build damage types + empty cells only, never full idol DB) before the FR-26 story.
+
+**Deferred-work items elevated into Phase 4 (addressed inside the relevant epic, not as standalone cleanup):**
+
+- **AR-14:** `warningGap === 0` false-warning — fix in `defense.rs`/`ward.rs` as the gap floor (FR-5/FR-6).
+- **AR-15:** "All gear affixes classified as prefixes" + `detect_mismatched_affixes` never sees suffixes — fixed by AR-2 + serializer emitting `position`.
+- **AR-16:** `GearSlotRanking`/`WishlistAffix` not re-exported from `lib.rs`; stale `MODELS.len() == 4` Rust test — fix during the gear-scoring / any-Rust work.
 
 ### UX Design Requirements
 
-No formal UX Design Specification document exists for Phase 3. All visual and interaction requirements are captured directly as Functional Requirements in Section F (FR-F1 through FR-F10) of the PRD and are covered above.
+_First-class design-system work items from the Claude Design handoff (`last-epoch-build-optimizer-UI-Handoff/`), beyond the per-screen FRs._
 
----
+- **UX-DR1:** Apply the Claude Design color palette via values-only token update (accent gold `#C9A84C`; bg base/surface/elevated/hover `#0A0A0B`/`#141417`/`#1C1C21`/`#252530`; new `--color-bg-sunken` `#060607`; node-suggested `#7B68EE`). (AR-9)
+- **UX-DR2:** Reconcile rarity colors in `rarityColors.ts` (normal `#C6C0B5`, magic `#4A7A9E`, rare `#C9A84C`, set `#5EBD78`, unique `#D4805A`, legendary `#B068E8` — adds the legendary tier).
+- **UX-DR3:** Class-specific gold glyph system for the Active Build card and class/mastery selectors (LeftPanel.jsx).
+- **UX-DR4:** Score Gauge — 3/4-arc SVG with gradient fill, center build score + delta indicator (RightPanel.jsx).
+- **UX-DR5:** Optimization Intent slider with five zone labels in zone colors (Juggernaut / Bulwark / Balanced / Aggressive / Glass Cannon).
+- **UX-DR6:** Optimization Orb CSS component (`.orb-overlay/.orb-stage/.orb-ring/.orb-core/.orb-token/.orb-status`), 130px token radius, one token absorbed per 620ms, 6-phrase status sequence, `prefers-reduced-motion` → static progress (addendum D, Pattern P4-5).
+- **UX-DR7:** Five-tab Stat Sheet structure (General / Offense / Defense / Minion / Other) per addendum F, with Minion tab conditionally hidden.
+- **UX-DR8:** Stat Source Breakdown tooltip layout — grouped categories, per-source contribution, pre-cap total + cap-gap line.
+- **UX-DR9:** Reusable TierPips component (carried from Phase 3) reused in both the Affix Picker and the gear detail panel.
+- **UX-DR10:** Gear paper-doll visual states — equipped (rarity-color border), empty ("drag to equip"), valid drop (gold), invalid drop (red).
+- **UX-DR11:** Idol shape visualizations (proportional rectangle + `W×H` label) in the tray and size-aware valid-cell highlighting in the grid.
+- **UX-DR12:** Accessibility baseline for all new/rebuilt components: 2px accent-gold focus rings, aria-live regions (polite on suggestion/loading/import-progress, assertive on critical errors), reduced-motion gating, zero new axe violations (NFR-14).
 
 ### FR Coverage Map
 
-**Epic 1 — Season 4 Data Foundation:**
-FR-G1: Epic 1 — Update bundled game data to Season 4 (nodes, uniques, affixes, skill trees)
-FR-G2: Epic 1 — Annotate every passive node and affix with `modifierType` and `scope` fields from lastepochtools.com DB
-FR-G3: Epic 1 — Update `manifest.json` to Season 4 version string; trigger staleness prompt for old data
-FR-G4: Epic 1 — Include Season 4 idol data in idol database bundle
-FR-G5: Epic 1 — Include Season 4 blessings in blessings database bundle
+| FR | Epic | Coverage |
+|----|------|----------|
+| FR-1 | Epic 1 | Per-damage-type increased/more multipliers |
+| FR-2 | Epic 1 | Crit chance/multi, stun, crit-weighted hit |
+| FR-3 | Epic 1 | Attack/cast speed, AoE modifier |
+| FR-4 | Epic 1 | Elemental + physical penetration |
+| FR-5 | Epic 1 | Full defensive-layer computation |
+| FR-6 | Epic 1 | EHP ×3 (Hits/DoTs/1-shots), tunklab-aligned |
+| FR-7 | Epic 1 | Stable Ward + Stable HP equilibrium |
+| FR-8 | Epic 1 | Ailment chances + avoidance |
+| FR-9 | Epic 1 | Attribute totals + parseable conversions |
+| FR-10 | Epic 1 | Minion stats + conditional Minion tab |
+| FR-11 | Epic 1 | Recompute on any build-state change |
+| FR-12 | Epic 1 | ModifierSource tracking + stat_sources field |
+| FR-13 | Epic 1 | Source Breakdown tooltip |
+| FR-14 | Epic 1 | Resistance cap-gap annotation |
+| FR-15 | Epic 3 | Optimizer scope restricted to passive_node |
+| FR-16 | Epic 3 | Empty-budget fallback message |
+| FR-17 | Epic 3 | Gold/silver/dim node highlight + path lines |
+| FR-18 | Epic 3 | Suggestion card → tree cross-highlight + focusNode |
+| FR-19 | Epic 3 | Suggestion card content format |
+| FR-20 | Epic 6 | Complete Build Optimizer nav + full-screen view |
+| FR-21 | Epic 6 | Scope Selector checkboxes + fill status |
+| FR-22 | Epic 6 | Completeness gates + inline red alerts |
+| FR-23 | Epic 6 | Skill suggestion from Popular Builds (uses Epic 5) |
+| FR-24 | Epic 6 | Optimization Orb animation |
+| FR-25 | Epic 6 | Unified domain-grouped output |
+| FR-26 | Epic 6 | Idol AI recommendations |
+| FR-27 | Epic 4 | Item Picker Modal |
+| FR-28 | Epic 4 | Affix Picker Modal |
+| FR-29 | Epic 4 | Gear slot affix pips |
+| FR-30 | Epic 4 | Three-column gear workspace |
+| FR-31 | Epic 4 | Drag-and-drop equip |
+| FR-32 | Epic 4 | AI gear analysis |
+| FR-33 | Epic 2 | Header navigation |
+| FR-34 | Epic 2 | Left panel — identity + section navigator |
+| FR-35 | Epic 2 | Right panel — gauge, archetype, optimizer chrome |
+| FR-36 | Epic 2 | Center canvas six-tab bar |
+| FR-37 | Epic 2 | Blessing editor card grid |
+| FR-38 | Epic 2 | Idol editor tray + grid |
+| FR-39 | Epic 2 | Status bar |
+| FR-40 | Epic 5 | Complete 133-skill database |
+| FR-41 | Epic 5 | Complete skill icons |
+| FR-42 | Epic 5 | Popular Builds Database |
+| FR-43 | Epic 5 | Skills tab full picker |
+| FR-44 | Epic 3 | Shift+click fill to max |
+| FR-45 | Epic 3 | Right-click remove all |
+| FR-46 | Epic 7 | Character Import Modal (two tabs) |
+| FR-47 | Epic 7 | Offline save-file detection |
+| FR-48 | Epic 7 | Offline save-file parsing (spike-gated) |
+| FR-49 | Epic 7 | Online import (stub, partner-gated) |
 
-**Epic 2 — Scoring Engine & Live Stat Sheet:**
-FR-A1: Epic 2 — DamageScore formula (Base × Σ Increased% × Π More%)
-FR-A2: Epic 2 — Crit-weighted average damage computation
-FR-A3: Epic 2 — SurvivabilityScore as effective HP with defensive layer bonus
-FR-A4: Epic 2 — SpeedScore from move speed, attack/cast speed, AoE modifier
-FR-A5: Epic 2 — Composite BuildScore with archetype weights from slider
-FR-A6: Epic 2 — `modifierType` field drives modifier application (increased/more/flat)
-FR-A7: Epic 2 — Defensive floor check (resistances, crit avoidance, sustain) before suggestions
-FR-A8: Epic 2 — Critical-priority suggestion for any defensive floor failure
-FR-B1: Epic 2 — Right panel stat sheet with 5 tabs (General, Offense, Defense, Minion, Other)
-FR-B2: Epic 2 — General tab content (level, points, skill levels, class/mastery)
-FR-B3: Epic 2 — Offense tab content (DamageScore, hit damage, crit %, crit multi, attack/cast speed, AoE)
-FR-B4: Epic 2 — Defense tab content (EHP, raw HP, Ward, endurance, armor, resistances, crit avoidance, dodge)
-FR-B5: Epic 2 — Minion tab (shown only when minion skills active)
-FR-B6: Epic 2 — Other tab content (move speed, CDR, mana pool, resource-specific stats)
-FR-B7: Epic 2 — Real-time recalculation on every state change, no recalculate button
-
-**Epic 3 — Build Context: Idols, Blessings & Conditions:**
-FR-C1: Epic 3 — Idol grid (5×5, blocked corners + center, layout from JSON not hardcoded)
-FR-C2: Epic 3 — Idol placement by size type with valid placement rule enforcement
-FR-C3: Epic 3 — Idol prefix + suffix affix support (mandated types require both)
-FR-C4: Epic 3 — Idol affix picker respects size/type restrictions
-FR-C5: Epic 3 — Idol affix tier selection (T1 through max tier)
-FR-C6: Epic 3 — Idol stats included in all stat sheet calculations
-FR-C7: Epic 3 — Full idol context passed to AI optimization engine as structured data
-FR-C8: Epic 3 — Clear individual idol slots or full grid reset
-FR-C9: Epic 3 — Idol database bundled with staleness-check pattern
-FR-D1: Epic 3 — Blessings section: one blessing per monolith timeline
-FR-D2: Epic 3 — Blessings database with all current blessings and stat effects
-FR-D3: Epic 3 — Searchable blessing dropdown organized by timeline
-FR-D4: Epic 3 — Active blessings contribute to stat sheet as additive bonuses
-FR-D5: Epic 3 — Blessings database updatable via staleness check system
-FR-E1: Epic 3 — Conditions panel accessible from context panel or dedicated tab
-FR-E2: Epic 3 — Universal conditions (enemy type, resistances, charge counts)
-FR-E3: Epic 3 — Build-specific conditions shown only when relevant passives/skills active
-FR-E4: Epic 3 — Condition values used by scoring engine for context-accurate scores
-FR-E5: Epic 3 — Condition values included in Claude optimization payload
-
-**Epic 4 — Passive Tree Intelligence & Optimization:**
-FR-A9: Epic 4 — Per-node efficiency score (ΔBuildScore / EffectivePointCost via Dijkstra path)
-FR-A10: Epic 4 — Path ΔBuildScore sums contributions from all nodes on path (not just target)
-FR-A11: Epic 4 — Efficiency scan as O(N log N) shortest-path traversal
-FR-A12: Epic 4 — "more" modifier nodes get 3–5× multiplier when Σ Increased% > 200%
-FR-A13: Epic 4 — Mastery depth bonus: nodes at depth 7–10 get 1.2× efficiency multiplier
-FR-A14: Epic 4 — Two-phase budget solver: greedy shortlist (top 20) + bounded DP knapsack
-FR-A15: Epic 4 — Solver output: ordered node allocation list maximizing BuildScore within budget
-FR-A20: Epic 4 — Zero-value passive allocation detection (Medium-priority reallocation suggestions)
-FR-A21: Epic 4 — Mismatched affix type detection (High-priority replacement suggestions)
-FR-A22: Epic 4 — Synergy enabler threshold detection (Game-Changer suggestion tier)
-FR-A23: Epic 4 — Full optimization payload sent to Claude (ranked suggestions + delta values + context)
-FR-A24: Epic 4 — Claude produces natural-language explanations referencing specific delta values
-FR-A25: Epic 4 — Claude role is narrative only; suggestion list and priority are deterministic
-FR-A26: Epic 4 — Node efficiency overlay on passive tree (gold/silver/dim tiers)
-FR-A27: Epic 4 — No overlay on nodes when no unspent points remain
-FR-A28: Epic 4 — Overlay toggleable; defaults on when suggestions are present
-FR-B8: Epic 4 — Stat sheet shows before/after delta on AI suggestion hover (green/red deltas)
-
-**Epic 5 — Gear Optimization Screen:**
-FR-A16: Epic 5 — Dynamic affix weight (ΔBuildScore at T5); cached per build state
-FR-A17: Epic 5 — Ideal affix config per slot (top 2 prefix + 2 suffix); skill-context-aware
-FR-A18: Epic 5 — UpgradeScore per slot (gap from current to ideal); slots ranked by UpgradeScore
-FR-A19: Epic 5 — Affix scorer is delivery-type and damage-element aware (zero-weight inapplicable affixes)
-FR-H1: Epic 5 — Skill role designation (Primary Offense required; Secondary, Defensive, Utility optional)
-FR-H2: Epic 5 — Skill role designations saved with build and persist across sessions
-FR-H3: Epic 5 — Gear Optimization screen prompts for roles if none set; roles editable at screen top
-FR-H4: Epic 5 — Full build snapshot captured on screen open / "Analyze Gear"
-FR-H5: Epic 5 — Snapshot passed to scoring engine for UpgradeScore and Weight computation
-FR-H6: Epic 5 — Gear slots ranked by UpgradeScore; highest-gap slot flagged as Priority Upgrade
-FR-H7: Epic 5 — Upgrade priority list showing all 12 slots with current efficiency % of ideal
-FR-H8: Epic 5 — Correct unique/set items flagged as "correct — keep" regardless of affix scores
-FR-H9: Epic 5 — Per-slot affix wishlist: top 2 prefix + top 2 suffix with tier targets
-FR-H10: Epic 5 — Each recommended affix includes a mechanical reason from scoring context
-FR-H11: Epic 5 — Satisfied affixes shown checked off; missing/below-tier affixes highlighted
-FR-H12: Epic 5 — Wishlist distinguishes prefix vs. suffix (matching LE's 2P+2S crafting system)
-FR-H13: Epic 5 — Claude gear narrative: prioritized story across all slots, not slot-by-slot boilerplate
-FR-H14: Epic 5 — Claude narrative references Primary Offense skill name throughout
-FR-H15: Epic 5 — Claude surfaces build-enabling unique items as Game-Changer recommendations
-FR-H16: Epic 5 — All gear recommendations weighted by Glass Cannon ↔ Juggernaut slider position
-FR-H17: Epic 5 — Gear narrative explicitly calls out archetype context and slider-driven priority
-
-**Epic 6 — Visual Fidelity & UX Polish:**
-FR-F1: Epic 6 — Item rarity color system applied to all item names, tooltips, affix headers (7 canonical colors)
-FR-F2: Epic 6 — Unique/Set item names in rarity color; unique affix entries displayed as read-only
-FR-F3: Epic 6 — Damage-type color coding in stat sheet and tooltips (7 canonical colors)
-FR-F4: Epic 6 — Passive tree: dark stone TilingSprite background (`bg_stone_tile.webp`), inserted before edge graphics
-FR-F5: Epic 6 — Skill tree canvases: damage-type tint overlay on stone base texture (palette per FR-F5)
-FR-F6: Epic 6 — Weaver Tree tab: void/crystalline purple aesthetic (`bg_weaver_tile.webp`) on WeaverTreePlaceholder
-FR-F7: Epic 6 — Ctrl+Z/Y (Win) and Cmd+Z/Y (Mac) undo/redo; visible ↩/↪ buttons in tree controls bar
-FR-F8: Epic 6 — [REVISED 2026-05-26] Keys 1-5 switch center tabs (tree/gear/skill/idol/blessing) and [/] collapse left/right panels — ALREADY IMPLEMENTED in App.tsx via UI redesign. Original C/S/P shortcuts superseded by the 5-tab model.
-FR-F9: Epic 6 — Node tooltips overflowing viewport are scrollable in place (mouse wheel)
-FR-F10: Epic 6 — Shift+click allocates multiple points in one action (up to node max or budget)
-
----
+All 49 FRs mapped. NFR-1–14 and Additional Requirements AR-1–16 / UX-DR1–12 are allocated within the epics below (see each epic's implementation notes).
 
 ## Epic List
 
-### Epic 1: Season 4 Game Data Foundation
-Players' optimization suggestions are accurate for the current game season. The bundled game data is updated to Last Epoch Season 4 (Shattered Omens) and annotated with the `modifierType` and `scope` fields required by the scoring engine. This epic is the **critical-path gate** — all scoring engine stories in Epic 2+ depend on this data being available; development proceeds with mock data until this epic is complete.
-**FRs covered:** FR-G1, FR-G2, FR-G3, FR-G4, FR-G5
+**Recommended sequence:** 1 → 2 → 3 → 4 → 5 → 6 → 7. Epics are independently shippable; the only hard cross-epic dependencies are **Epic 6 depends on Epic 1** (full stat engine for full-picture analysis) and **Epic 6's FR-23 depends on Epic 5** (Popular Builds Database). Each epic's first story resolves any data gate it owns, after which the rest of the epic parallelizes behind mocks — exactly as Phase 3 ran behind Epic G.
 
-### Epic 2: Scoring Engine & Live Stat Sheet
-Players can see their build's computed damage, survivability, and speed scores update in real time on every passive node click, gear change, or level adjustment — powered by a deterministic Rust scoring engine implementing Last Epoch's actual damage formula. The engine runs in a separate pure Rust crate (`scoring-core`) and communicates via Tauri IPC with debounced rAF updates. Defensive floor failures (uncapped resistances, low crit avoidance, no sustain) are flagged as Critical suggestions before any offensive recommendations.
-**FRs covered:** FR-A1, FR-A2, FR-A3, FR-A4, FR-A5, FR-A6, FR-A7, FR-A8, FR-B1, FR-B2, FR-B3, FR-B4, FR-B5, FR-B6, FR-B7
+### Epic 1: Complete Stat Sheet & Source Attribution
+Players see every computed stat in the game across a five-tab stat sheet — all damage types, every defensive layer, EHP ×3, Stable Ward, ailments, attributes, and minions — agreeing within ±2% of tunklab — and can hover any stat to learn exactly which passives, gear, idols, blessings, skills, and conditions contribute to it. This is the core intelligence Phase 4 is built on; it unblocks both optimizers' full-picture analysis.
+**FRs covered:** FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14
+**Owns:** AR-1 (ModifierType enum — Gate 2, first story), AR-3 (`compute/` module split), AR-4 (`track_sources`), AR-12 (Parry spike), AR-14 (`warningGap===0` fix), Story-0 `SCORING_ERROR` reuse. NFR-1, NFR-2, NFR-9, NFR-10, NFR-11, NFR-12. UX-DR7, UX-DR8.
+**Implementation notes:** Owns the functional StatSheetPanel five-tab content (addendum F) and StatSourceTooltip; the surrounding right-panel chrome restyle is Epic 2. Stat math reads the Modifier Registry only (Pattern P4-1); `track_sources` on only for the display call (Pattern P4-2). EHP/Ward implement tunklab observable behavior with `tests/ehp_reference.rs` as the CI parity gate.
 
-### Epic 3: Build Context — Idols, Blessings & Conditions
-Players can input their complete in-game build context: place idols on an accurate 5×5 idol grid, assign monolith blessings from a searchable dropdown, and configure combat conditions (enemy type, charge counts, build-specific toggles). All context contributions flow into the live stat sheet in real time and are included in the Claude optimization payload, making suggestions context-accurate.
-**FRs covered:** FR-C1, FR-C2, FR-C3, FR-C4, FR-C5, FR-C6, FR-C7, FR-C8, FR-C9, FR-D1, FR-D2, FR-D3, FR-D4, FR-D5, FR-E1, FR-E2, FR-E3, FR-E4, FR-E5
+### Epic 2: UI/UX Revamp — Claude Design System
+The entire app is re-skinned and rebuilt to the Claude Design handoff — a dark-stone, gold-typography, class-glyph aesthetic that feels native to Last Epoch. Header navigation, left build-identity panel with section navigator, right panel with score gauge and archetype slider, six-tab center canvas, blessing card grid, idol tray+grid editor, and status bar are all rebuilt. The design-token foundation (first story) re-skins everything from a single stylesheet, so later epics inherit the look automatically.
+**FRs covered:** FR-33, FR-34, FR-35, FR-36, FR-37, FR-38, FR-39
+**Owns:** AR-9 (token reconciliation — first story), AR-6 partial (`CenterTab += 'weaver'`, keys 1–6, divider). UX-DR1, UX-DR2, UX-DR3, UX-DR4, UX-DR5, UX-DR10, UX-DR11, UX-DR12. NFR-14.
+**Implementation notes:** Token reconciliation is values-only (Pattern P4-8); all rarity/damage colors route through `rarityColors.ts`. Components are faithfully rebuilt to the design, not wrappers of the prototype JSX. Section-navigator completion indicators reuse the FR-21 gate thresholds. Blessing/idol editors here are the visual rebuilds; their data wiring is unchanged from Phase 3.
 
-### Epic 4: Passive Tree Intelligence & Optimization
-Players can run an AI-powered optimization that scans every unallocated passive node, computes per-path efficiency using a Dijkstra traversal and budget knapsack solver, detects mismatched/zero-value allocations, and overlays a gold/silver/dim efficiency heatmap directly on the passive tree canvas. Claude receives the full deterministic suggestion list and produces personalized natural-language explanations. Hovering a suggestion shows before/after stat deltas in the live stat sheet.
-**FRs covered:** FR-A9, FR-A10, FR-A11, FR-A12, FR-A13, FR-A14, FR-A15, FR-A20, FR-A21, FR-A22, FR-A23, FR-A24, FR-A25, FR-A26, FR-A27, FR-A28, FR-B8
+### Epic 3: Passive Tree Optimizer & Allocation
+Players get surgical, point-budget-aware passive-tree suggestions with unmistakable on-canvas highlighting and one-click cross-navigation from suggestion card to node — and can allocate faster with shift+click fill-to-max and right-click remove-all. The optimizer never surfaces off-tree noise (no resistance/gear warnings), resolving the Phase 3 pain.
+**FRs covered:** FR-15, FR-16, FR-17, FR-18, FR-19, FR-44, FR-45
+**Owns:** AR-5 partial (`run_optimization` filtered to `passive_node`, Pattern P4-3), AR-6 partial (`SkillTreeCanvasHandle.focusNode()`). Pattern P4-7 (single-undo batch ops). NFR-3, NFR-6.
+**Implementation notes:** Shared files — `pixiRenderer.ts` (overlay overhaul + multi-allocate visuals), `useSkillTree.ts`, `buildStore.ts` (`fillNodeToMax`, `removeAllPoints`). Floor-check warnings still compute in `compute_stats`; only suggestion emission is scope-filtered. Both multi-allocate ops push exactly one undo snapshot.
 
-### Epic 5: Gear Optimization Screen
-Players can open a dedicated Gear Optimization screen that analyzes all 12 gear slots against their build's ideal affix configuration. The player designates skill roles (Primary Offense required), and the scoring engine computes a skill-context-aware affix weight for every possible affix, ranks slots by upgrade priority, and generates a per-slot wishlist (top 2 prefix + suffix). Claude produces a prioritized gear narrative that references the player's specific Primary Offense skill and flags build-enabling unique items as Game-Changer recommendations.
-**FRs covered:** FR-A16, FR-A17, FR-A18, FR-A19, FR-H1, FR-H2, FR-H3, FR-H4, FR-H5, FR-H6, FR-H7, FR-H8, FR-H9, FR-H10, FR-H11, FR-H12, FR-H13, FR-H14, FR-H15, FR-H16, FR-H17
+### Epic 4: Gear System & Optimization
+Players build and tune gear without leaving the app — a searchable item-database browser (Item Picker Modal), an affix selector grouped Offense/Defense/Utility with tier pips (Affix Picker Modal), affix pips on every slot, and a full three-column Gear Optimization screen with drag-and-drop equip and AI-ranked gear-swap recommendations.
+**FRs covered:** FR-27, FR-28, FR-29, FR-30, FR-31, FR-32
+**Owns:** AR-2 (affix `position` discriminator — Gate 1, first story), AR-8 (HTML5 DnD), AR-15 (suffix-side scoring fix), AR-16 (lib.rs re-exports + stale test). Pattern P4-6 (payload-ID-constrained recs). NFR-5.
+**Implementation notes:** First story is the affix `position` data gate; engine + UI proceed against mock-annotated affixes until ingestion lands. Item Picker uses a prebuilt client search index (<100ms). Affix Picker reuses the Phase 3 TierPips component (UX-DR9). Gear recommendations rejected if their item ID is absent from the payload subset.
 
-### Epic 6: Visual Fidelity & UX Polish
-The app achieves Last Epoch's authentic visual language throughout: canonical item rarity colors (7 tiers), damage-type color coding (7 types), and tree backgrounds (dark stone TilingSprite for passive/skill trees, void crystalline for the Weaver tab) that match the game's aesthetic. Keyboard shortcuts match lastepochtools.com conventions. Shift+click enables rapid multi-point allocation. Node tooltips that overflow the viewport scroll in place.
-**FRs covered:** FR-F1, FR-F2, FR-F3, FR-F4, FR-F5, FR-F6, FR-F7, FR-F8, FR-F9, FR-F10
+### Epic 5: Skills & Popular Builds Data
+The skills database is completed to all 133 Season 4 skills with icons and specialization-tree data, the Skills tab surfaces a full class-appropriate picker, and a bundled Popular Builds Database (≥3 builds × 15 masteries) ships with client-side matching — enabling popular-build awareness and the skill-suggestion flow the Complete Build Optimizer relies on.
+**FRs covered:** FR-40, FR-41, FR-42, FR-43
+**Owns:** AR-7 (popular-builds.json as bundled resource, `conditions.json` pattern), `popularBuildMatch.ts` (client match). NFR-7, NFR-13.
+**Implementation notes:** `popularBuilds` loads once into `gameDataStore`; matching (filter by mastery, sort by skill-overlap, top 3) is fully offline. SkillPickerGrid is extended to draw from the complete DB. This epic supplies the data FR-23 (Epic 6) consumes.
 
+### Epic 6: Complete Build Optimizer
+Players run a single holistic optimization across passive tree, skills, gear, idols, and blessings together and receive a unified, domain-grouped, ranked upgrade roadmap. A scope selector with per-section completeness gates guides setup, a skill-suggestion shortcut fills gaps from popular builds, and an animated Optimization Orb covers the wait without ever delaying results.
+**FRs covered:** FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, FR-26
+**Owns:** AR-5 (`run_complete_optimization` + `complete-opt:*` + `useCompleteOptStream`), AR-6 partial (`currentView += 'complete-optimizer'`), AR-13 (idol-payload subset spec). Patterns P4-4, P4-5, P4-6. NFR-4, NFR-8.
+**Depends on:** Epic 1 (full stat engine), Epic 5 (FR-23 skill suggestion data).
+**Implementation notes:** Reuses existing stage functions behind a scope mask — no scoring-logic duplication. Orb is CSS, decoupled from the IPC result path (results within 500ms of backend return). Idol recs use a filtered idol-payload subset (build damage types + empty cells), validated via `validatePlacement()`.
 
----
-
-## Epic 1: Season 4 Game Data Foundation
-
-Players' optimization suggestions are accurate for the current game season. The bundled game data is updated to Last Epoch Season 4 (Shattered Omens) and annotated with the `modifierType` and `scope` fields required by the scoring engine. This epic is the critical-path gate — all scoring engine stories in Epic 2+ depend on this data.
-
-### Story 1.1: Game Data Type Extension & Schema Definition
-
-As a developer,
-I want the TypeScript types and JSON schemas extended to include `modifierType`, `scope`, and `damageType` fields on nodes and affixes, plus defined schemas for the three new game databases,
-So that subsequent data ingestion and scoring engine stories have a stable contract to build against.
-
-**Acceptance Criteria:**
-
-**Given** the TypeScript type definitions in `shared/types/gameData.ts`
-**When** a developer imports the passive node and affix types
-**Then** passive node effects include an optional `modifierType?: 'increased' | 'more' | 'flat'` field
-**And** affix entries (`AffixEntryV2`) include optional `modifierType`, `scope: 'melee' | 'ranged' | 'spell' | 'minion' | 'generic'`, and `damageType` fields
-
-**Given** all new fields are optional
-**When** the scoring engine encounters a node or affix without `modifierType`
-**Then** the engine falls back to treating it as `"increased"` (no panic, no error)
-
-**Given** the `idol-data.json` schema is documented
-**When** an agent reviews the schema definition
-**Then** the schema includes `version`, `defaultGrid` (with `rows`, `cols`, `blockedCells[]`), and an empty `altarVariants: []` array
-**And** the `altarVariants` array is the documented Phase 4 extension point
-
-**Given** the `conditions.json` schema is documented
-**When** an agent reviews it
-**Then** each condition entry includes: `id`, `displayLabel`, `category: 'universal' | 'build-specific'`, and an optional `filter` (class ID or skill tag)
-
-**Given** the updated TypeScript types
-**When** `pnpm build` runs
-**Then** the build succeeds with zero TypeScript errors
-
-### Story 1.2: Season 4 Node & Class Data Ingestion
-
-As a player,
-I want the passive tree and skill tree data to reflect Season 4 content including all new nodes and updated node effects annotated with modifier types,
-So that optimization suggestions reference current-season nodes and produce correct scoring results.
-
-**Acceptance Criteria:**
-
-**Given** the class JSON files in `src-tauri/resources/classes/`
-**When** the Season 4 ingestion pipeline runs against the lastepochtools.com community DB
-**Then** all passive tree node effects in all 5 class files have a `modifierType` field populated as `"increased"`, `"more"`, or `"flat"`
-**And** new Season 4 passive nodes (Spellblade updates, new Rogue nodes) are present in the relevant class files
-
-**Given** the `manifest.json` file
-**When** the Season 4 data is integrated
-**Then** the `dataVersion` field reflects Season 4 (e.g., `"s4.1"` or equivalent format)
-**And** the `gameVersion` string matches Season 4 (Shattered Omens)
-
-**Given** a player running the app with Season 3 data
-**When** the app compares the stored data version to the bundled version
-**Then** the staleness bar displays an update prompt indicating Season 4 data is available
-
-**Given** any passive node with no `modifierType` in the source DB
-**When** the ingestion pipeline processes it
-**Then** the pipeline uses a fallback heuristic (e.g., "more" keyword in effect text → `"more"`) and logs a warning
-**And** no node is left without a `modifierType` field in the output JSON
-
-### Story 1.3: Season 4 Affix & Item Data Ingestion
-
-As a player,
-I want the affix database and item database to reflect Season 4 content with delivery-type and damage-element scope annotations,
-So that the gear affix scorer can correctly weight affixes for any build's damage delivery type and element.
-
-**Acceptance Criteria:**
-
-**Given** the affix database file
-**When** the Season 4 ingestion pipeline runs
-**Then** all affix entries have `modifierType`, `scope`, and `damageType` fields populated
-**And** Rune of Corruption affixes from Season 4 are present with correct values and `modifierType` annotations
-
-**Given** an affix whose scope cannot be determined from the community DB
-**When** the ingestion pipeline processes it
-**Then** a heuristic fallback applies: "Melee" in the affix name → `scope: "melee"`, "Spell" → `scope: "spell"`, etc.
-**And** a fallback count is logged so the data can be manually verified
-
-**Given** new Season 4 unique and set items
-**When** the item database is inspected
-**Then** all new uniques and set items are present with correct affix value tables and `modifierType` annotations
-**And** build-enabling uniques (Exsanguinous, Bleeding Heart, Omnividence) are present with correct effect descriptions for the synergy detector
-
-**Given** the updated affix and item databases
-**When** `pnpm build` and `cargo build` both run
-**Then** both succeed without errors
-**And** no existing TypeScript type assertions fail due to schema changes
-
-**Given** the item database after ingestion
-**When** gear slot IDs are queried
-**Then** exactly 12 canonical slot IDs are present and consistent with lastepochtools.com's slot naming (e.g., `helm`, `chest`, `gloves`, `boots`, `belt`, `amulet`, `ring_1`, `ring_2`, `weapon`, `off_hand`, `relic`, and one additional slot verified against the community DB)
-**And** every affix entry that has a slot restriction uses only IDs from this canonical list
-
-### Story 1.4: New Game Database Files & Staleness Integration
-
-As a player,
-I want the app to load idol, blessings, and conditions data on startup and surface staleness indicators when those databases are out of date,
-So that the context input features in Epic 3 have correct data from day one and players are notified when updates are available.
-
-**Acceptance Criteria:**
-
-**Given** the Tauri resource bundle
-**When** the app starts for the first time
-**Then** `idol-data.json`, `blessings.json`, and `conditions.json` are all loaded without error
-**And** all loading uses `invokeCommand<T>()` — never raw `invoke()`
-
-**Given** `gameDataStore`
-**When** the store is initialized
-**Then** it exposes `isIdolDataStale`, `idolDataStaleAcknowledged`, `isBlessingsDataStale`, `blessingsDataStaleAcknowledged` boolean flags
-**And** the new flags follow the identical initialization pattern as the existing `isItemDataStale` flag
-
-**Given** the loaded `idol-data.json`
-**When** the default grid layout is accessed
-**Then** the grid has 5 rows and 5 columns with exactly 5 blocked cells: (0,0), (0,4), (4,0), (4,4), (2,2)
-**And** the `altarVariants` array is present and empty
-
-**Given** the loaded `blessings.json`
-**When** blessings are queried by timeline
-**Then** all current Season 4 monolith timeline blessings are present with their stat effects
-**And** each blessing entry includes: `id`, `timelineId`, `timelineName`, `displayName`, and `statEffects[]`
-
-**Given** the loaded `conditions.json`
-**When** universal conditions are queried
-**Then** entries for enemy type, per-element enemy resistance, and charge counts (frenzy, power, endurance) are all present
-**And** build-specific conditions include at minimum: "Sigil of Hope active" (Paladin), "Is enemy Hexed?" (hex builds)
+### Epic 7: Character Import
+Players import an existing Last Epoch character into LEBO instead of rebuilding by hand — a two-tab modal where the Offline tab scans local save files, parses the selected character into a new build, and reports any unresolved IDs, while the Online tab ships as a wired stub that lights up when EHG API access is granted.
+**FRs covered:** FR-46, FR-47, FR-48, FR-49
+**Owns:** AR-10 (`character_import.rs` module + `CHARACTER_IMPORT_ERROR`), AR-11 (OQ-8 save-format spike — before the FR-48 story).
+**Implementation notes:** File I/O lives in the Tauri crate, never `scoring-core`. FR-48 is sized only after the OQ-8 spike succeeds (fallback: shell-invoke the community Java tool, parse its JSON). Import creates a new named build, preserving the prior one. FR-49 returns "API access pending" until EHG partnership (OQ-7); UI and command are fully built.
 
 ---
 
-## Epic 2: Scoring Engine & Live Stat Sheet
+## Epic 1: Complete Stat Sheet & Source Attribution
 
-Players can see their build's computed damage, survivability, and speed scores update in real time on every passive node click, gear change, or level adjustment — powered by a deterministic Rust scoring engine implementing Last Epoch's actual damage formula. Defensive floor failures are flagged as Critical suggestions before any offensive recommendations.
+Deliver a five-tab stat sheet computing every stat in Last Epoch — all damage types, every defensive layer, EHP ×3, Stable Ward, ailments, attributes, minions — within ±2% of tunklab, with a hover breakdown revealing every contributing source. This is the engine the rest of Phase 4 builds on.
 
-### Story 2.1: Scoring Engine Foundation — Crate Setup & Type System
+### Story 1.1: ModifierType enum migration and compute module split
 
-As a developer,
-I want the `scoring-core` Rust workspace crate scaffolded with all core types, the `ClassModule` trait, five class module stubs, and the `SCORING_ERROR` prefix wired into the TypeScript error system,
-So that all subsequent Epic 2 stories have a stable, compiler-enforced foundation to build against.
-
-**Acceptance Criteria:**
-
-**Given** the `src-tauri/` directory
-**When** a developer runs `cargo build -p scoring-core`
-**Then** the crate compiles without errors
-**And** `scoring-core/Cargo.toml` has no Tauri, no tokio, no async runtime dependencies — only serde, serde_json, rayon
-
-**Given** `scoring-core/src/modifier.rs`
-**When** an agent reviews it
-**Then** `Modifier`, `ModifierType`, `Condition`, and `ModifierRegistry` are defined and public
-**And** `ModifierRegistry::query(stat, active_conditions)` filters by `stat_key` and `condition.is_active(active_conditions)`
-**And** the `Condition` enum includes `Always`, `Named(String)`, `Stacked { name, count }`, `Threshold { stat, above }`, and `Composite(Vec<Condition>)` variants
-
-**Given** the `ClassModule` trait in `scoring-core/src/class_module.rs`
-**When** an agent reviews it
-**Then** the trait requires `class_id()`, `apply_modifiers(&mut registry, &snapshot)`, and `compute_class_stats(&base, &snapshot) -> Option<ClassStats>` methods
-**And** five stub class modules exist in `scoring-core/src/classes/` (sentinel, mage, primalist, rogue, acolyte), each compiling with no-op implementations
-
-**Given** `shared/types/errors.ts`
-**When** an agent inspects the `ErrorType` const
-**Then** `SCORING_ERROR: 'SCORING_ERROR'` is present as a value
-**And** `shared/utils/errorNormalizer.ts` maps `'SCORING_ERROR'` in `ERROR_TYPE_MAP` via case-insensitive substring match
-
-**Given** `shared/types/statSheet.ts` (new file)
-**When** a developer imports from it
-**Then** `StatSheet`, `OffenseStats`, `DefenseStats`, `ScoreComponents`, `StatWarning`, `NodeEfficiency`, `GearAnalysis`, `SynergyFlag` are all exported
-**And** `AilmentStats` and `MinionStats` are exported as Phase 4 placeholder interfaces (empty interfaces)
-**And** no `index.ts` barrel file is created
-
-**Given** the TypeScript build
-**When** `pnpm build` runs after this story
-**Then** zero TypeScript errors occur
-
-### Story 2.2: Stage 1 — Build Score Function Implementation
-
-As a player,
-I want the scoring engine to compute my build's DamageScore, SurvivabilityScore, SpeedScore, and composite BuildScore using Last Epoch's actual damage formula,
-So that every stat value I see in the app is mathematically correct rather than estimated.
+As a developer extending the scoring engine,
+I want `ModifierType`/`scope`/`position` migrated to serde enums and `compute.rs` split into the `compute/` submodule layout,
+So that full stat parity can be added module-by-module on a type-safe foundation without one unmaintainable file.
 
 **Acceptance Criteria:**
 
-**Given** a `BuildSnapshot` with passive nodes containing only "increased" modifiers summing to 150%
-**When** `compute_stats()` is called
-**Then** `offense.damage_score` matches `base × (1 + 1.50) × 1.0` = `base × 2.5`
-**And** the computation completes in < 2ms on target hardware
+**Given** game data stores `modifierType`/`scope` as lowercase strings
+**When** game data is loaded
+**Then** they deserialize into `ModifierType { Flat, Increased, More, Conversion }` and the `scope` enum with `rename_all = "lowercase"`
+**And** an unknown or absent value defaults to `ModifierType::Increased`, preserving the Phase 3 fallback contract (verified by an existing-data regression test).
 
-**Given** a build with 82% crit chance and a crit multiplier of 350%
-**When** `compute_stats()` is called
-**Then** `offense.avg_hit_damage_crit_weighted` equals `base_hit × (3.50 × 0.82 + 1.0 × 0.18)` = `base_hit × 3.05`
-**And** crit chance inputs above 100% are clamped to 1.0 before computation
+**Given** the `compute.rs` monolith
+**When** the split is complete
+**Then** `compute/mod.rs` exposes the single `compute_stats(snapshot, game_data, options) -> StatSheet` entry and the `compute/` submodule files (`offense`, `penetration`, `defense`, `ehp`, `ward`, `ailment`, `attributes`, `minion`) exist as scaffolds
+**And** the `compute_stats` IPC contract and Tauri command signature are unchanged
+**And** all Phase 3 formula-regression tests still pass.
 
-**Given** a build with HP 1500, Ward 300, Endurance 30%
-**When** `compute_stats()` is called
-**Then** `defense.effective_hp` equals `1500 × (1 + 300/1500) × (1 / (1 - 0.30))` ≈ 2571
-**And** defensive layer count is tracked and used in the survivability bonus multiplier
+**Given** the error-normalization layer
+**When** this story completes
+**Then** `SCORING_ERROR` remains mapped and a `CHARACTER_IMPORT_ERROR` entry is added to `ErrorType`/`errorNormalizer.ts` as Story-0 setup
+**And** branching on raw modifier-type strings no longer exists anywhere in `scoring-core`.
 
-**Given** a slider position of 50 (balanced: w_dmg=0.55, w_surv=0.35, w_speed=0.10)
-**When** `compute_stats()` is called
-**Then** `scores.build_score` equals `0.55 × damage_score + 0.35 × surv_score + 0.10 × speed_score`
+### Story 1.2: Offense stats — damage types, crit, speed, penetration
 
-**Given** a passive node with no `modifierType` field
-**When** `compute_stats()` processes it
-**Then** the modifier is treated as `"increased"` (additive) with no panic or error
-
-**Given** the `scoring-core` unit test suite
-**When** `cargo test -p scoring-core` runs
-**Then** all formula tests pass including: damage formula with increased-only, damage formula with a more multiplier, crit-weighted damage at various crit chance values, EHP with Ward and Endurance, BuildScore weights at all five slider positions from the archetype weight table
-
-### Story 2.3: Defensive Floor Check
-
-As a player,
-I want the app to flag uncapped resistances, low crit avoidance, and missing sustain as Critical-priority warnings before showing any offensive suggestions,
-So that I never receive offensive optimization suggestions while my build has survivability-breaking gaps.
+As a theory-crafting player,
+I want the Offense tab to show per-damage-type Increased%/More%, crit stats, attack/cast speed, AoE, and penetration,
+So that I can read my offensive profile without summing modifiers by hand.
 
 **Acceptance Criteria:**
 
-**Given** a build with Fire resistance at 52%
-**When** `compute_stats()` runs the defensive floor check
-**Then** `stat_sheet.warnings` contains a `StatWarning` with `type: "fire_resistance_uncapped"`, `current_value: 52`, `gap: 23`
-**And** the warning includes the specific gear slot that has room for a resistance fix
+**Given** a build with modifiers across multiple damage types
+**When** `compute_stats` runs
+**Then** Increased% and More% are computed independently per type (Physical, Fire, Cold, Lightning, Void, Necrotic, Poison, Bleed, Corruption) with hit/DoT variants where supported (FR-1)
+**And** a modifier tagged for one damage type does not affect another type's score.
 
-**Given** a build with Crit Avoidance at 62%
-**When** `compute_stats()` runs
-**Then** `stat_sheet.warnings` contains a `StatWarning` with `type: "crit_avoidance_low"` and `current_value: 62`
+**Given** crit and speed modifiers
+**When** `compute_stats` runs
+**Then** Crit Chance is capped at 100%, Crit Multi is `200% + Σ additive`, Stun Chance is computed, and crit-weighted average damage uses `Hit × [(CritMulti × CritChance) + (1 × (1 − CritChance))]` (FR-2)
+**And** Attack Speed and Cast Speed are computed as separate stats and AoE Modifier is computed (FR-3)
+**And** Elemental Penetration and Physical Penetration are computed separately and reduce effective enemy resistance in the score calc (FR-4).
 
-**Given** a build with no sustain layer (no life leech, no Ward generation, life regen < 100/s)
-**When** `compute_stats()` runs
-**Then** `stat_sheet.warnings` contains a `StatWarning` with `type: "no_sustain_layer"`
+**Given** the offense computation
+**When** any module computes a stat
+**Then** it reads values only via `ModifierRegistry` queries by `StatKey`, never from raw snapshot fields (Pattern P4-1).
 
-**Given** a build that passes all three defensive floor checks
-**When** `compute_stats()` runs
-**Then** `stat_sheet.warnings` is empty
+### Story 1.3: Defensive layer computation
 
-**Given** the `scoring-core` unit test suite
-**When** defensive floor check tests run
-**Then** tests cover all failure cases: fire/cold/lightning/void/poison/physical resistance uncapped, crit avoidance below 80%, no sustain layer, and the happy path
-**And** all tests pass
-
-### Story 2.4: Tauri IPC Wiring — `compute_stats` Command
-
-As a developer,
-I want the `compute_stats` Tauri command registered and wired to `scoring-core::compute_stats`, with game data loaded once at startup and held in `AppState`,
-So that TypeScript can call `invokeCommand<StatSheet>('compute_stats', { snapshot })` and receive a correct `StatSheet`.
+As a theory-crafting player,
+I want every defensive layer computed as an independent value on the Defense tab,
+So that I can see my full mitigation picture at a glance.
 
 **Acceptance Criteria:**
 
-**Given** `src-tauri/Cargo.toml`
-**When** an agent reviews it
-**Then** it is a workspace root with `members = [".", "scoring-core"]`
-**And** `rayon` is listed as a dependency only in `scoring-core/Cargo.toml`
+**Given** a build with defensive modifiers
+**When** `compute_stats` runs
+**Then** each layer in the FR-5 table is computed independently: Health/Regen/Leech, Healing Effectiveness, Ward + Retention + Decay Threshold + Ward/sec, Armor + Mitigation%, Endurance% + Threshold, Dodge, Parry, Block, Glancing Blow, Crit Avoidance, Reduced Bonus Damage from Crits, and all seven resistances.
 
-**Given** `scoring_commands.rs` in the Tauri crate
-**When** an agent reviews it
-**Then** the sync `compute_stats` Tauri command is defined there (not inline in `lib.rs`)
-**And** it calls `scoring_core::compute_stats(&snapshot, &game_data, ComputeOptions::default())`
+**Given** resistance values
+**When** the Defense tab renders
+**Then** resistances at cap show the gold at-cap indicator and below-cap show the gap (e.g., "+7% to cap") in the warning color
+**And** a value exactly at cap (gap == 0) does NOT render the false warning (AR-14 `warningGap===0` fix lives in the engine gap floor, not the renderer).
 
-**Given** `game_data_loader.rs` in the Tauri crate
-**When** the Tauri app starts
-**Then** `scoring_core::GameData` is constructed from disk JSON files exactly once
-**And** it is held in `AppState` as `Arc<RwLock<scoring_core::GameData>>` and reused for every command call without re-reading disk
+**Given** the OQ-1 Parry question
+**When** this story is implemented
+**Then** the spike verifies whether Parry is a player-accessible Season 4 stat, and if it is enemy-only Parry is dropped from FR-5 and `defense.rs` with the decision recorded.
 
-**Given** the sync `compute_stats` command execution
-**When** it runs
-**Then** it takes a `.read().unwrap()` lock (no clone), computes, and the lock drops at function end
-**And** the lock is never held across an `await` boundary
+### Story 1.4: EHP triple and Stable Ward/HP equilibrium
 
-**Given** a TypeScript call to `invokeCommand<StatSheet>('compute_stats', { snapshot })`
-**When** the command resolves successfully
-**Then** the returned `StatSheet` has snake_case field names (e.g., `build_score`, `offense`)
-**And** the Rust `BuildSnapshot` input struct has `#[serde(rename_all = "camelCase")]` so TypeScript sends camelCase properties
-
-**Given** a scoring computation error in Rust
-**When** the error propagates
-**Then** the error string is prefixed with `"SCORING_ERROR: "`
-**And** `normalizeAppError()` maps it to `ErrorType.SCORING_ERROR` correctly without falling through to `UNKNOWN_ERROR`
-
-### Story 2.5: TypeScript Integration — Serializer, Hook & Store
-
-As a developer,
-I want the `buildSnapshotSerializer.ts` utility, `useStatSheet.ts` hook, and `optimizationStore` extensions wired together so stat sheet updates flow automatically on every build state change,
-So that the stat sheet display in Story 2.6 has live data without any "Recalculate" button.
+As a theory-crafting player,
+I want EHP reported as vs Hits / vs DoTs / vs 1-shots plus Stable Ward and Stable HP,
+So that my survivability numbers match the community tunklab calculators I trust.
 
 **Acceptance Criteria:**
 
-**Given** `shared/utils/buildSnapshotSerializer.ts`
-**When** `toBuildSnapshot(activeBuild, gameData)` is called with a full `BuildState`
-**Then** the returned `BuildSnapshot` contains only ID-based data (node IDs, affix IDs, tiers, idol placements, blessings, conditions, level, class, mastery, slider)
-**And** `BuildState` UI-specific fields (`schemaVersion`, undo metadata) are absent from the snapshot
+**Given** a build with mitigation layers
+**When** EHP is computed
+**Then** three values are produced — EHP vs Hits, EHP vs DoTs, EHP vs 1-shots — with layers applied multiplicatively, DoTs excluding Dodge/Parry/Block, and 1-shots treating the endurance threshold as a hard floor (FR-6).
 
-**Given** `shared/stores/useStatSheet.ts`
-**When** the user rapidly allocates five nodes in < 16ms
-**Then** only one `invokeCommand('compute_stats', ...)` call fires per rAF frame
-**And** the stat sheet reflects the final allocation state, not an intermediate state
+**Given** a build using Ward as a buffer
+**When** Stable Ward is computed
+**Then** it uses Ward Retention, Decay Threshold, Ward/sec, Health Regen, %Current Health Lost/sec, and %Missing Health→Ward/sec, and both Stable Ward and Stable HP at equilibrium are shown on the Defense tab (FR-7).
 
-**Given** a pending `compute_stats` call and a newer state change arriving before it resolves
-**When** the newer call's result arrives and then the older call also resolves
-**Then** the stale (older) result is discarded via the `generationRef` counter
-**And** `optimizationStore.statSheet` reflects only the latest generation's result
+**Given** the reference fixtures in `scoring-core/tests/ehp_reference.rs`
+**When** CI runs
+**Then** computed EHP/Ward values agree within ±2% of the recorded tunklab outputs for every reference build, and a drift beyond tolerance fails CI (NFR-1).
 
-**Given** `App.tsx`
-**When** an agent reviews it
-**Then** the inline `calculateScore` subscribe blocks are removed
-**And** `useStatSheet()` is called as a single hook call in `App.tsx`
-**And** `scoringEngine.ts` still exists in place with a deprecation comment (deletion is a follow-up story, not part of this story)
+### Story 1.5: Ailment, attribute, and minion stats
 
-**Given** `optimizationStore`
-**When** an agent reviews its fields
-**Then** `statSheet: StatSheet | null`, `isComputingStats: boolean`, `setStatSheet()`, and `setIsComputingStats()` are all present
-**And** `nodeEfficiencies: NodeEfficiency[] | null` and its setter are present (will be wired in Epic 4 Story 4.4)
-
-### Story 2.6: Stat Sheet UI — Five-Tab Display
-
-> **Quick Dev candidate** — Pure React UI consuming `optimizationStore.statSheet`. Once 2-5 is done the data shape is fixed; this is component work only. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
-
-As a player,
-I want a five-tab stat sheet in the right panel showing General, Offense, Defense, Minion, and Other stats that update in real time on every state change,
-So that I can see my build's computed performance across all dimensions without any manual recalculation.
+As a theory-crafting player,
+I want ailment chances/avoidance, attribute totals, and minion stats computed,
+So that the stat sheet covers ailment and minion builds, not just direct-hit builds.
 
 **Acceptance Criteria:**
 
-**Given** the right panel stat sheet section with the General tab active
-**When** a player views it
-**Then** character level, passive points spent vs. available (per mastery), per-skill levels and skill points spent vs. available, class and mastery name are all displayed with correct values
-**And** values update within one rAF frame of any node allocation or level change
+**Given** a build with ailment modifiers
+**When** `compute_stats` runs
+**Then** Bleed/Ignite/Poison/Freeze/Shock/Armor Shred Chance appear as offense stats and Chill/Stun/Bleed immunity appear as defense avoidance stats (FR-8).
 
-**Given** an Offense tab with a crit-focused build loaded
-**When** the player views it
-**Then** DamageScore, average hit damage (base and crit-weighted), crit chance %, crit multi %, attack or cast speed per active skill, and AoE modifier are all displayed with correct computed values
+**Given** attribute sources across passives/gear/idols
+**When** `compute_stats` runs
+**Then** Str/Dex/Int/Att totals are computed and shown on the General tab, and attribute→secondary-stat conversion is applied only where a parseable ratio exists in game data (complex per-class conversions deferred to Phase 5) (FR-9).
 
-**Given** the Defense tab with any resistance below the 75% cap
-**When** that resistance is displayed
-**Then** it is visually flagged as uncapped (distinct color or warning icon)
-**And** a tooltip or inline label indicates the gap to cap (e.g., "+23% needed")
-
-**Given** a build with no minion skills active
-**When** the stat sheet is rendered
-**Then** the Minion tab is not visible (hidden, not just disabled or greyed out)
-**And** when a minion skill is later assigned, the Minion tab appears without requiring a page refresh
-
-**Given** `optimizationStore.isComputingStats = true` during recalculation
+**Given** a build with at least one minion skill assigned
 **When** the stat sheet renders
-**Then** a loading indicator is visible on the stat sheet
-**And** the previous stat values remain visible during loading (no blank flash or layout shift)
+**Then** Minion Count, Damage Multi, HP Multi, and Speed are computed and the Minion tab is visible; with no minion skill the Minion tab is hidden (FR-10).
 
-**Given** the stat sheet with all five tabs rendered
-**When** `axe(container)` accessibility check runs
-**Then** `expect(await axe(container)).toHaveNoViolations()` passes
-**And** all tabs are keyboard-navigable with correct `aria-selected` states and 2px solid accent-gold focus rings
+### Story 1.6: Five-tab Stat Sheet panel with live recompute
 
+As a theory-crafting player,
+I want all computed stats laid out across General/Offense/Defense/Minion/Other tabs that update instantly,
+So that I always see the current build's full picture without a recalculate button.
+
+**Acceptance Criteria:**
+
+**Given** the computed `StatSheet`
+**When** the panel renders
+**Then** stats are organized across the five tabs exactly per addendum F (General / Offense / Defense / Minion / Other) (UX-DR7)
+**And** the Minion tab is conditionally hidden when no minion skill is assigned.
+
+**Given** any build-state change (node, gear, affix tier, idol, blessing, condition, level, skill, archetype slider)
+**When** the change is applied
+**Then** all stats recompute immediately via the existing `useStatSheet` rAF-debounced path and the panel reflects new values, with no manual recalculate control present (FR-11)
+**And** the Stage-1 display `compute_stats` round-trip stays under 16ms (NFR-10).
+
+### Story 1.7: ModifierSource tracking and opt-in stat_sources
+
+As a developer building attribution,
+I want every Modifier to carry a `ModifierSource` surfaced via an opt-in `stat_sources` response field,
+So that the UI can show where any stat comes from without a second computation pass or a hot-path cost.
+
+**Acceptance Criteria:**
+
+**Given** `ComputeOptions.track_sources == true`
+**When** the display `compute_stats` call runs
+**Then** the response includes `stat_sources: Some(HashMap<StatKey, Vec<ModifierSource>>)` where each `ModifierSource` has `source_type`, `source_label`, `value`, and `modifier_type` (FR-12).
+
+**Given** any scan/knapsack/gear/complete-opt internal `compute_stats` call
+**When** it runs with `track_sources == false`
+**Then** `stat_sources` is `None` and no per-modifier source collection occurs (Pattern P4-2).
+
+**Given** source tracking enabled on the display call
+**When** round-trip time is measured
+**Then** source tracking adds no more than 20ms to the `compute_stats` round-trip (NFR-9).
+
+### Story 1.8: Stat Source Breakdown tooltip with cap-gap annotation
+
+As a theory-crafting player,
+I want to hover any stat row and see every source contributing to it,
+So that I can find exactly which passive, gear, or idol to change — especially for resistance tuning.
+
+**Acceptance Criteria:**
+
+**Given** a stat row with sources
+**When** I hover it
+**Then** an adjacent tooltip lists all `ModifierSource`s grouped by category (Passive Nodes / Gear / Idols / Blessings / Skills / Conditions) with each source's name and contribution (FR-13, UX-DR8)
+**And** the tooltip appears within 50ms of hover (NFR-2)
+**And** it dismisses on mouse-leave.
+
+**Given** a capped stat (e.g., a resistance at 75%)
+**When** the tooltip renders
+**Then** it shows the pre-cap total and the cap gap; a stat with no sources shows "Base value only."
+
+**Given** a resistance below cap
+**When** the Defense tab row renders
+**Then** it shows a delta annotation in the warning color (e.g., `68% (+7 to cap)`) and the tooltip repeats the cap gap (FR-14).
 
 ---
 
-## Epic 3: Build Context — Idols, Blessings & Conditions
+## Epic 2: UI/UX Revamp — Claude Design System
 
-Players can input their complete in-game build context: idol placement on an accurate 5×5 grid, monolith blessings from a searchable panel, and combat conditions (enemy type, charge counts, build-specific toggles). All context flows into the live stat sheet in real time and is included in the Claude optimization payload.
+Re-skin and rebuild the whole app to the Claude Design handoff. A single values-only token update re-skins everything; then header, panels, tab bar, blessing/idol editors, and status bar are rebuilt to the design.
 
-### Story 3.1: Idol Grid Builder — Layout & Placement
+### Story 2.1: Design-token reconciliation
 
 As a player,
-I want an idol grid that matches the Last Epoch in-game layout where I can place idols by size type with valid placement enforcement and clear/reset controls,
-So that my idol configuration is accurately modeled in the app's stat calculations.
+I want the app to adopt the Claude Design palette,
+So that LEBO looks like a polished, native Last Epoch companion in one coherent re-skin.
 
 **Acceptance Criteria:**
 
-**Given** the context panel is open
-**When** a player navigates to the Idols section
-**Then** a 5×5 grid is displayed with the four corners and center cell visually blocked (non-interactive, distinct visual treatment)
-**And** the layout matches the Last Epoch in-game idol grid per the `idol-data.json` `defaultGrid` spec
+**Given** the global stylesheet (Tailwind v4 CSS-first, no config file)
+**When** the token values are updated
+**Then** existing `--color-*` token names are kept and their values updated to the Claude palette (accent gold `#C9A84C`; bg base/surface/elevated/hover `#0A0A0B`/`#141417`/`#1C1C21`/`#252530`; node-suggested `#7B68EE`) and `--color-bg-sunken` `#060607` is added (AR-9, UX-DR1)
+**And** no token is renamed and no unprefixed `--*` token from the prototype is introduced (Pattern P4-8).
 
-**Given** an empty idol grid
-**When** a player clicks an active cell and selects idol size type "1×2"
-**Then** the idol occupies 2 cells in the correct column-orientation and the cells become visually occupied
-**And** the idol's visual representation shows placeholder affix slots (configured in Story 3.2)
+**Given** `rarityColors.ts`
+**When** rarity colors are reconciled
+**Then** `RARITY_COLORS` reflects normal `#C6C0B5`, magic `#4A7A9E`, rare `#C9A84C`, set `#5EBD78`, unique `#D4805A`, legendary `#B068E8` (adding the legendary tier) and all rarity/damage colors continue to route through this utility — never hardcoded inline (UX-DR2).
 
-**Given** a player tries to place a "2×2" idol that would overlap an existing "1×2" idol
-**When** the placement is attempted
-**Then** the placement is rejected and an error message explains the overlap
-**And** no partial placement occurs
-
-**Given** a placed idol
-**When** the player clicks "Clear slot" for that idol
-**Then** the cells return to empty state immediately
-**And** the idol's stat contributions are removed from the stat sheet within one rAF frame
-
-**Given** a grid with multiple placed idols
-**When** the player clicks "Reset all idols"
-**Then** all slots clear and the stat sheet updates to reflect no idol contributions
-
-**Given** idol grid state when a build is saved and then reloaded
-**When** the build is restored
-**Then** all placed idols are at their exact positions with correct size types
-**And** idol state is persisted in `buildStore.activeBuild.contextData`
-
-**Given** `shared/types/build.ts`
-**When** an agent reviews the `BuildState` interface
-**Then** it includes `idolGrid?: IdolGridState`, `blessings?: Record<string, string | null>`, and `activeConditions?: string[]` fields — all optional and defaulting to empty state
-**And** `schemaVersion` remains at `2` — no migration is needed since these fields default to empty values for existing saved builds
-**And** `buildSnapshotSerializer.ts` maps these fields into `BuildSnapshot` so they reach the Rust scoring engine
-
-### Story 3.2: Idol Affix Selection & Stat Contribution
+### Story 2.2: Header navigation
 
 As a player,
-I want to assign prefix and suffix affixes with tier selection to each placed idol, with affix contributions flowing into the live stat sheet and optimization payload,
-So that the scoring engine factors in my actual idol bonuses when computing stats and suggestions.
+I want top-level header navigation between Builder, Complete Build Optimizer, Gear Optimization, and Settings,
+So that I can move between the app's major surfaces.
 
 **Acceptance Criteria:**
 
-**Given** a placed idol of size 1×2
-**When** the player opens the affix picker
-**Then** only affixes valid for that idol's size and type appear in the prefix picker
-**And** only valid suffixes appear in the suffix picker (sourced from `idol-data.json` affix tables)
+**Given** the app header
+**When** it renders
+**Then** it shows nav items Builder | Complete Build Optimizer | Gear Optimization | Settings with the active item highlighted/underlined (FR-33).
 
-**Given** an idol with a T2 Endurance Threshold prefix selected
-**When** the player changes the tier to T5
-**Then** the Defense tab's endurance threshold value updates immediately
-**And** the `BuildSnapshot` passed to `compute_stats` includes the updated tier value
+**Given** any full-screen view
+**When** I press `Esc`
+**Then** the app returns to the Builder view
+**And** navigation is driven by `appStore.currentView` with no React Router introduced.
 
-**Given** an idol type that requires both prefix and suffix (per game rules)
-**When** the player tries to confirm placement with only one affix selected
-**Then** confirmation is blocked with a clear message that both are required for this idol type
-
-**Given** placed idols with affixes configured
-**When** `toBuildSnapshot()` serializes the current build state
-**Then** the full idol context (slot position, idol size, affix IDs, tiers) is present in the returned `BuildSnapshot`
-**And** when `run_optimization` is called, the optimization payload includes idol data so Claude can generate idol-specific suggestions
-
-### Story 3.3: Blessings Panel
-
-> **Quick Dev candidate** — Searchable dropdown + stat contribution via `BuildSnapshot`. Follows the identical pattern as the existing gear slot component. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
+### Story 2.3: Left panel — build identity and section navigator
 
 As a player,
-I want to assign monolith blessings from a searchable panel with one blessing per timeline, with blessing contributions flowing into the stat sheet in real time,
-So that my actual blessings are modeled in the scoring engine and included in optimization suggestions.
+I want the left panel to show my build identity and a section navigator with fill counts,
+So that I can see my build's progress and jump between sections.
 
 **Acceptance Criteria:**
 
-**Given** the context panel with the Blessings section open
-**When** the player views it
-**Then** all monolith timelines are listed, each with a searchable dropdown for selecting one blessing
-**And** selecting a blessing from one timeline does not affect other timelines' selections
+**Given** an active build
+**When** the left panel renders
+**Then** it shows the Active Build card (class glyph, build name, class·mastery subtitle), restyled Class/Mastery selectors, a Build Sections navigator listing each center tab with its fill count (e.g., "Gear — 8/11"), a Save Build button (gold when there are unsaved changes), an Import Character button, and the restyled Saved Builds list (FR-34, UX-DR3).
 
-**Given** the blessing search field in any timeline dropdown
-**When** a player types "critical"
-**Then** only blessings with "critical" in their name or description are shown (case-insensitive)
+**Given** a section meeting its FR-21 gate threshold
+**When** the navigator renders
+**Then** that section shows a gold checkmark
+**And** the former "Paste build code" input is removed (Last Epoch has no build code system).
 
-**Given** a blessing selected from a timeline that provides +14% fire resistance
-**When** that blessing is active
-**Then** the Defense tab's fire resistance value increases by 14%
-**And** the `BuildSnapshot` includes the blessing's stat effect for `compute_stats`
+**Given** the Import Character button
+**When** it is present
+**Then** it is the control that opens the Character Import modal (modal behavior delivered in Epic 7; the button and its open-intent exist here).
 
-**Given** a player who deselects a previously selected blessing
-**When** the blessing is removed
-**Then** the stat sheet removes its contribution immediately
-**And** the optimization payload no longer includes the blessing's effect
-
-**Given** a stale blessings database detected by the staleness check system
-**When** the app displays the blessings panel
-**Then** the staleness indicator uses the existing staleness bar pattern
-**And** the blessing selection remains functional with current data while the update is pending
-
-### Story 3.4: Conditions Panel
-
-> **Quick Dev candidate** — Toggle UI + build-specific filter logic. Pure React + state, no new Rust required. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
+### Story 2.4: Right panel — score gauge, archetype, optimizer chrome
 
 As a player,
-I want a conditions panel where I can set combat context (enemy type, charges, build-specific toggles) that flows into the scoring engine and Claude's optimization payload,
-So that optimization suggestions are accurate for my actual play context (e.g., boss fight with power charges active).
+I want the right panel rebuilt with the score gauge, archetype slider, and optimizer controls,
+So that my build score and optimization intent are clear and on-brand.
 
 **Acceptance Criteria:**
 
-**Given** the Conditions panel is opened
-**When** the player views universal conditions
-**Then** an enemy type selector (standard mob / rare / unique boss / pinnacle boss), per-element enemy resistance inputs, and charge count selectors (frenzy, power, endurance up to their maximums) are all displayed
+**Given** the right panel
+**When** it renders
+**Then** it shows a 3/4-arc SVG Score Gauge with gradient fill, center build score, and delta indicator (UX-DR4); the DMG/SURV/SPD pill trio; an Optimization Intent header with the Juggernaut↔Glass Cannon slider and a zone label in zone color (Juggernaut / Bulwark / Balanced / Aggressive / Glass Cannon, UX-DR5); a collapsible Fine Tune Weights section; the Optimize Build button (gold, pulsing while running); the AI Suggestions card area; and the restyled Stat Sheet (FR-35).
 
-**Given** a Paladin build with "Sigil of Hope" skill assigned to an active slot
-**When** the Conditions panel is displayed
-**Then** a "Is Sigil of Hope active?" toggle is visible
-**And** a non-Paladin build without Sigil of Hope does not show this toggle
+**Given** the Stat Sheet within the right panel
+**When** rendered
+**Then** it hosts the five-tab functional content delivered in Epic 1 (this story restyles the surrounding chrome, not the stat content).
 
-**Given** conditions set to "pinnacle boss" with 3 power charges active
-**When** `compute_stats()` is called
-**Then** `BuildSnapshot.activeConditions` includes `["on_pinnacle_boss", "power_charges_3"]`
-**And** the DamageScore in the stat sheet reflects the condition-adjusted computation
+### Story 2.5: Center canvas six-tab bar with Weaver
 
-**Given** active conditions when `run_optimization` is triggered
-**When** the Claude optimization payload is assembled
-**Then** `build_context.conditions` in the payload matches the active conditions
-**And** Claude references the conditions in at least one suggestion explanation
+As a player,
+I want a six-tab center canvas bar with a divider and keyboard shortcuts,
+So that I can switch between tree and context editors quickly.
 
-**Given** a build-specific condition visible for a skill currently in a slot
-**When** the player replaces that skill with a different skill
-**Then** the condition disappears from the panel
-**And** the `BuildSnapshot` no longer includes the now-irrelevant condition
+**Acceptance Criteria:**
+
+**Given** the center canvas
+**When** the tab bar renders
+**Then** it shows Passive Tree | Weaver | Gear | Skills | Idols | Blessings with badge counts and a visual divider separating the tree tabs (Passive, Weaver) from the context tabs (Gear, Skills, Idols, Blessings) (FR-36).
+
+**Given** the keyboard
+**When** I press keys 1–6
+**Then** the corresponding tab activates
+**And** `CenterTab` is extended to include `'weaver'` and `safeTabIndex` guards out-of-range indices (AR-6 partial)
+**And** the always-mounted `SkillTreeView` is preserved (shown/hidden, never unmounted) to keep the WebGL context.
+
+### Story 2.6: Blessing editor card grid
+
+As a player,
+I want blessings shown as a two-column card grid per timeline,
+So that I can pick blessings inline without dropdowns.
+
+**Acceptance Criteria:**
+
+**Given** the Blessing tab
+**When** it renders
+**Then** it shows a two-column card grid with one card per monolith timeline, the timeline name as the card header, and inline blessing selection (no dropdown) (FR-37)
+**And** the active blessing is highlighted in gold with a gold border
+**And** blessing data wiring is unchanged from Phase 3 (visual rebuild only).
+
+### Story 2.7: Idol editor tray and grid
+
+As a player,
+I want the idol editor rebuilt as a tray plus grid with live placement preview,
+So that placing idols is visual and mistake-proof.
+
+**Acceptance Criteria:**
+
+**Given** the Idol tab
+**When** it renders
+**Then** it shows the 5×4 idol grid on the left and a scrollable Idol Tray on the right listing all idol definitions with shape visualizations (proportional rectangle + `W×H` label), names, stat descriptions, and a filter input (FR-38, UX-DR11)
+**And** an Active Idol Stats summary is shown below the grid.
+
+**Given** an idol selected in the tray
+**When** I hover grid cells
+**Then** a live placement-preview overlay shows which cells would be occupied, only cells where the idol fits (given shape + current occupancy) are highlighted as valid, and overflow/collision cells render invalid and are not clickable
+**And** clicking outside the grid deselects the placing idol
+**And** clicking an occupied cell removes that idol (placement validation routes through the existing `validatePlacement()`).
+
+### Story 2.8: Status bar
+
+As a player,
+I want a footer status bar showing data version, unsaved state, and LLM provider,
+So that I always know my data freshness and which model is active.
+
+**Acceptance Criteria:**
+
+**Given** the footer
+**When** it renders
+**Then** it shows the data version (Season 4 / Shattered Omens + date), an unsaved-changes gold dot when the build is dirty, and the LLM provider + model name (FR-39).
+
+**Given** all components rebuilt in this epic
+**When** they render
+**Then** each keeps a 2px solid accent-gold focus ring on interactive elements, gates animation behind `prefers-reduced-motion`, applies the appropriate aria-live regions, and introduces zero new `vitest-axe` violations (UX-DR12, NFR-14).
 
 ---
 
-## Epic 4: Passive Tree Intelligence & Optimization
+## Epic 3: Passive Tree Optimizer & Allocation
 
-Players can run an AI-powered optimization that scans every unallocated passive node, computes per-path efficiency using Dijkstra + knapsack, detects mismatched/zero-value allocations, and overlays a gold/silver/dim efficiency heatmap on the passive tree canvas. Claude receives the deterministic suggestion list and produces personalized explanations. Hovering a suggestion shows before/after deltas in the live stat sheet.
+Refine the passive-tree optimizer to be strictly on-tree, give suggested nodes unmistakable on-canvas treatment with card↔node cross-navigation, and speed up tree editing with shift+click fill and right-click remove-all.
 
-### Story 4.1: Passive Tree Efficiency Scan — Dijkstra + Knapsack Solver
+### Story 3.1: Scope-restricted optimizer with empty-budget fallback
 
-As a player,
-I want the optimization engine to compute the efficiency of every unallocated passive path using shortest-path traversal with "more" modifier and mastery depth bonuses, then solve for the optimal multi-point allocation within my budget,
-So that optimization recommendations are the highest-value moves for my specific build, not guesses.
-
-**Acceptance Criteria:**
-
-**Given** a passive tree with 50 unallocated nodes and a single allocated region
-**When** `run_efficiency_scan()` is called in `scoring-core/scan.rs`
-**Then** each unallocated node has `efficiency = path_delta_score / effective_point_cost`
-**And** `effective_point_cost` correctly counts all unallocated prerequisites on the minimum-cost Dijkstra path
-
-**Given** a build with Σ Increased% = 250% (above the 200% threshold) and a "more" damage node unallocated
-**When** `run_efficiency_scan()` runs
-**Then** that node's efficiency is multiplied by a factor between 3.0 and 5.0 (scaled by `1 + 250/200 = 2.25`, capped at 5×)
-**And** an equivalent "increased" modifier node at the same point cost scores lower
-
-**Given** a passive node at depth 8 in the mastery sub-tree
-**When** `run_efficiency_scan()` runs
-**Then** that node's efficiency includes the 1.2× mastery depth bonus
-**And** a node at depth 5 does not receive this bonus
-
-**Given** a player with 6 unspent points
-**When** the budget knapsack solver runs after the efficiency scan
-**Then** the greedy phase selects the top 20 highest-efficiency candidate paths as the shortlist
-**And** the DP knapsack over the shortlist finds the globally optimal combination within the 6-point budget
-**And** the output is an ordered allocation list with cheapest-first ordering within each path
-
-**Given** `scoring-core` unit tests for `scan.rs`
-**When** `cargo test -p scoring-core` runs
-**Then** tests cover: correct Dijkstra path finding on a synthetic tree, "more" multiplier application, mastery depth bonus, knapsack output matching manual calculation for a 5-node example
-**And** rayon parallelism produces identical output to a sequential reference implementation
-
-**Given** a passive tree with 150 unallocated nodes
-**When** `run_efficiency_scan()` runs using rayon
-**Then** the scan completes in < 20ms on target hardware
-**And** output is deterministic across repeated runs with the same input
-
-### Story 4.2: Cross-Domain Synergy Detection
-
-As a player,
-I want the engine to detect passive nodes I've allocated that don't apply to my skills, affix mismatches between my gear and my damage delivery type, and build-enabling unique items I'm close to unlocking,
-So that I can reallocate wasted passive points, fix inapplicable gear affixes, and know when a single unique item would be transformative.
+As a player optimizing my tree,
+I want the Optimize Build button to return only passive-node suggestions,
+So that I get actionable tree advice instead of off-tree resistance/gear warnings.
 
 **Acceptance Criteria:**
 
-**Given** a caster build with a "Melee Damage" passive node allocated
-**When** `run_synergy_detection()` is called
-**Then** that node is flagged as a Medium-priority "zero-value reallocation" suggestion
-**And** the suggestion identifies the node by name and explains it contributes zero value (melee damage on a spell build)
+**Given** a build with at least one unspent passive point
+**When** I run the Passive Tree Optimizer
+**Then** every returned suggestion is of kind `passive_node` and none references gear, resistances, blessings, idols, or any off-tree stat (FR-15, NFR-3).
 
-**Given** a spell-only build with "Melee Critical Strike Chance" affix on a gear slot
-**When** `run_synergy_detection()` is called
-**Then** that affix is flagged as a High-priority "mismatched affix" suggestion
-**And** the suggestion identifies "Spell Critical Strike Chance" as the correct replacement scope
+**Given** the defensive floor check
+**When** the optimizer runs
+**Then** the floor check still computes and populates `StatSheet.warnings`, but its results are excluded from `run_optimization` output (Pattern P4-3); the command filters its output to `suggestion.kind == PassiveNode`.
 
-**Given** a build where equipping Exsanguinous would increase BuildScore by > 30%
-**When** `run_synergy_detection()` is called
-**Then** Exsanguinous appears as a "Game-Changer" suggestion
-**And** the suggestion includes the specific stat threshold needed and the current gap
+**Given** a build with zero unspent passive points
+**When** I run the optimizer
+**Then** it returns the message "No unspent passive points available. Allocate additional points or use the Complete Build Optimizer for a full reallocation analysis." (FR-16).
 
-**Given** synergy detection results combined with the efficiency scan results
-**When** `run_optimization` assembles the full suggestion list
-**Then** Critical defensive suggestions (from the floor check) rank above all synergy and efficiency suggestions
-**And** High-priority synergy suggestions (mismatched affixes) rank above Medium-priority (zero-value reallocations)
-
-### Story 4.3: `run_optimization` Tauri Command & Claude Narrative
+### Story 3.2: Enhanced suggested-node visualization on the canvas
 
 As a player,
-I want clicking "Optimize" to trigger the full pipeline and receive Claude's natural-language explanations that reference specific delta values from the deterministic engine,
-So that every suggestion I read is verifiably correct and explained in plain language referencing my specific build numbers.
+I want suggested nodes rendered with tiered, hover-free highlighting,
+So that I can spot the best nodes on the tree at a glance.
 
 **Acceptance Criteria:**
 
-**Given** the `lib.rs` invoke handler
-**When** an agent inspects it
-**Then** `run_optimization` is registered in `invoke_handler!`
-**And** the handler is `async` and uses `spawn_blocking` for the CPU-intensive scan and synergy stages
+**Given** ranked suggestions
+**When** the PixiJS canvas renders them
+**Then** Gold-tier nodes scale to 1.4× with a pulsing gold glow (1.8s cycle), Silver-tier scale to 1.2× with a steady silver glow, and Dim-tier scale to 1.05× with a muted blue outline and no animation (FR-17).
 
-**Given** a `run_optimization` call completes
-**When** the Claude payload is assembled
-**Then** the payload includes for each suggestion: `ΔBuildScore`, `EffectivePointCost`, synergy flags, and the specific numerical context (current crit chance, exact resistance gap, node ID and path)
-**And** `build_context` includes class, mastery, active skills, level, slider position, and active conditions
+**Given** a suggested node whose prerequisites are not yet allocated
+**When** it renders
+**Then** a dashed gold path line connects it to the nearest allocated node
+**And** a suggested node is visually distinct from a merely available (allocatable) node without hovering.
 
-**Given** Claude processes the optimization payload
-**When** suggestion explanations stream back via `optimization:suggestion-received`
-**Then** each explanation references the specific delta values from the engine (e.g., "190% average damage gain")
-**And** the suggestion stream order matches the engine's priority order exactly
-**And** Claude does not add suggestions beyond what the engine produced
+**Given** `prefers-reduced-motion` is set
+**When** suggestions render
+**Then** the pulsing glow is suppressed in favor of a static treatment (`drawSuggested` skips the glow ring).
 
-**Given** the existing `useOptimizationStream` hook
-**When** an agent reviews it after this story
-**Then** it calls `invokeCommand('run_optimization', { snapshot })` as the active optimization path
-**And** all existing suggestion streaming behavior is preserved (`optimization:suggestion-received` events still fire per suggestion)
-
-**Given** `run_optimization` completes Stages 1–3 and Stage 5 (synergy detection)
-**When** it triggers the Claude narrative layer
-**Then** it invokes the existing streaming function in `claude_commands.rs` with the assembled optimization payload
-**And** the `optimization:suggestion-received` event pipeline is unchanged — no new IPC event namespace is introduced for the narrative layer
-**And** `run_optimization` does not replace `invoke_claude_api` but delegates to the existing Claude streaming call internally for the narrative portion
-
-### Story 4.4: Node Efficiency Overlay on Passive Tree
+### Story 3.3: Suggestion card content and tree cross-highlight
 
 As a player,
-I want a color-coded efficiency heatmap overlay on the passive tree canvas showing which unallocated nodes offer the highest value for my current budget, with a toggle button to hide/show it,
-So that I can visually identify the highest-value passive nodes at a glance without reading every suggestion detail.
+I want each suggestion card to be informative and to highlight its node on the tree when I interact with it,
+So that I never have to hunt for the suggested node.
 
 **Acceptance Criteria:**
 
-**Given** `run_optimization` completes with node efficiencies
-**When** `optimizationStore.nodeEfficiencies` is populated
-**Then** the passive tree canvas renders efficiency tier colors on every unallocated node: gold = top quartile, silver = second quartile, dim = third/fourth quartile or unreachable within budget
+**Given** a suggestion
+**When** its card renders in the right panel
+**Then** it shows rank number, node name, score delta (e.g., `+4.2`), point cost + path cost (e.g., `2 pts / 4 pts to reach`), and a one-sentence Claude mechanical explanation citing the specific deltas (FR-19).
 
-**Given** all passive points are spent (zero unspent budget)
-**When** the overlay is active
-**Then** no efficiency overlay colors are rendered on any node (per FR-A27)
+**Given** I hover or click a suggestion card
+**When** the interaction fires
+**Then** the corresponding node(s) pulse with an intensified highlight and a compact canvas tooltip shows node name, point cost, path cost, and per-stat deltas (FR-18).
 
-**Given** the tree controls bar
-**When** a player clicks the overlay toggle button
-**Then** the overlay hides if currently visible, and shows if currently hidden
-**And** the overlay defaults to visible when `nodeEfficiencies` is non-null
+**Given** the suggested node is off-screen (tree panned/zoomed away)
+**When** I interact with its card
+**Then** the canvas smoothly animates to center it via `SkillTreeCanvasHandle.focusNode(nodeId)` (AR-6), keeping the canvas props/ref-driven with no store access inside it.
 
-**Given** the efficiency overlay is rendering
-**When** a frame renders
-**Then** the overlay adds ≤ 2ms to the frame render time (precomputed when `nodeEfficiencies` changes, not recalculated per frame)
-
-**Given** `SkillTreeCanvas` implementation
-**When** an agent reviews it
-**Then** `SkillTreeCanvas` does NOT access `optimizationStore` directly
-**And** `nodeEfficiencies` is passed as a prop from `SkillTreeView` (following the props-only canvas rule)
-
-### Story 4.5: Stat Sheet Suggestion Preview — Hover Deltas
-
-> **Quick Dev candidate** — Purely additive React UI: hover state on suggestion items drives delta display in the stat sheet. No Rust work, no new IPC. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
+### Story 3.4: Shift+click fill node to max
 
 As a player,
-I want to hover over any AI suggestion to see how applying it would change my stat sheet values — gains in green and losses in red — so I can evaluate the trade-off at a glance.
+I want shift+click to fill a node to its max in one action,
+So that I can allocate multi-point nodes without repeated clicking.
 
 **Acceptance Criteria:**
 
-**Given** a suggestion item in the suggestion list
-**When** the player hovers over it
-**Then** affected stat sheet values display before/after deltas: gains appear as green `(+X%)`, losses appear as red `(-X%)`
-**And** unaffected stat sheet values show no delta notation
+**Given** a partially-allocated or available node
+**When** I shift+click it
+**Then** all remaining points up to the node's `max_points` or the remaining budget (whichever is lower) are allocated in a single action (FR-44).
 
-**Given** hover delta display is active
-**When** the player moves the mouse off the suggestion item
-**Then** all stat sheet values return to normal display immediately with no animation delay
+**Given** 2 unspent points and a node with 3 points remaining
+**When** I shift+click
+**Then** exactly 2 points are allocated (budget-limited)
+**And** the batch is recorded as a single undo step via `buildStore.fillNodeToMax`, never a loop of `applyNodeChange` calls (Pattern P4-7, NFR-6).
 
-**Given** the stat sheet is in a loading state (`isComputingStats = true`)
-**When** the player hovers a suggestion
-**Then** hover delta display is suppressed — deltas cannot be shown against an in-flight computation
+### Story 3.5: Right-click remove all points with orphan cascade
 
-**Given** the hover delta implementation
-**When** `axe(container)` runs on the suggestion list
-**Then** `expect(await axe(container)).toHaveNoViolations()` passes
-**And** color is not the sole differentiator — delta values include `+` or `-` prefix signs for color-blind accessibility
+As a player,
+I want right-click to remove all points from a node in one action,
+So that I can quickly undo an allocation without clicking down each point.
 
+**Acceptance Criteria:**
+
+**Given** an allocated node with no dependent allocated children
+**When** I right-click it
+**Then** all its points are removed in one action as a single undo step via `buildStore.removeAllPoints` (FR-45, Pattern P4-7).
+
+**Given** an allocated node whose removal would orphan allocated child nodes
+**When** I right-click it
+**Then** a confirmation prompt names the orphaned nodes ("Removing this node will also deallocate: [Node A], [Node B]. Continue?")
+**And** on confirm, the node and its orphaned children are deallocated together in one single undo step.
 
 ---
 
-## Epic 5: Gear Optimization Screen
+## Epic 4: Gear System & Optimization
 
-Players can open a dedicated Gear Optimization screen that analyzes all 12 gear slots against their build's ideal affix configuration. The player designates skill roles, and the scoring engine computes skill-context-aware affix weights, ranks slots by upgrade priority, and generates per-slot wishlists. Claude produces a prioritized gear narrative referencing the player's specific Primary Offense skill.
+Give players a full in-app gear workflow: an item-database browser, a grouped affix picker with tier pips, per-slot affix pips, and a three-column Gear Optimization screen with drag-drop equip and AI-ranked swaps. The affix `position` discriminator data gate comes first.
 
-### Story 5.1: Skill Role Designation
+### Story 4.1: Affix prefix/suffix discriminator (data gate)
 
-> **Quick Dev candidate** — Role-tagging UI + persistence in `buildStore`. Self-contained React component with no Rust work. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
-
-As a player,
-I want to designate which of my active skills is my Primary Offense (required) and optionally tag others as Secondary Offense, Defensive, or Utility — with those designations saved with the build,
-So that the gear scoring engine knows which damage type and delivery type to optimize affix recommendations around.
+As a developer enabling the gear features,
+I want a `position: 'prefix' | 'suffix'` discriminator on affixes end-to-end,
+So that the Affix Picker can group correctly and gear scoring sees suffixes.
 
 **Acceptance Criteria:**
 
-**Given** the Gear Optimization screen opened for the first time (no roles set)
-**When** the player views the screen
-**Then** a prompt explains that at least one skill must be designated Primary Offense before analysis can run
-**And** a role designation UI shows all active skill slots with role buttons or dropdowns
+**Given** the affix schema
+**When** the discriminator is added
+**Then** `AffixEntryV2`/`GearAffixV2` (TypeScript) and the Rust affix type gain a `position` field populated by the data-ingestion pipeline, with an absent value treated as `prefix` (back-compatible) (AR-2).
 
-**Given** skill roles are designated and the build is saved
-**When** the build is reloaded
-**Then** the skill role designations are restored exactly as saved
-**And** roles do not affect the passive tree optimization flow or the main optimization view
+**Given** `buildSnapshotSerializer.ts`
+**When** it serializes gear
+**Then** it emits each affix's `position`, so `detect_mismatched_affixes` and `gear.rs` see suffixes (resolving the "all affixes classified as prefixes" deferred-work item, AR-15).
 
-**Given** a player changes the skill assigned to a slot that had a role
-**When** the skill changes
-**Then** the role designation for that slot is cleared
-**And** the Gear Optimization screen's role display reflects the cleared state
+**Given** the Rust lib surface
+**When** this story completes
+**Then** `GearSlotRanking` and `WishlistAffix` are re-exported from `lib.rs` and the stale `MODELS.len() == 4` test is corrected (AR-16)
+**And** downstream gear engine and UI work can proceed against mock-annotated affixes until ingestion fully lands.
 
-**Given** only a Secondary Offense role is designated with no Primary Offense
-**When** the player clicks "Analyze Gear"
-**Then** the analysis is blocked with an error: "Please designate at least one skill as Primary Offense before running gear analysis"
+### Story 4.2: Item Picker Modal
 
-### Story 5.2: Gear Affix Scorer — Rust Implementation
-
-As a player,
-I want the scoring engine to compute skill-context-aware affix weights that zero out inapplicable affixes, identify ideal affix configurations per slot, and rank slots by upgrade priority,
-So that gear recommendations are specific to my build's damage type and delivery method rather than generic.
+As a player building gear,
+I want a searchable, filterable item-database modal,
+So that I can find and equip any base item without leaving the app.
 
 **Acceptance Criteria:**
 
-**Given** a Poison Bladedancer build with Poison Eruption as Primary Offense (spell delivery type)
-**When** `run_gear_scoring()` computes affix weights
-**Then** Poison-damage affixes and ailment-scaling prefixes score significantly higher than generic damage affixes
-**And** "Melee Critical Strike Chance" scores exactly zero (delivery type mismatch: Poison Eruption is a spell)
+**Given** an empty gear slot or "Swap item" on an equipped slot
+**When** I click it
+**Then** the Item Picker Modal opens with sidebar filters (Rarity, Item Level range slider, Required Tags), a real-time search bar, and an item grid showing icon (slot glyph in rarity color), name, base type, and affix slot count or unique flavor text (FR-27).
 
-**Given** all 12 equipped gear slots
-**When** `run_gear_scoring()` computes UpgradeScore per slot
-**Then** each slot has an `UpgradeScore` = gap between current affix config and ideal (top 2 prefix + 2 suffix by weight × tier value)
-**And** the slot with the highest UpgradeScore is identified as the Priority Upgrade slot
+**Given** the full item database
+**When** I type a search query
+**Then** filtered results return in under 100ms via a prebuilt client search index (NFR-5).
 
-**Given** a player changes their Primary Offense skill designation
-**When** the affix weight cache is checked
-**Then** the cache is invalidated and the next `run_gear_scoring()` recomputes all weights from scratch
+**Given** an item in the grid
+**When** I single-click it
+**Then** it is selected and equippable via an "Equip Item" button; double-click equips immediately with a default affix configuration that can be modified
+**And** hovering an item card shows a tooltip with its full stat description.
 
-**Given** the `scoring-core` unit tests for `gear.rs`
-**When** `cargo test -p scoring-core` runs
-**Then** tests cover: delivery-type zero-weight filtering, damage-element filtering, ideal prefix/suffix ranking, UpgradeScore computation for a known-correct gear scenario
-**And** all tests pass
+### Story 4.3: Affix Picker Modal
 
-### Story 5.3: `run_gear_scoring` Tauri Command & TypeScript Wiring
+As a player tuning gear,
+I want a grouped affix picker with full names, ranges, descriptions, and tier pips,
+So that I can add the exact affix and tier I want.
+
+**Acceptance Criteria:**
+
+**Given** "Add Affix" or an existing affix row
+**When** I click it
+**Then** the Affix Picker Modal opens with a stat-name search and affixes grouped under Offense / Defense / Utility, each row showing name, category tag (e.g., "Defense · max T7"), full-tier stat range, and a one-line description present for every affix entry (FR-28).
+
+**Given** an affix selected
+**When** the tier selector appears
+**Then** a Tier Pip row (T1–Tmax) is shown using the Phase 3 TierPips component, clicking a pip sets the tier, the live value for the selected tier is displayed (e.g., "T5 → 48–64%"), and Apply adds or replaces the affix at that tier (UX-DR9).
+
+**Given** a specific gear slot
+**When** the picker lists affixes
+**Then** only affixes valid for that slot type are shown (weapon affixes do not appear for boots).
+
+### Story 4.4: Gear slot affix pips
+
+As a player,
+I want each equipped slot to show affix pips I can click,
+So that I can see and edit affixes directly from the paper-doll.
+
+**Acceptance Criteria:**
+
+**Given** an equipped gear slot
+**When** it renders
+**Then** four affix pips appear below the item name, filled pips indicating present affixes and empty pips indicating available positions (FR-29).
+
+**Given** an affix pip
+**When** I click it
+**Then** the Affix Picker opens for that specific affix position.
+
+### Story 4.5: Three-column Gear Optimization workspace with drag-drop
+
+As a player,
+I want a dedicated three-column gear screen with drag-and-drop equip,
+So that I can manage my full loadout in one workspace.
+
+**Acceptance Criteria:**
+
+**Given** the Gear Optimization view
+**When** it renders
+**Then** it shows a left paper-doll with all 11 slots as drop targets (equipped item icon + name + rarity-color border, or "drag to equip" empty state), a center searchable gear database with slot/rarity filter pills and draggable item cards, and a right detail panel for the active slot with its affix list, tier pips, and Affix Picker integration (FR-30, UX-DR10).
+
+**Given** a draggable item card
+**When** I drag it over a slot
+**Then** a valid (correct-type) slot highlights gold and an invalid slot highlights red; dropping on a valid slot equips the item; double-clicking a card equips it to its default slot type (FR-31)
+**And** drag-and-drop uses native HTML5 DnD with no new frontend dependency (AR-8).
+
+### Story 4.6: AI gear analysis
+
+As a player,
+I want AI-ranked gear-swap recommendations,
+So that I know which gear upgrades most improve my build.
+
+**Acceptance Criteria:**
+
+**Given** a build with gear and skill roles
+**When** I click "Optimize Gear"
+**Then** the analysis payload includes current gear, build score, skill-role designations, and archetype weights, and results appear in a slide-in panel ranked by slot showing current item → recommended item, ΔBuildScore, and Claude's mechanical reason (FR-32).
+
+**Given** a returned recommendation
+**When** the frontend processes it
+**Then** any recommendation whose item ID is absent from the payload's catalog subset is rejected before display, and slots with no meaningful upgrade are omitted rather than shown as placeholders (Pattern P4-6).
+
+---
+
+## Epic 5: Skills & Popular Builds Data
+
+Complete the skills database to all 133 Season 4 skills with icons and specialization data, surface a full skill picker, and ship a bundled Popular Builds Database with client-side matching that powers popular-build awareness and the Complete Build Optimizer's skill suggestion.
+
+### Story 5.1: Complete 133-skill database
+
+As a player,
+I want every Season 4 skill available for my mastery,
+So that I can build any character without missing skills.
+
+**Acceptance Criteria:**
+
+**Given** the skills database
+**When** it is completed
+**Then** all 133 Season 4 skills are present, each with skill name, class/mastery affiliation, tags (damage type, delivery type), an icon reference, and specialization tree node data (FR-40).
+
+**Given** an active mastery
+**When** the skill data is queried
+**Then** all class-appropriate skills for that mastery are available to the picker.
+
+### Story 5.2: Complete skill icons
+
+As a player,
+I want every skill to show its icon,
+So that the skill picker is visually scannable.
+
+**Acceptance Criteria:**
+
+**Given** a skill with an icon asset
+**When** the picker renders it
+**Then** the icon is resolved via the Rust icon pipeline (`get_icon_cache_path`) (FR-41).
+
+**Given** a skill whose icon is not cached
+**When** the picker renders it
+**Then** it falls back to the placeholder glyph without error.
+
+### Story 5.3: Skills tab full picker
+
+As a player,
+I want the Skills tab to show a complete picker and my specialization allocations,
+So that I can assign and inspect my five skills.
+
+**Acceptance Criteria:**
+
+**Given** the Skills tab
+**When** it renders
+**Then** it shows a full skill picker grid (icon + name + tag) drawing from the complete 133-skill database, with skills assignable to the 5 skill slots (FR-43).
+
+**Given** an assigned skill
+**When** it renders in a slot
+**Then** its specialization point allocation is shown
+**And** `SkillPickerGrid` continues to exclude skills already assigned to other slots.
+
+### Story 5.4: Popular Builds Database with client-side matching
+
+As a player,
+I want a bundled database of popular builds with offline matching,
+So that I can see and reuse proven skill combinations for my mastery.
+
+**Acceptance Criteria:**
+
+**Given** the bundled `popular-builds.json`
+**When** the app loads
+**Then** it contains ≥3 curated builds for each of the 15 masteries (≥45 entries), each with mastery, five skill IDs, a build name, and a source URL, and it loads once into `gameDataStore.popularBuilds` following the bundled `conditions.json` pattern (FR-42, AR-7, NFR-7).
+
+**Given** a build's class/mastery and currently-assigned skills
+**When** `popularBuildMatch.ts` runs
+**Then** it filters by exact mastery match, sorts by count of skill overlap with assigned skills, and returns the top 3 matches entirely client-side with no network request (NFR-13).
+
+---
+
+## Epic 6: Complete Build Optimizer
+
+A full-screen, scope-driven holistic optimizer that reasons across tree, skills, gear, idols, and blessings together and returns a unified, domain-grouped, ranked roadmap — with completeness gates, a skill-suggestion shortcut, and a non-blocking Optimization Orb. Depends on Epic 1 (stat engine) and Epic 5 (popular builds for FR-23).
+
+### Story 6.1: Complete Build Optimizer view and routing
+
+As a player,
+I want a full-screen Complete Build Optimizer reachable from the header,
+So that I have a dedicated space for holistic optimization.
+
+**Acceptance Criteria:**
+
+**Given** the header navigation
+**When** I click "Complete Build Optimizer"
+**Then** the builder view is replaced by the full-screen Complete Build Optimizer and a "Back to Builder" control returns to it (FR-20).
+
+**Given** the view topology
+**When** this story completes
+**Then** `appStore.currentView` is extended with `'complete-optimizer'` and routed in `App.tsx` with no React Router (AR-6)
+**And** `Esc` returns to the Builder (consistent with FR-33).
+
+### Story 6.2: Scope Selector
+
+As a player,
+I want to choose which build sections the optimization includes,
+So that I can focus or exclude sections like the empty Weaver tree.
+
+**Acceptance Criteria:**
+
+**Given** the Complete Build Optimizer
+**When** the Scope Selector renders
+**Then** it shows one checkbox per section — Passive Tree, Active Skills, Gear, Idols, Blessings (checked by default) and Weaver (unchecked) — each with a secondary fill-status label (e.g., "Gear 8/11") (FR-21).
+
+**Given** an unchecked section
+**When** an optimization runs
+**Then** that section is excluded from the optimization payload and from the suggestions.
+
+### Story 6.3: Completeness gates with inline alerts
+
+As a player,
+I want clear validation before a run with direct fixes,
+So that I know exactly what to complete before optimizing.
+
+**Acceptance Criteria:**
+
+**Given** checked sections
+**When** I click "Run Complete Build Optimization"
+**Then** each checked section's completeness gate is evaluated before analysis (Passive Tree ≥1 point; Active Skills ≥2 slots; Gear all 11 slots; Idols none; Blessings ≥1; Weaver budget >0) (FR-21, FR-22).
+
+**Given** one or more failed gates
+**When** validation runs
+**Then** all failing gates render their inline red alert cards simultaneously, each with the section icon, a plain-language reason (e.g., "Gear requires all 11 slots filled — 3 slots are empty"), and a "Go to [Section]" button that navigates the builder to the relevant tab
+**And** the optimization run does not start until all checked gates pass.
+
+### Story 6.4: Complete optimization command, scope mask, and stream
 
 As a developer,
-I want the `run_gear_scoring` Tauri command registered, with `useGearStream.ts` subscribing to `gear:analysis-complete` and `gear:error` events — completely isolated from the `optimization:*` namespace,
-So that the Gear Optimization screen receives gear analysis results without interfering with the main optimization flow.
+I want a `run_complete_optimization` command that composes existing stages behind a scope mask and streams results,
+So that the multi-domain flow reuses one engine without duplicating scoring logic.
 
 **Acceptance Criteria:**
 
-**Given** `lib.rs` invoke handler
-**When** an agent inspects it
-**Then** `run_gear_scoring` is registered in `invoke_handler!`
-**And** the handler is `async` and uses `spawn_blocking` for the gear scoring computation
+**Given** a snapshot and a `CompleteOptScope`
+**When** `run_complete_optimization` runs
+**Then** it executes inside `spawn_blocking`, reuses the existing scan/gear/synergy/idol stage functions gated by the scope mask, and never duplicates scoring logic; all internal `compute_stats` calls pass `track_sources: false` (AR-5, Pattern P4-2).
 
-**Given** `run_gear_scoring` completes on the Rust side
-**When** the gear analysis result is ready
-**Then** a `gear:analysis-complete` Tauri event is emitted with the full `GearAnalysis` payload
-**And** the `optimization:*` event namespace is NOT used for any gear analysis events
+**Given** the streaming surface
+**When** results are produced
+**Then** they stream over a dedicated `complete-opt:suggestion-received` (domain-badged) / `complete-opt:complete` / `complete-opt:error` namespace, with no reuse of `optimization:*` or `gear:*` (Pattern P4-4)
+**And** a new `useCompleteOptStream.ts` hook subscribes and populates `optimizationStore.completeOpt`, leaving the existing two stream hooks unmodified.
 
-**Given** `shared/stores/useGearStream.ts`
-**When** the hook is active
-**Then** it subscribes to `gear:analysis-complete` and `gear:error` events
-**And** on `analysis-complete`, it updates the relevant store field with the `GearAnalysis` payload
-**And** on `gear:error`, it surfaces a user-facing error via the existing toast/error system
-
-**Given** the `GearAnalysis` TypeScript type in `shared/types/statSheet.ts`
-**When** a developer imports it
-**Then** field names mirror the Rust output struct's snake_case naming exactly
-**And** the type includes `slotRankings: GearSlotRanking[]`, `prioritySlot: string`, and all required nested types
-
-**Given** placed idols in the build when `run_gear_scoring` is called
-**When** the gear scoring command runs
-**Then** the full idol context (slot position, idol size, affix IDs, tiers) is present in the `BuildSnapshot` passed to the Rust scoring engine
-**And** `GearSlotRanking` entries use the canonical 12 slot IDs established in Story 1.3
-
-### Story 5.4: Gear Optimization View — Priority Ranking & Wishlists
+### Story 6.5: Unified domain-grouped suggestion output
 
 As a player,
-I want the Gear Optimization screen to show all 12 gear slots ranked by upgrade priority with a per-slot affix wishlist including tier targets, mechanical reasons, and satisfied-affix checkmarks, weighted by my slider position,
-So that I know exactly what to craft or trade for, in order of impact.
+I want results grouped by domain and ranked,
+So that I can act on the highest-impact change in each area.
 
 **Acceptance Criteria:**
 
-**Given** the Gear Optimization screen after "Analyze Gear" completes
-**When** the player views the ranking list
-**Then** all 12 gear slots appear in descending UpgradeScore order
-**And** each slot shows its name and "XX% of ideal" efficiency value
-**And** the highest-gap slot is visually flagged as "Priority Upgrade" (distinct badge or color)
+**Given** a completed optimization
+**When** results render
+**Then** suggestions are grouped under domain section headers (Passive Tree / Gear / Idols / Blessings / Active Skills), ranked by ΔBuildScore within each, using the FR-19 card format plus a domain badge; gear cards show current→recommended + delta + reason; sections expand/collapse (FR-25).
 
-**Given** a Unique item in a gear slot whose special effect contributes positively to BuildScore
-**When** that slot is shown in the ranking
-**Then** it is marked "correct — keep" regardless of affix UpgradeScore
-**And** a tooltip explains: "This unique's effect contributes positively to your build"
+**Given** passive-tree suggestions in the results
+**When** I click "Focus on Passive Tree"
+**Then** the builder navigates to the passive tree with all Complete Build Optimizer passive suggestions pre-highlighted using the FR-17 visualization
+**And** the run returns suggestions spanning at least 3 domains for a fully-configured build (NFR-4).
 
-**Given** a gear slot's per-slot wishlist section
-**When** the player views it
-**Then** up to 2 prefix recommendations and 2 suffix recommendations are shown, each with: affix name, target tier label (e.g., "T5+"), and a one-sentence mechanical reason
-**And** current affixes that match a wishlist item are shown with a checkmark (satisfied)
-**And** missing or below-target-tier affixes are visually highlighted
-
-**Given** the Glass Cannon ↔ Juggernaut slider at position 20 (near Juggernaut)
-**When** gear analysis runs
-**Then** defensive affixes (Hybrid Health, Endurance Threshold, Resistances) rank in the top positions of every slot's wishlist
-**And** at slider position 80, offensive affixes rank highest
-
-**Given** the Gear Optimization screen rendered
-**When** `axe(container)` runs
-**Then** `expect(await axe(container)).toHaveNoViolations()` passes
-**And** all slot items and wishlist rows have accessible labels and keyboard-navigation support
-
-### Story 5.5: Claude Gear Narrative Integration
+### Story 6.6: Optimization Orb animation
 
 As a player,
-I want Claude to generate a personalized gear narrative that references my Primary Offense skill by name, identifies my weakest slot with specific delta values, surfaces Game-Changer unique item recommendations, and calls out my slider-driven archetype priorities,
-So that the gear narrative feels tailored to my specific build rather than generic boilerplate.
+I want an engaging animation while optimization runs,
+So that the wait feels intentional — without delaying my results.
 
 **Acceptance Criteria:**
 
-**Given** a Poison Bladedancer with "Poison Eruption" as Primary Offense and a crit-less Amulet
-**When** Claude generates the gear narrative
-**Then** the narrative names "Poison Eruption" at least once and identifies the Amulet by slot name
-**And** the narrative includes specific delta values from the engine (e.g., "+22% average damage" from a T5 crit prefix)
+**Given** a running optimization
+**When** the orb renders
+**Then** it shows a central gold/void orb with one token per checked section orbiting inward and absorbed (130px radius, one absorbed per ~620ms), and status text cycling the six canonical phrases ("Ingesting build state…" → … → "Assembling narrative…"), built in CSS per addendum D (FR-24, UX-DR6).
 
-**Given** a build where equipping Exsanguinous would be a Game-Changer (>30% BuildScore increase)
-**When** Claude generates the gear narrative
-**Then** Exsanguinous is explicitly surfaced as a "Game-Changer" recommendation
-**And** the narrative includes the specific stat threshold needed and how close the build currently is
+**Given** backend results arrive
+**When** `complete-opt:complete` fires
+**Then** results render immediately regardless of orb step — if results arrive first, the orb snaps to complete and the panel slides in within 500ms of backend return; the orb never gates the IPC result path (NFR-8, Pattern P4-5)
+**And** `prefers-reduced-motion` collapses the orb to a static progress indicator.
 
-**Given** the slider set to full Glass Cannon position
-**When** Claude generates the gear narrative
-**Then** the narrative includes text stating that offensive affixes are prioritized and notes that shifting toward Juggernaut would elevate Hybrid Health and Endurance Threshold to the top of every slot
+### Story 6.7: Idol AI recommendations
 
-**Given** the gear narrative is being generated
-**When** the player views the Gear Optimization screen
-**Then** a streaming/loading state is shown while Claude generates
-**And** narrative text appears progressively as Claude streams it
+As a player,
+I want specific idol-placement recommendations when idols are in scope,
+So that I can fill empty idol cells optimally.
+
+**Acceptance Criteria:**
+
+**Given** Idols in scope with empty grid cells
+**When** the optimization runs
+**Then** it recommends specific idol placements — size, placement coordinates, affix selection, and resulting stat contribution — shown as cards with a grid placement preview (FR-26).
+
+**Given** the idol recommendation payload
+**When** it is assembled
+**Then** it includes only a filtered idol-database subset (idol types/affixes relevant to the build's damage types and empty cells), never the full idol DB (AR-13)
+**And** recommended placements reference real affix IDs/tiers, do not conflict with existing placed idols (validated via `validatePlacement()`), and any rec with an out-of-payload ID is rejected before display (Pattern P4-6).
+
+### Story 6.8: Skill suggestion from Popular Builds
+
+As a player with an incomplete skill bar,
+I want suggested skill sets from popular builds,
+So that I can fill my remaining slots with proven combinations and proceed to optimize.
+
+**Acceptance Criteria:**
+
+**Given** Active Skills is checked and fewer than 2 slots are filled
+**When** the gate renders
+**Then** it includes a "Suggest skills for my build" action that queries the Popular Builds Database (Epic 5) by the build's class/mastery and already-assigned skills, showing a ranked list of popular skill sets with the current partial match highlighted (FR-23).
+
+**Given** I select a suggested skill set
+**When** it is applied
+**Then** it auto-fills only the remaining empty slots without overwriting already-assigned skills
+**And** when no popular build shares the assigned skills, the closest mastery-level match is shown.
 
 ---
 
-## Epic 6: Visual Fidelity & UX Polish
+## Epic 7: Character Import
 
-The app achieves Last Epoch's authentic visual language throughout: canonical rarity colors, damage-type color coding, tree backgrounds matching the game aesthetic, keyboard shortcuts that match lastepochtools.com conventions, scrollable node tooltips, and Shift+click multi-point allocation.
+Let players import an existing Last Epoch character instead of rebuilding by hand: a two-tab modal whose Offline tab scans and parses local save files into a new build, and whose Online tab ships as a wired stub pending EHG API access.
 
-### Story 6.1: Item Rarity & Damage-Type Color Systems
-
-> **Quick Dev candidate** — CSS constants + applying color classes throughout. No logic, no Rust. Easiest story in the project. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
+### Story 7.1: Character Import modal shell and error wiring
 
 As a player,
-I want all item names, tooltips, and affix headers to use Last Epoch's canonical rarity colors, and all damage/resistance values in the stat sheet to use LE's canonical damage-type colors,
-So that the app's visual language feels continuous with the game itself.
+I want an Import Character modal with Offline and Online tabs,
+So that I have one place to bring a character into LEBO.
 
 **Acceptance Criteria:**
 
-**Given** an item name displayed in any panel (gear context, tooltips, affix headers)
-**When** the item's rarity is "Rare"
-**Then** the item name text renders in `#D4AF37` (Rare yellow)
-**And** all 7 rarity colors are applied consistently: Common (#E8E8E8), Magic (#5B9BD5), Rare (#D4AF37), Unique (#E87722), Set (#4CAF50), Exalted (#9C27B0), Legendary (#C62828)
+**Given** the left-panel Import Character button
+**When** I click it
+**Then** a modal opens with two tabs, Offline and Online, dismissible via an ✕ button or clicking outside (FR-46).
 
-**Given** a Unique item equipped in a gear slot
-**When** the gear panel renders
-**Then** the item name appears in `#E87722` (Unique orange)
-**And** all of its affix entries are read-only (no affix picker, no tier selector)
+**Given** the error-handling surface
+**When** this story completes
+**Then** `CHARACTER_IMPORT_ERROR` exists in `ErrorType`/`errorNormalizer.ts` (reusing the `SCORING_ERROR` discipline) so import commands normalize errors correctly (AR-10).
 
-**Given** the Defense tab showing Fire resistance
-**When** the stat is displayed
-**Then** the value and label use `#E85D2A` (Fire color)
-**And** each damage type uses its canonical color: Cold (#5BC8E8), Lightning (#F0D020), Void (#A050D0), Poison (#50B840), Physical (#D0D0D0), Bleed (#A03030)
-
-**Given** any panel using the new color system
-**When** `axe(container)` runs
-**Then** `expect(await axe(container)).toHaveNoViolations()` passes
-**And** color is not the only differentiator — icons, labels, or text also distinguish rarity and damage type for color-blind accessibility
-
-### Story 6.2: Tree Background Textures
-
-> **Quick Dev candidate** — One `TilingSprite` insertion in `pixiRenderer.ts` + a CSS background class on `WeaverTreePlaceholder`. Localized changes, no new IPC. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
+### Story 7.2: Save-file format spike and offline detection
 
 As a player,
-I want the passive tree and skill tree canvases to display a dark stone texture background with damage-type tint overlays on skill trees and a void/crystalline purple background on the Weaver tab,
-So that the tree UI feels immersive and visually connected to the game.
+I want LEBO to find my local character save files,
+So that I can pick a character to import.
 
 **Acceptance Criteria:**
 
-**Given** the passive tree canvas is initialized
-**When** the tree renders
-**Then** a `TilingSprite` with `bg_stone_tile.webp` texture is the first child of `worldContainer` (inserted before `edgeGraphics`)
-**And** `app.init()` uses `backgroundAlpha: 0` (transparent) — the `TilingSprite` handles the entire background
+**Given** the OQ-8 save-format question
+**When** this story begins
+**Then** a Rust parsing spike against the community save-editor (gaconvt159/last-epoch-save-editor) resolves the `1CHARACTERSLOT_BETA_###` binary format, or the documented fallback (shell-invoke the Java tool, parse its JSON) is adopted; the chosen approach is recorded before sizing FR-48 (AR-11).
 
-**Given** a skill tree canvas for a skill with COLD as primary damage type
-**When** the canvas renders
-**Then** a semi-transparent cool blue overlay (`rgba(40, 100, 180, 0.18)`) is applied over the stone base texture
-**And** the overlay is a single precomputed `Graphics` rect (not a per-frame draw call)
+**Given** the Offline tab
+**When** it opens
+**Then** `scan_save_files` checks both known locations (Steam `userdata/.../899770/...Saves/` and AppData `LocalLow/Eleventh Hour Games/Last Epoch/Saves/`) and lists detected files with character name and class parsed from the header (FR-47).
 
-**Given** the Weaver Tree tab (Tab 6)
-**When** a player clicks on it
-**Then** the `WeaverTreePlaceholder` panel has `bg_weaver_tile.webp` applied as a CSS background image
-**And** the weaver tab looks intentional and on-brand (not a blank grey box)
+**Given** neither default path exists
+**When** the tab opens
+**Then** it shows a "No save files detected" state with a Browse button for manual path selection.
 
-**Given** the bundled app resources
-**When** `src-tauri/resources/backgrounds/` is inspected
-**Then** both `bg_stone_tile.webp` and `bg_weaver_tile.webp` are present as static resources
-**And** their combined file size is < 50KB
-
-**Given** `pixiRenderer.ts`
-**When** an agent reviews it
-**Then** the WebGL null info-log patch IIFE at module load is still present and unchanged
-
-### Story 6.3: Keyboard Shortcuts & Undo/Redo Controls
-
-> **Quick Dev candidate** — Two icon buttons in the tree controls bar + Ctrl+Z/Y key bindings. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
-
-> **REVISED 2026-05-26:** Keys 1–5 (center tab switching) and `[`/`]` (panel collapse) are ALREADY LIVE in `App.tsx` from the UI redesign. The original C/S/P panel-focus shortcuts are superseded by the 5-tab model. This story's remaining scope is undo/redo only.
+### Story 7.3: Offline save-file parsing into a new build
 
 As a player,
-I want Ctrl+Z/Y (Win) and Cmd+Z/Y (Mac) for undo/redo with visible ↩/↪ buttons in the tree controls bar,
-So that I can quickly reverse accidental passive tree allocations with familiar keyboard conventions.
+I want my selected character parsed into a new build,
+So that I can optimize my real character in LEBO.
 
 **Acceptance Criteria:**
 
-**Given** no text input has focus
-**When** the user presses `Ctrl+Z` (Windows) or `Cmd+Z` (macOS)
-**Then** the last passive node allocation is undone
-**And** the stat sheet updates to reflect the undone state within one rAF frame
+**Given** a selected save file
+**When** I click Import and confirm the replace prompt
+**Then** `parse_save_file` extracts charClass, level, charTree, skillTrees, and equipment into an `ImportedBuild` mapped to a new `BuildState`, and the import creates a new named build (character name default) preserving the prior build (FR-48).
 
-**Given** an undone state
-**When** the user presses `Ctrl+Y` (Windows) or `Cmd+Y` (macOS)
-**Then** the undone allocation is redone and the stat sheet updates correctly
+**Given** items or node IDs newer than the bundled data
+**When** parsing completes
+**Then** unresolved IDs are flagged in a post-import summary (e.g., "3 items could not be resolved — their slots have been imported as empty")
+**And** all file I/O lives in `character_import.rs` in the Tauri crate, never in `scoring-core`.
 
-**Given** the tree controls bar
-**When** an agent reviews it
-**Then** a visible ↩ (undo) button and ↪ (redo) button are present alongside the existing reset button
-**And** both buttons are disabled when no undo/redo history is available (respectively)
-**And** both buttons have accessible `aria-label` attributes and meet the 2px solid accent-gold focus ring standard
-
-**Given** a text input (affix search, blessing search, etc.) is focused
-**When** the user presses `Ctrl+Z` or `Ctrl+Y`
-**Then** undo/redo is NOT triggered — the browser's native text undo behavior runs normally
-
-### Story 6.4: Tooltip Polish & Multi-Point Allocation
-
-> **Quick Dev candidate** — CSS `max-height` on the tooltip + click modifier handling in the PixiJS interaction layer. Two localized changes. Use `/bmad-quick-dev` instead of the full CS → DS → CR cycle.
+### Story 7.4: Online import stub tab
 
 As a player,
-I want node tooltips that overflow the viewport to be scrollable in place via mouse wheel, and Shift+click to allocate multiple points at once up to my remaining budget — matching lastepochtools.com behavior,
-So that long tooltips don't get clipped and multi-point node allocation is fast.
+I want the Online import UI present and ready,
+So that online import works the moment EHG API access is granted, with no UI rework.
 
 **Acceptance Criteria:**
 
-**Given** a passive node whose tooltip content is taller than 60% of the viewport height
-**When** the player hovers over that node
-**Then** the tooltip renders with a maximum height (60vh) and an internal scrollbar
-**And** mouse wheel scrolling inside the tooltip scrolls the tooltip content (not the page or tree canvas)
+**Given** the Online tab
+**When** it renders
+**Then** it shows Account Name and Character Name fields and an Import button mirroring the lastepochtools.com import UI (FR-49).
 
-**Given** a passive node that allows up to 5 allocations and the player has 4 unspent points
-**When** the player `Shift+click`s that node
-**Then** 4 points are allocated in one action (limited by budget, not node max of 5)
-**And** the stat sheet updates after all 4 points are applied as a single batch (one rAF compute cycle)
-
-**Given** a passive node already at its maximum allocation (5/5)
-**When** the player `Shift+click`s it
-**Then** no additional allocation occurs
-**And** the node shows its "at max" visual state unchanged
-
-**Given** a node that requires 3 path points to reach and the player has 1 unspent point
-**When** the player `Shift+click`s that node
-**Then** the allocation is rejected with no partial allocation
-**And** no points are spent — the engine validates the full path cost before applying any changes
+**Given** the EHG API is partner-gated (OQ-7)
+**When** I submit the Online form
+**Then** `import_online_character` returns `Err("CHARACTER_IMPORT_ERROR: API access pending")` surfaced as an inline error (not a toast), with the command and UI fully wired so only the endpoint + auth headers substitute later.
