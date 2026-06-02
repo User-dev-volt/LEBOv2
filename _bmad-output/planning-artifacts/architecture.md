@@ -1,21 +1,29 @@
 ---
 stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 status: 'complete'
-completedAt: '2026-05-20'
-inputDocuments:
-  - '_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/prd.md'
-  - '_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/addendum.md'
-  - '_bmad-output/project-context.md'
+completedAt: '2026-06-01'
 workflowType: 'architecture'
 project_name: 'LEBOv2'
 user_name: 'Alec'
-date: '2026-05-19'
-scope: 'brownfield-partial — Rust scoring engine, TypeScript↔Rust IPC surface, data ingestion pipeline'
+date: '2026-06-01'
+phase: 'Phase 4 — Complete Build Tool'
+scope: 'brownfield — extends the Phase 3 scoring-core engine, IPC surface, data pipeline, and React UI. Ten new/expanded subsystems (FR-1–FR-49).'
+supersedes: 'Phase 3 architecture (frozen at _bmad-output/_phase3-archive/planning-artifacts/architecture.md)'
+inputDocuments:
+  - '_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-29/prd.md'
+  - '_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-29/addendum.md'
+  - '_bmad-output/_phase3-archive/planning-artifacts/architecture.md'
+  - '_bmad-output/project-context.md'
+  - '_bmad-output/implementation-artifacts/deferred-work.md'
+  - '_bmad-output/last-epoch-build-optimizer-UI-Handoff/ (Claude Design prototype)'
+  - '_bmad-output/planning-artifacts/epics.md (Phase 3 breakdown — context)'
 ---
 
-# Architecture Decision Document — LEBOv2 Phase 3 (Partial)
+# Architecture Decision Document — LEBOv2 Phase 4 (Complete Build Tool)
 
-_Brownfield addendum — existing architecture unchanged. This document covers only the three new subsystems called out in the skill invocation: (1) Rust scoring engine module, (2) TypeScript ↔ Rust IPC surface for scoring commands, (3) data ingestion pipeline._
+_Brownfield. The Phase 3 architecture stands unchanged and is the technical foundation for this phase — the prior `scoring-core` crate, three-command IPC surface, four-store frontend, Modifier Registry, and `ClassModule` trait are all extended, not replaced. This document covers only the ten Phase 4 subsystems: (1) Complete Stats Engine to full game parity, (2) Stat Source Attribution, (3) Passive Tree Optimizer refinement, (4) Complete Build Optimizer, (5) Gear Item & Affix Pickers, (6) Gear Optimization screen rework, (7) full Claude Design UI/UX revamp, (8) data completeness (skills, icons, popular builds), (9) multi-allocate fix, (10) character import._
+
+_The Phase 3 design anticipated this phase deliberately: `Option<T>` slots on `StatSheet` (`ailment`, `minion`), the open `Condition` enum, the forward-compatible affix schema, and the pure-crate boundary were all built as Phase 4 expansion joints. Phase 4 fills them in. Where Phase 3 said "populated Phase 4," this is that population._
 
 ---
 
@@ -23,350 +31,69 @@ _Brownfield addendum — existing architecture unchanged. This document covers o
 
 ### Requirements Overview
 
-**Functional Requirements (scoped to three subsystems):**
+**Functional Requirements (FR-1–FR-49, ten feature groups):**
 
-Epic A (28 FRs) defines a 6-stage deterministic scoring pipeline: Build Score Function → Defensive Floor Check → Passive Tree Efficiency Scan (Dijkstra, O(N log N)) → Budget Knapsack Solver (greedy + DP) → Gear Affix Scorer (skill-role-aware) → Cross-Domain Synergy Detector. Claude's role is narrative-only — suggestion list, priority order, and delta values are entirely deterministic from the engine (FR-A23–A25).
-
-Epic G (5 FRs) requires Season 4 data ingestion plus two critical schema fields absent from the current game data: `modifierType` (increased/more/flat) and `scope`/delivery type on affix entries. Source confirmed as lastepochtools.com community DB (OQ-1/OQ-2 resolved). Three new game databases are also needed: idol database, blessings database, conditions metadata.
-
-FR-B7 requires all stat sheet values to recompute on every state change: node click, affix tier change, idol placement, condition toggle, character level change, skill level change.
+| Group | FRs | Architectural surface |
+|---|---|---|
+| §4.1 Complete Stats Engine | FR-1–11 | `scoring-core` — full damage-type, defensive-layer, ailment, attribute, minion coverage; tunklab-aligned EHP/Ward |
+| §4.2 Stat Source Attribution | FR-12–14 | `scoring-core` `ModifierSource` propagation; `compute_stats` response gains `stat_sources` |
+| §4.3 Passive Tree Optimizer (refined) | FR-15–19 | `run_optimization` output scope-restricted to `passive_node`; PixiJS suggestion-overlay overhaul |
+| §4.4 Complete Build Optimizer | FR-20–26 | New full-screen view + new `run_complete_optimization` command + `complete-opt:*` event namespace + CSS orb |
+| §4.5 Gear Item & Affix Pickers | FR-27–29 | Modal components; affix prefix/suffix discriminator added to schema |
+| §4.6 Gear Optimization screen | FR-30–32 | Three-column rework of `gear-optimization/`; native HTML5 drag-drop |
+| §4.7 UI/UX revamp | FR-33–39 | Design-token value reconciliation; component rebuild to Claude Design; `CenterTab` union expansion |
+| §4.8 Data completeness | FR-40–43 | 133-skill DB, full icon set, bundled `popular-builds.json` |
+| §4.9 Multi-allocate fix | FR-44–45 | `buildStore` bulk allocate/remove actions; single undo step |
+| §4.10 Character import | FR-46–49 | New Tauri `character_import.rs` (offline save parsing); online stub gated on EHG API |
 
 **Non-Functional Requirements driving architecture:**
 
-- NFR-1: Full scoring pipeline (defensive floor + passive scan + gear scoring + synergy) < 100ms
-- NFR-2: Stat sheet recalculation on any single state change < 16ms
-- NFR-4: All stat values and scoring weights data-driven — no numeric constants in source code
-- NFR-5: Scoring engine structured for pluggable class-specific modules (Paradox Class readiness)
-- NFR-8/9: Damage formula and defensive floor check have dedicated unit tests; formula regression fails CI
+- **SM-1 / ±2% tunklab parity** — defensive math must reproduce the tunklab EHP/Ward calculators' observable outputs, not an independently-derived formula. Drives a dedicated reference-fixture test suite.
+- **SM-2 / SM-C2** — Stat Source Breakdown tooltip < 50ms; source tracking must add < 20ms to `compute_stats` round-trip. Drives the additive, opt-in `track_sources` design.
+- **NFR carried from Phase 3** — `compute_stats` < 16ms (rAF-debounced, Stage-1 path), full pipeline < 100ms, all values data-driven (no numeric constants in source), pluggable class modules, formula regression fails CI, offline-only except the Claude/OpenRouter call.
+- **SM-C1** — Optimization Orb animation must never delay result rendering; results appear within 500ms of backend return regardless of animation state. Drives a hard decoupling of the CSS animation from the IPC result path.
+- **SM-5** — Item Picker search < 100ms over the full item DB. Drives a client-side prebuilt search index.
 
-**Scale & Complexity:**
+### Scale & Complexity
 
-- Complexity: **High** — Dijkstra + DP knapsack in Rust, new IPC surface, new data schema fields, three new game databases, pluggable class module system
-- Primary domain: Rust backend + Tauri IPC
-- Phase 3 stat calculator depth: approximately "PoB circa 2016" — correct for the core damage loop, missing ailment DPS, conditional modifiers, damage conversions, and full derivation chains. **The calculator will need to grow substantially to match top-tier tools.**
+- Complexity: **High** — the stat engine roughly triples in stat coverage; a second full-pipeline optimization flow (Complete Build Optimizer) is added; the entire UI is rebuilt to a new design system; a binary save-file parser must be reverse-engineered.
+- Primary domains: **Rust scoring engine** (stat parity, sources, multi-domain optimization) + **React/PixiJS UI** (full revamp, two new full-screen views, three modals) + **Rust file I/O** (save import).
+- Estimated new/modified components: ~6 new `scoring-core` modules, 1 new Tauri command module + 3 new commands, ~2 extended commands, 2 new full-screen views, 3 modals, ~8 rebuilt panels, 1 new bundled database, 1 new Rust import module.
+- This is the largest phase to date and the one "a player would pay for" (PRD §1). It is still brownfield — no greenfield rewrite, no new runtime, no new framework.
 
 ### Technical Constraints & Dependencies
 
-- **Data availability gate:** The scoring engine cannot produce correct results until Epic G is complete. `modifierType` is the most critical field — without it, every modifier defaults to `"increased"`, making `"more"` modifier nodes (the highest-value nodes in LE) score identically to `"increased"` nodes.
-- **Brownfield IPC constraint:** All new Tauri commands must follow the existing `invokeCommand<T>()` pattern and be registered in `lib.rs invoke_handler!`. No new IPC patterns.
-- **Stat display vs. optimization:** The full 6-stage pipeline (NFR-1: <100ms) is only invoked on an explicit "Optimize" trigger. Stat sheet display (NFR-2: <16ms) needs only Stage 1 (Build Score Function) — the cheapest computation in the pipeline.
+- **Modifier Registry is the load-bearing inheritance.** The Phase 3 registry (`modifier.rs`) was explicitly built so that "adding ailment stacking means adding a `StatKey` and a `ModifierType` variant — the registry absorbs them with zero changes to existing computation logic." Phase 4's full stat parity is exactly this exercise. The architecture must not introduce a parallel computation path that bypasses the registry.
+- **Data gate, again.** Phase 3 closed the `modifierType`/`scope` schema gap. Phase 4 has two new data dependencies: the **affix prefix/suffix discriminator** (OQ-2; also a deferred-work item) and the **completed 133-skill database + icons** (§4.8). The affix discriminator blocks FR-28 (Affix Picker) and correct suffix-side gear scoring. Treat it as Phase 4's critical-path data gate, the way Epic G was Phase 3's.
+- **Brownfield IPC discipline unchanged.** All new commands follow `invokeCommand<T>()`, register in `lib.rs invoke_handler!`, use `#[serde(rename_all = "camelCase")]` on input structs and default snake_case on outputs. No new IPC patterns.
+- **Four-store rule unchanged.** No new top-level Zustand store. Complete Build Optimizer state extends `optimizationStore`; the new full-screen views extend `appStore.currentView`.
+- **Save-file format is unknown until a spike resolves it (OQ-8).** FR-48 cannot be sized until a Rust parsing spike against the community save-editor format (gaconvt159/last-epoch-save-editor) succeeds. The architecture provides the module boundary and a documented fallback (shell-invoke the community Java tool, parse its JSON), but the binary format itself is a research deliverable, not an architecture deliverable.
+- **EHG online API is partner-gated (OQ-7).** FR-49 ships as a wired stub returning "API access pending"; the real endpoint substitutes in later with no UI change.
 
 ### Cross-Cutting Concerns Identified
 
-1. **IPC latency budget vs. correctness** — resolved in favour of debounced Rust IPC (see §IPC Strategy below)
-2. **Modifier model extensibility** — the single most load-bearing architectural decision; drives all future stat complexity
-3. **Data schema forward-compatibility** — Epic G must produce a schema that Phase 4 can extend without full re-ingestion
-4. **Condition model extensibility** — conditions panel must be data-driven, not hardcoded, to survive Season patches
+1. **Source tracking vs. hot-path cost** — `ModifierSource` collection is acceptable on the single display `compute_stats` call but forbidden inside the knapsack/scan hot loops. Resolved by an opt-in `ComputeOptions.track_sources` flag (see ADR-P4-002).
+2. **Two optimization flows sharing one engine** — the refined Passive Tree Optimizer (single-domain) and the Complete Build Optimizer (multi-domain) must reuse `scoring-core` without duplicating scoring logic. Resolved by a shared `run_complete_optimization` that composes the existing stage functions across a scope mask (ADR-P4-004).
+3. **Design-token reconciliation** — the codebase uses `--color-*` tokens; the handoff uses `--*` tokens with different gold/rarity values. A rename would churn every component and `rarityColors.ts`. Resolved by a values-only update plus additive tokens (ADR-P4-007).
+4. **Defensive-floor results: warning vs. suggestion** — FR-15 forbids the floor check from appearing in Passive Tree Optimizer output. The check still runs and still feeds the stat-sheet warnings and the Complete Build Optimizer. Resolved by separating "compute warnings" (always) from "emit suggestions" (scope-filtered) at the command boundary (ADR-P4-003).
 
 ---
 
-## Scoring Engine Bedrock — Foundational Decisions
+## Starter Template Evaluation
 
-### The Core Architectural Tension
+**Not applicable — brownfield continuation.** No starter template is evaluated or introduced. The technology stack is locked, pinned, and verified in `project-context.md` (last updated 2026-05-30) and unchanged since Phase 3:
 
-NFR-2 (<16ms stat display) and the PRD's mandate of Rust-side computation appear to conflict. They don't — but only if the IPC strategy and computation scope are chosen correctly.
+- **Shell:** Tauri 2.x (`@tauri-apps/api ^2`, `tauri-plugin-*` 2.x)
+- **Frontend:** React 19.1, TypeScript ~5.8.3 (strict), Vite 7.0.4, Tailwind v4.2.2 (CSS-first, no config file)
+- **Canvas:** PixiJS 8.18.1 + `@pixi/react` 8.0.5
+- **State:** Zustand 5.0.12 (four domain stores)
+- **UI primitives:** `@headlessui/react` 2.2.10; toasts `react-hot-toast`
+- **Backend (Rust):** Tauri 2, serde/serde_json 1, rusqlite 0.32, reqwest 0.12, tokio 1, argon2 0.5; **`rayon`** (added Phase 3, inside `scoring-core` only)
+- **Testing:** Vitest 4.1.4 + Testing Library + jsdom + vitest-axe; `cargo test -p scoring-core`
 
-**Key insight:** The stat sheet does not need the full 6-stage pipeline. It needs only Stage 1 (Build Score Function). Stage 1 Rust computation takes ~0.3ms. Tauri IPC overhead on target hardware: ~1–3ms. Total per state change: **~1.5–3.5ms** — well within 16ms for single events.
+**New dependencies introduced by Phase 4:** **none mandatory on the frontend.** Two Rust-side considerations are evaluated under ADR-P4-010 (character import): the save-file parser uses only `std` + existing `serde_json` if the binary format is JSON-like; a parsing-helper crate (e.g. `nom`/`binrw`) is admitted **only if** the OQ-8 spike proves the format requires it. Native HTML5 drag-and-drop is used for the Gear Optimization screen (ADR-P4-006) specifically to avoid a new frontend dependency.
 
-The real constraint is **rapid successive state changes** (e.g., `Shift+click` allocating multiple nodes, FR-F10). Firing one IPC call per allocation in a multi-node sequence serializes them, potentially approaching the 16ms ceiling. Additionally, as the stat calculator grows toward PoB-level complexity (ailment DPS, conditional modifiers, damage conversions), Stage 1 computation will no longer be ~0.3ms.
-
-### IPC Strategy Decision
-
-**Chosen: Path C — Debounced rAF + Rust IPC**
-
-State changes accumulate within a 16ms window. At each `requestAnimationFrame` boundary, if state changed, exactly one Rust IPC call fires with the latest build snapshot. Rust returns computed stats; display updates at the next frame.
-
-```
-State change (t=0ms)  → mark dirty
-State change (t=3ms)  → mark dirty (supersedes)
-State change (t=9ms)  → mark dirty (supersedes)
-rAF fires  (t=16ms)   → one invokeCommand('compute_stats', latestSnapshot)
-Rust returns (~t=19ms) → StatSheet → display updates
-```
-
-**Why not Path B (direct IPC per change):** Works for Phase 3's simple computation but breaks as stat complexity grows toward PoB levels (50–200ms computations). Debounce is free architectural insurance.
-
-**Why not Path A (TypeScript mirrors Stage 1):** Creates two implementations of the same formula. Divergence is silent — displayed stats drift from the optimizer's internal numbers, eroding player trust.
-
-**Why not WASM:** Solves the latency problem but adds wasm-pack toolchain, Vite WASM plugin, and Tauri 2 asset loading complexity. Only warranted if Path C proves insufficient after measurement.
-
-**Upgrade path:** If Path C shows lag under heavy computation (Phase 4+), upgrade to **Path E — Persistent Rust Channel Worker**. A long-lived Rust worker thread receives build state diffs over a Tauri 2 `Channel`, pushes `StatSheet` updates back as they complete. This eliminates per-call spawn overhead and pipelines state changes. The TypeScript debounce layer is unchanged; only the Rust side gains a persistent worker. This upgrade requires no TypeScript architectural changes.
-
-### The Modifier Registry — The Load-Bearing Foundation
-
-The single most critical architectural decision. Every stat calculator that has been painted into a corner made the same mistake: treating stat computation as a formula rather than a data transformation.
-
-**The wrong approach:**
-```rust
-// Works for Phase 3, breaks when conditionals arrive
-fn compute_damage(build: &BuildSnapshot) -> f64 {
-    build.base_damage * (1.0 + build.increased_pct) * build.more_multiplier
-}
-```
-
-**The right approach — a Modifier Registry:**
-
-Every source (passive node, affix, idol, blessing, condition toggle) registers its modifiers into a central collection before any computation runs. Each modifier is a struct:
-
-```rust
-pub struct Modifier {
-    pub stat_key:      StatKey,       // e.g. StatKey::IncreasedDamage
-    pub modifier_type: ModifierType,  // Increased, More, Flat, Conversion
-    pub value:         f64,
-    pub condition:     Condition,     // see Condition enum below
-    pub source:        SourceId,      // NodeId, AffixId, BlessingId, etc.
-}
-
-pub struct ModifierRegistry {
-    modifiers: Vec<Modifier>,
-}
-
-impl ModifierRegistry {
-    pub fn query(&self, stat: StatKey, active_conditions: &[Condition]) -> Vec<&Modifier> {
-        self.modifiers.iter()
-            .filter(|m| m.stat_key == stat && m.condition.is_active(active_conditions))
-            .collect()
-    }
-}
-```
-
-Computation becomes: build the registry from the snapshot, query by stat key, apply in sequence. Adding ailment stacking (Phase 4) means adding `StatKey::BleedDpsPerStack` and `ModifierType::AilmentStacking` — the registry absorbs them with zero changes to existing computation logic.
-
-### The `Condition` Enum — Designed for Growth
-
-Phase 3 conditions are simple named toggles. The enum is defined now for Phase 4's conditional modifiers:
-
-```rust
-pub enum Condition {
-    Always,
-    Named(String),                            // Phase 3: "on_boss", "power_charges_3"
-    Stacked { name: String, count: u32 },     // charge count thresholds
-    Threshold { stat: StatKey, above: f64 },  // "if crit_chance > 0.50"
-    Composite(Vec<Condition>),                // "A AND B"
-}
-```
-
-Phase 3 only uses `Always` and `Named`. The remaining variants are defined but not instantiated — zero dead code, zero runtime cost, full extensibility for Phase 4 conditional mechanics ("while channeling", "if recently used flask").
-
-**Conditions panel is data-driven:** Available conditions are read from a game data file, not hardcoded in the React component. New Season conditions are added via a data update, not a code change.
-
-### The `compute_stats` Function — Pure and Tauri-Free
-
-The scoring engine lives in its own Rust crate (`scoring-core`) with no Tauri dependencies:
-
-```rust
-// scoring-core/src/lib.rs — no tauri, no async, no side effects
-pub fn compute_stats(
-    snapshot: &BuildSnapshot,
-    game_data: &GameData,
-    options:   ComputeOptions,
-) -> StatSheet
-```
-
-**Why purity matters:**
-- Unit tests need no mocking — call the function with a snapshot, assert on the output
-- WASM compilation is possible with no changes if IPC latency ever becomes a problem
-- The optimization scan (Stage 3) calls this function in a tight loop across hundreds of candidate paths — pure functions parallelize trivially with `rayon`
-
-### The `StatSheet` — Designed for `Option<T>` Expansion
-
-```rust
-pub struct StatSheet {
-    pub offense:  OffenseStats,
-    pub defense:  DefenseStats,
-    pub scores:   ScoreComponents,
-    pub ailment:  Option<AilmentStats>,   // None in Phase 3; populated Phase 4
-    pub minion:   Option<MinionStats>,    // None unless active minion skills present
-    pub warnings: Vec<StatWarning>,       // "fire_resistance_uncapped", etc.
-}
-```
-
-`Option<T>` slots are the expansion joints. Phase 3 returns `None` for `ailment` and `minion`. Phase 4 populates them. TypeScript renders `null` gracefully — it already handles optional display sections. No contract break, no migration.
-
-### The `ClassModule` Trait — Paradox Class Readiness (NFR-5)
-
-```rust
-pub trait ClassModule: Send + Sync {
-    fn class_id(&self) -> ClassId;
-    fn apply_modifiers(
-        &self,
-        registry: &mut ModifierRegistry,
-        snapshot: &BuildSnapshot,
-    );
-    fn compute_class_stats(
-        &self,
-        base:     &StatSheet,
-        snapshot: &BuildSnapshot,
-    ) -> Option<ClassStats>;
-}
-```
-
-Phase 3 ships five class modules (Sentinel, Mage, Primalist, Rogue, Acolyte) implementing this trait. Paradox Classes (Orobyss expansion) are new structs implementing the same trait, registered at startup. The engine's `compute_stats` function never changes — it calls `module.apply_modifiers()` before building the registry, then `module.compute_class_stats()` after the base sheet is computed.
-
----
-
-## Data Ingestion Pipeline — Foundational Schema
-
-### The Schema Gap (Epic G Prerequisite)
-
-Current game data files (classes/{classId}.json, item database) are missing two fields required by the scoring engine:
-
-| Field | Missing From | Required For | Phase 3 Source |
-|---|---|---|---|
-| `modifierType` | Passive nodes + affixes | Stage 1 damage formula, Stage 3 efficiency scoring | lastepochtools.com community DB |
-| `scope` / delivery type | Affixes | Stage 4 gear affix scorer (FR-A19) | lastepochtools.com community DB |
-
-These gaps block all scoring engine work. Epic G data ingestion is the critical path dependency.
-
-### Forward-Compatible Affix Schema
-
-Designed now to survive Phase 4 additions with only field population, not schema migration:
-
-```json
-{
-  "affixId":       "melee_crit_chance",
-  "statKey":       "crit_chance",
-  "modifierType":  "increased",
-  "scope":         "melee",
-  "damageType":    null,
-  "condition":     null,
-  "ailmentType":   null,
-  "valuePerTier":  [4, 8, 12, 16, 20, 24, 28]
-}
-```
-
-`condition`, `damageType`, and `ailmentType` are `null` in Phase 3 output. Phase 4 ingestion populates them from the community DB as they become available. No re-ingestion of the full dataset required — only new/changed records need updating.
-
-### Three New Game Databases
-
-Following the existing staleness-check pattern (manifest.json tracks version, staleness flags in `gameDataStore`):
-
-| Database | File | Staleness flags |
-|---|---|---|
-| Idol grid + affix database | `idol-data.json` | `isIdolDataStale`, `idolDataStaleAcknowledged` |
-| Blessings database | `blessings.json` | `isBlessingsDataStale`, `blessingsDataStaleAcknowledged` |
-| Conditions metadata | `conditions.json` | sourced from game data — not network-stale |
-
-`conditions.json` defines available simulation conditions and their display labels. It is bundled with the app and updated on app releases, not via the network staleness pipeline — conditions change with patches, not player-initiated updates.
-
----
-
-## Foundation — Brownfield Stack & Crate Structure
-
-Existing stack unchanged: Tauri 2 / React 19 / TypeScript 5.8 / Vite 7 / Zustand 5 / PixiJS 8. All patterns from `project-context.md` apply. No new frontend dependencies. One new Rust dependency: `rayon`.
-
-### ADR-001: Cargo Workspace Layout
-
-**Decision: Separate workspace crate (`src-tauri/scoring-core/`)**
-
-`src-tauri/Cargo.toml` becomes a workspace root with two members: `.` (the existing Tauri crate, unchanged) and `scoring-core` (new pure Rust crate).
-
-```
-src-tauri/
-  Cargo.toml              ← workspace root: members = [".", "scoring-core"]
-  src/                    ← Tauri crate (unchanged)
-    lib.rs
-    scoring_commands.rs   ← new: Tauri command handlers only
-    game_data_loader.rs   ← new: disk → GameData construction
-    ...existing modules...
-  scoring-core/
-    Cargo.toml            ← deps: serde, serde_json, rayon only — NO tauri, NO tokio
-    src/
-      lib.rs
-      modifier.rs
-      build_snapshot.rs
-      stat_sheet.rs
-      game_data.rs
-      compute.rs
-      scan.rs
-      gear.rs
-      synergy.rs
-      class_module.rs
-      classes/
-        sentinel.rs
-        mage.rs
-        primalist.rs
-        rogue.rs
-        acolyte.rs
-```
-
-**Rejected: inline module** (`src-tauri/src/scoring/`) — purity is convention-only; compiler does not enforce it. Silent drift under deadline pressure breaks the WASM and unit-test guarantees.
-
-**Rejected: top-level workspace** — adds complexity without benefit; Vite and Cargo toolchains are independent.
-
-### ADR-002: Module Boundaries
-
-**`scoring-core` owns — pure computation, no Tauri:**
-
-| Module | Responsibility |
-|---|---|
-| `modifier.rs` | `Modifier`, `ModifierType`, `Condition`, `ModifierRegistry` |
-| `build_snapshot.rs` | `BuildSnapshot` — player state as IDs only (node IDs, affix IDs, tiers, idol placements, blessings, active conditions, level, class, mastery, slider) |
-| `game_data.rs` | `GameData` — read-only reference tables (node effects, affix value-per-tier tables, tree graph, class definitions) |
-| `stat_sheet.rs` | `StatSheet` and all sub-types (`OffenseStats`, `DefenseStats`, `ScoreComponents`, `Option<AilmentStats>`, `Option<MinionStats>`, `Vec<StatWarning>`) |
-| `compute.rs` | `compute_stats(snapshot, game_data, options) -> StatSheet` — Stage 1 only, fast path |
-| `scan.rs` | `run_efficiency_scan(snapshot, game_data) -> Vec<NodeEfficiency>` — Stages 2–3, uses rayon internally |
-| `gear.rs` | `run_gear_scoring(snapshot, game_data) -> GearAnalysis` — Stage 4 |
-| `synergy.rs` | `run_synergy_detection(snapshot, game_data) -> Vec<SynergyFlag>` — Stage 5 |
-| `class_module.rs` | `ClassModule` trait definition |
-| `classes/` | Five class module implementations |
-
-**Tauri crate owns — IPC wiring only:**
-
-| Module | Responsibility |
-|---|---|
-| `scoring_commands.rs` | `#[tauri::command]` handlers that call `scoring_core::*` |
-| `game_data_loader.rs` | Reads JSON from disk → constructs `scoring_core::GameData`; held in `AppState`, loaded once at startup |
-
-**Key boundary rule:** `BuildSnapshot` contains IDs only — not resolved data. `GameData` is the resolution table. `compute_stats` resolves IDs internally. `GameData` is loaded once at startup, held in Tauri `AppState`, passed by reference — zero per-call disk I/O.
-
-### ADR-003: Parallelism Primitive
-
-**Decision: `rayon` inside `scoring-core`; `spawn_blocking` at the Tauri command boundary for the full optimization run**
-
-The Stage 3 efficiency scan is embarrassingly parallel: each node's path computation is fully independent. Sequential estimate on a 150-node tree: ~52ms — within NFR-1 (100ms) but with no headroom as computation grows in Phase 4. `rayon` provides ~4× speedup on a 4-core machine (~13ms) with zero async overhead.
-
-```rust
-// scan.rs — pure sync, rayon parallelism
-let efficiencies: Vec<NodeEfficiency> = unallocated_nodes
-    .par_iter()
-    .map(|node| compute_node_efficiency(node, &snapshot, &game_data))
-    .collect();
-```
-
-Two Tauri command shapes:
-
-```rust
-// Fast path — stat sheet only (~2ms total). Sync: no spawn_blocking needed.
-#[tauri::command]
-fn compute_stats(
-    snapshot: BuildSnapshot,
-    state: tauri::State<'_, AppState>,
-) -> Result<StatSheet, String> {
-    let game_data = state.game_data.read().unwrap();
-    Ok(scoring_core::compute_stats(&snapshot, &game_data, ComputeOptions::default()))
-}
-
-// Full optimization — all 6 stages (~15–50ms). Async: spawn_blocking keeps tokio event loop free.
-#[tauri::command]
-async fn run_optimization(
-    snapshot: BuildSnapshot,
-    state: tauri::State<'_, AppState>,
-) -> Result<OptimizationResult, String> {
-    let game_data = state.game_data.read().unwrap().clone();
-    tokio::task::spawn_blocking(move || {
-        scoring_core::run_full_optimization(&snapshot, &game_data)
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
-```
-
-`scoring-core` is entirely synchronous — no async primitives inside the crate. The async boundary lives only in `scoring_commands.rs`. `rayon` and `spawn_blocking` compose cleanly: `spawn_blocking` moves computation off the tokio thread; `rayon` handles internal CPU parallelism.
-
-**Rejected: `tokio::spawn_blocking` loops per node** — tokio is I/O-bound async infrastructure, not a CPU parallelism primitive. 150 `spawn_blocking` calls per scan = excessive task scheduling overhead.
-
-**Rejected: sequential scan** — acceptable for Phase 3 but leaves no headroom. As `compute_stats` grows more complex in Phase 4, sequential cost multiplies directly into the NFR-1 budget.
+**Rationale:** versions are inherited from a working, shipping Phase 3 build verified one day before this document. Re-deriving or re-pinning them would add risk, not value. The first implementation story is not a project init; it is the affix prefix/suffix discriminator data gate (see Handoff).
 
 ---
 
@@ -375,390 +102,470 @@ async fn run_optimization(
 ### Decision Priority Analysis
 
 **Critical (block implementation):**
-- D1: `StatSheet` store placement — must be decided before any frontend stat display work
-- D2: Debounce hook location — must be decided before `compute_stats` IPC wiring
-- D3: IPC command surface — must be decided before Rust command registration
-- D4: `StatSheet` TypeScript type file — must be decided before any type imports
+- **D-P4-1** — `ModifierType` enum migration (`Option<String>` → serde enum). Blocks all FR-1 stat-engine work; also clears a deferred-work item.
+- **D-P4-2** — Affix prefix/suffix discriminator on `AffixEntryV2`/`GearAffixV2`. Blocks FR-28 Affix Picker and correct suffix-side gear scoring. Phase 4's data-gate equivalent of Epic G.
+- **D-P4-3** — `stat_sources` response shape and `ComputeOptions.track_sources` flag. Blocks FR-12–14.
+- **D-P4-4** — `run_complete_optimization` command + `complete-opt:*` events + scope mask. Blocks FR-20–26.
+- **D-P4-5** — `appStore.currentView` and `CenterTab` union expansion. Blocks the two new full-screen views and the Skills/Weaver tab rework.
 
-**Deferred (post-Phase 3):**
-- `scores: BuildScore | null` removal from `optimizationStore` — deprecated once Rust engine live, removed in a follow-up story to avoid a big-bang migration
-- `scoringEngine.ts` deletion — same follow-up story
+**Important (shape the architecture):**
+- ADR-P4-001 `scoring-core` module split; ADR-P4-005 popular-builds data placement; ADR-P4-007 design-token reconciliation; ADR-P4-010 character-import module boundary.
 
-### D1 — StatSheet Store Placement
+**Deferred (post-Phase 4 / Phase 5):**
+- Weaver Tree full PixiJS renderer (PRD non-goal — opt-in scope checkbox only).
+- Full attribute → secondary-stat conversion tables (FR-9 caps Phase 4 at attribute totals + parseable conversions only).
+- Online character import going live (gated on EHG API partnership, OQ-7).
+- Node/tree art-asset fidelity, environment art (Phase 5 non-goals).
 
-**Decision:** `useOptimizationStore`
+---
 
-`optimizationStore` gains two new fields alongside the existing `scores: BuildScore | null`:
+### ADR-P4-001 — `scoring-core` Module Split for Full Stat Parity
 
-```ts
-statSheet: StatSheet | null      // null until first compute_stats returns
-isComputingStats: boolean        // true during debounce + IPC window
-setStatSheet: (s: StatSheet | null) => void
-setIsComputingStats: (v: boolean) => void
+**Decision:** Split the growing `compute.rs` into a `compute/` submodule directory before adding Phase 4 stat coverage. Stat parity roughly triples the computation surface; one file would become unmaintainable and would obscure which math maps to which FR.
+
+```
+scoring-core/src/
+  compute.rs          → becomes compute/mod.rs: orchestrates, owns compute_stats() entry
+  compute/
+    offense.rs        FR-1,2,3,4: per-damage-type increased/more, crit, attack/cast speed, AoE
+    penetration.rs    FR-4: elemental + physical penetration
+    defense.rs        FR-5: armor, endurance, dodge, parry, block, glancing, crit-avoidance, resistances
+    ehp.rs            FR-6: EHP vs Hits / DoTs / 1-shots (tunklab-aligned, multiplicative layers)
+    ward.rs           FR-7: Stable Ward + Stable HP equilibrium
+    ailment.rs        FR-8: bleed/ignite/poison/freeze/shock/armour-shred chances + avoidance
+    attributes.rs     FR-9: Str/Dex/Int/Att totals + parseable conversions only
+    minion.rs         FR-10: minion count/damage/HP/speed (populates Option<MinionStats>)
+  modifier.rs         EXTENDED: ModifierType enum migration; new StatKey variants
+  stat_sheet.rs       EXTENDED: OffenseStats/DefenseStats expanded; AilmentStats/MinionStats filled in
 ```
 
-**Rationale:** Project rule is firm — four stores only. `useOptimizationStore` already owns `scores`, `suggestions`, and the optimization lifecycle. `StatSheet` is the Phase 3 replacement for `BuildScore` — same conceptual home, richer type.
+**Rationale:** Each module maps 1:1 to a PRD feature sub-section, so a story and its acceptance criteria land in exactly one file. The `compute/mod.rs` orchestrator still exposes the single pure `compute_stats(snapshot, game_data, options) -> StatSheet` entry — the IPC contract and the `compute_stats` Tauri command are unchanged. The Modifier Registry remains the only data source for every module: each `compute/*` module queries the registry by `StatKey` and applies modifiers in `flat → increased → more` order. No module reads raw snapshot fields directly for stat math.
 
-### D2 — Debounce Hook Location
+**EHP/Ward special note (FR-6/FR-7, SM-1):** `ehp.rs` and `ward.rs` implement the tunklab calculators' **observable behavior** — same inputs produce the same outputs — rather than a re-derived closed-form formula. Layers apply multiplicatively (armor DR × resistance DR × endurance DR × avoidance), with `EHP vs DoTs` excluding dodge/parry/block and `EHP vs 1-shots` treating the endurance threshold as a hard floor. Concrete reference builds with known tunklab outputs live in `scoring-core/tests/ehp_reference.rs`; the ±2% tolerance (SM-1) is asserted there and gates CI.
 
-**Decision:** New named hook `shared/stores/useStatSheet.ts`, following the `useOptimizationStream` pattern exactly.
+**Rejected:** keep one `compute.rs` — would exceed maintainable size and scatter FR traceability; defeats the per-story acceptance-criteria mapping the BMAD flow depends on.
 
-Called from `App.tsx` as one line: `useStatSheet()`. The existing inline `useBuildStore.subscribe` score recalculation blocks in `App.tsx` (lines 74–88 and 100–111, currently calling `calculateScore()`) are replaced by this hook.
+---
 
-**Hook responsibilities:**
-1. Subscribe to `buildStore` and `gameDataStore` (full object references — any change triggers recompute)
-2. Debounce via `requestAnimationFrame` — one IPC call per frame maximum, latest state always wins
-3. Call `invokeCommand<StatSheet>('compute_stats', snapshot)`
-4. Write result to `optimizationStore.setStatSheet()` and clear `isComputingStats`
+### ADR-P4-D-P4-1 — `ModifierType` Enum Migration
 
-**Pattern rationale:** The existing code distinguishes synchronous store reactions (inline `useEffect` + `subscribe` in App.tsx) from async Tauri operations (named hook in `shared/stores/`). The new `compute_stats` call is async IPC — it belongs in the named hook pattern, not inline.
+**Decision:** Replace `modifier_type: Option<String>` (and the affix `scope`/`modifierType` `String` fields) with proper serde enums, deserialized once at game-data load.
 
-**Migration:** `scoringEngine.ts` and its `calculateScore()` usages are deprecated in place once `useStatSheet` is live. Deleted in a follow-up story, not in the same PR as the hook addition.
+```rust
+#[derive(Deserialize, Serialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ModifierType { Flat, Increased, More, Conversion }
 
-### D3 — IPC Command Surface
+// Unknown / absent → default Increased (preserves the Phase 3 fallback contract)
+impl Default for ModifierType { fn default() -> Self { ModifierType::Increased } }
+```
 
-**Decision:** Three commands — clean separation by trigger and scope.
+`scope` (`melee|ranged|spell|minion|generic`) and the new affix `position` (below) become enums by the same pattern. This closes four related deferred-work items (`modifier_type: Option<String>`, "narrow union types not validated in Rust", "`affix_class`/`scope` unvalidated strings", "open `String` vs closed union at IPC boundary").
 
-| Command | Sync/Async | Trigger | Stages | Returns |
+**Rationale:** Phase 4 scoring depends on `more` vs `increased` being correct for every damage type — a silent typo (`"More"`, `"MELEE"`) currently misdirects a modifier with no error. Validating at the deserialization boundary makes bad game data fail loudly at load, not silently at score time. The fallback-to-`Increased` contract relied on by existing tests is preserved via `Default` + `#[serde(default)]`.
+
+**Migration safety:** game data JSON already stores these as lowercase strings; the enum's `rename_all = "lowercase"` matches existing files with no re-ingestion. This is a Rust-side type tightening, not a data format change.
+
+---
+
+### ADR-P4-D-P4-2 — Affix Prefix/Suffix Discriminator (Phase 4 Data Gate)
+
+**Decision:** Add `position: 'prefix' | 'suffix'` to `AffixEntryV2` (TypeScript) / `GearAffixV2` and to the Rust affix type, populated by the data-ingestion pipeline. (OQ-2 resolved in favour of a single discriminator field, not parallel `prefixes[]`/`suffixes[]` arrays.)
+
+**Rationale:** A single `position` field is the minimal change that unblocks three things at once: FR-28's grouped Affix Picker, FR-29's prefix/suffix pip display, and correct suffix-side gear scoring (today `buildSnapshotSerializer.ts` classifies *all* gear affixes as prefixes and `detect_mismatched_affixes` never sees suffixes — two standing deferred-work items). Parallel arrays would force a `GearItemV2` shape change and ripple through every gear consumer; a discriminator field is additive and back-compatible (absent → treat as prefix, matching today's behavior until data is populated).
+
+**Gate status:** This is the critical-path data dependency for the gear features (§4.5, §4.6) and must be the **first story** of the gear epic, exactly as Epic G's schema annotation was Phase 3's first gate. Engine and UI work proceeds against mock-annotated affixes until ingestion completes.
+
+---
+
+### ADR-P4-D-P4-3 — Stat Source Attribution: Response Shape & Opt-In Tracking
+
+**Decision:** `ModifierSource` (per PRD addendum A) is attached to every `Modifier` as it is consumed, and surfaced as a new field on the `compute_stats` response. Tracking is opt-in via `ComputeOptions`.
+
+```rust
+pub struct ModifierSource {
+    pub source_type:   SourceType,   // PassiveNode | GearSlot | Idol | Blessing | SkillNode | Condition
+    pub source_label:  String,       // "Shadow Cascade", "Helm — Fire Resistance T5"
+    pub value:         f64,
+    pub modifier_type: ModifierType,
+}
+
+// StatSheet gains (only populated when options.track_sources == true):
+pub stat_sources: Option<HashMap<String, Vec<ModifierSource>>>,  // key = StatKey string
+
+pub struct ComputeOptions {
+    pub track_sources: bool,  // true: display compute_stats path; false: scan/knapsack hot loops
+    // ...existing options...
+}
+```
+
+**Rationale:** SM-C2 caps source tracking at +20ms on the `compute_stats` round-trip. Source collection is a `Vec` append per modifier (~200–400 per build) — negligible for the single display call, but multiplied by hundreds of candidate paths in the Stage-3 scan it would blow the NFR-1 budget. The `track_sources` flag draws the line exactly where the addendum prescribes: **on** for the one display `compute_stats` call (the only place the tooltip data is needed), **off** everywhere the engine runs in a loop. `stat_sources` is `Option` so the scan path returns `None` and pays zero serialization cost.
+
+**Frontend (FR-13/14):** the breakdown tooltip reads `statSheet.stat_sources[statKey]`, groups by `source_type`, and renders the grouped list with the pre-cap total and cap-gap annotation. The tooltip is a pure render of already-present data — no extra IPC call, satisfying SM-2's 50ms budget trivially.
+
+---
+
+### ADR-P4-D-P4-4 — Complete Build Optimizer: Command, Events, Scope Mask
+
+**Decision:** A new async Tauri command `run_complete_optimization` composes the existing `scoring-core` stage functions across a **scope mask**, streaming results over a new `complete-opt:*` event namespace. It does **not** duplicate scoring logic.
+
+```rust
+// Input (camelCase from TS)
+pub struct CompleteOptScope {
+    pub passive_tree: bool,
+    pub active_skills: bool,
+    pub gear: bool,
+    pub idols: bool,
+    pub blessings: bool,
+    pub weaver: bool,
+}
+
+#[tauri::command]
+async fn run_complete_optimization(
+    snapshot: BuildSnapshot,
+    scope: CompleteOptScope,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    let game_data = state.game_data.read().unwrap().clone();   // clone, release lock (Pattern 3)
+    tokio::task::spawn_blocking(move || {
+        // reuse existing stage fns; gate each by the scope mask
+        if scope.passive_tree { /* scan.rs + knapsack */ }
+        if scope.gear         { /* gear.rs */ }
+        if scope.idols        { /* idol recommendation pass (new in idol.rs) */ }
+        // synergy detection always runs across whatever is in scope
+    }).await.map_err(|e| format!("SCORING_ERROR: {e}"))?
+}
+```
+
+| Command | Sync/Async | Trigger | Scope | Events |
 |---|---|---|---|---|
-| `compute_stats` | Sync | Every state change (via `useStatSheet` debounce) | Stage 1 only | `StatSheet` |
-| `run_optimization` | Async | Explicit "Optimize" button click | Stages 1–3 + 5–6 (passive tree + synergy + Claude) | `OptimizationResult` |
-| `run_gear_scoring` | Async | Gear Optimization screen open / "Analyze Gear" | Stages 1 + 4 + 6 (gear affix + Claude narrative) | `GearAnalysis` |
+| `compute_stats` (extended) | Sync | every state change | Stage 1 + optional sources | — (direct return) |
+| `run_optimization` (extended) | Async | "Optimize Build" (right panel) | passive tree only — output **filtered to `passive_node`** | `optimization:*` |
+| `run_gear_scoring` | Async | Gear Optimization screen | gear (Stage 1 + 4) | `gear:*` |
+| `run_complete_optimization` (NEW) | Async | Complete Build Optimizer "Optimize" | scope mask: tree+skills+gear+idols+blessings(+weaver) | `complete-opt:suggestion-received`, `complete-opt:complete`, `complete-opt:error` |
 
-All three registered in `lib.rs invoke_handler!`. All called via `invokeCommand<T>()` on the TypeScript side — never raw `invoke()`.
+**Events:** `complete-opt:suggestion-received` (incremental, carries a domain badge per FR-25), `complete-opt:complete`, `complete-opt:error`. A new `useCompleteOptStream.ts` hook in `shared/stores/` subscribes — mirroring `useOptimizationStream`/`useGearStream` exactly. The existing two streams are untouched.
 
-**Rejected: two-command surface with `mode` flag** — a `mode: 'passive' | 'gear' | 'full'` parameter on `run_optimization` couples the passive tree and gear optimization concerns into one handler. Three discrete commands match the three discrete user triggers and make each handler independently testable.
+**Idol recommendations (FR-26, OQ-6):** the idol-scope pass builds a **filtered** idol-database subset for the Claude payload (only idol types/affixes relevant to the build's damage types and empty grid cells), never the full idol DB — resolving the OQ-6 token-budget concern. Recommended placements are validated against existing placed idols via the same `validatePlacement()` used by the editor.
 
-### D4 — StatSheet TypeScript Type File
+**Rejected:** a `mode` flag on `run_optimization` — re-rejected for the same reason Phase 3 rejected it (couples distinct user triggers into one handler; defeats independent testability). Four discrete commands map to four discrete triggers.
 
-**Decision:** New `shared/types/statSheet.ts`
+---
 
-Contains: `StatSheet`, `OffenseStats`, `DefenseStats`, `ScoreComponents`, `AilmentStats` (Phase 4 placeholder interface), `MinionStats` (Phase 4 placeholder interface), `StatWarning`, `NodeEfficiency`, `GearAnalysis`, `SynergyFlag`.
+### ADR-P4-D-P4-5 — View & Tab Topology Expansion
 
-`shared/types/optimization.ts` remains unchanged — `OptimizationScore`, `OptimizationSuggestion`, `SuggestionResult` stay there.
+**Decision:** Extend the existing enums; introduce no router (the no-React-Router rule holds).
 
-**Rationale:** `optimization.ts` already has sufficient surface area. The new stat types are a distinct domain (derived stat display) from the existing optimization types (suggestion lifecycle). A dedicated file keeps both manageable.
+```ts
+// appStore — two new full-screen views
+type CurrentView = 'main' | 'settings' | 'gear-optimization' | 'complete-optimizer'  // + 'complete-optimizer'
+
+// appStore — center tab bar gains Weaver as a first-class tab sibling of Passive Tree
+type CenterTab = 'tree' | 'weaver' | 'gear' | 'skill' | 'idol' | 'blessing'           // + 'weaver'
+// keys 1–6 switch tabs (was 1–5); a visual divider separates {tree, weaver} from {gear, skill, idol, blessing}
+```
+
+**Rationale:** The Claude Design handoff models Complete Build Optimizer and Gear Optimization as header-nav full-screen views (`view: 'complete' | 'gearopt'`) and the center tab bar as six tabs with a divider after Weaver (FR-36). The existing `currentView` union and `centerTab` union are the precedent for both — extending them is consistent with the established pattern and avoids a router. Per-skill specialization trees (the old `SkillTreeTabBar` slots 1–5) are accessed *inside* the Skill tab's editor (FR-43), not as top-level center tabs; the passive and weaver trees are the two canvas tabs. `Esc` returns to `main` from any full-screen view (FR-33), matching the handoff's keydown handler.
+
+**Cross-highlight handle (FR-18):** `SkillTreeCanvasHandle` gains `focusNode(nodeId: string)` alongside the existing `fitToTree()` — it smoothly pans/zooms the PixiJS viewport to center a suggested node. This keeps the canvas props-only and ref-driven; no store access inside the canvas.
+
+---
+
+### ADR-P4-005 — Popular Builds Database Placement
+
+**Decision:** `popular-builds.json` is a bundled Tauri resource (schema per addendum C), loaded once at startup into `gameDataStore` as `popularBuilds: PopularBuild[] | null`. It follows the **`conditions.json` pattern, not the staleness pattern** — bundled, updated with app releases, never network-stale.
+
+**Rationale:** FR-42 requires ≥3 builds per mastery × 15 masteries (≥45 entries), curated per Season patch from maxroll.gg/lastepochtools.com. The data changes with game patches, not player-initiated updates — identical to `conditions.json`, which Phase 3 deliberately excluded from the network staleness pipeline. The FR-23 matching logic (filter by `mastery`, sort by skill-overlap count, return top 3) runs entirely client-side with no network request, satisfying the offline NFR.
+
+---
+
+### ADR-P4-006 — Gear Drag-and-Drop Primitive
+
+**Decision:** Native HTML5 drag-and-drop (`draggable`, `onDragStart`/`onDragOver`/`onDrop`) for the Gear Optimization screen's database-card → paper-doll-slot interaction (FR-31). No new dependency.
+
+**Rationale:** The interaction is simple — drag a card onto one of 11 typed slots, with gold/red validity highlighting. Native HTML5 DnD covers it; pulling in `@dnd-kit` or `react-dnd` would violate the "no new frontend dependencies" preference for a feature this contained. The idol grid keeps its existing click-to-place model (already shipped in Phase 3), so DnD is needed in exactly one place. Double-click-to-equip (FR-31) is a plain `onDoubleClick` fallback.
+
+---
+
+### ADR-P4-007 — Design-Token Reconciliation
+
+**Decision:** Keep the existing `--color-*` token **names**; update their **values** to the Claude Design palette and add the missing tokens. No rename.
+
+| Token (existing name) | New value (from handoff) |
+|---|---|
+| `--color-accent-gold` | `#C9A84C` |
+| `--color-bg-base` / `-surface` / `-elevated` / `-hover` | `#0A0A0B` / `#141417` / `#1C1C21` / `#252530` |
+| `--color-node-suggested` | `#7B68EE` |
+| rarity tokens (via `rarityColors.ts`) | normal `#C6C0B5`, magic `#4A7A9E`, rare `#C9A84C`, set `#5EBD78`, unique `#D4805A`, legendary `#B068E8` |
+| NEW: `--color-bg-sunken` | `#060607` |
+
+**Rationale:** The codebase references `--color-*` everywhere and `rarityColors.ts` keys off them; the handoff uses unprefixed `--*` tokens with a different gold and an added legendary rarity. Renaming tokens would touch every component and the rarity utility for zero visual benefit. Updating values in the single global stylesheet (Tailwind v4 CSS-first, no config file) re-skins the whole app at once, and `rarityColors.ts` keeps working. FR-7 also revises Phase 3's rarity hex list (`#E87722` unique → `#D4805A`, etc.) — this is the place that reconciliation lands. Components are then rebuilt to the Claude Design layout (FR-33–39) consuming these tokens — a faithful recreation, not a wrapping of the prototype JSX (PRD §4.7).
+
+---
+
+### ADR-P4-010 — Character Import Module Boundary
+
+**Decision:** Save-file scanning and parsing live in a **new Tauri-crate module `character_import.rs`**, never in `scoring-core` (which stays pure, no I/O). Three new commands; online import is a wired stub.
+
+```rust
+// src-tauri/src/character_import.rs
+#[tauri::command] fn scan_save_files() -> Result<Vec<DetectedCharacter>, String>;   // FR-47
+#[tauri::command] fn parse_save_file(path: String) -> Result<ImportedBuild, String>; // FR-48
+#[tauri::command] async fn import_online_character(account: String, character: String)
+    -> Result<ImportedBuild, String>;                                                // FR-49 — stub
+```
+
+- **Offline (FR-47/48):** `scan_save_files` checks both known paths (Steam `userdata/.../899770/...Saves/` and AppData `LocalLow/Eleventh Hour Games/Last Epoch/Saves/`), parses the `1CHARACTERSLOT_BETA_###` header for name+class, and returns the list. `parse_save_file` extracts `charClass`, `level`, `charTree`, `skillTrees`, `equipment` into an `ImportedBuild` that maps to a new `BuildState`. Unresolved item/node IDs are reported in a post-import summary (FR-48), and the import creates a new named build (preserving the prior one).
+- **Spike gate (OQ-8):** the binary format is reverse-engineered from the community save-editor source before the FR-48 story is written. Documented fallback: shell-invoke the community Java tool and parse its JSON output. The module boundary and command signatures are stable regardless of which path the spike chooses.
+- **Online (FR-49, OQ-7):** `import_online_character` returns `Err("CHARACTER_IMPORT_ERROR: API access pending")` until EHG partnership is granted. The UI (two-tab modal) and the command are fully built; only the endpoint + auth headers substitute later. A new `CHARACTER_IMPORT_ERROR` prefix is added to `ErrorType`/`errorNormalizer.ts` (Story-0 setup task, same discipline as Phase 3's `SCORING_ERROR`).
+
+**Rationale:** File I/O and OS-path logic belong in the Tauri crate by the project's "all backend logic in Rust, `scoring-core` stays pure" rule. Keeping the parser out of `scoring-core` preserves the crate's WASM-readiness and no-mock unit-test guarantee. The stub-with-real-UI approach for online import lets the whole import surface ship now and light up later with zero rework.
 
 ### Cross-Component Dependencies
 
 ```
-Epic G (data ingestion)
-  ↓ blocks
-scoring-core crate (ADR-001–003)
+D-P4-2 (affix prefix/suffix discriminator)   ← Phase 4 critical-path data gate
+  ↓ unblocks
+§4.5 Affix Picker  +  correct suffix-side gear scoring (gear.rs, serializer)
+
+D-P4-1 (ModifierType enum)
+  ↓ unblocks
+§4.1 Complete Stats Engine (compute/* modules)
   ↓ enables
-compute_stats Tauri command
-  ↓ enables
-useStatSheet hook  →  optimizationStore.statSheet  →  StatSheet display (FR-B1–B6)
-  
-run_optimization command  →  existing suggestion pipeline (unchanged)
-run_gear_scoring command  →  Gear Optimization screen (Epic H)
+§4.2 Stat Source Attribution (track_sources)  →  Source Breakdown tooltip
+  ↓ feeds
+§4.4 Complete Build Optimizer (full-picture analysis)  →  run_complete_optimization
+                                                          →  complete-opt:* / useCompleteOptStream
+
+§4.8 popular-builds.json  →  FR-23 skill suggestion (Complete Build Optimizer gate)
+§4.7 token reconciliation →  whole-app re-skin  →  component rebuilds (FR-33–39)
+§4.10 character import     →  independent; gated only by OQ-8 spike (offline) / OQ-7 (online)
 ```
 
-Epic G is the sole critical-path gate. All other work can proceed in parallel once the game data schema is defined (even before ingestion is complete — mock data suffices for engine development).
+The affix discriminator and the `ModifierType` enum are the two gates; everything else parallelizes behind mock data, exactly as Phase 3 ran behind Epic G.
 
 ---
 
 ## Implementation Patterns & Consistency Rules
 
-These patterns cover only the three new subsystems. All existing patterns from `project-context.md` remain in force and are not repeated here.
+All Phase 3 patterns (Patterns 1–7) remain in force and are **not** repeated. `project-context.md`'s 85 rules remain authoritative. The following are **additive** Phase 4 patterns.
 
-### Pattern 1 — `BuildSnapshot` Serialization Boundary
+### Pattern P4-1 — Stat math reads the registry, never the snapshot
 
-**Conflict:** An agent implementing `compute_stats` might serialize `BuildState` directly over IPC. `BuildState` contains UI-specific fields (`schemaVersion`, undo metadata, `contextData` shape) that are not part of the engine's contract.
+**Conflict:** An agent adding a Phase 4 stat (e.g. Parry, a new ailment) might read `snapshot.gear[...]` or a passive allocation directly to compute it — bypassing the Modifier Registry and re-introducing the "formula not data-transformation" trap the Phase 3 architecture warned against.
 
-**Rule:** A dedicated `shared/utils/buildSnapshotSerializer.ts` utility is the single point of responsibility for converting `BuildState` → `BuildSnapshot`. No hook, component, or store calls `invokeCommand('compute_stats', ...)` with a raw `BuildState`. The serializer is always the intermediary.
-
-```ts
-// shared/utils/buildSnapshotSerializer.ts
-export function toBuildSnapshot(build: BuildState, gameData: GameData): BuildSnapshot { ... }
-
-// useStatSheet.ts — correct usage
-const snapshot = toBuildSnapshot(activeBuild, gameData)
-const result = await invokeCommand<StatSheet>('compute_stats', { snapshot })
-```
-
-**Anti-pattern:**
-```ts
-// Wrong — sends full BuildState including schemaVersion, undo history, etc.
-await invokeCommand<StatSheet>('compute_stats', { buildState: activeBuild })
-```
-
-### Pattern 2 — Serde Field Naming Direction
-
-**Rule:** Follows the established project convention confirmed by existing code (`useOptimizationStream.ts` receiving `from_node_id`, `startOptimization` sending `sliderPosition`):
-
-- **TypeScript → Rust (input structs):** `#[serde(rename_all = "camelCase")]` on all new Rust input structs (`BuildSnapshot`, `ComputeOptions`). TypeScript sends camelCase property names.
-- **Rust → TypeScript (output / events):** Default serde snake_case. TypeScript interface field names mirror Rust struct field names exactly.
+**Rule:** Every `compute/*` module computes its stats **only** by querying `ModifierRegistry` for `StatKey`s. Sources register their modifiers once (`module.apply_modifiers` + the snapshot-ingest pass); computation queries and applies `flat → increased → more`. New stats = new `StatKey` variants + new modifier registrations, never a new direct-read code path.
 
 ```rust
-// Rust input struct — camelCase from TypeScript
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct BuildSnapshot {
-    pub node_allocations: HashMap<String, u32>,  // received as "nodeAllocations"
-    pub character_level: u32,                     // received as "characterLevel"
-}
-
-// Rust output struct — snake_case to TypeScript
-#[derive(Serialize)]
-pub struct StatSheet {
-    pub offense: OffenseStats,
-    pub defense: DefenseStats,
-    pub build_score: f64,           // TypeScript receives as "build_score"
-}
+// Correct — registry query
+let inc = registry.query(StatKey::IncreasedFireDamage, conds).iter().map(|m| m.value).sum();
+// Wrong — direct snapshot read for a stat value
+let inc = snapshot.gear.values().filter(|a| a.stat == "fire").map(...).sum();
 ```
 
-```ts
-// TypeScript interface — mirrors Rust snake_case exactly
-interface StatSheet {
-  offense: OffenseStats
-  defense: DefenseStats
-  build_score: number              // snake_case, matches Rust output
-}
-```
+### Pattern P4-2 — `track_sources` is on only for the display call
 
-### Pattern 3 — `GameData` Locking in AppState
+**Rule:** `ComputeOptions.track_sources` is `true` exactly once: the `compute_stats` call driven by `useStatSheet`. Every scan/knapsack/gear/complete-opt internal `compute_stats` call passes `track_sources: false`. An agent must never enable source tracking inside a loop. `stat_sources` is `Option`; loop paths return `None`.
 
-**Conflict:** An agent might reload game data JSON on every call (catastrophic), or hold a read lock across an `await` boundary (deadlock risk with `spawn_blocking`).
+### Pattern P4-3 — Warnings always compute; suggestions are scope-filtered
 
-**Rule:**
-- `compute_stats` (sync command): `.read().unwrap()` — take lock, compute, return. Lock drops at end of function. No clone.
-- `run_optimization` / `run_gear_scoring` (async commands): `.read().unwrap().clone()` — clone while holding the lock, then release immediately. Pass the clone into `spawn_blocking`. Lock is never held across an `await`.
+**Conflict:** FR-15 forbids the defensive floor check from appearing as a Passive Tree Optimizer suggestion, but the check must still drive stat-sheet warnings (FR-14) and Complete Build Optimizer output.
 
-```rust
-// Sync — no clone needed
-#[tauri::command]
-fn compute_stats(snapshot: BuildSnapshot, state: tauri::State<'_, AppState>) -> Result<StatSheet, String> {
-    let game_data = state.game_data.read().unwrap();   // lock held for duration of call
-    Ok(scoring_core::compute_stats(&snapshot, &game_data, ComputeOptions::default()))
-}
+**Rule:** The floor check runs inside `compute_stats` and always populates `StatSheet.warnings`. **Emitting suggestions** is a separate, command-level concern: `run_optimization` filters its output to `suggestion.kind == PassiveNode` only. Floor-derived gear/resistance suggestions appear **only** in `run_complete_optimization` when `scope.gear == true`. Never emit a non-`passive_node` suggestion from `run_optimization`.
 
-// Async — clone before spawn_blocking, release lock immediately
-#[tauri::command]
-async fn run_optimization(snapshot: BuildSnapshot, state: tauri::State<'_, AppState>) -> Result<OptimizationResult, String> {
-    let game_data = state.game_data.read().unwrap().clone();  // lock released after clone
-    tokio::task::spawn_blocking(move || scoring_core::run_full_optimization(&snapshot, &game_data))
-        .await.map_err(|e| e.to_string())?
-}
-```
+### Pattern P4-4 — `complete-opt:*` is its own event namespace
 
-### Pattern 4 — `useStatSheet` Generation-Based Cancellation
+**Rule:** Complete Build Optimizer streaming uses `complete-opt:suggestion-received` / `complete-opt:complete` / `complete-opt:error` exclusively. Never reuse `optimization:*` or `gear:*`. A dedicated `useCompleteOptStream.ts` subscribes; the other two stream hooks are not modified. (Direct parallel to Phase 3 Pattern 6.)
 
-**Conflict:** An agent might fire IPC calls without cancellation, leaving stale results overwriting newer state (e.g., rapid allocation then undo — older call resolves last).
+### Pattern P4-5 — Orb animation is decoupled from results (SM-C1)
 
-**Rule:** Token-based generation counter in `useStatSheet`. A `useRef` holds the current generation number, incremented on each state change before the IPC call. The result is discarded if the generation has moved on.
+**Conflict:** An agent might gate result rendering on the orb animation completing (`(N+2) × 620ms`), delaying results.
 
-```ts
-const generationRef = useRef(0)
+**Rule:** The Optimization Orb (CSS, per addendum D — `.orb-overlay`/`.orb-ring`/`.orb-core`/`.orb-token`/`.orb-status`) is a pure presentational overlay driven by a local timer. Results render the instant `complete-opt:complete` arrives, regardless of orb step. If results arrive before the animation finishes, the orb snaps to complete and the results panel slides in (≤500ms, SM-C1). The orb never blocks, awaits, or sequences the IPC result path. `prefers-reduced-motion` collapses the orb to a static progress indicator.
 
-// On each state change:
-const generation = ++generationRef.current
-setIsComputingStats(true)
+### Pattern P4-6 — Recommendations are constrained to payload IDs
 
-invokeCommand<StatSheet>('compute_stats', { snapshot })
-  .then((result) => {
-    if (generationRef.current !== generation) return  // stale — discard
-    useOptimizationStore.getState().setStatSheet(result)
-    useOptimizationStore.getState().setIsComputingStats(false)
-  })
-  .catch(() => {
-    if (generationRef.current !== generation) return  // stale — discard
-    useOptimizationStore.getState().setIsComputingStats(false)
-  })
-```
+**Conflict:** Claude could return a gear/idol recommendation referencing an item or affix ID not in the payload (hallucination), and the UI might render it.
 
-### Pattern 5 — `SCORING_ERROR` Error Type Prefix
+**Rule:** For `run_gear_scoring` and `run_complete_optimization`, the Claude payload includes the exact catalog subset of candidate IDs, and the frontend **rejects** any recommendation whose ID is absent from that subset before display (FR-32 / FR-26). Slots with no meaningful upgrade are omitted, never rendered as placeholder suggestions.
 
-**Conflict:** An agent might emit raw Rust error strings from the scoring engine that don't match any `ErrorType`, silently falling through to `UNKNOWN_ERROR` in `normalizeAppError`.
+### Pattern P4-7 — Batch allocate/remove is a single undo step
 
-**Rule:** All scoring engine Rust errors are prefixed `SCORING_ERROR: {detail}`. This prefix must be added to `ErrorType` enum in `shared/types/errors.ts` and `ERROR_TYPE_MAP` in `shared/utils/errorNormalizer.ts` **before any scoring IPC story begins** — it is a Story 0 / setup task, not an implementation detail.
+**Conflict:** Shift+click fill (FR-44) and right-click remove-all-with-orphan-cascade (FR-45) could push N separate undo entries.
 
-```rust
-// In scoring_commands.rs
-fn compute_stats(...) -> Result<StatSheet, String> {
-    scoring_core::compute_stats(...)
-        .map_err(|e| format!("SCORING_ERROR: {e}"))
-}
-```
+**Rule:** Bulk operations push exactly **one** snapshot onto `undoStack`. New `buildStore` actions `fillNodeToMax(nodeId)` and `removeAllPoints(nodeId)` snapshot once, then apply the full batch. `removeAllPoints` runs the prerequisite/orphan check first; if removal orphans allocated children it deallocates them in the same single step after the confirmation prompt naming the orphaned nodes (FR-45). Never implement these as a loop of single `applyNodeChange` calls.
 
-```ts
-// errors.ts — add alongside existing ErrorType values
-export const ErrorType = {
-  // ...existing...
-  SCORING_ERROR: 'SCORING_ERROR',
-} as const
-```
+### Pattern P4-8 — Token reconciliation is values-only
 
-### Pattern 6 — `gear:*` Event Namespace
-
-**Conflict:** An agent might emit gear analysis results on `optimization:suggestion-received`, coupling the Gear Optimization screen to the main optimization event channel.
-
-**Rule:** Gear analysis streaming uses its own Tauri event namespace, never `optimization:*`:
-
-| Event | Trigger |
-|---|---|
-| `gear:analysis-complete` | `run_gear_scoring` finishes — full `GearAnalysis` in payload |
-| `gear:error` | `run_gear_scoring` fails |
-
-A dedicated `useGearStream.ts` hook in `shared/stores/` subscribes to these events. The `useOptimizationStream` hook is not modified for gear analysis.
-
-### Pattern 7 — `StatSheet` Null Sub-Sheets = Hidden, Not Errored
-
-**Conflict:** An agent might treat `statSheet.ailment === null` as an error state or show an empty panel.
-
-**Rule:** Null sub-sheets mean the section is **not applicable** — hide the tab/section entirely. Never render a loading spinner, error message, or empty container for a null sub-sheet. The Minion tab (FR-B5) is already the precedent: hidden when no minion skills are active.
-
-```ts
-// Correct — hide when null
-{statSheet.minion !== null && <MinionTab data={statSheet.minion} />}
-
-// Wrong — renders empty or errors
-<MinionTab data={statSheet.minion!} />
-```
+**Rule:** Never rename a `--color-*` token or introduce an unprefixed `--*` token from the prototype. Update values in the global stylesheet and add new tokens under the `--color-*` namespace. All rarity/damage-type colors continue to route through `rarityColors.ts` — never hardcode the new hex values inline (existing rule, reaffirmed).
 
 ### Enforcement Summary
 
-**All agents implementing scoring subsystem work MUST:**
+**All agents implementing Phase 4 work MUST:**
 
-1. Use `toBuildSnapshot()` from `buildSnapshotSerializer.ts` — never serialize `BuildState` directly
-2. Apply `#[serde(rename_all = "camelCase")]` to Rust input structs; leave output structs as default snake_case
-3. Never hold a `RwLock` read guard across an `await` boundary — clone before `spawn_blocking`
-4. Include generation cancellation in `useStatSheet` — never fire-and-forget IPC calls that mutate store state
-5. Prefix all scoring Rust errors with `SCORING_ERROR:` — add to `ErrorType` before any scoring story
-6. Use `gear:*` events for gear analysis — never reuse `optimization:*`
-7. Treat null `StatSheet` sub-sheets as hidden sections — never as errors
+1. Compute every stat via `ModifierRegistry` queries — never read snapshot fields for stat math (P4-1).
+2. Enable `track_sources` only on the single display `compute_stats` call (P4-2).
+3. Keep floor-check **warnings** in `compute_stats` and floor-derived **suggestions** out of `run_optimization` (P4-3).
+4. Use `complete-opt:*` events for the Complete Build Optimizer; add `useCompleteOptStream.ts` (P4-4).
+5. Never let the orb animation gate result rendering (P4-5).
+6. Reject Claude recommendations whose IDs are not in the payload subset (P4-6).
+7. Make batch allocate/remove a single undo step via dedicated store actions (P4-7).
+8. Reconcile design tokens by value only, under the `--color-*` namespace (P4-8).
+9. Add `CHARACTER_IMPORT_ERROR` (and reuse `SCORING_ERROR`) to `ErrorType`/`errorNormalizer.ts` as Story-0 setup tasks.
+10. Migrate `ModifierType`/`scope`/`position` to serde enums; never branch on raw strings (D-P4-1).
 
 ---
 
 ## Project Structure & Boundaries
 
-New additions and modifications only. The existing `lebo/src/` feature structure is unchanged unless marked EXTENDED or MODIFIED.
+New additions and modifications only. Everything under `lebo/src/` and `src-tauri/` not listed here is unchanged from Phase 3.
 
-### New File Tree
+### File Tree (new / modified)
 
 ```
 lebo/
 ├── src/
 │   ├── shared/
 │   │   ├── types/
-│   │   │   ├── statSheet.ts                    ← NEW
-│   │   │   │     StatSheet, OffenseStats, DefenseStats, ScoreComponents,
-│   │   │   │     AilmentStats, MinionStats, StatWarning, NodeEfficiency, GearAnalysis
-│   │   │   └── errors.ts                       ← EXTENDED (add SCORING_ERROR to ErrorType)
+│   │   │   ├── statSheet.ts                 ← EXTENDED  AilmentStats/MinionStats filled in;
+│   │   │   │                                            OffenseStats/DefenseStats expanded (all
+│   │   │   │                                            damage types, all defensive layers, EHP×3,
+│   │   │   │                                            Stable Ward); + ModifierSource, SourceType;
+│   │   │   │                                            stat_sources field on StatSheet
+│   │   │   ├── gameData.ts                   ← EXTENDED  AffixEntryV2.position; PopularBuild
+│   │   │   ├── build.ts                      ← EXTENDED  ImportedBuild → BuildState mapping types
+│   │   │   ├── optimization.ts               ← EXTENDED  CompleteOptScope, CompleteOptSuggestion (domain badge)
+│   │   │   └── errors.ts                     ← EXTENDED  CHARACTER_IMPORT_ERROR
 │   │   ├── utils/
-│   │   │   ├── buildSnapshotSerializer.ts      ← NEW (BuildState → BuildSnapshot)
-│   │   │   └── errorNormalizer.ts              ← EXTENDED (add SCORING_ERROR to ERROR_TYPE_MAP)
+│   │   │   ├── buildSnapshotSerializer.ts    ← MODIFIED  emit affix position (suffix-side fix)
+│   │   │   ├── errorNormalizer.ts            ← EXTENDED  CHARACTER_IMPORT_ERROR map entry
+│   │   │   └── popularBuildMatch.ts          ← NEW       FR-23 client-side mastery/skill-overlap match
 │   │   └── stores/
-│   │       ├── optimizationStore.ts            ← EXTENDED (statSheet, isComputingStats fields)
-│   │       ├── useStatSheet.ts                 ← NEW (debounced compute_stats hook)
-│   │       └── useGearStream.ts                ← NEW (gear:* event listener hook)
+│   │       ├── optimizationStore.ts          ← EXTENDED  completeOpt state; statSheet.stat_sources consumer
+│   │       ├── gameDataStore.ts              ← EXTENDED  popularBuilds: PopularBuild[] | null
+│   │       ├── appStore.ts                   ← EXTENDED  currentView += 'complete-optimizer'; CenterTab += 'weaver'
+│   │       └── useCompleteOptStream.ts       ← NEW       complete-opt:* listener hook
 │   ├── features/
+│   │   ├── stat-sheet/
+│   │   │   ├── StatSheetPanel.tsx            ← MODIFIED  5-tab General/Offense/Defense/Minion/Other (addendum F)
+│   │   │   └── StatSourceTooltip.tsx         ← NEW       FR-13/14 grouped source breakdown + cap gap
 │   │   ├── optimization/
-│   │   │   └── scoringEngine.ts                ← DEPRECATED (deleted in follow-up story)
-│   │   └── gear-optimization/                  ← NEW feature folder (Epic H)
-│   │       ├── GearOptimizationView.tsx
-│   │       ├── GearSlotRankList.tsx
-│   │       ├── GearWishlist.tsx
-│   │       ├── SkillRoleDesignator.tsx
-│   │       ├── useGearOptimization.ts
-│   │       └── GearOptimizationView.test.tsx
-│   └── App.tsx                                 ← MODIFIED
-│         add useStatSheet()
-│         remove inline calculateScore subscribe blocks (lines 74–88, 100–111)
+│   │   │   ├── SuggestionCard.tsx            ← MODIFIED  FR-19 format; cross-highlight (FR-18)
+│   │   │   └── scoringEngine.ts              ← DELETE    (Phase 3 follow-up; superseded by Rust engine)
+│   │   ├── complete-optimizer/               ← NEW feature folder (§4.4)
+│   │   │   ├── CompleteOptimizerView.tsx
+│   │   │   ├── ScopeSelector.tsx             ← FR-21 checkboxes + fill-status labels
+│   │   │   ├── CompletenessGate.tsx          ← FR-22 inline red alerts + "Go to [Section]"
+│   │   │   ├── OptimizationOrb.tsx           ← FR-24 CSS orb (Pattern P4-5)
+│   │   │   ├── UnifiedSuggestionList.tsx     ← FR-25 domain-grouped output
+│   │   │   ├── useCompleteOptimization.ts
+│   │   │   └── CompleteOptimizerView.test.tsx
+│   │   ├── gear/                             ← §4.5 modals
+│   │   │   ├── ItemPickerModal.tsx           ← FR-27 (search index, rarity/slot/tag filters)
+│   │   │   ├── AffixPickerModal.tsx          ← FR-28 (Offense/Defense/Utility groups, tier pips, position)
+│   │   │   ├── itemSearchIndex.ts            ← NEW prebuilt index (SM-5 < 100ms)
+│   │   │   └── *.test.tsx
+│   │   ├── gear-optimization/                ← §4.6 rework
+│   │   │   ├── GearOptimizationView.tsx      ← MODIFIED  three-column + HTML5 DnD (FR-30/31)
+│   │   │   └── PaperDoll.tsx                 ← NEW       11-slot drop targets
+│   │   ├── skill-tree/
+│   │   │   └── pixiRenderer.ts               ← EXTENDED  FR-17 suggestion overlay (gold/silver/dim
+│   │   │                                                 scale+glow, dashed path lines), focusNode()
+│   │   ├── skills/                           ← §4.8
+│   │   │   └── SkillPickerGrid.tsx           ← MODIFIED  draws from complete 133-skill DB (FR-40/43)
+│   │   ├── character-import/                 ← NEW feature folder (§4.10)
+│   │   │   ├── CharacterImportModal.tsx      ← FR-46 two-tab (Offline / Online)
+│   │   │   ├── OfflineImportTab.tsx          ← FR-47 detected list + Browse fallback
+│   │   │   ├── OnlineImportTab.tsx           ← FR-49 stub UI
+│   │   │   └── *.test.tsx
+│   │   └── layout/
+│   │       ├── AppHeader.tsx                 ← MODIFIED  FR-33 nav: Builder | Complete | Gear Opt | Settings
+│   │       ├── LeftPanel.tsx                 ← MODIFIED  FR-34 build identity + section navigator + Import
+│   │       ├── RightPanel.tsx                ← MODIFIED  FR-35 score gauge, archetype slider, optimizer
+│   │       ├── CenterCanvas.tsx              ← MODIFIED  FR-36 six-tab bar w/ divider, keys 1–6
+│   │       └── StatusBar.tsx                 ← MODIFIED  FR-39 data version, unsaved dot, LLM provider
+│   └── App.tsx                               ← MODIFIED  add useCompleteOptStream(); route 'complete-optimizer'
 │
-src-tauri/
-├── Cargo.toml                                  ← MODIFIED (workspace root)
-│     members = [".", "scoring-core"]
-├── src/
-│   ├── lib.rs                                  ← MODIFIED
-│   │     register: compute_stats, run_optimization, run_gear_scoring
-│   ├── scoring_commands.rs                     ← NEW (3 Tauri command handlers)
-│   └── game_data_loader.rs                     ← NEW
-│         disk → scoring_core::GameData construction
-│         held in AppState as Arc<RwLock<GameData>>, loaded once at startup
-└── scoring-core/                               ← NEW CRATE
-    ├── Cargo.toml
-    │     deps: serde, serde_json, rayon
-    │     NO tauri, NO tokio
-    └── src/
-        ├── lib.rs                  pub use re-exports
-        ├── modifier.rs             Modifier, ModifierType, Condition, ModifierRegistry
-        ├── build_snapshot.rs       BuildSnapshot (engine input, IDs only)
-        ├── game_data.rs            GameData (read-only reference tables)
-        ├── stat_sheet.rs           StatSheet + all sub-types + StatWarning
-        ├── compute.rs              compute_stats() — Stage 1 fast path
-        ├── scan.rs                 run_efficiency_scan() — Stages 2–3, rayon parallel
-        ├── gear.rs                 run_gear_scoring() — Stage 4
-        ├── synergy.rs              run_synergy_detection() — Stage 5
-        ├── class_module.rs         ClassModule trait
-        └── classes/
-            ├── mod.rs
-            ├── sentinel.rs
-            ├── mage.rs
-            ├── primalist.rs
-            ├── rogue.rs
-            └── acolyte.rs
+└── src-tauri/
+    ├── src/
+    │   ├── lib.rs                            ← MODIFIED  register run_complete_optimization,
+    │   │                                                 scan_save_files, parse_save_file,
+    │   │                                                 import_online_character
+    │   ├── scoring_commands.rs               ← EXTENDED  run_complete_optimization handler + payload assembly;
+    │   │                                                 compute_stats track_sources wiring;
+    │   │                                                 run_optimization passive_node filter
+    │   └── character_import.rs               ← NEW       FR-47/48/49 (offline parse, online stub)
+    └── scoring-core/
+        ├── Cargo.toml                        ← unchanged (serde, serde_json, rayon)
+        └── src/
+            ├── modifier.rs                   ← EXTENDED  ModifierType/scope enums; new StatKeys;
+            │                                             ModifierSource + SourceType
+            ├── stat_sheet.rs                 ← EXTENDED  expanded Offense/Defense; AilmentStats/MinionStats;
+            │                                             stat_sources: Option<HashMap<..>>
+            ├── compute.rs → compute/mod.rs   ← REFACTORED orchestrator
+            ├── compute/                       ← NEW submodules (ADR-P4-001)
+            │   ├── offense.rs   penetration.rs  defense.rs  ehp.rs
+            │   ├── ward.rs      ailment.rs       attributes.rs  minion.rs
+            ├── gear.rs                        ← EXTENDED  suffix-side scoring (affix position)
+            ├── idol.rs                        ← NEW       FR-26 idol recommendation pass
+            ├── synergy.rs                     ← EXTENDED  cross-domain over scope mask
+            └── tests/
+                ├── ehp_reference.rs           ← NEW       tunklab parity fixtures (SM-1 ±2%, CI gate)
+                └── ...formula regression tests (extended)
 ```
 
-### Epic-to-Structure Mapping
+### Epic-to-Structure Mapping (anticipated; epics generated separately)
 
-| Epic | FR Group | Primary Files |
+| Feature group | FRs | Primary files |
 |---|---|---|
-| A — Build Score Function | FR-A1–A6 | `scoring-core/compute.rs`, `modifier.rs`, `build_snapshot.rs`, `stat_sheet.rs` |
-| A — Defensive Floor Check | FR-A7–A8 | `scoring-core/compute.rs` (pre-computation pass) |
-| A — Efficiency Scan | FR-A9–A13 | `scoring-core/scan.rs` |
-| A — Knapsack Solver | FR-A14–A15 | `scoring-core/scan.rs` (Phase 2 of scan) |
-| A — Gear Affix Scorer | FR-A16–A19 | `scoring-core/gear.rs` |
-| A — Synergy Detector | FR-A20–A22 | `scoring-core/synergy.rs` |
-| A — Claude Narrative | FR-A23–A25 | `scoring_commands.rs` (assembles payload → existing `claude_commands.rs`) |
-| A — Node Efficiency Overlay | FR-A26–A28 | `scan.rs` returns `Vec<NodeEfficiency>`; overlay in `pixiRenderer.ts` (EXTENDED) |
-| B — Live Stat Sheet | FR-B1–B7 | `useStatSheet.ts`, `optimizationStore.ts`, stat display components |
-| G — Data Ingestion | FR-G1–G5 | External pipeline (not in `lebo/`); outputs: updated class JSONs + `idol-data.json`, `blessings.json`, `conditions.json` in Tauri resources |
-| H — Gear Optimization | FR-H1–H17 | `features/gear-optimization/`, `useGearStream.ts`, `run_gear_scoring` command |
+| Complete Stats Engine | FR-1–11 | `scoring-core/compute/*`, `modifier.rs`, `stat_sheet.rs`, `tests/ehp_reference.rs` |
+| Stat Source Attribution | FR-12–14 | `modifier.rs` (ModifierSource), `scoring_commands.rs`, `stat-sheet/StatSourceTooltip.tsx` |
+| Passive Tree Optimizer (refined) | FR-15–19 | `scoring_commands.rs` (filter), `skill-tree/pixiRenderer.ts`, `optimization/SuggestionCard.tsx` |
+| Complete Build Optimizer | FR-20–26 | `complete-optimizer/`, `useCompleteOptStream.ts`, `scoring_commands.rs`, `scoring-core/idol.rs` |
+| Gear Item & Affix Pickers | FR-27–29 | `gear/ItemPickerModal.tsx`, `AffixPickerModal.tsx`, `itemSearchIndex.ts`, `gameData.ts` (position) |
+| Gear Optimization screen | FR-30–32 | `gear-optimization/`, `scoring-core/gear.rs`, `buildSnapshotSerializer.ts` |
+| UI/UX revamp | FR-33–39 | `layout/*`, global stylesheet (tokens), `rarityColors.ts` |
+| Data completeness | FR-40–43 | `popular-builds.json` (resource), `gameDataStore.ts`, `popularBuildMatch.ts`, `skills/` |
+| Multi-allocate fix | FR-44–45 | `buildStore.ts` (`fillNodeToMax`, `removeAllPoints`), `useSkillTree.ts`, `pixiRenderer.ts` |
+| Character import | FR-46–49 | `character-import/`, `src-tauri/character_import.rs`, `lib.rs` |
 
 ### Integration Boundaries & Data Flow
 
-**Stat sheet (every state change):**
+**Stat sheet + sources (every state change):**
 ```
 buildStore / gameDataStore change
-  → useStatSheet (rAF debounce + generation token)
-    → toBuildSnapshot()                         [buildSnapshotSerializer.ts]
-      → invokeCommand<StatSheet>('compute_stats', { snapshot })
-        → [Rust sync] scoring_commands::compute_stats
-          → scoring_core::compute_stats(&snapshot, &game_data)
-            → ModifierRegistry → StatSheet
-          → StatSheet (snake_case JSON)
+  → useStatSheet (rAF debounce + generation token)            [unchanged Phase 3 pattern]
+    → toBuildSnapshot()                                        [serializer now emits affix position]
+      → compute_stats(snapshot, { track_sources: true })       [SYNC; sources on]
+        → scoring_core::compute_stats → ModifierRegistry
+          → compute/* modules → StatSheet { ..., stat_sources: Some(map) }
         → optimizationStore.setStatSheet()
-          → stat sheet display components
+          → StatSheetPanel (5 tabs) + StatSourceTooltip (hover, no extra IPC)
 ```
 
-**Full optimization run (explicit trigger):**
+**Complete Build Optimizer (explicit, multi-domain):**
 ```
-OptimizeButton click
-  → startOptimization()                         [useOptimizationStream.ts — extended]
-    → invokeCommand('run_optimization', { snapshot })
-      → [Rust async] run_optimization
-        → spawn_blocking → scoring_core::run_full_optimization()
-          → Stages 1–3: score + efficiency scan + knapsack → OptimizationResult
-          → Stage 5: synergy detection → Vec<SynergyFlag>
-        → assembles payload → claude_commands.rs
-          → streams via optimization:suggestion-received  [unchanged]
-```
-
-**Gear optimization (Gear Optimization screen):**
-```
-GearOptimizationView mounts / "Analyze Gear" click
-  → invokeCommand('run_gear_scoring', { snapshot })
-    → [Rust async] run_gear_scoring
-      → spawn_blocking → scoring_core::run_gear_scoring()
-        → Stage 1 (BuildScore) + Stage 4 (GearAnalysis)
-      → assembles gear payload → claude_commands.rs
-        → emits gear:analysis-complete           [new event namespace]
-          → useGearStream                        [new hook]
-            → GearOptimizationView
+CompleteOptimizerView "Optimize" (gates passed)
+  → useCompleteOptimization → invokeCommand('run_complete_optimization', { snapshot, scope })
+    → [Rust async] spawn_blocking → scoring_core stage fns gated by scope mask
+       (track_sources: false everywhere here)
+      → assemble filtered-catalog payload → claude_commands.rs
+        → stream complete-opt:suggestion-received (domain-badged) → complete-opt:complete
+          → useCompleteOptStream → optimizationStore.completeOpt
+            → UnifiedSuggestionList   (OptimizationOrb runs independently — Pattern P4-5)
 ```
 
-**Hard boundary:** `scoring-core` receives data, returns data. All Tauri IPC wiring, event emission, and Claude payload assembly lives in `scoring_commands.rs`. The crate boundary is the enforcement mechanism — `scoring-core/Cargo.toml` has no Tauri dependency.
+**Character import (offline):**
+```
+CharacterImportModal → OfflineImportTab
+  → invokeCommand('scan_save_files')          → DetectedCharacter[]   (Steam + AppData paths)
+  → select + Import → invokeCommand('parse_save_file', { path })
+    → [Rust] character_import::parse_save_file → ImportedBuild
+      → confirmation → buildStore creates new named build (prior preserved)
+        → unresolved-ID post-import summary
+```
+
+**Hard boundary (unchanged):** `scoring-core` receives data, returns data — no Tauri, no I/O. All IPC wiring, event emission, Claude payload assembly, and **file I/O for import** live in the Tauri crate (`scoring_commands.rs`, `character_import.rs`). The `scoring-core/Cargo.toml` dependency list is the enforcement mechanism.
 
 ---
 
@@ -766,104 +573,107 @@ GearOptimizationView mounts / "Analyze Gear" click
 
 ### Coherence Validation ✅
 
-**Decision compatibility:** All decisions work together without conflict.
-- `scoring-core` pure crate (ADR-001) + sync `compute_stats` + rAF debounce (Path C) → compatible. Sync Tauri commands work with TypeScript-side debouncing.
-- `rayon` inside `scoring-core` + `spawn_blocking` at Tauri boundary (ADR-003) → compatible and well-documented Rust pattern.
-- Four-store rule preserved: `useStatSheet` writes to `optimizationStore`, no new store created.
-- `#[serde(rename_all = "camelCase")]` on input structs + snake_case outputs → consistent with existing `useOptimizationStream` payload field names (`from_node_id` etc.).
-- `gear:*` event namespace → no collision with existing `optimization:*` events.
-
-**Pattern consistency:** All 7 patterns are consistent with existing `project-context.md` rules and with each other. Generation token pattern is standard React; `SCORING_ERROR:` prefix follows the established `normalizeAppError` convention.
-
-**Structure alignment:** All new files land in locations matching existing project conventions. `scoring-core/` in `src-tauri/` respects the "all backend logic in Rust" rule. `useStatSheet.ts` in `shared/stores/` mirrors `useOptimizationStream.ts` placement.
+- **Engine reuse, not duplication:** `run_complete_optimization` composes existing `scan.rs`/`gear.rs`/`synergy.rs`/new `idol.rs` behind a scope mask — no second scoring implementation. Consistent with the Modifier Registry single-source-of-truth principle.
+- **IPC consistency:** four commands map to four distinct user triggers; `complete-opt:*` namespace has no collision with `optimization:*`/`gear:*`; input structs camelCase, outputs snake_case — all consistent with Phase 3 Patterns 2/6.
+- **Store discipline:** no new store; `completeOpt` state and `stat_sources` consumption extend `optimizationStore`; `popularBuilds` extends `gameDataStore`; two new views/one new tab extend `appStore` enums. Four-store rule and no-router rule both preserved.
+- **Purity preserved:** all Phase 4 stat math stays in `scoring-core` via the registry; file I/O for import is quarantined in the Tauri crate. WASM-readiness and no-mock unit tests remain intact.
+- **Token reconciliation** is values-only — no component churn, `rarityColors.ts` unaffected by name.
 
 ### Requirements Coverage Validation
 
-**NFR coverage:**
-
-| NFR | Requirement | Architectural Coverage | Status |
-|---|---|---|---|
-| NFR-1 | <100ms full pipeline | `rayon` reduces scan to ~13ms; full pipeline ~50ms with parallelism | ✅ |
-| NFR-2 | <16ms stat sheet | Path C: ~1 frame lag (~18ms worst-case) — documented trade-off | ⚠️ addressed |
-| NFR-4 | Data-driven values | `GameData` from JSON; `ModifierRegistry` from data; conditions from `conditions.json` | ✅ |
-| NFR-5 | Pluggable class modules | `ClassModule` trait defined | ✅ |
-| NFR-8/9 | Formula unit tests | `cargo test -p scoring-core` isolated; pure fn enables no-mock tests | ✅ |
-
-**FR coverage:** All FR-A, FR-B7, FR-G, and FR-H groups have architectural homes. ✅
+| Requirement | Coverage | Status |
+|---|---|---|
+| FR-1–11 (full stat engine) | `compute/*` modules; registry-driven; EHP/Ward via tunklab fixtures | ✅ |
+| FR-12–14 (source attribution) | `ModifierSource` + opt-in `track_sources` + tooltip | ✅ |
+| FR-15–19 (passive optimizer refined) | command-level `passive_node` filter + PixiJS overlay overhaul + `focusNode()` | ✅ |
+| FR-20–26 (Complete Build Optimizer) | new view + `run_complete_optimization` + scope mask + CSS orb + filtered idol payload | ✅ |
+| FR-27–29 (gear pickers) | modals + `position` discriminator + search index | ✅ |
+| FR-30–32 (gear opt screen) | three-column + HTML5 DnD + payload-constrained recs | ✅ |
+| FR-33–39 (UI revamp) | token reconciliation + layout rebuilds + view/tab topology | ✅ |
+| FR-40–43 (data completeness) | 133-skill DB + icons + bundled `popular-builds.json` | ✅ |
+| FR-44–45 (multi-allocate) | single-undo bulk store actions | ✅ |
+| FR-46–48 (offline import) | `character_import.rs` (spike-gated format, documented fallback) | ⚠️ spike-gated |
+| FR-49 (online import) | wired stub; live on EHG partnership | ⚠️ partner-gated (OQ-7) |
+| SM-1 (±2% tunklab) | `tests/ehp_reference.rs` CI gate | ✅ |
+| SM-C2 (+≤20ms sources) | `track_sources` opt-in, additive Vec append | ✅ |
+| SM-C1 (orb never delays) | Pattern P4-5 decoupling | ✅ |
+| SM-5 (<100ms item search) | prebuilt client index | ✅ |
 
 ### Gap Analysis
 
-**Important gaps — address before relevant stories begin:**
+**Critical-path gates (resolve first, not blocking once done):**
+- **Gate 1 — affix `position` discriminator (D-P4-2):** first story of the gear epic; everything else mocks it.
+- **Gate 2 — `ModifierType` enum (D-P4-1):** prerequisite for `compute/*` work.
 
-**Gap 1 — Node efficiency overlay wiring (FR-A26–A28)**
+**Spikes required before sizing the affected stories:**
+- **OQ-8 — save-file binary format:** Rust parsing spike vs. community editor; fallback = shell-invoke Java tool + parse JSON. Resolve before the FR-48 story.
+- **OQ-1 — Parry as a player stat in Season 4:** verify against game data; if enemy-only, drop from FR-5/`defense.rs`. Resolve during the `defense.rs` story.
 
-`scan.rs` returns `Vec<NodeEfficiency>` but the wiring to the canvas was not specified. Resolution:
-
-`optimizationStore` gains `nodeEfficiencies: NodeEfficiency[] | null`. `run_optimization` populates it when the scan completes (alongside suggestions). `SkillTreeView` reads `nodeEfficiencies` from the store and passes it as a prop to `SkillTreeCanvas`. `pixiRenderer.ts` receives it and draws the efficiency tier overlay. This follows the existing props-only `SkillTreeCanvas` rule — no direct store access inside the canvas.
-
-**Gap 2 — `AppState` extension location**
-
-Agents implementing `game_data_loader.rs` must know where to add `game_data: Arc<RwLock<scoring_core::GameData>>`. Resolution:
-
-Locate the existing `AppState` struct in `src-tauri/src/lib.rs` and add the field. If no `AppState` struct exists, create one and pass it to `.manage()` in the Tauri builder chain. This is standard Tauri managed state — identical pattern to how `tauri-plugin-stronghold` manages its state.
-
-**Minor gaps — note in story acceptance criteria:**
-- `conditions.json` schema (condition ID, display label, applicable class filter) — specify before Epic E conditions panel story
-- `run_optimization` relationship to existing `invoke_claude_api` — clarify before Epic A Claude narrative story (whether it internally calls `invoke_claude_api` or replaces it)
+**Minor gaps (capture in story acceptance criteria):**
+- Filtered idol-payload subset rule (OQ-6) — specify the exact filter (build damage types + empty cells) before the FR-26 story.
+- `popular-builds.json` curation workflow (OQ-5) — manual per-patch curation is the Phase 4 approach; no automation in scope.
+- Right-panel `shrink-0` layout overflow on short windows (standing deferred-work item) — address during the FR-35 right-panel rebuild.
+- `warningGap === 0` false-warning (standing deferred-work item) — fix in `defense.rs`/`ward.rs` as the gap floor, not the renderer (FR-5/FR-6).
 
 ### Architecture Completeness Checklist
 
 **Requirements Analysis**
-- [x] Project context thoroughly analyzed
-- [x] Scale and complexity assessed
-- [x] Technical constraints identified
-- [x] Cross-cutting concerns mapped
+- [x] Project context thoroughly analyzed (PRD + addendum + Phase 3 arch + handoff + deferred-work)
+- [x] Scale and complexity assessed (ten subsystems, two data gates, two spikes)
+- [x] Technical constraints identified (registry inheritance, data gates, format/API gates)
+- [x] Cross-cutting concerns mapped (source cost, dual flows, token reconciliation, warning vs suggestion)
 
 **Architectural Decisions**
-- [x] Critical decisions documented with rationale (ADR-001–003, D1–D4)
-- [x] Technology stack fully specified (Rust workspace, rayon, serde, tokio boundary)
-- [x] Integration patterns defined (three IPC commands, event namespaces, data flows)
-- [x] Performance considerations addressed (NFR-1 ✅, NFR-2 trade-off documented)
+- [x] Critical decisions documented with rationale (D-P4-1–5, ADR-P4-001/005/006/007/010)
+- [x] Technology stack fully specified (inherited & pinned; zero new mandatory deps)
+- [x] Integration patterns defined (four commands, three event namespaces, three data flows)
+- [x] Performance considerations addressed (track_sources opt-in, orb decoupling, search index, tunklab fixtures)
 
 **Implementation Patterns**
-- [x] Naming conventions established (serde direction, event namespaces)
-- [x] Structure patterns defined (BuildSnapshot serializer, GameData locking)
-- [x] Communication patterns specified (generation token, gear:* namespace)
-- [x] Process patterns documented (error prefix, null sub-sheet handling)
+- [x] Naming conventions established (enum migration, `complete-opt:*`, `CHARACTER_IMPORT_ERROR`)
+- [x] Structure patterns defined (registry-only stat math, warnings vs suggestions, payload-ID constraint)
+- [x] Communication patterns specified (new stream hook, event namespace isolation)
+- [x] Process patterns documented (single-undo batch ops, orb decoupling, token values-only)
 
 **Project Structure**
-- [x] Complete directory structure defined (new + modified files explicit)
-- [x] Component boundaries established (scoring-core Cargo.toml enforces boundary)
-- [x] Integration points mapped (three data flow diagrams)
-- [x] Requirements-to-structure mapping complete
+- [x] Complete directory structure defined (new + modified + deleted explicit)
+- [x] Component boundaries established (`scoring-core` purity; import I/O in Tauri crate)
+- [x] Integration points mapped (three data-flow diagrams)
+- [x] Requirements-to-structure mapping complete (ten-group table)
 
 ### Architecture Readiness Assessment
 
 **Overall Status: READY WITH MINOR GAPS**
 
-Two important gaps (node overlay wiring, AppState location) are resolved above and should be captured in the relevant story acceptance criteria. They do not block the majority of implementation work.
+Two data gates (affix `position`, `ModifierType` enum) and two spikes (OQ-8 save format, OQ-1 Parry) are identified with resolutions/fallbacks and sequencing; none blocks the majority of implementation, which proceeds behind mock data exactly as Phase 3 did behind Epic G. Online character import (FR-49) is intentionally a wired stub pending EHG partnership.
 
 **Confidence Level: High**
 
 **Key Strengths:**
-- Modifier Registry design is genuinely future-proof — Phase 4 complexity additions require no engine rewrites
-- Pure `scoring-core` crate boundary is compiler-enforced, not convention-enforced
-- Three distinct IPC commands cleanly separate three distinct user triggers
-- Generation token cancellation prevents a common class of React async bugs
-- Epic G identified as the sole critical-path gate — all other implementation work can proceed in parallel with mock game data
+- Phase 4 is the redemption of Phase 3's deliberate expansion joints — `Option<T>` stat slots, the open `Condition` enum, the forward-compatible affix schema, and the pure-crate boundary all pay off here with no engine rewrite.
+- The Modifier Registry absorbs full stat parity by adding `StatKey`s and registrations, not new computation paths (Pattern P4-1).
+- Source attribution is purely additive metadata, gated by an opt-in flag — no hot-path regression (SM-C2 honoured by construction).
+- The second optimization flow reuses the first's stages via a scope mask — one engine, two flows.
+- The whole UI re-skins from a single stylesheet token update; components rebuild to the design without touching the rarity utility.
 
-**Areas for Future Enhancement:**
-- `conditions.json` schema (before Epic E story)
-- `invoke_claude_api` vs `run_optimization` relationship (before Epic A Claude narrative story)
-- Node efficiency overlay prop chain detail (before Epic A FR-A26 story)
+**Areas for Future Enhancement (Phase 5):**
+- Weaver Tree full PixiJS renderer (opt-in scope only in Phase 4).
+- Full attribute → secondary-stat conversion tables (Phase 4 ships totals + parseable conversions).
+- Live online character import once EHG API access is granted.
+- Node/tree art-asset fidelity and environment art.
 
 ### Implementation Handoff
 
 **AI Agent Guidelines:**
-- Read `project-context.md` (60 rules) before any code — this architecture document is additive, not a replacement
-- The `scoring-core` crate boundary is the primary consistency enforcement mechanism — never add Tauri types to it
-- Use `toBuildSnapshot()` from `buildSnapshotSerializer.ts` for every `compute_stats` / `run_optimization` / `run_gear_scoring` call — never pass `BuildState` directly
-- Add `SCORING_ERROR` to `ErrorType` and `errorNormalizer.ts` as the first story (setup prerequisite)
+- Read `project-context.md` (85 rules) and the **Phase 3 architecture** (`_phase3-archive/.../architecture.md`) before any code — this document is additive to both.
+- The `scoring-core` crate boundary and the Modifier Registry are the primary consistency-enforcement mechanisms — never add Tauri/I/O types to the crate, never compute a stat outside the registry.
+- Use `toBuildSnapshot()` for every scoring command; outputs are snake_case; inputs are camelCase.
+- Add `CHARACTER_IMPORT_ERROR` to `ErrorType`/`errorNormalizer.ts` (reuse `SCORING_ERROR`) as Story-0 setup, before any import/scoring IPC story.
 
-**First Implementation Priority:**
-Epic G data ingestion — this is the sole gate blocking all scoring engine work. Begin there, in parallel with `scoring-core` crate scaffolding using mock game data.
+**First Implementation Priorities (in order):**
+1. **Gate 1** — affix `position` discriminator + ingestion (data gate for §4.5/§4.6).
+2. **Gate 2** — `ModifierType`/`scope` serde enum migration (prerequisite for `compute/*`).
+3. In parallel behind mock data: `scoring-core/compute/*` build-out (FR-1–11) and the design-token reconciliation + layout rebuild (FR-33–39).
+4. Spikes: OQ-8 (save format) before FR-48; OQ-1 (Parry) before `defense.rs`.
+
+**Next workflow:** run **`bmad-create-epics-and-stories`** to decompose these ten feature groups into the Phase 4 epic/story breakdown (regenerating the active `epics.md`, whose Phase 3 copy is frozen in `_phase3-archive/`).
