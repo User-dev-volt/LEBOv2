@@ -45,7 +45,11 @@ pub(super) fn penetration_multiplier(
             .iter()
             .any(|e| e.eq_ignore_ascii_case(name))
     };
-    let pen_to_mult = |pen: f64| 1.0 - (ENEMY_RES_BASELINE - pen) / 100.0;
+    // Clamp each channel at 0: net negative penetration (effective enemy resistance
+    // above 100%) means full immunity, not inverted/negative damage. Without this floor
+    // the orchestrator's `damage_score *= mult` would bypass the `.max(0.01)` guard in
+    // compute_offense and could flip the score negative.
+    let pen_to_mult = |pen: f64| (1.0 - (ENEMY_RES_BASELINE - pen) / 100.0).max(0.0);
 
     let mut mult = 1.0;
     if has("fire") || has("cold") || has("lightning") {
@@ -109,6 +113,15 @@ mod tests {
 
         let mult_phys = penetration_multiplier(&["physical".to_string()], 0.0, 80.0);
         assert!((mult_phys - 1.80).abs() < 1e-9, "expected 1.80 got {mult_phys}");
+    }
+
+    #[test]
+    fn negative_penetration_floors_multiplier_at_zero() {
+        // pen = -100 → effective res 100% → immunity (×0), never negative damage.
+        let mult = penetration_multiplier(&["fire".to_string()], -100.0, 0.0);
+        assert_eq!(mult, 0.0, "−100 pen must floor at 0, got {mult}");
+        let mult_over = penetration_multiplier(&["fire".to_string()], -250.0, 0.0);
+        assert_eq!(mult_over, 0.0, "pen below −100 must stay floored at 0, got {mult_over}");
     }
 
     #[test]

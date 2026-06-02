@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Decide whether to keep or disable autonomous mode. If disabling: rename or delete `_bmad-output/project-intent.md`. (Answer was cut off mid-explanation but direction is clear.)
+Await user confirmation [Y/N] to launch parallel adversarial review (Blind Hunter + Edge Case Hunter + Acceptance Auditor) against the ~520-line diff.
 
 ---
 
