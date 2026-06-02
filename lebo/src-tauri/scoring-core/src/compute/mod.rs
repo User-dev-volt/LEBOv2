@@ -25,16 +25,12 @@ pub fn compute_stats(
     // Penetration scales the scored damage of the build's primary type(s) against a
     // 0%-resistance reference target. No-penetration builds get multiplier 1.0, so the
     // aggregate damage_score stays byte-identical to Phase 3. (See penetration.rs.)
-    let (elemental_pen, physical_pen, void_pen) = penetration::compute_penetration(&registry, active);
-    offense.elemental_penetration = elemental_pen;
-    offense.physical_penetration = physical_pen;
-    offense.void_penetration = void_pen;
-    let pen_mult = penetration::penetration_multiplier(
-        &snapshot.primary_offense_damage_elements,
-        elemental_pen,
-        physical_pen,
-        void_pen,
-    );
+    let pen = penetration::compute_penetration(&registry, active);
+    offense.elemental_penetration = pen.elemental();
+    offense.physical_penetration = pen.physical;
+    offense.void_penetration = pen.void;
+    let pen_mult =
+        penetration::penetration_multiplier(&snapshot.primary_offense_damage_elements, &pen);
     offense.damage_score *= pen_mult;
     offense.avg_hit_damage *= pen_mult;
     offense.avg_hit_damage_crit_weighted *= pen_mult;

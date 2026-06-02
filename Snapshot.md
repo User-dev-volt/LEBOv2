@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Await user confirmation [Y/N] to launch parallel adversarial review (Blind Hunter + Edge Case Hunter + Acceptance Auditor) against the ~520-line diff.
+Await user confirmation to proceed to
 
 ---
 
