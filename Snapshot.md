@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-- Execute the surgical move: relocate Phase 3 artifacts to `_phase3-archive/` per the folder-by-folder list, then verify Phase 4 PRD references still resolve
+Run `[CA]`
 
 ---
 
