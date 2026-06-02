@@ -1,6 +1,6 @@
 # Story 1.1: ModifierType enum migration and compute module split
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -36,34 +36,34 @@ This is **Gate 2 (D-P4-1)** of Phase 4 — a prerequisite for *all* `compute/*` 
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Migrate `ModifierType` and add `Scope` / `AffixPosition` enums in `scoring-core/src/modifier.rs`** (AC: 1, 3)
-  - [ ] Extend `ModifierType`: add the `Conversion` variant; add `#[serde(rename_all = "lowercase")]`; derive `Copy` and `Default` with `#[default]` on `Increased` (`#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]`). Adding `Copy` is safe — existing `.clone()` calls on `ModifierType` still compile.
-  - [ ] Add a single tolerant constructor `impl ModifierType { pub fn from_data_str(raw: Option<&str>) -> Self }` — case-insensitive match on `"flat" | "more" | "conversion" | "increased"`, **any unknown or `None` → `Increased`**. This is the *one* place the fallback contract lives. (Direct serde deserialization handles the strict-lowercase paths; `from_data_str` handles the tolerant boundary the loader uses.)
-  - [ ] Add `pub enum Scope { Melee, Ranged, Spell, Minion, Generic }` — `#[serde(rename_all = "lowercase")]`, `#[derive(... Default)]` with `#[default] Generic`, plus `Scope::from_data_str(Option<&str>) -> Self` (unknown/None → `Generic`). Add a helper `Scope::matches_delivery(&self, primary: Option<Scope>) -> bool` that returns `true` for `Generic` (preserves today's `scope == "generic"` short-circuit) or when it equals `primary`.
-  - [ ] Add `pub enum AffixPosition { Prefix, Suffix }` — `#[serde(rename_all = "lowercase")]`, `#[derive(... Default)]` with `#[default] Prefix`, plus `AffixPosition::from_data_str(Option<&str>) -> Self` (unknown/None → `Prefix`, matching today's "absent → prefix" behavior).
-  - [ ] Export the two new enums from `lib.rs` (`pub use modifier::{... Scope, AffixPosition}`), alongside the existing `ModifierType` re-export.
-- [ ] **Task 2 — Replace `String` discriminator fields in `scoring-core` data structs** (AC: 1, 3)
-  - [ ] `game_data.rs`: `GearAffixData.affix_class: String` → `affix_class: AffixPosition`; `GearAffixData.scope: String` → `scope: Scope`; `GameData.affix_scope: HashMap<String, String>` → `HashMap<String, Scope>`.
-  - [ ] `gear.rs`: change `passes_delivery_filter(scope: &str, primary_delivery: Option<&str>)` to take `scope: Scope` (use `Scope::matches_delivery`); replace `data.affix_class == "prefix"` / `== "suffix"` with `== AffixPosition::Prefix` / `Suffix`; update the in-file `#[cfg(test)]` fixtures (lines ~297–361) from `"prefix".to_string()` / `"melee".to_string()` to the enum variants.
-  - [ ] **Decision — `BuildSnapshot.primary_offense_delivery_type`:** it is `Option<String>` deserialized from the TS serializer (camelCase). Recommended: migrate to `Option<Scope>` so `passes_delivery_filter` compares `Scope` to `Scope`, deserialized via the lowercase serde. This requires the snapshot to tolerate an unrecognized string → use `#[serde(default, deserialize_with = "...")]` returning `None`/`Generic` rather than erroring (a hard error here would break live scoring on bad input). If the tolerant-deserialize wiring is non-trivial, the acceptable fallback is to keep the field `Option<String>` and convert at the `passes_delivery_filter` call site via `Scope::from_data_str(snapshot.primary_offense_delivery_type.as_deref())`. **Either way, no `&str` scope comparison may remain inside `gear.rs`'s logic.** Note: `primary_offense_damage_elements: Vec<String>` stays `Vec<String>` — element names are an open set, not a closed union; out of scope.
-- [ ] **Task 3 — Route the loader through the typed boundary** (AC: 1, 3)
-  - [ ] `src-tauri/src/services/game_data_loader.rs`: delete the local `fn parse_modifier_type(...)` and replace its two call sites + the node path with `ModifierType::from_data_str(...)`. The raw Tauri-side models (`models/game_data.rs`, `models/item_data.rs`) keep their `modifier_type: Option<String>` / `scope: Option<String>` JSON-landing fields — conversion to the typed enum happens once, here at the boundary.
-  - [ ] Where the loader assigns `affix_class` / `scope` into `GearAffixData` and `affix_scope`, convert via `AffixPosition::from_data_str(...)` / `Scope::from_data_str(...)`. (`RawAffix.affix_type` — the `#[serde(rename = "type")]` field — is the prefix/suffix source; `RawAffix.scope` is the scope source.)
-  - [ ] Update the seeded-unique builder and any other loader literals to the enum variants where they touch `affix_class`/`scope`.
-- [ ] **Task 4 — Split `compute.rs` → `compute/` modules** (AC: 2)
-  - [ ] Rename `scoring-core/src/compute.rs` to `scoring-core/src/compute/mod.rs`. `lib.rs`'s `pub mod compute;` and `pub use compute::compute_stats;` are unchanged — Rust resolves `compute/mod.rs` automatically, and `scan.rs`'s `use crate::compute::{build_registry, compute_stats};` path still resolves. Keep `build_registry` as `pub(crate)` in `mod.rs`.
-  - [ ] In `mod.rs`, declare the submodules: `mod offense; mod penetration; mod defense; mod ehp; mod ward; mod ailment; mod attributes; mod minion;`.
-  - [ ] Move `compute_offense` → `compute/offense.rs`; move `compute_defense` + `run_floor_check` + `find_slot_with_open_suffix` → `compute/defense.rs`. Make the moved fns `pub(super)` and update `mod.rs` call sites (`offense::compute_offense(...)`, `defense::compute_defense(...)`). Keep `compute_speed`, `resolve_archetype_weights`, `build_registry`, and the `compute_stats` orchestrator in `mod.rs`. Move the shared `DAMAGE_STAT_KEYS` const next to its only user (`offense.rs`) or keep it `pub(super)` in `mod.rs` — pick whichever avoids an unused-import warning (strict mode treats those as errors).
-  - [ ] Create the six remaining files (`penetration.rs`, `ehp.rs`, `ward.rs`, `ailment.rs`, `attributes.rs`, `minion.rs`) as scaffolds. A scaffold is a file with a short module doc comment stating its future FR ownership and **no executable code** (or a `//! TODO Story 1.x` only) — they must not be dead code that trips `noUnused`-equivalent Rust warnings. Do not declare a submodule you leave entirely empty if it produces an `unused module` style warning; a doc-comment-only file is fine.
-  - [ ] Relocate the `#[cfg(test)] mod tests` block (currently lines ~502–end of `compute.rs`). Keep offense/defense-specific tests beside their moved code where it reads naturally; orchestrator-level tests (full `compute_stats` round-trips) stay in `mod.rs`. Every test must still compile and pass unchanged — do not alter expected values.
-- [ ] **Task 5 — Error normalizer Story-0 setup** (AC: 3)
-  - [ ] `lebo/src/shared/types/errors.ts`: add `'CHARACTER_IMPORT_ERROR'` to the `ErrorType` union.
-  - [ ] `lebo/src/shared/utils/errorNormalizer.ts`: add `CHARACTER_IMPORT_ERROR: 'CHARACTER_IMPORT_ERROR'` to `ERROR_TYPE_MAP` and a user-facing string to `USER_MESSAGES` (e.g. `'Character import failed. Check the save file or try again.'`). `USER_MESSAGES` is a `Record<ErrorType, string>`, so a missing entry is a TS compile error — adding the union member forces this.
-  - [ ] No Rust `character_import.rs` exists yet (Epic 7) — do **not** create it. This is TypeScript-only Story-0 plumbing so the error type is ready when Epic 7 lands.
-- [ ] **Task 6 — Verify** (AC: 1, 2, 3)
-  - [ ] `cargo test -p scoring-core` (run from `lebo/src-tauri/`) — all Phase 3 regression + new enum tests green.
-  - [ ] `cargo build` for the Tauri crate (loader + models compile against the new enum field types).
-  - [ ] `pnpm build` and `pnpm vitest` (from `lebo/`) — TS strict compile passes with the new `ErrorType` member; add/extend an `errorNormalizer` test asserting a raw string containing `"CHARACTER_IMPORT_ERROR"` normalizes to that type.
+- [x] **Task 1 — Migrate `ModifierType` and add `Scope` / `AffixPosition` enums in `scoring-core/src/modifier.rs`** (AC: 1, 3)
+  - [x] Extend `ModifierType`: add the `Conversion` variant; add `#[serde(rename_all = "lowercase")]`; derive `Copy` and `Default` with `#[default]` on `Increased` (`#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]`). Adding `Copy` is safe — existing `.clone()` calls on `ModifierType` still compile.
+  - [x] Add a single tolerant constructor `impl ModifierType { pub fn from_data_str(raw: Option<&str>) -> Self }` — case-insensitive match on `"flat" | "more" | "conversion" | "increased"`, **any unknown or `None` → `Increased`**. This is the *one* place the fallback contract lives. (Direct serde deserialization handles the strict-lowercase paths; `from_data_str` handles the tolerant boundary the loader uses.)
+  - [x] Add `pub enum Scope { Melee, Ranged, Spell, Minion, Generic }` — `#[serde(rename_all = "lowercase")]`, `#[derive(... Default)]` with `#[default] Generic`, plus `Scope::from_data_str(Option<&str>) -> Self` (unknown/None → `Generic`). Add a helper `Scope::matches_delivery(&self, primary: Option<Scope>) -> bool` that returns `true` for `Generic` (preserves today's `scope == "generic"` short-circuit) or when it equals `primary`.
+  - [x] Add `pub enum AffixPosition { Prefix, Suffix }` — `#[serde(rename_all = "lowercase")]`, `#[derive(... Default)]` with `#[default] Prefix`, plus `AffixPosition::from_data_str(Option<&str>) -> Self` (unknown/None → `Prefix`, matching today's "absent → prefix" behavior).
+  - [x] Export the two new enums from `lib.rs` (`pub use modifier::{... Scope, AffixPosition}`), alongside the existing `ModifierType` re-export.
+- [x] **Task 2 — Replace `String` discriminator fields in `scoring-core` data structs** (AC: 1, 3)
+  - [x] `game_data.rs`: `GearAffixData.affix_class: String` → `affix_class: AffixPosition`; `GearAffixData.scope: String` → `scope: Scope`; `GameData.affix_scope: HashMap<String, String>` → `HashMap<String, Scope>`.
+  - [x] `gear.rs`: change `passes_delivery_filter(scope: &str, primary_delivery: Option<&str>)` to take `scope: Scope` (use `Scope::matches_delivery`); replace `data.affix_class == "prefix"` / `== "suffix"` with `== AffixPosition::Prefix` / `Suffix`; update the in-file `#[cfg(test)]` fixtures (lines ~297–361) from `"prefix".to_string()` / `"melee".to_string()` to the enum variants.
+  - [x] **Decision — `BuildSnapshot.primary_offense_delivery_type`:** it is `Option<String>` deserialized from the TS serializer (camelCase). Recommended: migrate to `Option<Scope>` so `passes_delivery_filter` compares `Scope` to `Scope`, deserialized via the lowercase serde. This requires the snapshot to tolerate an unrecognized string → use `#[serde(default, deserialize_with = "...")]` returning `None`/`Generic` rather than erroring (a hard error here would break live scoring on bad input). If the tolerant-deserialize wiring is non-trivial, the acceptable fallback is to keep the field `Option<String>` and convert at the `passes_delivery_filter` call site via `Scope::from_data_str(snapshot.primary_offense_delivery_type.as_deref())`. **Either way, no `&str` scope comparison may remain inside `gear.rs`'s logic.** Note: `primary_offense_damage_elements: Vec<String>` stays `Vec<String>` — element names are an open set, not a closed union; out of scope.
+- [x] **Task 3 — Route the loader through the typed boundary** (AC: 1, 3)
+  - [x] `src-tauri/src/services/game_data_loader.rs`: delete the local `fn parse_modifier_type(...)` and replace its two call sites + the node path with `ModifierType::from_data_str(...)`. The raw Tauri-side models (`models/game_data.rs`, `models/item_data.rs`) keep their `modifier_type: Option<String>` / `scope: Option<String>` JSON-landing fields — conversion to the typed enum happens once, here at the boundary.
+  - [x] Where the loader assigns `affix_class` / `scope` into `GearAffixData` and `affix_scope`, convert via `AffixPosition::from_data_str(...)` / `Scope::from_data_str(...)`. (`RawAffix.affix_type` — the `#[serde(rename = "type")]` field — is the prefix/suffix source; `RawAffix.scope` is the scope source.)
+  - [x] Update the seeded-unique builder and any other loader literals to the enum variants where they touch `affix_class`/`scope`.
+- [x] **Task 4 — Split `compute.rs` → `compute/` modules** (AC: 2)
+  - [x] Rename `scoring-core/src/compute.rs` to `scoring-core/src/compute/mod.rs`. `lib.rs`'s `pub mod compute;` and `pub use compute::compute_stats;` are unchanged — Rust resolves `compute/mod.rs` automatically, and `scan.rs`'s `use crate::compute::{build_registry, compute_stats};` path still resolves. Keep `build_registry` as `pub(crate)` in `mod.rs`.
+  - [x] In `mod.rs`, declare the submodules: `mod offense; mod penetration; mod defense; mod ehp; mod ward; mod ailment; mod attributes; mod minion;`.
+  - [x] Move `compute_offense` → `compute/offense.rs`; move `compute_defense` + `run_floor_check` + `find_slot_with_open_suffix` → `compute/defense.rs`. Make the moved fns `pub(super)` and update `mod.rs` call sites (`offense::compute_offense(...)`, `defense::compute_defense(...)`). Keep `compute_speed`, `resolve_archetype_weights`, `build_registry`, and the `compute_stats` orchestrator in `mod.rs`. Move the shared `DAMAGE_STAT_KEYS` const next to its only user (`offense.rs`) or keep it `pub(super)` in `mod.rs` — pick whichever avoids an unused-import warning (strict mode treats those as errors).
+  - [x] Create the six remaining files (`penetration.rs`, `ehp.rs`, `ward.rs`, `ailment.rs`, `attributes.rs`, `minion.rs`) as scaffolds. A scaffold is a file with a short module doc comment stating its future FR ownership and **no executable code** (or a `//! TODO Story 1.x` only) — they must not be dead code that trips `noUnused`-equivalent Rust warnings. Do not declare a submodule you leave entirely empty if it produces an `unused module` style warning; a doc-comment-only file is fine.
+  - [x] Relocate the `#[cfg(test)] mod tests` block (currently lines ~502–end of `compute.rs`). Keep offense/defense-specific tests beside their moved code where it reads naturally; orchestrator-level tests (full `compute_stats` round-trips) stay in `mod.rs`. Every test must still compile and pass unchanged — do not alter expected values.
+- [x] **Task 5 — Error normalizer Story-0 setup** (AC: 3)
+  - [x] `lebo/src/shared/types/errors.ts`: add `'CHARACTER_IMPORT_ERROR'` to the `ErrorType` union.
+  - [x] `lebo/src/shared/utils/errorNormalizer.ts`: add `CHARACTER_IMPORT_ERROR: 'CHARACTER_IMPORT_ERROR'` to `ERROR_TYPE_MAP` and a user-facing string to `USER_MESSAGES` (e.g. `'Character import failed. Check the save file or try again.'`). `USER_MESSAGES` is a `Record<ErrorType, string>`, so a missing entry is a TS compile error — adding the union member forces this.
+  - [x] No Rust `character_import.rs` exists yet (Epic 7) — do **not** create it. This is TypeScript-only Story-0 plumbing so the error type is ready when Epic 7 lands.
+- [x] **Task 6 — Verify** (AC: 1, 2, 3)
+  - [x] `cargo test -p scoring-core` (run from `lebo/src-tauri/`) — all Phase 3 regression + new enum tests green.
+  - [x] `cargo build` for the Tauri crate (loader + models compile against the new enum field types).
+  - [x] `pnpm build` and `pnpm vitest` (from `lebo/`) — TS strict compile passes with the new `ErrorType` member; add/extend an `errorNormalizer` test asserting a raw string containing `"CHARACTER_IMPORT_ERROR"` normalizes to that type.
 
 ## Dev Notes
 
@@ -146,8 +146,50 @@ Per epics.md AR-1, this migration closes four standing items in `_bmad-output/im
 
 ### Agent Model Used
 
+claude-opus-4-8 (Claude Code dev-story workflow)
+
 ### Debug Log References
+
+- `cargo test -p scoring-core` → 65 passed, 0 failed (new enum tests + all Phase 3 formula-regression tests, byte-identical expected values).
+- `cargo build -p scoring-core` → warning-clean (no unused imports/modules under Rust strict hygiene).
+- `cargo test -p lebo` → Tauri crate compiles against the new enum field types; new `shipped_class_json_effect_count_is_stable` regression test passes (179 effects across all 5 shipped class JSONs). One **pre-existing, unrelated** failure: `openrouter_service::tests::models_list_has_four_entries` (file untouched by this story; asserts the OpenRouter `MODELS` list length).
+- `pnpm build` → TS strict compile passes; `USER_MESSAGES` Record completeness enforced the new `CHARACTER_IMPORT_ERROR` member.
+- `pnpm vitest run errorNormalizer.test.ts` → 25 passed (incl. new `CHARACTER_IMPORT_ERROR` test).
+- Full `pnpm vitest`: 14 pre-existing UI-component test failures (AppHeader, RightPanel, ProviderSelector, Settings, SkillTreeCanvas, TreeControls). **Proven pre-existing** — identical 14 failures with the Story-1.1 TS changes stashed. None touch the migrated error-type code.
 
 ### Completion Notes List
 
+- **AC1** — `ModifierType` now derives `Copy, Eq, Default` (`#[default] Increased`) with `#[serde(rename_all = "lowercase")]` and the new `Conversion` variant; added `Scope { Melee, Ranged, Spell, Minion, Generic }` (default `Generic`) and `AffixPosition { Prefix, Suffix }` (default `Prefix`). Each has a tolerant, case-insensitive `from_data_str(Option<&str>)` constructor (unknown/`None` → the variant's default), the single home of the FR-A6 fallback. Existing-data regression test loads every shipped class JSON through the loader's parser and asserts a stable effect count (179) — proving the fallback contract holds across real data. (All shipped `modifierType` values are lowercase `flat|increased|more`, so the count is unchanged by the migration.)
+- **AC2** — `compute.rs` split into `compute/mod.rs` (orchestrator `compute_stats`, `build_registry` [pub(crate)], `compute_speed`, `resolve_archetype_weights`, orchestrator round-trip tests) + `offense.rs` (`compute_offense` + `DAMAGE_STAT_KEYS`) + `defense.rs` (`compute_defense` + `run_floor_check` + `find_slot_with_open_suffix` + floor consts) + six doc-comment scaffolds (`penetration/ehp/ward/ailment/attributes/minion`). Public paths (`crate::compute::compute_stats`, `crate::compute::build_registry`) unchanged — `scan.rs`/`synergy.rs`/lib re-exports untouched. `StatSheet` shape (`ailment: None, minion: None`) unchanged. All Phase 3 formula tests pass with identical expected values.
+- **AC3** — Added `CHARACTER_IMPORT_ERROR` to the `ErrorType` union, `ERROR_TYPE_MAP`, and `USER_MESSAGES`. Eliminated all raw-string discriminator branching in `scoring-core`: `gear.rs` (`affix_class == "prefix"`, `scope == "generic"`) and `synergy.rs` (`scope == "generic" || scope == primary_str`) now compare enum variants via `AffixPosition`/`Scope::matches_delivery`. The loader's local `parse_modifier_type` was deleted in favour of `ModifierType::from_data_str`.
+- **Decision (Task 2)** — `BuildSnapshot.primary_offense_delivery_type` kept as `Option<String>` (the story's documented acceptable fallback); converted to `Scope` at the `gear.rs` call site via `Scope::from_data_str`, so no `&str` scope comparison remains in `gear.rs` logic and live scoring tolerates unrecognized input (→ `Generic`) without erroring.
+- **Deferred-work items closed (per epics.md AR-1):** the four standing items in `deferred-work.md` re: unvalidated `modifier_type`/`affix_class`/`scope` strings and open-vs-closed-union IPC discriminators are now resolved by the serde-enum migration.
+- **No new stat computed** — pure type-tightening + structural refactor, as scoped.
+
 ### File List
+
+- `lebo/src-tauri/scoring-core/src/modifier.rs` (modified) — `ModifierType` migration; new `Scope`, `AffixPosition` enums + `from_data_str`/`matches_delivery`/`as_str`; new `#[cfg(test)]` enum tests.
+- `lebo/src-tauri/scoring-core/src/game_data.rs` (modified) — `GearAffixData.affix_class: AffixPosition`, `scope: Scope`; `GameData.affix_scope: HashMap<String, Scope>`; import update.
+- `lebo/src-tauri/scoring-core/src/gear.rs` (modified) — `passes_delivery_filter(scope: Scope, primary: Option<Scope>)`; enum comparisons; call-site `Scope::from_data_str` conversion; test fixtures → enum variants.
+- `lebo/src-tauri/scoring-core/src/synergy.rs` (modified) — `affix_scope` consumed as `Scope`; `DeliveryType::to_scope()` + `Scope::matches_delivery`/`as_str` replace raw-string branch; test fixture → enum variants.
+- `lebo/src-tauri/scoring-core/src/lib.rs` (modified) — re-export `Scope`, `AffixPosition`.
+- `lebo/src-tauri/scoring-core/src/compute.rs` (deleted) — renamed into the `compute/` module.
+- `lebo/src-tauri/scoring-core/src/compute/mod.rs` (added) — orchestrator + `build_registry` + `compute_speed` + `resolve_archetype_weights` + submodule declarations + orchestrator tests.
+- `lebo/src-tauri/scoring-core/src/compute/offense.rs` (added) — `compute_offense` + `DAMAGE_STAT_KEYS`.
+- `lebo/src-tauri/scoring-core/src/compute/defense.rs` (added) — `compute_defense` + `run_floor_check` + `find_slot_with_open_suffix` + floor consts.
+- `lebo/src-tauri/scoring-core/src/compute/penetration.rs` (added) — scaffold (FR-4, Story 1.2).
+- `lebo/src-tauri/scoring-core/src/compute/ehp.rs` (added) — scaffold (FR-6, Story 1.4).
+- `lebo/src-tauri/scoring-core/src/compute/ward.rs` (added) — scaffold (FR-7, Story 1.4).
+- `lebo/src-tauri/scoring-core/src/compute/ailment.rs` (added) — scaffold (FR-8, Story 1.5).
+- `lebo/src-tauri/scoring-core/src/compute/attributes.rs` (added) — scaffold (FR-9, Story 1.5).
+- `lebo/src-tauri/scoring-core/src/compute/minion.rs` (added) — scaffold (FR-10, Story 1.5).
+- `lebo/src-tauri/src/services/game_data_loader.rs` (modified) — removed `parse_modifier_type`; routed through `ModifierType::from_data_str`; `affix_scope` typed as `HashMap<String, Scope>`; added existing-data regression test module.
+- `lebo/src/shared/types/errors.ts` (modified) — `CHARACTER_IMPORT_ERROR` added to `ErrorType`.
+- `lebo/src/shared/utils/errorNormalizer.ts` (modified) — `CHARACTER_IMPORT_ERROR` added to `ERROR_TYPE_MAP` and `USER_MESSAGES`.
+- `lebo/src/shared/utils/errorNormalizer.test.ts` (modified) — added `CHARACTER_IMPORT_ERROR` normalization test + coverage-list entry.
+
+## Change Log
+
+| Date | Change |
+|------|--------|
+| 2026-06-02 | Story 1.1 implemented: migrated `ModifierType`/`Scope`/`AffixPosition` to serde enums with tolerant `from_data_str` constructors; replaced all raw-string discriminator branching in `scoring-core` (gear.rs, synergy.rs, loader); split `compute.rs` into the `compute/` submodule layout (offense + defense moved, six scaffolds added) with behavior unchanged; added Story-0 `CHARACTER_IMPORT_ERROR` TS plumbing. Status → review. |

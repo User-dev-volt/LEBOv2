@@ -10,6 +10,7 @@ export type ErrorType =
   | 'ITEM_DATA_ERROR'
   | 'CONTEXT_DATA_ERROR'
   | 'SCORING_ERROR'
+  | 'CHARACTER_IMPORT_ERROR'
   | 'UNKNOWN'
 
 export interface AppError {

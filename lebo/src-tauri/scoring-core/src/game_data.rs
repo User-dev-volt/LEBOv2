@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::modifier::{Condition, ModifierType, StatKey};
+use crate::modifier::{AffixPosition, Condition, ModifierType, Scope, StatKey};
 
 /// Gear affix scoring data — one entry per affix ID in the affix database.
 /// Populated by game_data_loader.rs from the affix DB (initially empty; loaded in a future story).
@@ -13,11 +13,10 @@ pub struct GearAffixData {
     pub modifier_type: ModifierType,
     /// Average stat value at each tier. Key = 1-indexed tier number.
     pub values_by_tier: HashMap<u32, f64>,
-    /// "prefix" or "suffix" — determines which wishlist bucket this affix goes into.
-    pub affix_class: String,
-    /// Delivery-type scope: "melee" | "ranged" | "spell" | "minion" | "generic".
-    /// "generic" affixes apply to all delivery types (e.g., % Fire Resistance).
-    pub scope: String,
+    /// Prefix or suffix — determines which wishlist bucket this affix goes into.
+    pub affix_class: AffixPosition,
+    /// Delivery-type scope. `Generic` affixes apply to all delivery types (e.g., % Fire Resistance).
+    pub scope: Scope,
     /// Damage elements this affix applies to: e.g. ["fire", "cold"].
     /// Empty = applies to all damage elements (no element filtering).
     pub damage_elements: Vec<String>,
@@ -127,10 +126,10 @@ pub struct GameData {
     pub node_mastery_depth: HashMap<String, u32>,
 
     /// Delivery-type scope for each affix ID (Story 4.2).
-    /// Key: affix_id. Value: "melee" | "ranged" | "spell" | "minion" | "generic".
-    /// Missing entries → treat as "generic" (no mismatch flag).
+    /// Key: affix_id. Value: the affix's `Scope`.
+    /// Missing entries → treated as `Scope::Generic` (no mismatch flag).
     /// Populated from the affix database in game_data_loader.rs when scope data is available.
-    pub affix_scope: HashMap<String, String>,
+    pub affix_scope: HashMap<String, Scope>,
 
     /// Build-enabling unique items used for Game-Changer detection (FR-A22, Story 4.2).
     /// Each entry describes a unique that could dramatically increase BuildScore.

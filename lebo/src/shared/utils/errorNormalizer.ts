@@ -12,6 +12,7 @@ const ERROR_TYPE_MAP: Record<string, ErrorType> = {
   ITEM_DATA_ERROR: 'ITEM_DATA_ERROR',
   CONTEXT_DATA_ERROR: 'CONTEXT_DATA_ERROR',
   SCORING_ERROR: 'SCORING_ERROR',
+  CHARACTER_IMPORT_ERROR: 'CHARACTER_IMPORT_ERROR',
 }
 
 const USER_MESSAGES: Record<ErrorType, string> = {
@@ -26,6 +27,7 @@ const USER_MESSAGES: Record<ErrorType, string> = {
   ITEM_DATA_ERROR: 'Item database unavailable. Gear input will use free-text mode.',
   CONTEXT_DATA_ERROR: 'Context database unavailable. Idol, blessing, and condition inputs may be limited.',
   SCORING_ERROR: 'Scoring engine error. Build score could not be computed.',
+  CHARACTER_IMPORT_ERROR: 'Character import failed. Check the save file or try again.',
   UNKNOWN: 'An unexpected error occurred. Please try again.',
 }
 

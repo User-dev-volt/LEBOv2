@@ -83,6 +83,13 @@ describe('normalizeAppError', () => {
     expect(result.message.length).toBeGreaterThan(0)
   })
 
+  it('detects CHARACTER_IMPORT_ERROR from string', () => {
+    const result = normalizeAppError('CHARACTER_IMPORT_ERROR: save file unreadable')
+    expect(result.type).toBe('CHARACTER_IMPORT_ERROR')
+    expect(result.detail).toBe('CHARACTER_IMPORT_ERROR: save file unreadable')
+    expect(result.message.length).toBeGreaterThan(0)
+  })
+
   it('detects CONTEXT_DATA_ERROR from string', () => {
     const result = normalizeAppError('CONTEXT_DATA_ERROR: idol db unavailable')
     expect(result.type).toBe('CONTEXT_DATA_ERROR')
@@ -93,7 +100,8 @@ describe('normalizeAppError', () => {
     const types = [
       'API_ERROR', 'NETWORK_ERROR', 'TIMEOUT', 'PARSE_ERROR',
       'DATA_STALE', 'STORAGE_ERROR', 'AUTH_ERROR', 'ICON_ERROR',
-      'ITEM_DATA_ERROR', 'CONTEXT_DATA_ERROR', 'SCORING_ERROR', 'UNKNOWN',
+      'ITEM_DATA_ERROR', 'CONTEXT_DATA_ERROR', 'SCORING_ERROR',
+      'CHARACTER_IMPORT_ERROR', 'UNKNOWN',
     ]
     for (const type of types) {
       const result = normalizeAppError(`${type}: test`)

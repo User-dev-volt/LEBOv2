@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Review `_bmad-output/implementation-artifacts/sprint-status.yaml`, then run `create-story` on Epic 1 Story 1 to flip it to `ready-for-dev` and mark Epic 1 `in-progress`.
+Assign story 1.1 to developer and wait for PR. Once merged, unblock Epic 1's subsequent stories (1.2–1.5 stat branches can proceed in parallel since they're independent scaffold fills).
 
 ---
 

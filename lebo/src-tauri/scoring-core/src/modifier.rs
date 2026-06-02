@@ -74,11 +74,97 @@ pub enum StatKey {
     IncreasedMinionHp,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
 pub enum ModifierType {
+    #[default]
     Increased,
     More,
     Flat,
+    Conversion,
+}
+
+impl ModifierType {
+    /// Tolerant boundary constructor for game-data strings. Case-insensitive.
+    /// Any unknown value or `None` falls back to `Increased` (FR-A6). This is the
+    /// single place the fallback contract lives — direct serde deserialization
+    /// handles the strict-lowercase paths.
+    pub fn from_data_str(raw: Option<&str>) -> Self {
+        match raw.map(|s| s.to_ascii_lowercase()) {
+            Some(s) if s == "flat" => ModifierType::Flat,
+            Some(s) if s == "more" => ModifierType::More,
+            Some(s) if s == "conversion" => ModifierType::Conversion,
+            _ => ModifierType::Increased,
+        }
+    }
+}
+
+/// Delivery-type scope of an affix or stat. Deserialized from lowercase game-data
+/// strings ("melee" | "ranged" | "spell" | "minion" | "generic").
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum Scope {
+    Melee,
+    Ranged,
+    Spell,
+    Minion,
+    #[default]
+    Generic,
+}
+
+impl Scope {
+    /// Tolerant boundary constructor. Case-insensitive; unknown/`None` → `Generic`.
+    pub fn from_data_str(raw: Option<&str>) -> Self {
+        match raw.map(|s| s.to_ascii_lowercase()) {
+            Some(s) if s == "melee" => Scope::Melee,
+            Some(s) if s == "ranged" => Scope::Ranged,
+            Some(s) if s == "spell" => Scope::Spell,
+            Some(s) if s == "minion" => Scope::Minion,
+            _ => Scope::Generic,
+        }
+    }
+
+    /// `true` when this scope applies to a build with the given primary delivery type.
+    /// `Generic` always applies (preserves the historical `scope == "generic"` short-circuit);
+    /// a specific scope applies only when it equals the primary, and never when no primary is set.
+    pub fn matches_delivery(&self, primary: Option<Scope>) -> bool {
+        if *self == Scope::Generic {
+            return true;
+        }
+        primary == Some(*self)
+    }
+
+    /// Lowercase string label for human-readable descriptions. Display only —
+    /// never use this for branching decisions (compare `Scope` variants instead).
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Scope::Melee => "melee",
+            Scope::Ranged => "ranged",
+            Scope::Spell => "spell",
+            Scope::Minion => "minion",
+            Scope::Generic => "generic",
+        }
+    }
+}
+
+/// Affix prefix/suffix discriminator. Deserialized from lowercase game-data strings.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum AffixPosition {
+    #[default]
+    Prefix,
+    Suffix,
+}
+
+impl AffixPosition {
+    /// Tolerant boundary constructor. Case-insensitive; unknown/`None` → `Prefix`
+    /// (matches the historical "absent → prefix" behavior).
+    pub fn from_data_str(raw: Option<&str>) -> Self {
+        match raw.map(|s| s.to_ascii_lowercase()) {
+            Some(s) if s == "suffix" => AffixPosition::Suffix,
+            _ => AffixPosition::Prefix,
+        }
+    }
 }
 
 /// Condition under which a modifier applies.
@@ -166,5 +252,90 @@ impl ModifierRegistry {
 
     pub fn is_empty(&self) -> bool {
         self.modifiers.is_empty()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- Lowercase serde round-trip ---
+
+    #[test]
+    fn modifier_type_lowercase_serde_round_trip() {
+        assert_eq!(
+            serde_json::from_str::<ModifierType>("\"more\"").unwrap(),
+            ModifierType::More
+        );
+        assert_eq!(
+            serde_json::from_str::<ModifierType>("\"conversion\"").unwrap(),
+            ModifierType::Conversion
+        );
+        assert_eq!(serde_json::to_string(&ModifierType::Flat).unwrap(), "\"flat\"");
+    }
+
+    #[test]
+    fn scope_lowercase_serde_round_trip() {
+        assert_eq!(serde_json::from_str::<Scope>("\"melee\"").unwrap(), Scope::Melee);
+        assert_eq!(serde_json::from_str::<Scope>("\"generic\"").unwrap(), Scope::Generic);
+        assert_eq!(serde_json::to_string(&Scope::Spell).unwrap(), "\"spell\"");
+    }
+
+    #[test]
+    fn affix_position_lowercase_serde_round_trip() {
+        assert_eq!(
+            serde_json::from_str::<AffixPosition>("\"suffix\"").unwrap(),
+            AffixPosition::Suffix
+        );
+        assert_eq!(serde_json::to_string(&AffixPosition::Prefix).unwrap(), "\"prefix\"");
+    }
+
+    // --- from_data_str: None and unknown fall back to the default ---
+
+    #[test]
+    fn modifier_type_from_data_str_defaults() {
+        assert_eq!(ModifierType::from_data_str(None), ModifierType::Increased);
+        assert_eq!(ModifierType::from_data_str(Some("GARBAGE")), ModifierType::Increased);
+        assert_eq!(ModifierType::default(), ModifierType::Increased);
+    }
+
+    #[test]
+    fn scope_from_data_str_defaults() {
+        assert_eq!(Scope::from_data_str(None), Scope::Generic);
+        assert_eq!(Scope::from_data_str(Some("GARBAGE")), Scope::Generic);
+        assert_eq!(Scope::default(), Scope::Generic);
+    }
+
+    #[test]
+    fn affix_position_from_data_str_defaults() {
+        assert_eq!(AffixPosition::from_data_str(None), AffixPosition::Prefix);
+        assert_eq!(AffixPosition::from_data_str(Some("GARBAGE")), AffixPosition::Prefix);
+        assert_eq!(AffixPosition::default(), AffixPosition::Prefix);
+    }
+
+    // --- from_data_str: case-insensitive recognized values ---
+
+    #[test]
+    fn from_data_str_is_case_insensitive() {
+        assert_eq!(ModifierType::from_data_str(Some("MORE")), ModifierType::More);
+        assert_eq!(ModifierType::from_data_str(Some("Conversion")), ModifierType::Conversion);
+        assert_eq!(Scope::from_data_str(Some("SPELL")), Scope::Spell);
+        assert_eq!(AffixPosition::from_data_str(Some("Suffix")), AffixPosition::Suffix);
+    }
+
+    // --- Scope::matches_delivery preserves the historical short-circuit ---
+
+    #[test]
+    fn scope_matches_delivery_generic_always_matches() {
+        assert!(Scope::Generic.matches_delivery(None));
+        assert!(Scope::Generic.matches_delivery(Some(Scope::Melee)));
+    }
+
+    #[test]
+    fn scope_matches_delivery_specific() {
+        assert!(Scope::Melee.matches_delivery(Some(Scope::Melee)));
+        assert!(!Scope::Melee.matches_delivery(Some(Scope::Spell)));
+        // No primary designated → a specific scope never matches.
+        assert!(!Scope::Melee.matches_delivery(None));
     }
 }

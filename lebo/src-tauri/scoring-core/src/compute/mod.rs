@@ -1,8 +1,17 @@
 use crate::build_snapshot::BuildSnapshot;
 use crate::compute_options::ComputeOptions;
 use crate::game_data::{ArchetypeWeights, GameData};
-use crate::modifier::{Condition, Modifier, ModifierRegistry, ModifierType, StatKey};
-use crate::stat_sheet::{DefenseStats, OffenseStats, ScoreComponents, StatSheet, StatWarning};
+use crate::modifier::{Condition, Modifier, ModifierRegistry, StatKey};
+use crate::stat_sheet::{ScoreComponents, StatSheet};
+
+mod offense;
+mod penetration;
+mod defense;
+mod ehp;
+mod ward;
+mod ailment;
+mod attributes;
+mod minion;
 
 pub fn compute_stats(
     snapshot: &BuildSnapshot,
@@ -11,8 +20,8 @@ pub fn compute_stats(
 ) -> StatSheet {
     let registry = build_registry(snapshot, game_data);
     let active = snapshot.active_conditions.as_slice();
-    let offense = compute_offense(&registry, active);
-    let defense = compute_defense(snapshot, game_data, &registry, active);
+    let offense = offense::compute_offense(&registry, active);
+    let defense = defense::compute_defense(snapshot, game_data, &registry, active);
     let speed = compute_speed(&registry, active);
     let weights = resolve_archetype_weights(snapshot.slider_position, game_data);
     let scores = ScoreComponents {
@@ -23,7 +32,7 @@ pub fn compute_stats(
             + weights.w_surv * defense.effective_hp
             + weights.w_speed * speed,
     };
-    let warnings = run_floor_check(&defense, snapshot);
+    let warnings = defense::run_floor_check(&defense, snapshot);
     StatSheet {
         offense,
         defense,
@@ -104,288 +113,6 @@ pub(crate) fn build_registry(snapshot: &BuildSnapshot, game_data: &GameData) -> 
     registry
 }
 
-const DAMAGE_STAT_KEYS: &[StatKey] = &[
-    StatKey::IncreasedDamage,
-    StatKey::IncreasedFireDamage,
-    StatKey::IncreasedColdDamage,
-    StatKey::IncreasedLightningDamage,
-    StatKey::IncreasedVoidDamage,
-    StatKey::IncreasedPoisonDamage,
-    StatKey::IncreasedPhysicalDamage,
-    StatKey::IncreasedSpellDamage,
-    StatKey::IncreasedMeleeDamage,
-    StatKey::IncreasedRangedDamage,
-    StatKey::IncreasedAreaDamage,
-];
-
-fn compute_offense(registry: &ModifierRegistry, active: &[String]) -> OffenseStats {
-    // Sum all Increased% modifiers for damage stats
-    let total_increased: f64 = DAMAGE_STAT_KEYS
-        .iter()
-        .flat_map(|key| registry.query(key, active))
-        .filter(|m| m.modifier_type == ModifierType::Increased)
-        .map(|m| m.value)
-        .sum();
-
-    // Multiply all More% multipliers; product() on empty iterator returns 1.0 correctly
-    let more_factor: f64 = registry
-        .query(&StatKey::MoreDamage, active)
-        .iter()
-        .filter(|m| m.modifier_type == ModifierType::More)
-        .map(|m| m.value)
-        .product();
-
-    let base = 100.0_f64;
-    let damage_score = (base * (1.0 + total_increased / 100.0) * more_factor).max(0.01);
-
-    // Crit chance: sum of CriticalStrikeChance Flat modifiers / 100, clamped to [0, 1]
-    let crit_chance_raw: f64 = registry
-        .query(&StatKey::CriticalStrikeChance, active)
-        .iter()
-        .filter(|m| m.modifier_type == ModifierType::Flat)
-        .map(|m| m.value)
-        .sum::<f64>()
-        / 100.0;
-    let crit_chance = crit_chance_raw.clamp(0.0, 1.0);
-
-    // Crit multiplier: base 200% + added% → expressed as multiplier (e.g., 3.50)
-    let crit_multi_added: f64 = registry
-        .query(&StatKey::CriticalStrikeMultiplier, active)
-        .iter()
-        .filter(|m| m.modifier_type == ModifierType::Flat)
-        .map(|m| m.value)
-        .sum();
-    let crit_multi = 2.0 + crit_multi_added / 100.0;
-
-    let avg_hit_damage = damage_score;
-    let avg_hit_damage_crit_weighted =
-        avg_hit_damage * (crit_multi * crit_chance + 1.0 * (1.0 - crit_chance));
-
-    // Attack/cast speed
-    let attack_speed_mods: f64 = registry
-        .query(&StatKey::AttackSpeed, active)
-        .iter()
-        .map(|m| m.value)
-        .sum();
-    let cast_speed_mods: f64 = registry
-        .query(&StatKey::CastSpeed, active)
-        .iter()
-        .map(|m| m.value)
-        .sum();
-
-    let attack_speed = if attack_speed_mods != 0.0 {
-        Some(1.0 + attack_speed_mods / 100.0)
-    } else {
-        None
-    };
-    let cast_speed = if cast_speed_mods != 0.0 {
-        Some(1.0 + cast_speed_mods / 100.0)
-    } else {
-        None
-    };
-
-    let aoe_modifier: f64 = registry
-        .query(&StatKey::AreaOfEffect, active)
-        .iter()
-        .map(|m| m.value)
-        .sum::<f64>()
-        / 100.0
-        + 1.0;
-
-    OffenseStats {
-        damage_score,
-        avg_hit_damage,
-        avg_hit_damage_crit_weighted,
-        critical_strike_chance: crit_chance * 100.0,
-        critical_strike_multiplier: crit_multi * 100.0,
-        attack_speed,
-        cast_speed,
-        aoe_modifier,
-    }
-}
-
-fn compute_defense(
-    snapshot: &BuildSnapshot,
-    game_data: &GameData,
-    registry: &ModifierRegistry,
-    active: &[String],
-) -> DefenseStats {
-    // Base HP from class or fallback
-    let (base_hp, hp_per_level) = game_data
-        .class_base_stats
-        .get(&snapshot.class_id)
-        .map(|s| (s.base_hp, s.hp_per_level))
-        .unwrap_or((100.0, 5.0));
-
-    let level = snapshot.character_level.max(1) as f64;
-    let flat_hp: f64 = registry
-        .query(&StatKey::MaxHp, active)
-        .iter()
-        .filter(|m| m.modifier_type == ModifierType::Flat)
-        .map(|m| m.value)
-        .sum();
-
-    let hp_percent: f64 = registry
-        .query(&StatKey::MaxHpPercent, active)
-        .iter()
-        .filter(|m| m.modifier_type == ModifierType::Increased)
-        .map(|m| m.value)
-        .sum();
-
-    let class_hp = base_hp + (level - 1.0) * hp_per_level;
-    let raw_hp = class_hp + flat_hp + class_hp * hp_percent / 100.0;
-
-    // Ward
-    let ward: f64 = registry
-        .query(&StatKey::WardPerSecond, active)
-        .iter()
-        .map(|m| m.value)
-        .sum::<f64>()
-        + registry
-            .query(&StatKey::WardOnHit, active)
-            .iter()
-            .map(|m| m.value)
-            .sum::<f64>();
-
-    // Endurance
-    let endurance_pct_raw: f64 = registry
-        .query(&StatKey::EndurancePercent, active)
-        .iter()
-        .map(|m| m.value)
-        .sum::<f64>()
-        / 100.0;
-    let endurance_pct = endurance_pct_raw.clamp(0.0, 0.9);
-
-    // Effective HP
-    let ward_ratio = if raw_hp > 0.0 { ward / raw_hp } else { 0.0 };
-    let mut effective_hp = raw_hp * (1.0 + ward_ratio) * (1.0 / (1.0 - endurance_pct));
-
-    // Resistances
-    let all_res: f64 = registry
-        .query(&StatKey::AllResistances, active)
-        .iter()
-        .map(|m| m.value)
-        .sum();
-    let fire_res: f64 = all_res
-        + registry
-            .query(&StatKey::FireResistance, active)
-            .iter()
-            .map(|m| m.value)
-            .sum::<f64>();
-    let cold_res: f64 = all_res
-        + registry
-            .query(&StatKey::ColdResistance, active)
-            .iter()
-            .map(|m| m.value)
-            .sum::<f64>();
-    let lightning_res: f64 = all_res
-        + registry
-            .query(&StatKey::LightningResistance, active)
-            .iter()
-            .map(|m| m.value)
-            .sum::<f64>();
-    let void_res: f64 = all_res
-        + registry
-            .query(&StatKey::VoidResistance, active)
-            .iter()
-            .map(|m| m.value)
-            .sum::<f64>();
-    let poison_res: f64 = all_res
-        + registry
-            .query(&StatKey::PoisonResistance, active)
-            .iter()
-            .map(|m| m.value)
-            .sum::<f64>();
-    let physical_res: f64 = all_res
-        + registry
-            .query(&StatKey::PhysicalResistance, active)
-            .iter()
-            .map(|m| m.value)
-            .sum::<f64>();
-
-    // Crit avoidance (as percentage 0–100)
-    let crit_avoidance: f64 = registry
-        .query(&StatKey::CriticalStrikeAvoidance, active)
-        .iter()
-        .map(|m| m.value)
-        .sum();
-
-    // Life leech and regen for sustain layer
-    let life_leech: f64 = registry
-        .query(&StatKey::LifeLeechPercent, active)
-        .iter()
-        .map(|m| m.value)
-        .sum();
-    let hp_regen: f64 = registry
-        .query(&StatKey::HpRegenPerSec, active)
-        .iter()
-        .map(|m| m.value)
-        .sum();
-    // Armor and dodge
-    let armor: f64 = registry
-        .query(&StatKey::Armor, active)
-        .iter()
-        .map(|m| m.value)
-        .sum();
-    let dodge_chance: f64 = registry
-        .query(&StatKey::DodgeRating, active)
-        .iter()
-        .map(|m| m.value)
-        .sum();
-    let endurance_threshold: f64 = registry
-        .query(&StatKey::EnduranceThreshold, active)
-        .iter()
-        .map(|m| m.value)
-        .sum();
-
-    // Defensive layers
-    let mut layer_count: u32 = 0;
-    if endurance_pct > 0.0 {
-        layer_count += 1;
-    }
-    if ward > 0.0 {
-        layer_count += 1;
-    }
-    if fire_res >= 75.0
-        && cold_res >= 75.0
-        && lightning_res >= 75.0
-        && void_res >= 75.0
-        && poison_res >= 75.0
-        && physical_res >= 75.0
-    {
-        layer_count += 1;
-    }
-    if crit_avoidance >= 80.0 {
-        layer_count += 1;
-    }
-    // Sustain layer: leech or regen only; ward_per_sec is already captured by the ward layer
-    if life_leech > 0.0 || hp_regen >= 100.0 {
-        layer_count += 1;
-    }
-    if layer_count > 2 {
-        effective_hp *= 1.05_f64.powi((layer_count - 2) as i32);
-    }
-
-    DefenseStats {
-        effective_hp,
-        raw_hp,
-        ward,
-        endurance_percent: endurance_pct * 100.0,
-        endurance_threshold,
-        armor,
-        fire_resistance: fire_res,
-        cold_resistance: cold_res,
-        lightning_resistance: lightning_res,
-        void_resistance: void_res,
-        poison_resistance: poison_res,
-        physical_resistance: physical_res,
-        crit_avoidance,
-        dodge_chance,
-        life_leech_percent: life_leech,
-        hp_regen_per_sec: hp_regen,
-    }
-}
-
 fn compute_speed(registry: &ModifierRegistry, active: &[String]) -> f64 {
     let move_speed = 1.0
         + registry
@@ -411,79 +138,6 @@ fn compute_speed(registry: &ModifierRegistry, active: &[String]) -> f64 {
     move_speed * atk_speed * aoe
 }
 
-const RESISTANCE_CAP: f64 = 75.0;
-const CRIT_AVOIDANCE_FLOOR: f64 = 80.0;
-const HP_REGEN_SUSTAIN_THRESHOLD: f64 = 100.0;
-const MAX_SUFFIXES_PER_SLOT: usize = 2;
-
-fn run_floor_check(defense: &DefenseStats, snapshot: &BuildSnapshot) -> Vec<StatWarning> {
-    let mut warnings = Vec::new();
-
-    let resistance_checks = [
-        ("fire_resistance_uncapped", defense.fire_resistance),
-        ("cold_resistance_uncapped", defense.cold_resistance),
-        ("lightning_resistance_uncapped", defense.lightning_resistance),
-        ("void_resistance_uncapped", defense.void_resistance),
-        ("poison_resistance_uncapped", defense.poison_resistance),
-        ("physical_resistance_uncapped", defense.physical_resistance),
-    ];
-    for (warning_type, current_value) in resistance_checks {
-        if current_value < RESISTANCE_CAP {
-            let gap = RESISTANCE_CAP - current_value;
-            let suggested_fix = find_slot_with_open_suffix(snapshot)
-                .map(|slot| format!("{} has room for a Resistance suffix", slot));
-            warnings.push(StatWarning {
-                warning_type: warning_type.to_string(),
-                current_value,
-                gap,
-                suggested_fix,
-            });
-        }
-    }
-
-    if defense.crit_avoidance < CRIT_AVOIDANCE_FLOOR {
-        warnings.push(StatWarning {
-            warning_type: "crit_avoidance_low".to_string(),
-            current_value: defense.crit_avoidance,
-            gap: CRIT_AVOIDANCE_FLOOR - defense.crit_avoidance,
-            suggested_fix: None,
-        });
-    }
-
-    let has_sustain = defense.ward > 0.0
-        || defense.life_leech_percent > 0.0
-        || defense.hp_regen_per_sec >= HP_REGEN_SUSTAIN_THRESHOLD;
-    if !has_sustain {
-        warnings.push(StatWarning {
-            warning_type: "no_sustain_layer".to_string(),
-            current_value: 0.0,
-            gap: 0.0,
-            suggested_fix: Some(
-                "Add Life Leech, Ward generation, or Life Regeneration \u{2265} 100/s".to_string(),
-            ),
-        });
-    }
-
-    warnings
-}
-
-/// Finds the first gear slot with fewer than `MAX_SUFFIXES_PER_SLOT` suffixes.
-/// Preference order: helm → chest → gloves → boots → belt → amulet → ring_1 → ring_2.
-/// Falls back to "helm" if no snapshot gear data is present.
-fn find_slot_with_open_suffix(snapshot: &BuildSnapshot) -> Option<String> {
-    const PRIORITY: &[&str] = &[
-        "helm", "chest", "gloves", "boots", "belt", "amulet", "ring_1", "ring_2",
-    ];
-    for slot_id in PRIORITY {
-        match snapshot.gear_slots.get(*slot_id) {
-            Some(slot) if slot.suffixes.len() < MAX_SUFFIXES_PER_SLOT => return Some(slot_id.to_string()),
-            None => return Some(slot_id.to_string()),
-            _ => {}
-        }
-    }
-    Some("helm".to_string())
-}
-
 fn resolve_archetype_weights(slider_position: u32, game_data: &GameData) -> ArchetypeWeights {
     for entry in &game_data.archetype_weights {
         if slider_position <= entry.slider_upper {
@@ -498,12 +152,15 @@ fn resolve_archetype_weights(slider_position: u32, game_data: &GameData) -> Arch
     }
 }
 
+// Orchestrator-level tests: every case below exercises the full `compute_stats` round-trip,
+// so they live alongside the orchestrator. Offense- and defense-specific math is verified
+// here through the public entry point. Parity gate — expected values must never change.
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::build_snapshot::{AffixEntry, IdolPlacement};
     use crate::game_data::{ArchetypeWeightsEntry, BaseClassStats, IdolAffixEffect, NodeEffect};
-    use crate::modifier::Condition;
+    use crate::modifier::{Condition, ModifierType};
     use std::collections::HashMap;
 
     fn standard_weight_table() -> Vec<ArchetypeWeightsEntry> {

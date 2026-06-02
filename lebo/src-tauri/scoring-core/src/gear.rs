@@ -4,7 +4,7 @@ use crate::build_snapshot::{AffixEntry, BuildSnapshot, GearSlotSnapshot};
 use crate::compute::compute_stats;
 use crate::compute_options::ComputeOptions;
 use crate::game_data::{GameData, GearAffixData};
-use crate::modifier::StatKey;
+use crate::modifier::{AffixPosition, Scope, StatKey};
 use crate::stat_sheet::{GearAnalysis, GearSlotRanking, WishlistAffix};
 
 /// Canonical 12 gear slot IDs — every run_gear_scoring result includes all 12.
@@ -64,7 +64,11 @@ fn compute_weight(
     baseline_score: f64,
 ) -> f64 {
     // Delivery-type filter: non-generic scope must match primary offense delivery type.
-    if !passes_delivery_filter(&data.scope, snapshot.primary_offense_delivery_type.as_deref()) {
+    let primary_scope = snapshot
+        .primary_offense_delivery_type
+        .as_deref()
+        .map(|s| Scope::from_data_str(Some(s)));
+    if !passes_delivery_filter(data.scope, primary_scope) {
         return 0.0;
     }
     // Damage-element filter: non-empty damage_elements must overlap primary elements.
@@ -83,7 +87,7 @@ fn compute_weight(
     let mut modified = snapshot.clone();
     let inject_slot = modified.gear_slots.entry("helm".to_string()).or_default();
     let entry = AffixEntry { affix_id: affix_id.to_string(), tier: best_tier };
-    if data.affix_class == "prefix" {
+    if data.affix_class == AffixPosition::Prefix {
         inject_slot.prefixes.push(entry);
     } else {
         inject_slot.suffixes.push(entry);
@@ -95,15 +99,10 @@ fn compute_weight(
     (modified_score - baseline_score).max(0.0)
 }
 
-fn passes_delivery_filter(scope: &str, primary_delivery: Option<&str>) -> bool {
-    if scope == "generic" {
-        return true;
-    }
-    // If no primary offense is designated, non-generic affixes receive no weight.
-    match primary_delivery {
-        Some(dt) => dt == scope,
-        None => false,
-    }
+fn passes_delivery_filter(scope: Scope, primary_delivery: Option<Scope>) -> bool {
+    // Generic scope always passes; a specific scope passes only when it matches the
+    // designated primary delivery type (and never when no primary is designated).
+    scope.matches_delivery(primary_delivery)
 }
 
 fn passes_element_filter(affix_elements: &[String], primary_elements: &[String]) -> bool {
@@ -142,7 +141,7 @@ fn score_slot(
     let mut prefix_candidates: Vec<(&str, &GearAffixData, f64)> = game_data
         .gear_affixes
         .iter()
-        .filter(|(_, d)| d.affix_class == "prefix")
+        .filter(|(_, d)| d.affix_class == AffixPosition::Prefix)
         .filter_map(|(id, d)| {
             let w = *affix_weights.get(id)?;
             if w > 0.0 { Some((id.as_str(), d, w)) } else { None }
@@ -154,7 +153,7 @@ fn score_slot(
     let mut suffix_candidates: Vec<(&str, &GearAffixData, f64)> = game_data
         .gear_affixes
         .iter()
-        .filter(|(_, d)| d.affix_class == "suffix")
+        .filter(|(_, d)| d.affix_class == AffixPosition::Suffix)
         .filter_map(|(id, d)| {
             let w = *affix_weights.get(id)?;
             if w > 0.0 { Some((id.as_str(), d, w)) } else { None }
@@ -287,7 +286,7 @@ fn stat_display_name(key: &StatKey) -> &'static str {
 mod tests {
     use super::*;
     use crate::game_data::GearAffixData;
-    use crate::modifier::{ModifierType, StatKey};
+    use crate::modifier::{AffixPosition, ModifierType, Scope, StatKey};
 
     /// Minimal GameData with affixes covering all filter test cases.
     /// Uses stats that directly affect build_score:
@@ -303,8 +302,8 @@ mod tests {
                 stat_key: StatKey::IncreasedMeleeDamage,
                 modifier_type: ModifierType::Increased,
                 values_by_tier: [(5u32, 60.0)].into_iter().collect(),
-                affix_class: "prefix".to_string(),
-                scope: "melee".to_string(),
+                affix_class: AffixPosition::Prefix,
+                scope: Scope::Melee,
                 damage_elements: vec![],
             },
         );
@@ -316,8 +315,8 @@ mod tests {
                 stat_key: StatKey::IncreasedSpellDamage,
                 modifier_type: ModifierType::Increased,
                 values_by_tier: [(5u32, 60.0)].into_iter().collect(),
-                affix_class: "prefix".to_string(),
-                scope: "spell".to_string(),
+                affix_class: AffixPosition::Prefix,
+                scope: Scope::Spell,
                 damage_elements: vec![],
             },
         );
@@ -329,8 +328,8 @@ mod tests {
                 stat_key: StatKey::IncreasedFireDamage,
                 modifier_type: ModifierType::Increased,
                 values_by_tier: [(5u32, 60.0)].into_iter().collect(),
-                affix_class: "prefix".to_string(),
-                scope: "generic".to_string(),
+                affix_class: AffixPosition::Prefix,
+                scope: Scope::Generic,
                 damage_elements: vec!["fire".to_string()],
             },
         );
@@ -342,8 +341,8 @@ mod tests {
                 stat_key: StatKey::IncreasedPoisonDamage,
                 modifier_type: ModifierType::Increased,
                 values_by_tier: [(5u32, 60.0)].into_iter().collect(),
-                affix_class: "prefix".to_string(),
-                scope: "generic".to_string(),
+                affix_class: AffixPosition::Prefix,
+                scope: Scope::Generic,
                 damage_elements: vec!["poison".to_string()],
             },
         );
@@ -355,8 +354,8 @@ mod tests {
                 stat_key: StatKey::MaxHp,
                 modifier_type: ModifierType::Flat,
                 values_by_tier: [(5u32, 200.0)].into_iter().collect(),
-                affix_class: "suffix".to_string(),
-                scope: "generic".to_string(),
+                affix_class: AffixPosition::Suffix,
+                scope: Scope::Generic,
                 damage_elements: vec![],
             },
         );

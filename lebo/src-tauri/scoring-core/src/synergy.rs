@@ -2,7 +2,7 @@ use crate::build_snapshot::BuildSnapshot;
 use crate::compute::compute_stats;
 use crate::compute_options::ComputeOptions;
 use crate::game_data::GameData;
-use crate::modifier::StatKey;
+use crate::modifier::{Scope, StatKey};
 use crate::stat_sheet::SynergyFlag;
 
 /// FR-A22: BuildScore increase threshold to surface a unique as a Game-Changer suggestion.
@@ -36,6 +36,16 @@ impl DeliveryType {
             DeliveryType::Spell => "Spell",
             DeliveryType::Ranged => "Ranged",
             DeliveryType::Minion => "Minion",
+        }
+    }
+
+    /// Maps this delivery type to the corresponding affix `Scope` for scope comparison.
+    fn to_scope(&self) -> Scope {
+        match self {
+            DeliveryType::Melee => Scope::Melee,
+            DeliveryType::Spell => Scope::Spell,
+            DeliveryType::Ranged => Scope::Ranged,
+            DeliveryType::Minion => Scope::Minion,
         }
     }
 }
@@ -205,18 +215,20 @@ fn detect_mismatched_affixes(
 
     let mut flags = Vec::new();
 
+    let primary_scope = primary.to_scope();
+
     for (slot_id, slot) in &snapshot.gear_slots {
         let all_affixes = slot.prefixes.iter().chain(slot.suffixes.iter());
         for affix_entry in all_affixes {
-            // Normalize scope to lowercase so "Melee" / "SPELL" compare correctly.
+            // Missing scope entries are treated as Generic (no mismatch).
             let scope = game_data
                 .affix_scope
                 .get(&affix_entry.affix_id)
-                .map(|s| s.to_ascii_lowercase())
-                .unwrap_or_else(|| "generic".to_string());
+                .copied()
+                .unwrap_or(Scope::Generic);
 
-            if scope == "generic" || scope == primary_str {
-                continue; // no mismatch
+            if scope.matches_delivery(Some(primary_scope)) {
+                continue; // generic scope or matches the primary delivery type → no mismatch
             }
 
             flags.push(SynergyFlag {
@@ -227,7 +239,7 @@ fn detect_mismatched_affixes(
                      Replace it with an equivalent {} affix.",
                     affix_entry.affix_id,
                     slot_id,
-                    scope,
+                    scope.as_str(),
                     primary_str,
                     primary.capitalize(),
                 ),
@@ -356,9 +368,9 @@ mod tests {
             }],
         );
 
-        let mut affix_scope: HashMap<String, String> = HashMap::new();
-        affix_scope.insert("melee-crit-chance".to_string(), "melee".to_string());
-        affix_scope.insert("spell-crit-chance".to_string(), "spell".to_string());
+        let mut affix_scope: HashMap<String, Scope> = HashMap::new();
+        affix_scope.insert("melee-crit-chance".to_string(), Scope::Melee);
+        affix_scope.insert("spell-crit-chance".to_string(), Scope::Spell);
 
         let unique_items = vec![
             UniqueItem {

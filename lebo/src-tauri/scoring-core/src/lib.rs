@@ -17,7 +17,9 @@ pub use compute_options::ComputeOptions;
 pub use game_data::{
     ArchetypeWeights, ArchetypeWeightsEntry, BaseClassStats, GameData, NodeEffect, UniqueItem,
 };
-pub use modifier::{Condition, Modifier, ModifierRegistry, ModifierType, StatKey};
+pub use modifier::{
+    AffixPosition, Condition, Modifier, ModifierRegistry, ModifierType, Scope, StatKey,
+};
 pub use gear::run_gear_scoring;
 pub use scan::{run_efficiency_scan, ScanResult};
 pub use stat_sheet::{
