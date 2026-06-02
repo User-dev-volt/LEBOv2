@@ -43,8 +43,8 @@ story_location: "{project-root}/_bmad-output/implementation-artifacts"
 
 development_status:
   # Epic 1: Complete Stat Sheet & Source Attribution
-  epic-1: backlog
-  1-1-modifiertype-enum-migration-and-compute-module-split: backlog
+  epic-1: in-progress
+  1-1-modifiertype-enum-migration-and-compute-module-split: ready-for-dev
   1-2-offense-stats-damage-types-crit-speed-penetration: backlog
   1-3-defensive-layer-computation: backlog
   1-4-ehp-triple-and-stable-ward-hp-equilibrium: backlog

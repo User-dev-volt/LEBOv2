@@ -22,8 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-- Validate the regenerated Phase 4 `architecture.md` against the Phase 4 PRD addendum (spot-check critical decisions: Stat Source Attribution flow, Complete Optimizer prototype integration, deferred-work elevation)
-- Trigger the next phase workflow: `bm
+Review `_bmad-output/implementation-artifacts/sprint-status.yaml`, then run `create-story` on Epic 1 Story 1 to flip it to `ready-for-dev` and mark Epic 1 `in-progress`.
 
 ---
 
