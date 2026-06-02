@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Assign story 1.1 to developer and wait for PR. Once merged, unblock Epic 1's subsequent stories (1.2–1.5 stat branches can proceed in parallel since they're independent scaffold fills).
+Decide whether to keep or disable autonomous mode. If disabling: rename or delete `_bmad-output/project-intent.md`. (Answer was cut off mid-explanation but direction is clear.)
 
 ---
 
