@@ -227,12 +227,18 @@ fn tags_to_stat_key(tags: &[String], modifier_type: &ModifierType) -> Option<Sta
             return Some(StatKey::FlatAddedPhysicalDamage);
         }
         if has("MELEE") { return Some(StatKey::IncreasedMeleeDamage); }
-        // Element-specific increased damage
+        // Element-specific increased damage. DoT-ailment tags (IGNITE, BLEED) are checked
+        // before their parent element (FIRE/PHYSICAL) so explicitly-DoT nodes land on the
+        // DoT key feeding the per-type increased_dot/more_dot split. All branches here
+        // still return Some, so the golden effect-count (179) is unchanged by this remap.
+        if has("IGNITE") { return Some(StatKey::IncreasedIgniteDamage); }
         if has("FIRE") { return Some(StatKey::IncreasedFireDamage); }
         if has("COLD") { return Some(StatKey::IncreasedColdDamage); }
         if has("LIGHTNING") { return Some(StatKey::IncreasedLightningDamage); }
         if has("VOID") { return Some(StatKey::IncreasedVoidDamage); }
-        if has("POISON") || has("NECROTIC") { return Some(StatKey::IncreasedPoisonDamage); }
+        if has("POISON") { return Some(StatKey::IncreasedPoisonDamage); }
+        if has("NECROTIC") { return Some(StatKey::IncreasedNecroticDamage); }
+        if has("BLEED") { return Some(StatKey::IncreasedBleedDamage); }
         if has("PHYSICAL") && *modifier_type == ModifierType::Flat {
             return Some(StatKey::FlatAddedPhysicalDamage);
         }
@@ -515,5 +521,37 @@ mod tests {
             total, GOLDEN_EFFECT_COUNT,
             "shipped-data node-effect count drifted from the pre-migration baseline"
         );
+    }
+
+    /// Story 1.2 remap: NECROTIC is no longer conflated into Poison, and BLEED/IGNITE
+    /// now land on their own DoT keys. All still require a DAMAGE tag, so this changes
+    /// stat-key assignment only — never the effect count guarded above.
+    #[test]
+    fn damage_tag_remap_lands_on_new_keys() {
+        let inc = ModifierType::Increased;
+        let tag = |s: &str| vec![s.to_string(), "DAMAGE".to_string()];
+
+        assert_eq!(
+            tags_to_stat_key(&tag("NECROTIC"), &inc),
+            Some(StatKey::IncreasedNecroticDamage),
+            "NECROTIC must remap off Poison onto its own key"
+        );
+        assert_eq!(
+            tags_to_stat_key(&tag("POISON"), &inc),
+            Some(StatKey::IncreasedPoisonDamage),
+            "POISON must keep its own key after the split"
+        );
+        assert_eq!(
+            tags_to_stat_key(&tag("BLEED"), &inc),
+            Some(StatKey::IncreasedBleedDamage),
+            "BLEED (physical DoT) must map to its DoT key, not generic damage"
+        );
+        assert_eq!(
+            tags_to_stat_key(&tag("IGNITE"), &inc),
+            Some(StatKey::IncreasedIgniteDamage),
+            "IGNITE (fire DoT) must map to its DoT key"
+        );
+        // A DoT tag without DAMAGE is still dropped (no spurious key, count preserved).
+        assert_eq!(tags_to_stat_key(&["BLEED".to_string()], &inc), None);
     }
 }

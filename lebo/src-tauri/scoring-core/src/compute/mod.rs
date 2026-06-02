@@ -20,7 +20,23 @@ pub fn compute_stats(
 ) -> StatSheet {
     let registry = build_registry(snapshot, game_data);
     let active = snapshot.active_conditions.as_slice();
-    let offense = offense::compute_offense(&registry, active);
+    let mut offense = offense::compute_offense(&registry, active);
+
+    // Penetration scales the scored damage of the build's primary type(s) against a
+    // 0%-resistance reference target. No-penetration builds get multiplier 1.0, so the
+    // aggregate damage_score stays byte-identical to Phase 3. (See penetration.rs.)
+    let (elemental_pen, physical_pen) = penetration::compute_penetration(&registry, active);
+    offense.elemental_penetration = elemental_pen;
+    offense.physical_penetration = physical_pen;
+    let pen_mult = penetration::penetration_multiplier(
+        &snapshot.primary_offense_damage_elements,
+        elemental_pen,
+        physical_pen,
+    );
+    offense.damage_score *= pen_mult;
+    offense.avg_hit_damage *= pen_mult;
+    offense.avg_hit_damage_crit_weighted *= pen_mult;
+
     let defense = defense::compute_defense(snapshot, game_data, &registry, active);
     let speed = compute_speed(&registry, active);
     let weights = resolve_archetype_weights(snapshot.slider_position, game_data);
@@ -301,6 +317,72 @@ mod tests {
             expected,
             sheet.offense.damage_score
         );
+    }
+
+    // --- Penetration tests (FR-4) ---
+
+    #[test]
+    fn no_penetration_keeps_damage_score_byte_identical() {
+        // 100% increased fire, no penetration → aggregate 100 × (1 + 1.0) = 200, unscaled.
+        let mut node_effects = HashMap::new();
+        node_effects.insert(
+            "fire_dmg".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::IncreasedFireDamage,
+                modifier_type: ModifierType::Increased,
+                value: 100.0,
+                condition: Condition::Always,
+            }],
+        );
+        let game_data = make_game_data_with_effects(node_effects);
+        let mut snapshot = snapshot_at(50);
+        snapshot.primary_offense_damage_elements = vec!["fire".to_string()];
+        snapshot.node_allocations.insert("fire_dmg".to_string(), 1);
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        assert!(
+            (sheet.offense.damage_score - 200.0).abs() < 0.01,
+            "no-pen damage_score must stay 200, got {}",
+            sheet.offense.damage_score
+        );
+        assert_eq!(sheet.offense.elemental_penetration, 0.0);
+        assert_eq!(sheet.offense.physical_penetration, 0.0);
+    }
+
+    #[test]
+    fn elemental_penetration_scales_primary_element_damage_linearly() {
+        // 100% increased fire (aggregate 200) + 50% fire penetration on a fire-primary
+        // build → ×1.50 → 300. Linear, 0%-resistance reference target.
+        let mut node_effects = HashMap::new();
+        node_effects.insert(
+            "fire_dmg".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::IncreasedFireDamage,
+                modifier_type: ModifierType::Increased,
+                value: 100.0,
+                condition: Condition::Always,
+            }],
+        );
+        node_effects.insert(
+            "fire_pen".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::FirePenetration,
+                modifier_type: ModifierType::Flat,
+                value: 50.0,
+                condition: Condition::Always,
+            }],
+        );
+        let game_data = make_game_data_with_effects(node_effects);
+        let mut snapshot = snapshot_at(50);
+        snapshot.primary_offense_damage_elements = vec!["fire".to_string()];
+        snapshot.node_allocations.insert("fire_dmg".to_string(), 1);
+        snapshot.node_allocations.insert("fire_pen".to_string(), 1);
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        assert!(
+            (sheet.offense.damage_score - 300.0).abs() < 0.01,
+            "expected 300 (200 × 1.5), got {}",
+            sheet.offense.damage_score
+        );
+        assert!((sheet.offense.elemental_penetration - 50.0).abs() < 1e-9);
     }
 
     // --- Crit tests ---

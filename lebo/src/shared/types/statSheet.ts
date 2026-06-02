@@ -1,5 +1,15 @@
 // Rust output structs use snake_case (Pattern 2) — TypeScript mirrors exactly.
 
+// Per-damage-type Increased%/More% with an optional DoT-ailment split
+// (Ignite under fire, Bleed under physical). FR-1.
+export interface DamageTypeBreakdown {
+  damage_type: string
+  increased: number
+  more: number
+  increased_dot: number | null
+  more_dot: number | null
+}
+
 export interface OffenseStats {
   damage_score: number
   avg_hit_damage: number
@@ -9,6 +19,10 @@ export interface OffenseStats {
   attack_speed: number | null
   cast_speed: number | null
   aoe_modifier: number
+  stun_chance: number
+  elemental_penetration: number
+  physical_penetration: number
+  damage_types: DamageTypeBreakdown[]
 }
 
 export interface DefenseStats {

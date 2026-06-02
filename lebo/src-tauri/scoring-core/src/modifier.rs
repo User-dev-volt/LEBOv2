@@ -14,6 +14,10 @@ pub enum StatKey {
     IncreasedVoidDamage,
     IncreasedPoisonDamage,
     IncreasedPhysicalDamage,
+    IncreasedNecroticDamage,
+    // Damage — DoT ailment variants, tracked under their parent type's breakdown
+    IncreasedBleedDamage,
+    IncreasedIgniteDamage,
     // Damage — delivery-type-specific
     IncreasedSpellDamage,
     IncreasedMeleeDamage,
@@ -30,6 +34,7 @@ pub enum StatKey {
     CriticalStrikeChance,
     CriticalStrikeMultiplier,
     CriticalStrikeAvoidance,
+    StunChance,
     // Defense
     MaxHp,
     MaxHpPercent,

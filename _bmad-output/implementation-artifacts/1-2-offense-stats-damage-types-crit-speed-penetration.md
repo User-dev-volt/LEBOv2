@@ -1,6 +1,6 @@
 # Story 1.2: Offense stats — damage types, crit, speed, penetration
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -46,38 +46,38 @@ This story fills the `compute/offense.rs` and `compute/penetration.rs` modules t
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Extend `StatKey` for the missing damage types and stun (AC: 1, 2)** — `scoring-core/src/modifier.rs`
-  - [ ] Add damage-type variants absent today: `IncreasedNecroticDamage`, `IncreasedBleedDamage` (physical DoT ailment), and a DoT-side key set only where the data warrants it (see Dev Notes "Damage types: what the data actually has"). **Do not** add a `Corruption` damage type — DECIDED: it is not a player damage type in Last Epoch and is dropped from the per-type model. Model the 7 real LE types; represent Bleed/Ignite/Poison as DoT variants under their parent type.
-  - [ ] Add `StunChance` for FR-2.
-  - [ ] Per-type **More** needs **no new keys** — a "More Fire Damage" node already loads as `NodeEffect { stat_key: IncreasedFireDamage, modifier_type: More }`. Split increased vs more by `modifier_type` at query time, exactly as the aggregate `compute_offense` already does for generic damage.
-- [ ] **Task 2 — Update the loader tag→StatKey mapping for the new types (AC: 1)** — `src-tauri/src/services/game_data_loader.rs` `tags_to_stat_key`
-  - [ ] Today `NECROTIC` is mapped to `IncreasedPoisonDamage` (line ~235) and `BLEED`/`CORRUPTION` have no mapping (fall through to generic `IncreasedDamage`). Remap `NECROTIC` → `IncreasedNecroticDamage` and add `BLEED` → `IncreasedBleedDamage`. This changes *which* StatKey an effect lands on, **not the effect count** — the `shipped_class_json_effect_count_is_stable` golden test (179) must still pass. Verify it does after the remap.
-  - [ ] Add the new keys to the offense aggregate list (Task 3) so the generic `damage_score` total is unchanged by the remap (Necrotic currently feeds the aggregate via `IncreasedPoisonDamage`, which is in `DAMAGE_STAT_KEYS`; moving it to its own key requires adding that key to the aggregate list to preserve the sum).
-  - [ ] If you add a `STUN`/`STUN_CHANCE` tag mapping, confirm against real tags before adding (grep the class JSONs); do not invent tags the data never emits.
-- [ ] **Task 3 — Implement per-damage-type offense in `compute/offense.rs` (AC: 1, 5)**
-  - [ ] Keep the existing aggregate `damage_score` / `avg_hit_damage` / `avg_hit_damage_crit_weighted` path exactly as-is (parity gate).
-  - [ ] Add a per-type breakdown computed by querying each `IncreasedXDamage` StatKey and splitting `increased` (sum of `Increased`-typed `.value`) from `more` (product of `More`-typed `.value`), reusing the same math shape the aggregate uses (`product()` on empty = 1.0).
-  - [ ] Populate the new `OffenseStats` fields (see "OffenseStats shape" in Dev Notes). Keep `DAMAGE_STAT_KEYS` as the single source for the aggregate; add the new keys to it.
-- [ ] **Task 4 — Stun chance, AoE, speed pass-through (AC: 2, 3)** — `compute/offense.rs`
-  - [ ] Compute `stun_chance` from `StatKey::StunChance` (sum of Flat `.value`, clamp `[0, 100]` — mirror the crit-chance pattern). Default 0 when no modifiers.
-  - [ ] Leave attack/cast speed and AoE logic unchanged.
-- [ ] **Task 5 — Implement `compute/penetration.rs` (AC: 4, 5)**
-  - [ ] Add `pub(super) fn compute_penetration(registry, active) -> (...)` returning elemental + physical penetration. Elemental = the combined fire/cold/lightning penetration figure per FR-4 ("Elemental Penetration … separately" from physical); decide whether elemental is one summed value or surfaced per-element (see Q2) — default: one `elemental_penetration` (max or sum of the three; document the choice) + `physical_penetration`.
-  - [ ] Wire penetration into the scored damage per the LE linear mechanic (Dev Notes "Penetration model"): `damage × (1 − (ENEMY_RES_BASELINE − pen)/100)`, baseline `0.0`. Apply elemental penetration to elemental-typed scored damage and physical penetration to physical-typed, selecting the type from `primary_offense_damage_elements`. Call it from `compute/mod.rs::compute_stats` after offense, before assembling `ScoreComponents`, OR return it from offense — pick the layout that keeps `mod.rs` orchestration readable. `mod penetration;` is already declared — just fill the file.
-- [ ] **Task 6 — Extend the `OffenseStats` struct + TS mirror (AC: 1, 2, 4)**
-  - [ ] `scoring-core/src/stat_sheet.rs`: add the new fields to `OffenseStats` (keep `#[derive(Default)]` valid — all new fields must be `Default`-able; use `Vec`/`f64`/`Option`).
-  - [ ] `lebo/src/shared/types/statSheet.ts`: mirror the new fields **exactly** in snake_case (Pattern 2 / project-context rule — never camelCase Rust-output types). Add any new sub-interface (e.g. `DamageTypeBreakdown`).
-  - [ ] Keep `lebo/src/features/stat-sheet/StatSheetPanel.tsx` and its `StatDeltas`/`computeStatDeltas` compiling — the new fields are optional to *display* here (Story 1.6 owns the layout), but the TS types must still satisfy strict mode. Do **not** delete or rename existing fields.
-- [ ] **Task 7 — Tests (AC: 1, 2, 4)** — co-located in `compute/offense.rs` and `compute/penetration.rs` `#[cfg(test)]` blocks
-  - [ ] Per-type isolation: a build with only `IncreasedFireDamage` shows fire increased > 0 and cold/lightning/etc. increased == 0 (proves no cross-type bleed).
-  - [ ] Per-type more: a `More`-typed fire node yields fire `more` as a multiplier, not folded into `increased`.
-  - [ ] Stun chance: sum + clamp to 100; 0 when absent.
-  - [ ] Penetration: elemental vs physical separated; a no-penetration build's `damage_score` is byte-identical to Phase-3 (multiplier 1.0); a build with N% penetration on its primary element scales scored damage of that type by `(1 + N/100)` linearly.
-  - [ ] Necrotic remap regression: a `["NECROTIC","DAMAGE"]` node lands on `IncreasedNecroticDamage` and still contributes to the aggregate `damage_score` (sum preserved).
-- [ ] **Task 8 — Verify (AC: all)**
-  - [ ] `cargo test -p scoring-core` (from `lebo/src-tauri/`) — all Phase-3 regression tests byte-identical + new tests green.
-  - [ ] `cargo test -p lebo` — loader `shipped_class_json_effect_count_is_stable` still 179.
-  - [ ] `pnpm build` + `pnpm vitest` (from `lebo/`) — TS strict compile passes with the extended `statSheet.ts`; confirm the 14 known-pre-existing UI failures (per Story 1.1) are unchanged and no *new* failures appear.
+- [x] **Task 1 — Extend `StatKey` for the missing damage types and stun (AC: 1, 2)** — `scoring-core/src/modifier.rs`
+  - [x] Added `IncreasedNecroticDamage`, `IncreasedBleedDamage` (physical DoT) and `IncreasedIgniteDamage` (fire DoT). No `Corruption` type added. 7 real LE types modeled; Bleed/Ignite as DoT variants under parent type.
+  - [x] Added `StunChance` for FR-2.
+  - [x] Per-type **More** uses no new keys — split increased vs more by `modifier_type` at query time via the shared `increased_and_more` helper.
+- [x] **Task 2 — Update the loader tag→StatKey mapping for the new types (AC: 1)** — `src-tauri/src/services/game_data_loader.rs` `tags_to_stat_key`
+  - [x] Split `POISON`/`NECROTIC`: `NECROTIC` → `IncreasedNecroticDamage`, `POISON` → `IncreasedPoisonDamage`. Added `BLEED` → `IncreasedBleedDamage` and `IGNITE` → `IncreasedIgniteDamage`, all inside the `has("DAMAGE")` branch. Golden test (179) re-run and still passes.
+  - [x] Added all four new keys to `DAMAGE_STAT_KEYS` so the aggregate `damage_score` total is preserved.
+  - [x] Did **not** add a STUN tag mapping: the only `STUN` tag in shipped data (`["MELEE","STUN"]`) has no `DAMAGE` tag and is currently dropped — wiring it would bump the golden count off 179. `StunChance` is modeled in compute and tested programmatically; loader wiring is deferred. (Documented in `offense.rs`.)
+- [x] **Task 3 — Implement per-damage-type offense in `compute/offense.rs` (AC: 1, 5)**
+  - [x] Aggregate `damage_score` / `avg_hit_damage` / `avg_hit_damage_crit_weighted` path unchanged (parity gate; all Phase-3 tests pass).
+  - [x] Added per-type breakdown via `DAMAGE_TYPES` table + `increased_and_more` (sum of Increased, product of More; empty product = 1.0). Registry-only access (AC5).
+  - [x] Populated new `OffenseStats` fields. `DAMAGE_STAT_KEYS` remains the single aggregate source with the new keys added.
+- [x] **Task 4 — Stun chance, AoE, speed pass-through (AC: 2, 3)** — `compute/offense.rs`
+  - [x] `stun_chance` = sum of Flat `StunChance`, clamped `[0,100]`, default 0.
+  - [x] Attack/cast speed and AoE logic untouched.
+- [x] **Task 5 — Implement `compute/penetration.rs` (AC: 4, 5)**
+  - [x] `compute_penetration(registry, active) -> (elemental, physical)`. Elemental = **sum** of fire/cold/lightning penetration (documented). `physical_penetration` separate.
+  - [x] LE linear mechanic against a 0%-resistance reference target: `1 − (0 − pen)/100 = 1 + pen/100`. Applied in `compute/mod.rs::compute_stats` after offense via `penetration_multiplier`, selecting elemental vs physical from `primary_offense_damage_elements`. No-pen builds → ×1.0 → byte-identical parity.
+- [x] **Task 6 — Extend the `OffenseStats` struct + TS mirror (AC: 1, 2, 4)**
+  - [x] `stat_sheet.rs`: added `stun_chance`, `elemental_penetration`, `physical_penetration`, `damage_types: Vec<DamageTypeBreakdown>`; new `DamageTypeBreakdown` struct. All `Default`-able; `#[derive(Default)]` preserved. Exported from `lib.rs`.
+  - [x] `statSheet.ts`: mirrored exactly in snake_case + new `DamageTypeBreakdown` interface.
+  - [x] `StatSheetPanel.tsx` + `StatDeltas`/`computeStatDeltas` still compile (TS strict build passes). No existing fields renamed/deleted; `makeStatSheet()` test helper extended with the new fields.
+- [x] **Task 7 — Tests (AC: 1, 2, 4)** — co-located in `compute/offense.rs` and `compute/penetration.rs` `#[cfg(test)]` blocks
+  - [x] Per-type isolation (`per_type_increased_does_not_bleed_across_types`).
+  - [x] Per-type more is a multiplier, not folded into increased (`per_type_more_is_a_multiplier_not_folded_into_increased`).
+  - [x] Stun chance sum+clamp and zero-default.
+  - [x] Penetration: elemental vs physical separated; no-pen parity (`no_penetration_keeps_damage_score_byte_identical`); linear N% scaling (`elemental_penetration_scales_primary_element_damage_linearly`).
+  - [x] Necrotic remap regression (loader `damage_tag_remap_lands_on_new_keys` + compute `necrotic_key_contributes_to_aggregate_damage_score`).
+- [x] **Task 8 — Verify (AC: all)**
+  - [x] `cargo test -p scoring-core` — 81 passed, 0 failed (all Phase-3 parity tests + new tests green).
+  - [x] `cargo test -p lebo game_data_loader` — `shipped_class_json_effect_count_is_stable` still 179; remap test green.
+  - [x] `pnpm build` — TS strict compile passes with extended `statSheet.ts`. `pnpm vitest run` — 1026 passed, 14 failed = the documented Story-1.1 baseline (AppHeader/ProviderSelector/Settings/RightPanel/SkillTreeCanvas/TreeControls); no new failures.
 
 ## Dev Notes
 
@@ -178,14 +178,39 @@ FR-4 says penetration "reduces effective enemy resistance in the score calc," bu
 
 ### Agent Model Used
 
+claude-opus-4-8 (Amelia, BMAD dev-story workflow)
+
 ### Debug Log References
+
+- `cargo test -p scoring-core` → 81 passed, 0 failed.
+- `cargo test -p lebo game_data_loader` → 2 passed (golden count 179 + remap), 0 failed.
+- `pnpm build` → tsc strict + vite build succeeded (chunk-size warnings only).
+- `pnpm vitest run` → 1026 passed, 14 failed (pre-existing Story-1.1 baseline; no new failures).
 
 ### Completion Notes List
 
+- **Per-type breakdown (FR-1):** `OffenseStats.damage_types` is a fixed-order `Vec` of all 7 real LE damage types (physical, fire, cold, lightning, void, necrotic, poison), each with independent `increased`/`more`. Fire and physical carry a DoT split (`increased_dot`/`more_dot`) sourced from Ignite and Bleed respectively; the other types report `None` for the DoT fields. Verified no cross-type bleed.
+- **Aggregate parity (AC1/AC4):** the aggregate `damage_score` path is untouched; the four new damage keys were added to `DAMAGE_STAT_KEYS` so the remap of Necrotic/Bleed/Ignite off their old keys preserves the aggregate sum. All Phase-3 parity tests are byte-identical.
+- **Penetration (FR-4):** modeled with LE's real **linear** mechanic against a documented **0%-resistance reference target** (`1 + pen/100`). Wired in `compute/mod.rs` after offense; selects elemental vs physical from `primary_offense_damage_elements`. No-penetration builds get ×1.0, so parity holds for free. `elemental_penetration` is the **sum** of fire/cold/lightning penetration (documented choice).
+- **Stun (FR-2):** `StunChance` is summed (Flat) and clamped `[0,100]`. **Not wired in the loader** — the only shipped `STUN` tag lacks a `DAMAGE` tag and is currently dropped; adding a mapping would break the golden effect-count (179). Modeled + tested programmatically; loader wiring deferred to a future ailment story.
+- **Loader remap (AC1):** `tags_to_stat_key` now splits `POISON`/`NECROTIC` and routes `BLEED`→bleed, `IGNITE`→ignite, all inside the `has("DAMAGE")` branch (every branch returns `Some`), so the golden count is preserved by construction. Confirmed: 179 unchanged.
+- **TS mirror note for Story 1.6:** `DamageTypeBreakdown.damage_type` is a plain `string`. The existing `DAMAGE_TYPE_COLORS` map (in `rarityColors.ts`) keys on the Phase-1 `DamageType` union, which has `bleed` but **not** `necrotic`. The 1.6 UI will need a color token / mapping for `necrotic` (and to decide how to surface the Bleed/Ignite DoT split). No color/type-union changes made in this story (out of scope).
+
 ### File List
+
+- `lebo/src-tauri/scoring-core/src/modifier.rs` — `StatKey`: added `IncreasedNecroticDamage`, `IncreasedBleedDamage`, `IncreasedIgniteDamage`, `StunChance`.
+- `lebo/src-tauri/scoring-core/src/stat_sheet.rs` — extended `OffenseStats`; added `DamageTypeBreakdown`.
+- `lebo/src-tauri/scoring-core/src/lib.rs` — exported `DamageTypeBreakdown`.
+- `lebo/src-tauri/scoring-core/src/compute/offense.rs` — per-type breakdown, stun chance, new keys in `DAMAGE_STAT_KEYS`, `increased_and_more` helper, co-located tests.
+- `lebo/src-tauri/scoring-core/src/compute/penetration.rs` — `compute_penetration` + `penetration_multiplier`, co-located tests.
+- `lebo/src-tauri/scoring-core/src/compute/mod.rs` — wired penetration into `compute_stats`; added penetration parity/linearity tests.
+- `lebo/src-tauri/src/services/game_data_loader.rs` — `tags_to_stat_key` remap (Necrotic/Poison split, Bleed, Ignite); added `damage_tag_remap_lands_on_new_keys` test.
+- `lebo/src/shared/types/statSheet.ts` — mirrored new `OffenseStats` fields + `DamageTypeBreakdown` interface.
+- `lebo/src/features/stat-sheet/StatSheetPanel.test.tsx` — extended `makeStatSheet()` offense literal with new fields.
 
 ## Change Log
 
 | Date | Change |
 |------|--------|
 | 2026-06-02 | Story 1.2 created (ready-for-dev): offense per-damage-type increased/more + stun + penetration, StatKey/OffenseStats extension, loader Necrotic/Bleed remap, TS type mirror. Decisions: model 7 real LE damage types with DoT split (Bleed/Ignite/Poison as DoT variants, drop "Corruption"); penetration via real LE linear mechanic against a 0%-resistance reference target (`damage × (1 + pen/100)`), which preserves Phase-3 parity for no-penetration builds. |
+| 2026-06-02 | Story 1.2 implemented (review): added `IncreasedNecroticDamage`/`IncreasedBleedDamage`/`IncreasedIgniteDamage`/`StunChance` keys; per-type `damage_types` breakdown with Ignite/Bleed DoT split; stun chance; `compute/penetration.rs` (linear, 0% reference target); loader tag remap (golden count 179 preserved); TS mirror. StunChance modeled but not loader-wired (would break golden count). Verified: scoring-core 81/81, loader golden+remap green, TS strict build green, vitest 1026 pass / 14 pre-existing baseline failures (no new). |

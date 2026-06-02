@@ -30,6 +30,10 @@ function makeStatSheet(overrides: Partial<StatSheet> = {}): StatSheet {
       attack_speed: 1.2,
       cast_speed: null,
       aoe_modifier: 1.0,
+      stun_chance: 0,
+      elemental_penetration: 0,
+      physical_penetration: 0,
+      damage_types: [],
     },
     defense: {
       effective_hp: 5000,

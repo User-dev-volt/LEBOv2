@@ -13,6 +13,32 @@ pub struct OffenseStats {
     /// None if the build uses attack speed instead
     pub cast_speed: Option<f64>,
     pub aoe_modifier: f64,
+    /// Stun chance %, clamped to [0, 100] (FR-2).
+    pub stun_chance: f64,
+    /// Combined fire/cold/lightning penetration figure (sum of the three) (FR-4).
+    pub elemental_penetration: f64,
+    /// Physical penetration figure (FR-4).
+    pub physical_penetration: f64,
+    /// Per-damage-type Increased%/More% breakdown, one entry per LE damage type
+    /// in a fixed order (FR-1). Independent of the aggregate `damage_score`.
+    pub damage_types: Vec<DamageTypeBreakdown>,
+}
+
+/// Increased%/More% for a single damage type, with an optional DoT-ailment split
+/// (e.g. Ignite under Fire, Bleed under Physical) (FR-1).
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct DamageTypeBreakdown {
+    /// Lowercase LE damage-type label: "physical" | "fire" | "cold" | "lightning"
+    /// | "void" | "necrotic" | "poison".
+    pub damage_type: String,
+    /// Σ Increased% for this type.
+    pub increased: f64,
+    /// Π More multipliers for this type, expressed as a multiplier (1.0 = none).
+    pub more: f64,
+    /// Σ Increased% for this type's DoT ailment variant; None when the type has none.
+    pub increased_dot: Option<f64>,
+    /// Π More multipliers for this type's DoT ailment variant; None when the type has none.
+    pub more_dot: Option<f64>,
 }
 
 /// Survivability and defensive stats.
