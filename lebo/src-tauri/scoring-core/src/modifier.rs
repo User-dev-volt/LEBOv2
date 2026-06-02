@@ -90,7 +90,7 @@ impl ModifierType {
     /// single place the fallback contract lives — direct serde deserialization
     /// handles the strict-lowercase paths.
     pub fn from_data_str(raw: Option<&str>) -> Self {
-        match raw.map(|s| s.to_ascii_lowercase()) {
+        match raw.map(|s| s.trim().to_ascii_lowercase()) {
             Some(s) if s == "flat" => ModifierType::Flat,
             Some(s) if s == "more" => ModifierType::More,
             Some(s) if s == "conversion" => ModifierType::Conversion,
@@ -115,7 +115,7 @@ pub enum Scope {
 impl Scope {
     /// Tolerant boundary constructor. Case-insensitive; unknown/`None` → `Generic`.
     pub fn from_data_str(raw: Option<&str>) -> Self {
-        match raw.map(|s| s.to_ascii_lowercase()) {
+        match raw.map(|s| s.trim().to_ascii_lowercase()) {
             Some(s) if s == "melee" => Scope::Melee,
             Some(s) if s == "ranged" => Scope::Ranged,
             Some(s) if s == "spell" => Scope::Spell,
@@ -160,7 +160,7 @@ impl AffixPosition {
     /// Tolerant boundary constructor. Case-insensitive; unknown/`None` → `Prefix`
     /// (matches the historical "absent → prefix" behavior).
     pub fn from_data_str(raw: Option<&str>) -> Self {
-        match raw.map(|s| s.to_ascii_lowercase()) {
+        match raw.map(|s| s.trim().to_ascii_lowercase()) {
             Some(s) if s == "suffix" => AffixPosition::Suffix,
             _ => AffixPosition::Prefix,
         }
@@ -321,6 +321,15 @@ mod tests {
         assert_eq!(ModifierType::from_data_str(Some("Conversion")), ModifierType::Conversion);
         assert_eq!(Scope::from_data_str(Some("SPELL")), Scope::Spell);
         assert_eq!(AffixPosition::from_data_str(Some("Suffix")), AffixPosition::Suffix);
+    }
+
+    // --- from_data_str: surrounding whitespace is tolerated ---
+
+    #[test]
+    fn from_data_str_trims_whitespace() {
+        assert_eq!(ModifierType::from_data_str(Some(" flat ")), ModifierType::Flat);
+        assert_eq!(Scope::from_data_str(Some("melee\n")), Scope::Melee);
+        assert_eq!(AffixPosition::from_data_str(Some(" suffix")), AffixPosition::Suffix);
     }
 
     // --- Scope::matches_delivery preserves the historical short-circuit ---

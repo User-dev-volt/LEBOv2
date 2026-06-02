@@ -197,3 +197,7 @@
 - **Test mock `convertFileSrc` omits URL encoding** [`SkillPickerGrid.test.tsx`] — Mock returns raw concatenation; real Tauri API encodes spaces etc. Current test paths are space-free so assertions pass. Risk emerges if tests are added for Lightning Bolt icon path.
 - **No retry mechanism for `getIconCachePath` returning null** [`SkillTreeView.tsx`, `skillIconUrls` useEffect] — Icons whose cache files aren't ready at class-load time are permanently absent from the tab bar until the user switches classes. Pre-existing limitation from `useIconTextures`.
 - **`convertFileSrc` test verifies call but not stored value** [`SkillPickerGrid.test.tsx`] — `expect(convertFileSrc).toHaveBeenCalledWith(mockPath)` would pass even if the return value was discarded before storage. Minor coverage gap.
+
+## Deferred from: code review of story-1.1 (2026-06-02)
+
+- **Typed `affix_scope`/`affix_class` boundary not yet exercised** [`game_data_loader.rs`, `game_data.rs`] — The migration correctly types `GearAffixData.affix_class: AffixPosition`, `scope: Scope`, and `GameData.affix_scope: HashMap<String, Scope>`, but the loader seeds `gear_affixes`/`affix_scope` empty and wires only `ModifierType::from_data_str` — no `AffixPosition::from_data_str`/`Scope::from_data_str` conversion runs at the loader boundary yet. The string→enum tolerance therefore lives only in tests, not on a live data path. Correct scaffolding ahead of data; verify the conversion is actually wired when the affix DB is populated (Epic 4 / story 4-1 affix data gate). Not caused by this change.

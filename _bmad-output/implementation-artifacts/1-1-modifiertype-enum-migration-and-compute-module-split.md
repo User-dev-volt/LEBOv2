@@ -1,6 +1,6 @@
 # Story 1.1: ModifierType enum migration and compute module split
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -64,6 +64,15 @@ This is **Gate 2 (D-P4-1)** of Phase 4 — a prerequisite for *all* `compute/*` 
   - [x] `cargo test -p scoring-core` (run from `lebo/src-tauri/`) — all Phase 3 regression + new enum tests green.
   - [x] `cargo build` for the Tauri crate (loader + models compile against the new enum field types).
   - [x] `pnpm build` and `pnpm vitest` (from `lebo/`) — TS strict compile passes with the new `ErrorType` member; add/extend an `errorNormalizer` test asserting a raw string containing `"CHARACTER_IMPORT_ERROR"` normalizes to that type.
+
+### Review Findings
+
+Adversarial code review (Blind Hunter + Edge Case Hunter + Acceptance Auditor), 2026-06-02. Acceptance Auditor verdict: **PASS** — all three ACs and both hard constraints (zero behavior change / byte-identical; no new stat in scaffolds) verified.
+
+- [x] [Review][Patch] `from_data_str` constructors did not trim whitespace before lowercasing — `" flat "`/`"melee\n"`/`" suffix"` fell back to the default instead of the intended variant [`scoring-core/src/modifier.rs:93,118,163`] — **FIXED**: added `.trim()` in all three tolerant constructors; added `from_data_str_trims_whitespace` regression test (66 tests pass).
+- [x] [Review][Defer] Typed `affix_scope`/`affix_class` boundary not yet exercised — loader seeds the affix maps empty and wires only `ModifierType::from_data_str`; `AffixPosition`/`Scope` string→enum tolerance lives only in tests until the affix DB is populated (Epic 4 / 4-1) [`game_data_loader.rs`, `game_data.rs`] — deferred, recorded in deferred-work.md.
+
+_Dismissed as noise (3):_ migration parity vs. deleted `parse_modifier_type` — **verified** byte-identical on real data (all shipped `modifierType` values are clean lowercase `flat`/`increased`/`more`; golden count 179 is a valid parity gate); new `Conversion` variant exhaustive-match compile risk — no exhaustive `match` on `ModifierType` exists and `cargo test` is green; non-alphabetical `mod` declaration order in `compute/mod.rs` — style only, compiles warning-clean.
 
 ## Dev Notes
 
