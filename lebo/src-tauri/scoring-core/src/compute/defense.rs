@@ -248,6 +248,11 @@ pub(super) fn compute_defense(
         ehp_vs_one_shots: 0.0,
         stable_ward: 0.0,
         stable_hp: 0.0,
+        // FR-8 ailment avoidance (Story 1.5): no shipped source — honest 0.0, no dead key
+        // (parry_chance precedent). Flows in when a stat_key-bearing source lands.
+        chill_avoidance: 0.0,
+        stun_avoidance: 0.0,
+        bleed_avoidance: 0.0,
     }
 }
 

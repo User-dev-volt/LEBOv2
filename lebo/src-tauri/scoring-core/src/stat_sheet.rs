@@ -25,6 +25,18 @@ pub struct OffenseStats {
     /// Per-damage-type Increased%/More% breakdown, one entry per LE damage type
     /// in a fixed order (FR-1). Independent of the aggregate `damage_score`.
     pub damage_types: Vec<DamageTypeBreakdown>,
+    // --- FR-8 ailment CHANCES added in Story 1.5 ---
+    // No shipped Season-4 source carries a parseable ailment-chance % (the audit found no
+    // numeric `*_CHANCE` ailment tag), so every field below surfaces honest 0.0 with NO dead
+    // StatKey — exactly the `parry_chance`/`stun_chance`-unsourced pattern from Story 1.3.
+    // A real source (most cleanly a `stat_key`-bearing gear/idol affix) flows in with zero
+    // further loader changes once it lands.
+    pub bleed_chance: f64,
+    pub ignite_chance: f64,
+    pub poison_chance: f64,
+    pub freeze_chance: f64,
+    pub shock_chance: f64,
+    pub armor_shred_chance: f64,
 }
 
 /// Increased%/More% for a single damage type, with an optional DoT-ailment split
@@ -103,6 +115,14 @@ pub struct DefenseStats {
     pub stable_ward: f64,
     /// FR-7: Stable HP at equilibrium — `raw_hp + stable_ward`. Display-only; does NOT feed scoring.
     pub stable_hp: f64,
+    // --- FR-8 ailment AVOIDANCE added in Story 1.5 ---
+    // No shipped Season-4 source carries an ailment-avoidance/immunity % (the audit found no
+    // numeric AVOIDANCE/IMMUNITY ailment tag), so each surfaces honest 0.0 with NO dead StatKey
+    // (the parry_chance precedent). Flows in automatically when a stat_key-bearing source lands.
+    pub chill_avoidance: f64,
+    pub stun_avoidance: f64,
+    /// Bleed immunity/avoidance — distinct from the offensive `OffenseStats.bleed_chance` (FR-8).
+    pub bleed_avoidance: f64,
 }
 
 /// Weighted composite scoring breakdown.
@@ -176,13 +196,46 @@ pub struct SynergyFlag {
     pub delta_build_score: Option<f64>,
 }
 
-/// Phase 4 placeholder — populated when ailment DPS tracking is implemented.
+/// Ailment duration / stack / freeze figures (FR-8, Story 1.5). The FR-8 *chances* live on
+/// `OffenseStats` and *avoidance* on `DefenseStats`; this sub-sheet carries the duration-class
+/// figures. `ignite_duration` and `freeze_rate_multiplier` are sourced today (idol + blessing);
+/// `poison_duration` / `bleed_duration` / `max_poison_stacks` have no loader path in the shipped
+/// data and surface 0.0 until one lands. `StatSheet.ailment` is `Some` only when at least one
+/// field is non-zero (mirrors the Minion conditional-presence rule).
 #[derive(Debug, Clone, Default, Serialize)]
-pub struct AilmentStats {}
+pub struct AilmentStats {
+    pub ignite_duration: f64,
+    pub freeze_rate_multiplier: f64,
+    pub poison_duration: f64,
+    pub bleed_duration: f64,
+    pub max_poison_stacks: f64,
+}
 
-/// Phase 4 placeholder — populated when minion builds are fully modeled.
+/// Minion stats (FR-10, Story 1.5). `minion_damage_multi` is the only figure with a shipped
+/// source (`StatKey::IncreasedMinionDamage` from passives/idols/blessings); `minion_count` has no
+/// source and `minion_hp_multi` / `minion_speed` are conflated into the player's MaxHp/AttackSpeed
+/// by the loader — all three surface honest 0.0 to preserve the frozen `effective_hp`/speed parity
+/// gate (full minion correctness is the tracked post–Epic-5 follow-up). See Story 1.5 Decision.
 #[derive(Debug, Clone, Default, Serialize)]
-pub struct MinionStats {}
+pub struct MinionStats {
+    pub minion_count: f64,
+    pub minion_damage_multi: f64,
+    pub minion_hp_multi: f64,
+    pub minion_speed: f64,
+}
+
+/// Attribute totals (FR-9, Story 1.5). Summed from registry sources tagged with each attribute.
+/// Totals only — no attribute→secondary-stat conversion this phase (no parseable ratio ships;
+/// complex per-class conversions are deferred to Phase 5 per FR-9). `vitality` is 0.0 today (no
+/// VITALITY-tagged source in shipped data).
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct AttributeStats {
+    pub strength: f64,
+    pub dexterity: f64,
+    pub intelligence: f64,
+    pub attunement: f64,
+    pub vitality: f64,
+}
 
 /// Complete stat sheet returned by `compute_stats`.
 /// `None` sub-sheets are hidden sections — never rendered as errors (Pattern 7).
@@ -191,9 +244,11 @@ pub struct StatSheet {
     pub offense: OffenseStats,
     pub defense: DefenseStats,
     pub scores: ScoreComponents,
-    /// None in Phase 3; populated Phase 4
+    /// Attribute totals (FR-9, Story 1.5) — always present (additive sub-sheet, never hidden).
+    pub attributes: AttributeStats,
+    /// `Some` only when at least one ailment duration/freeze figure is non-zero (Story 1.5).
     pub ailment: Option<AilmentStats>,
-    /// None unless active minion skills present
+    /// `Some` only when the build has an active minion skill (Story 1.5 presence signal).
     pub minion: Option<MinionStats>,
     pub warnings: Vec<StatWarning>,
 }
@@ -204,6 +259,7 @@ impl Default for StatSheet {
             offense: OffenseStats::default(),
             defense: DefenseStats::default(),
             scores: ScoreComponents::default(),
+            attributes: AttributeStats::default(),
             ailment: None,
             minion: None,
             warnings: Vec::new(),

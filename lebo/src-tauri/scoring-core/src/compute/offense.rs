@@ -176,6 +176,14 @@ pub(super) fn compute_offense(registry: &ModifierRegistry, active: &[String]) ->
         physical_penetration: 0.0,
         void_penetration: 0.0,
         damage_types,
+        // FR-8 ailment chances (Story 1.5): no shipped Season-4 source — honest 0.0, no dead key.
+        // These flow in automatically once a stat_key-bearing affix lands. See OffenseStats docs.
+        bleed_chance: 0.0,
+        ignite_chance: 0.0,
+        poison_chance: 0.0,
+        freeze_chance: 0.0,
+        shock_chance: 0.0,
+        armor_shred_chance: 0.0,
     }
 }
 

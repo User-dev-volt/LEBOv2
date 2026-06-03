@@ -24,6 +24,14 @@ export interface OffenseStats {
   physical_penetration: number
   void_penetration: number
   damage_types: DamageTypeBreakdown[]
+  // FR-8 ailment chances added in Story 1.5 (snake_case mirror of OffenseStats). No shipped
+  // source — honest 0.0 today. Display-only; the Offense-tab "Ailment Chances" layout is Story 1.6.
+  bleed_chance: number
+  ignite_chance: number
+  poison_chance: number
+  freeze_chance: number
+  shock_chance: number
+  armor_shred_chance: number
 }
 
 export interface DefenseStats {
@@ -61,6 +69,11 @@ export interface DefenseStats {
   ehp_vs_one_shots: number
   stable_ward: number
   stable_hp: number
+  // FR-8 ailment avoidance added in Story 1.5 (snake_case mirror of DefenseStats). No shipped
+  // source — honest 0.0 today. Display-only; the Defense-tab "Ailment Avoidance" layout is Story 1.6.
+  chill_avoidance: number
+  stun_avoidance: number
+  bleed_avoidance: number
 }
 
 export interface ScoreComponents {
@@ -70,11 +83,37 @@ export interface ScoreComponents {
   build_score: number
 }
 
-// Phase 4 placeholder — hidden when null (Pattern 7)
-export interface AilmentStats {}
+// FR-8 ailment duration/stack/freeze figures (Story 1.5). `ailment` is null unless at least one
+// figure is non-zero. ignite_duration/freeze_rate_multiplier are sourced today; the rest are 0.0
+// until a loader path lands. Display-only; the General/Ailment layout is Story 1.6.
+export interface AilmentStats {
+  ignite_duration: number
+  freeze_rate_multiplier: number
+  poison_duration: number
+  bleed_duration: number
+  max_poison_stacks: number
+}
 
-// Phase 4 placeholder — hidden when null (Pattern 7)
-export interface MinionStats {}
+// FR-10 minion stats (Story 1.5). `minion` is null unless an active minion skill is detected.
+// minion_damage_multi is sourced; count/hp/speed are honest 0.0 (frozen-parity gate — see Story
+// 1.5 Decision). Display-only; the conditional Minion tab is Story 1.6.
+export interface MinionStats {
+  minion_count: number
+  minion_damage_multi: number
+  minion_hp_multi: number
+  minion_speed: number
+}
+
+// FR-9 attribute totals (Story 1.5). Always present (additive sub-sheet). Totals only — no
+// attribute→secondary conversion this phase. vitality is 0.0 today (no VITALITY-tagged source).
+// Display-only; the General-tab Attributes row is Story 1.6.
+export interface AttributeStats {
+  strength: number
+  dexterity: number
+  intelligence: number
+  attunement: number
+  vitality: number
+}
 
 export interface StatWarning {
   warning_type: string
@@ -126,6 +165,7 @@ export interface StatSheet {
   offense: OffenseStats
   defense: DefenseStats
   scores: ScoreComponents
+  attributes: AttributeStats
   ailment: AilmentStats | null
   minion: MinionStats | null
   warnings: StatWarning[]

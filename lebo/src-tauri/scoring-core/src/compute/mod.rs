@@ -48,6 +48,24 @@ pub fn compute_stats(
     defense.stable_ward = ward_eq.stable_ward;
     defense.stable_hp = ward_eq.stable_hp;
 
+    // FR-8/FR-9/FR-10 (Story 1.5): additive sub-sheets. Computed AFTER the offense/defense/ehp/ward
+    // block and BEFORE `scores` — they feed only their own sheet fields and NEVER the `scores`
+    // block, `effective_hp`, or the speed score (frozen parity gate). The ailment chance/avoidance
+    // fields ride offense/defense already at honest 0.0; here we add the attribute totals, the
+    // sourced ailment durations, and minion stats, with Some/None conditional presence.
+    let attributes = attributes::compute_attributes(&registry, active);
+    let ailment_stats = ailment::compute_ailment(&registry, active);
+    let ailment = if ailment::has_ailment_data(&ailment_stats) {
+        Some(ailment_stats)
+    } else {
+        None
+    };
+    let minion = if minion::has_minion_skill(snapshot, &registry, active) {
+        Some(minion::compute_minion(&registry, active))
+    } else {
+        None
+    };
+
     let speed = compute_speed(&registry, active);
     let weights = resolve_archetype_weights(snapshot.slider_position, game_data);
     let scores = ScoreComponents {
@@ -63,8 +81,9 @@ pub fn compute_stats(
         offense,
         defense,
         scores,
-        ailment: None,
-        minion: None,
+        attributes,
+        ailment,
+        minion,
         warnings,
     }
 }
@@ -1227,5 +1246,151 @@ mod tests {
             "gap expected ~0.1 got {}",
             out_warn.unwrap().gap
         );
+    }
+
+    // --- Story 1.5 parity + sub-sheet tests (FR-8/9/10) ---
+
+    fn story_1_5_base_effects() -> HashMap<String, Vec<NodeEffect>> {
+        let mut ne = HashMap::new();
+        ne.insert(
+            "dmg".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::IncreasedDamage,
+                modifier_type: ModifierType::Increased,
+                value: 120.0,
+                condition: Condition::Always,
+            }],
+        );
+        ne.insert(
+            "ward".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::WardPerSecond,
+                modifier_type: ModifierType::Flat,
+                value: 200.0,
+                condition: Condition::Always,
+            }],
+        );
+        ne.insert(
+            "spd".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::AttackSpeed,
+                modifier_type: ModifierType::Flat,
+                value: 30.0,
+                condition: Condition::Always,
+            }],
+        );
+        ne
+    }
+
+    /// AC4 frozen-parity gate: adding attribute, minion-damage, and ailment-duration nodes leaves
+    /// every frozen aggregate (effective_hp, survivability_score, damage_score, speed, build_score)
+    /// byte-identical to the same build without them, while the new sub-sheets populate.
+    #[test]
+    fn story_1_5_stats_do_not_perturb_frozen_aggregates() {
+        let gd_base = make_game_data_with_effects(story_1_5_base_effects());
+        let mut snap_base = snapshot_at(50);
+        snap_base.node_allocations.insert("dmg".to_string(), 1);
+        snap_base.node_allocations.insert("ward".to_string(), 1);
+        snap_base.node_allocations.insert("spd".to_string(), 1);
+        let base = compute_stats(&snap_base, &gd_base, ComputeOptions::default());
+
+        let mut effects = story_1_5_base_effects();
+        effects.insert(
+            "attrs".to_string(),
+            vec![
+                NodeEffect {
+                    stat_key: StatKey::Strength,
+                    modifier_type: ModifierType::Flat,
+                    value: 20.0,
+                    condition: Condition::Always,
+                },
+                NodeEffect {
+                    stat_key: StatKey::Dexterity,
+                    modifier_type: ModifierType::Flat,
+                    value: 8.0,
+                    condition: Condition::Always,
+                },
+            ],
+        );
+        effects.insert(
+            "mdmg".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::IncreasedMinionDamage,
+                modifier_type: ModifierType::Increased,
+                value: 50.0,
+                condition: Condition::Always,
+            }],
+        );
+        effects.insert(
+            "ignite".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::IgniteDuration,
+                modifier_type: ModifierType::Increased,
+                value: 40.0,
+                condition: Condition::Always,
+            }],
+        );
+        let gd = make_game_data_with_effects(effects);
+        let mut snap = snap_base.clone();
+        snap.node_allocations.insert("attrs".to_string(), 1);
+        snap.node_allocations.insert("mdmg".to_string(), 1);
+        snap.node_allocations.insert("ignite".to_string(), 1);
+        let with = compute_stats(&snap, &gd, ComputeOptions::default());
+
+        assert_eq!(
+            with.defense.effective_hp, base.defense.effective_hp,
+            "effective_hp must be byte-identical"
+        );
+        assert_eq!(with.scores.survivability_score, base.scores.survivability_score);
+        assert_eq!(
+            with.scores.damage_score, base.scores.damage_score,
+            "damage_score must not absorb attribute/minion-damage/ailment keys"
+        );
+        assert_eq!(
+            with.scores.speed_score, base.scores.speed_score,
+            "speed must not absorb minion/attribute keys"
+        );
+        assert_eq!(with.scores.build_score, base.scores.build_score);
+
+        // New sub-sheets actually populated.
+        assert_eq!(with.attributes.strength, 20.0);
+        assert_eq!(with.attributes.dexterity, 8.0);
+        assert_eq!(with.attributes.vitality, 0.0);
+        let minion = with.minion.as_ref().expect("minion modifier present → Some");
+        assert_eq!(minion.minion_damage_multi, 50.0);
+        assert_eq!(minion.minion_count, 0.0);
+        assert_eq!(minion.minion_hp_multi, 0.0);
+        assert_eq!(minion.minion_speed, 0.0);
+        let ailment = with.ailment.as_ref().expect("ignite duration present → Some");
+        assert_eq!(ailment.ignite_duration, 40.0);
+    }
+
+    /// AC1/AC3 conditional presence: no minion signal → `minion: None`; no ailment figure →
+    /// `ailment: None`; the attribute sub-sheet is always present (all-zero when unsourced).
+    #[test]
+    fn story_1_5_minion_and_ailment_absent_yield_none() {
+        let gd = GameData { archetype_weights: standard_weight_table(), ..Default::default() };
+        let sheet = compute_stats(&snapshot_at(50), &gd, ComputeOptions::default());
+        assert!(sheet.minion.is_none(), "no minion signal → None");
+        assert!(sheet.ailment.is_none(), "no ailment figure → None");
+        assert_eq!(sheet.attributes.strength, 0.0);
+        assert_eq!(sheet.attributes.intelligence, 0.0);
+    }
+
+    /// AC1 honesty rule: ailment chances (offense) and avoidance (defense) surface 0.0 with no
+    /// shipped source (the parry_chance precedent).
+    #[test]
+    fn story_1_5_ailment_chances_and_avoidance_are_zero() {
+        let gd = GameData { archetype_weights: standard_weight_table(), ..Default::default() };
+        let sheet = compute_stats(&snapshot_at(50), &gd, ComputeOptions::default());
+        assert_eq!(sheet.offense.bleed_chance, 0.0);
+        assert_eq!(sheet.offense.ignite_chance, 0.0);
+        assert_eq!(sheet.offense.poison_chance, 0.0);
+        assert_eq!(sheet.offense.freeze_chance, 0.0);
+        assert_eq!(sheet.offense.shock_chance, 0.0);
+        assert_eq!(sheet.offense.armor_shred_chance, 0.0);
+        assert_eq!(sheet.defense.chill_avoidance, 0.0);
+        assert_eq!(sheet.defense.stun_avoidance, 0.0);
+        assert_eq!(sheet.defense.bleed_avoidance, 0.0);
     }
 }

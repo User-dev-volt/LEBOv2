@@ -308,6 +308,17 @@ fn tags_to_stat_key(tags: &[String], modifier_type: &ModifierType) -> Option<Sta
         return Some(StatKey::IncreasedDamage); // generic
     }
 
+    // Attributes (FR-9, Story 1.5). Ship as standalone single-tag effects (e.g. `["STRENGTH"]`),
+    // so they are placed AFTER the DAMAGE branch: a node co-tagged with DAMAGE (the lone case is
+    // mage runemaster `["SPELL","INTELLIGENCE","DAMAGE"]`) keeps its damage key, leaving these to
+    // catch the pure-attribute nodes. Audit-proven sourced for STR/DEX/INT/ATT; VITALITY keys the
+    // real LE tag for forward-compat (no VITALITY-tagged node ships today).
+    if has("STRENGTH") { return Some(StatKey::Strength); }
+    if has("DEXTERITY") { return Some(StatKey::Dexterity); }
+    if has("INTELLIGENCE") { return Some(StatKey::Intelligence); }
+    if has("ATTUNEMENT") { return Some(StatKey::Attunement); }
+    if has("VITALITY") { return Some(StatKey::Vitality); }
+
     // Crit
     if has("CRIT_AVOIDANCE") || (has("CRIT") && has("AVOIDANCE")) {
         return Some(StatKey::CriticalStrikeAvoidance);
@@ -604,11 +615,20 @@ mod tests {
         //         (→ HealingEffectiveness, +3 non-DAMAGE-tagged nodes). The Necrotic-resistance
         //         split (NECROTIC+RESISTANCE: PoisonResistance → NecroticResistance) is
         //         count-neutral — the one shipped node stays Some, only its key changed.
-        const GOLDEN_EFFECT_COUNT: usize = 198;
+        //   203 — Story 1.5 FR-9 attribute sourcing (+5): wiring the previously-dropped attribute
+        //         tags (STRENGTH/DEXTERITY/INTELLIGENCE/ATTUNEMENT → their new StatKeys). Five
+        //         standalone single-tag nodes that fell through to None before now parse, each with
+        //         a parseable "+4" value: primalist STRENGTH + ATTUNEMENT, rogue DEXTERITY, mage
+        //         base INTELLIGENCE, acolyte INTELLIGENCE. The lone co-tagged attribute node (mage
+        //         runemaster `["SPELL","INTELLIGENCE","DAMAGE"]`) is unchanged — it still resolves
+        //         to IncreasedSpellDamage via the DAMAGE branch, so it neither double-counts nor
+        //         shifts. No VITALITY-tagged node ships (the "Vitality" node is tagged HEALTH), so
+        //         the VITALITY branch adds 0 effects here.
+        const GOLDEN_EFFECT_COUNT: usize = 203;
         let total = total_parsed_effects();
         assert_eq!(
             total, GOLDEN_EFFECT_COUNT,
-            "shipped-data node-effect count drifted from the Story-1.2 penetration-sourcing baseline"
+            "shipped-data node-effect count drifted from the Story-1.5 attribute-sourcing baseline"
         );
     }
 
@@ -642,6 +662,31 @@ mod tests {
         );
         // A DoT tag without DAMAGE is still dropped (no spurious key, count preserved).
         assert_eq!(tags_to_stat_key(&["BLEED".to_string()], &inc), None);
+    }
+
+    /// Story 1.5/FR-9: the previously-dropped attribute tags now source their new StatKeys. A
+    /// standalone attribute tag maps to its key; an attribute co-tagged with DAMAGE keeps the
+    /// damage key (the DAMAGE branch is checked first) so the golden count and damage parity hold.
+    #[test]
+    fn attribute_tags_land_on_new_keys() {
+        let flat = ModifierType::Flat;
+        assert_eq!(tags_to_stat_key(&["STRENGTH".to_string()], &flat), Some(StatKey::Strength));
+        assert_eq!(tags_to_stat_key(&["DEXTERITY".to_string()], &flat), Some(StatKey::Dexterity));
+        assert_eq!(
+            tags_to_stat_key(&["INTELLIGENCE".to_string()], &flat),
+            Some(StatKey::Intelligence)
+        );
+        assert_eq!(tags_to_stat_key(&["ATTUNEMENT".to_string()], &flat), Some(StatKey::Attunement));
+        assert_eq!(tags_to_stat_key(&["VITALITY".to_string()], &flat), Some(StatKey::Vitality));
+        // The lone co-tagged attribute node (mage runemaster) must stay on the damage key.
+        assert_eq!(
+            tags_to_stat_key(
+                &["SPELL".to_string(), "INTELLIGENCE".to_string(), "DAMAGE".to_string()],
+                &ModifierType::Increased,
+            ),
+            Some(StatKey::IncreasedSpellDamage),
+            "attribute co-tagged with DAMAGE keeps its damage key (DAMAGE branch wins)"
+        );
     }
 
     /// Story 1.3/AC2: NECROTIC resistance splits off the Poison bucket onto its own key.

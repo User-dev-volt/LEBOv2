@@ -1,6 +1,6 @@
 # Story 1.5: Ailment, attribute, and minion stats
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -52,48 +52,48 @@ The legacy `defense.effective_hp` field, the `compute_defense` HP math, and `sco
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Source audit FIRST (disaster-prevention; the Story 1.2/1.3 precedent) (AC: 1, 2, 3)**
-  - [ ] Confirm the **frozen parity gate** before touching anything: read `compute/defense.rs` (the `effective_hp` math), `compute/mod.rs` `#[cfg(test)]` (`effective_hp_*`, `build_score_slider_*`), and note the loader's tag-precedence in `tags_to_stat_key` (`DAMAGE`/`MINION` branch at the top; `HEALTH`/`ATTACK_SPEED` below — minion HP/speed nodes fall into the player branches).
-  - [ ] Audit shipped data for each FR-8/9/10 stat's real source: grep `resources/game-data/classes/*.json`, `resources/context-data/idol-data.json`, and `resources/context-data/blessings.json` for ailment-chance/avoidance tags, attribute tags, and minion tags. Record, per stat, **sourced / conflated / unsourced** (the audit results are pre-recorded in Dev Notes "The audited data reality" — verify them against the data, do not take them on faith).
-  - [ ] Resolve the **minion-skill-presence signal** decision (Dev Notes) and the **`AilmentStats` content** decision (Dev Notes), and record both in the Dev Agent Record.
+- [x] **Task 1 — Source audit FIRST (disaster-prevention; the Story 1.2/1.3 precedent) (AC: 1, 2, 3)**
+  - [x] Confirm the **frozen parity gate** before touching anything: read `compute/defense.rs` (the `effective_hp` math), `compute/mod.rs` `#[cfg(test)]` (`effective_hp_*`, `build_score_slider_*`), and note the loader's tag-precedence in `tags_to_stat_key` (`DAMAGE`/`MINION` branch at the top; `HEALTH`/`ATTACK_SPEED` below — minion HP/speed nodes fall into the player branches).
+  - [x] Audit shipped data for each FR-8/9/10 stat's real source: grep `resources/game-data/classes/*.json`, `resources/context-data/idol-data.json`, and `resources/context-data/blessings.json` for ailment-chance/avoidance tags, attribute tags, and minion tags. Record, per stat, **sourced / conflated / unsourced** (the audit results are pre-recorded in Dev Notes "The audited data reality" — verify them against the data, do not take them on faith).
+  - [x] Resolve the **minion-skill-presence signal** decision (Dev Notes) and the **`AilmentStats` content** decision (Dev Notes), and record both in the Dev Agent Record.
 
-- [ ] **Task 2 — `compute/attributes.rs`: attribute totals + loader sourcing (AC: 2, 4)** — `attributes.rs`, `modifier.rs`, `game_data_loader.rs`, `stat_sheet.rs`, `lib.rs`
-  - [ ] Add `Strength, Dexterity, Intelligence, Attunement, Vitality` to the `StatKey` enum (`modifier.rs`) — these are sourced (audit-proven), not dead keys.
-  - [ ] Add the attribute tag branches to `tags_to_stat_key` in `game_data_loader.rs` (e.g. `has("STRENGTH") → StatKey::Strength`, …). Place them where they cannot be shadowed by the `DAMAGE`/`HEALTH` branches (attribute tags ship as standalone single-tag effects, e.g. `["STRENGTH"]`).
-  - [ ] Add `AttributeStats { strength, dexterity, intelligence, attunement, vitality: f64 }` to `stat_sheet.rs` (`#[derive(Default, Serialize)]`), re-export from `lib.rs`, and add `attributes: AttributeStats` to `StatSheet` + its `Default`.
-  - [ ] Implement `compute_attributes(registry, active) -> AttributeStats` summing each attribute key's modifiers (mirror the offense/defense summation pattern). No conversions this phase (document — no parseable ratio in data).
-  - [ ] Update `GOLDEN_EFFECT_COUNT` in `game_data_loader.rs` to the new parser count; document the delta + which attribute nodes drove it (same style as the 179→185→198 history comment).
+- [x] **Task 2 — `compute/attributes.rs`: attribute totals + loader sourcing (AC: 2, 4)** — `attributes.rs`, `modifier.rs`, `game_data_loader.rs`, `stat_sheet.rs`, `lib.rs`
+  - [x] Add `Strength, Dexterity, Intelligence, Attunement, Vitality` to the `StatKey` enum (`modifier.rs`) — these are sourced (audit-proven), not dead keys.
+  - [x] Add the attribute tag branches to `tags_to_stat_key` in `game_data_loader.rs` (e.g. `has("STRENGTH") → StatKey::Strength`, …). Place them where they cannot be shadowed by the `DAMAGE`/`HEALTH` branches (attribute tags ship as standalone single-tag effects, e.g. `["STRENGTH"]`).
+  - [x] Add `AttributeStats { strength, dexterity, intelligence, attunement, vitality: f64 }` to `stat_sheet.rs` (`#[derive(Default, Serialize)]`), re-export from `lib.rs`, and add `attributes: AttributeStats` to `StatSheet` + its `Default`.
+  - [x] Implement `compute_attributes(registry, active) -> AttributeStats` summing each attribute key's modifiers (mirror the offense/defense summation pattern). No conversions this phase (document — no parseable ratio in data).
+  - [x] Update `GOLDEN_EFFECT_COUNT` in `game_data_loader.rs` to the new parser count; document the delta + which attribute nodes drove it (same style as the 179→185→198 history comment). **198 → 203 (+5).**
 
-- [ ] **Task 3 — `compute/ailment.rs`: chances (offense) + avoidance (defense) + sourced durations (AC: 1, 4)** — `ailment.rs`, `stat_sheet.rs`, `offense.rs`, `defense.rs`
-  - [ ] Add ailment-chance fields to `OffenseStats` (`bleed_chance`, `ignite_chance`, `poison_chance`, `freeze_chance`, `shock_chance`, `armor_shred_chance`) — additive `f64`, honest `0.0` (no dead `StatKey`), doc-comment each with the "no shipped source; flows in when a `stat_key`-bearing affix lands" note.
-  - [ ] Add ailment-avoidance fields to `DefenseStats` (`chill_avoidance`, `stun_avoidance`, `bleed_avoidance`) — same honest-`0.0` treatment.
-  - [ ] Implement `compute_ailment(registry, active) -> AilmentStats` populating the **sourced** duration/stack/freeze fields per the Task-1 `AilmentStats` decision (`IgniteDuration`, `FreezeRateMultiplier` are idol-sourced today; `PoisonDuration`/`BleedDuration`/`MaxPoisonStacks` exist but are unsourced → `0.0`). Guard against NaN; `#[derive(Default)]`.
-  - [ ] The chance/avoidance fields ride the existing offense/defense compute functions (or a small helper `compute_ailment.rs` exposes) — keep the offense/defense parity untouched (these are net-new fields, default `0.0`).
+- [x] **Task 3 — `compute/ailment.rs`: chances (offense) + avoidance (defense) + sourced durations (AC: 1, 4)** — `ailment.rs`, `stat_sheet.rs`, `offense.rs`, `defense.rs`
+  - [x] Add ailment-chance fields to `OffenseStats` (`bleed_chance`, `ignite_chance`, `poison_chance`, `freeze_chance`, `shock_chance`, `armor_shred_chance`) — additive `f64`, honest `0.0` (no dead `StatKey`), doc-comment each with the "no shipped source; flows in when a `stat_key`-bearing affix lands" note.
+  - [x] Add ailment-avoidance fields to `DefenseStats` (`chill_avoidance`, `stun_avoidance`, `bleed_avoidance`) — same honest-`0.0` treatment.
+  - [x] Implement `compute_ailment(registry, active) -> AilmentStats` populating the **sourced** duration/stack/freeze fields per the Task-1 `AilmentStats` decision (`IgniteDuration`, `FreezeRateMultiplier` are idol-sourced today; `PoisonDuration`/`BleedDuration`/`MaxPoisonStacks` exist but are unsourced → `0.0`). Guard against NaN; `#[derive(Default)]`.
+  - [x] The chance/avoidance fields ride the existing offense/defense compute functions (or a small helper `compute_ailment.rs` exposes) — keep the offense/defense parity untouched (these are net-new fields, default `0.0`).
 
-- [ ] **Task 4 — `compute/minion.rs`: minion stats + conditional presence (AC: 3, 4)** — `minion.rs`, `stat_sheet.rs`
-  - [ ] Fill `MinionStats { minion_count, minion_damage_multi, minion_hp_multi, minion_speed: f64 }` in `stat_sheet.rs` (`#[derive(Default, Serialize)]`; already re-exported).
-  - [ ] Implement `compute_minion(registry, active) -> MinionStats`: `minion_damage_multi` from `StatKey::IncreasedMinionDamage` (sourced, currently unconsumed → zero parity risk); `minion_count` / `minion_hp_multi` / `minion_speed` = honest `0.0` (audit: unsourced or conflated into player stats — do NOT de-conflate, deferred per the **Decision** section). Doc-comment each `0.0`.
-  - [ ] Add a `has_minion_skill(snapshot) -> bool` helper using the Task-1 signal decision; the orchestrator sets `minion: Some(..)` only when true.
+- [x] **Task 4 — `compute/minion.rs`: minion stats + conditional presence (AC: 3, 4)** — `minion.rs`, `stat_sheet.rs`
+  - [x] Fill `MinionStats { minion_count, minion_damage_multi, minion_hp_multi, minion_speed: f64 }` in `stat_sheet.rs` (`#[derive(Default, Serialize)]`; already re-exported).
+  - [x] Implement `compute_minion(registry, active) -> MinionStats`: `minion_damage_multi` from `StatKey::IncreasedMinionDamage` (sourced, currently unconsumed → zero parity risk); `minion_count` / `minion_hp_multi` / `minion_speed` = honest `0.0` (audit: unsourced or conflated into player stats — do NOT de-conflate, deferred per the **Decision** section). Doc-comment each `0.0`.
+  - [x] Add a `has_minion_skill(snapshot) -> bool` helper using the Task-1 signal decision; the orchestrator sets `minion: Some(..)` only when true.
 
-- [ ] **Task 5 — Wire into the orchestrator (AC: 1, 2, 3, 4)** — `compute/mod.rs`
-  - [ ] After the existing offense/defense/ehp/ward block, call `attributes::compute_attributes`, `ailment::compute_ailment`, `minion::compute_minion`; write `attributes` onto the sheet, set `ailment` to `Some(..)`/`None` and `minion` to `Some(..)`/`None` per the presence rules. Write the ailment chance/avoidance fields onto `offense`/`defense`.
-  - [ ] **Do NOT touch** the `scores` block, the `compute_defense` call, or the `ehp`/`ward` wiring. Keep `attributes`/`ailment`/`minion` `mod`s private with `pub(super)` fns.
+- [x] **Task 5 — Wire into the orchestrator (AC: 1, 2, 3, 4)** — `compute/mod.rs`
+  - [x] After the existing offense/defense/ehp/ward block, call `attributes::compute_attributes`, `ailment::compute_ailment`, `minion::compute_minion`; write `attributes` onto the sheet, set `ailment` to `Some(..)`/`None` and `minion` to `Some(..)`/`None` per the presence rules. Write the ailment chance/avoidance fields onto `offense`/`defense`.
+  - [x] **Do NOT touch** the `scores` block, the `compute_defense` call, or the `ehp`/`ward` wiring. Keep `attributes`/`ailment`/`minion` `mod`s private with `pub(super)` fns.
 
-- [ ] **Task 6 — Unit tests for each module (AC: 1, 2, 3, 4)** — co-located `#[cfg(test)]`
-  - [ ] `attributes.rs`: each attribute key sums independently and does not bleed into another attribute or into `damage_score`/`effective_hp`; loader test asserting the new tag branches map correctly (mirror `damage_tag_remap_lands_on_new_keys`).
-  - [ ] `ailment.rs`: sourced duration/freeze fields populate from idol keys; chance/avoidance fields are `0.0` with no source; `AilmentStats` Some/None presence rule.
-  - [ ] `minion.rs`: `minion_damage_multi` flows from `IncreasedMinionDamage`; count/hp/speed honest `0.0`; `has_minion_skill` true/false → `Some`/`None`.
-  - [ ] Orchestrator parity tests: a build with attribute/minion/ailment nodes leaves `effective_hp`, `survivability_score`, `build_score`, `damage_score`, and speed **byte-identical** to the same build without them (pin the numbers).
+- [x] **Task 6 — Unit tests for each module (AC: 1, 2, 3, 4)** — co-located `#[cfg(test)]`
+  - [x] `attributes.rs`: each attribute key sums independently and does not bleed into another attribute or into `damage_score`/`effective_hp`; loader test asserting the new tag branches map correctly (mirror `damage_tag_remap_lands_on_new_keys`).
+  - [x] `ailment.rs`: sourced duration/freeze fields populate from idol keys; chance/avoidance fields are `0.0` with no source; `AilmentStats` Some/None presence rule.
+  - [x] `minion.rs`: `minion_damage_multi` flows from `IncreasedMinionDamage`; count/hp/speed honest `0.0`; `has_minion_skill` true/false → `Some`/`None`.
+  - [x] Orchestrator parity tests: a build with attribute/minion/ailment nodes leaves `effective_hp`, `survivability_score`, `build_score`, `damage_score`, and speed **byte-identical** to the same build without them (pin the numbers).
 
-- [ ] **Task 7 — TS mirror + keep the build green (AC: 4)** — `statSheet.ts`, test literals
-  - [ ] Mirror in `statSheet.ts`: new `OffenseStats` ailment-chance fields, new `DefenseStats` ailment-avoidance fields, new `AttributeStats` interface + `StatSheet.attributes`, and the filled `AilmentStats` / `MinionStats` shapes (snake_case, `number`; sub-sheets `… | null` where `Option`). Add the "display-only / Story 1.6 owns layout" comment.
-  - [ ] Update every `StatSheet`/`OffenseStats`/`DefenseStats` object literal in the TS suite (notably `StatSheetPanel.test.tsx` `makeStatSheet()`) to include the new fields/sub-sheets.
+- [x] **Task 7 — TS mirror + keep the build green (AC: 4)** — `statSheet.ts`, test literals
+  - [x] Mirror in `statSheet.ts`: new `OffenseStats` ailment-chance fields, new `DefenseStats` ailment-avoidance fields, new `AttributeStats` interface + `StatSheet.attributes`, and the filled `AilmentStats` / `MinionStats` shapes (snake_case, `number`; sub-sheets `… | null` where `Option`). Add the "display-only / Story 1.6 owns layout" comment.
+  - [x] Update every `StatSheet`/`OffenseStats`/`DefenseStats` object literal in the TS suite (notably `StatSheetPanel.test.tsx` `makeStatSheet()`) to include the new fields/sub-sheets.
 
-- [ ] **Task 8 — Verify (AC: all)**
-  - [ ] `cargo test -p scoring-core` — all green incl. the unchanged `effective_hp_*` / `build_score_slider_*` parity tests and `ehp_reference.rs`.
-  - [ ] `cargo test` (the Tauri crate, for the loader golden-count test) — `shipped_class_json_effect_count_is_stable` passes at the **new** documented count.
-  - [ ] `pnpm exec tsc --noEmit` exit 0; `CI=true pnpm exec vitest run` — 14-failure baseline unchanged, no new failures.
-  - [ ] Record the source-audit results, the two decisions (minion-presence signal, `AilmentStats` content), the golden-count delta, and every honest-`0.0` field in the Dev Agent Record.
+- [x] **Task 8 — Verify (AC: all)**
+  - [x] `cargo test -p scoring-core` — all green incl. the unchanged `effective_hp_*` / `build_score_slider_*` parity tests and `ehp_reference.rs`.
+  - [x] `cargo test` (the Tauri crate, for the loader golden-count test) — `shipped_class_json_effect_count_is_stable` passes at the **new** documented count (203).
+  - [x] `pnpm exec tsc --noEmit` exit 0; `CI=true pnpm exec vitest run` — 14-failure baseline unchanged, no new failures.
+  - [x] Record the source-audit results, the two decisions (minion-presence signal, `AilmentStats` content), the golden-count delta, and every honest-`0.0` field in the Dev Agent Record.
 
 ## Dev Notes
 
@@ -181,11 +181,48 @@ FR-8's **chances** go on `OffenseStats` and **avoidance** on `DefenseStats` (per
 
 ### Agent Model Used
 
+claude-opus-4-8 (Claude Code, dev-story workflow)
+
 ### Debug Log References
+
+- `cargo test -p scoring-core` → 123 unit + 4 `ehp_reference.rs` integration tests pass; the `effective_hp_*` / `build_score_slider_*` parity tests pass unchanged.
+- `cargo test --lib game_data_loader` (Tauri crate) → 6 pass, incl. `shipped_class_json_effect_count_is_stable` at the new **203** golden count and the new `attribute_tags_land_on_new_keys`.
+- `pnpm exec tsc --noEmit` → exit 0.
+- `CI=true pnpm exec vitest run` → 1026 passed / 14 failed = the pre-existing 14-failure baseline unchanged (all 14 are pre-existing `SkillTreeCanvas`/`TreeControls` failures; none in stat-sheet). `StatSheetPanel.test.tsx` → 15/15 pass.
 
 ### Completion Notes List
 
+**Source audit (Task 1) — verified against the shipped data, not taken on faith:**
+- **Attributes:** standalone tags `["STRENGTH"]`, `["DEXTERITY"]`, `["INTELLIGENCE"]`, `["ATTUNEMENT"]` exist with parseable `+4` values → **5 standalone effects** newly parse: primalist STRENGTH + ATTUNEMENT, rogue DEXTERITY, mage base INTELLIGENCE, acolyte INTELLIGENCE. The lone co-tagged attribute node (mage runemaster `["SPELL","INTELLIGENCE","DAMAGE"]`) already resolves to `IncreasedSpellDamage` via the DAMAGE branch (unchanged, not double-counted). **Correction to Dev Notes: no `VITALITY` tag exists in the shipped data** — the node *named* "Vitality" (sentinel) is tagged `HEALTH` → player HP. The `Vitality` StatKey + loader branch are added for forward-compat (real LE tag) but total `0.0` today.
+- **Golden count: 198 → 203 (+5)**, documented in-test.
+- **Minion Damage:** sourced (`MINION`+`DAMAGE` passives, `idol-stout-increased-minion-damage`, blessing) and consumed nowhere before (`DAMAGE_STAT_KEYS` excludes it) → read into `minion_damage_multi` with zero parity risk.
+- **Minion HP/Speed:** confirmed conflated into player `MaxHp`/`AttackSpeed` (e.g. `["HEALTH","ARMOUR","MINION"]` → HEALTH branch; `["MINION","ATTACK_SPEED","KILL"]` → ATTACK_SPEED branch). Left honest `0.0` — NOT de-conflated (frozen parity gate).
+- **Minion Count:** no shipped source → honest `0.0`, no dead key.
+- **Ailment chances/avoidance:** no numeric source → additive `OffenseStats`/`DefenseStats` fields at honest `0.0`, no dead `StatKey` (the Story 1.3 `parry_chance` precedent).
+- **Ailment durations:** `IgniteDuration` + `FreezeRateMultiplier` are mapped in `stat_key_from_str` (idol + blessing sourced); `PoisonDuration`/`BleedDuration`/`MaxPoisonStacks` have no loader path (blessing JSON references for poison_duration/max_poison_stacks are dropped at `stat_key_from_str`) → surfaced `0.0` by querying the existing keys (forward-compatible).
+
+**Decision 1 (minion-presence signal):** `minion: Some(..)` when `primary_offense_delivery_type == Some("minion")` OR any `IncreasedMinion*` modifier is in the registry; else `None`. Non-primary minion skills without a minion modifier won't trigger the sub-sheet until Epic-5 skill metadata loads — documented, acceptable.
+
+**Decision 2 (`AilmentStats` content):** populated with the duration/freeze figures (`ignite_duration`, `freeze_rate_multiplier`, and the `0.0` `poison_duration`/`bleed_duration`/`max_poison_stacks`); `ailment: Some(..)` only when at least one is non-zero, else `None`.
+
+**Honest-`0.0` fields shipped this story:** offense `bleed_chance`/`ignite_chance`/`poison_chance`/`freeze_chance`/`shock_chance`/`armor_shred_chance`; defense `chill_avoidance`/`stun_avoidance`/`bleed_avoidance`; minion `minion_count`/`minion_hp_multi`/`minion_speed`; attribute `vitality`; ailment `poison_duration`/`bleed_duration`/`max_poison_stacks`.
+
+**Frozen parity gate:** additive-only. Loader `MINION`-before-`HEALTH`/`ATTACK_SPEED` ordering untouched; `scores`/`compute_defense`/`ehp`/`ward` wiring untouched. Verified byte-identical `effective_hp`/`survivability_score`/`build_score`/`damage_score`/speed via the new `story_1_5_stats_do_not_perturb_frozen_aggregates` orchestrator test + the unchanged Phase-3 parity suite.
+
 ### File List
+
+- `lebo/src-tauri/scoring-core/src/modifier.rs` — added 5 attribute `StatKey` variants (Strength/Dexterity/Intelligence/Attunement/Vitality).
+- `lebo/src-tauri/scoring-core/src/stat_sheet.rs` — added ailment-chance fields to `OffenseStats`, ailment-avoidance fields to `DefenseStats`, filled `AilmentStats`/`MinionStats`, added `AttributeStats`, added `StatSheet.attributes` (+ `Default`).
+- `lebo/src-tauri/scoring-core/src/lib.rs` — re-export `AttributeStats`.
+- `lebo/src-tauri/scoring-core/src/compute/attributes.rs` — implemented `compute_attributes` + unit tests.
+- `lebo/src-tauri/scoring-core/src/compute/ailment.rs` — implemented `compute_ailment` + `has_ailment_data` + unit tests.
+- `lebo/src-tauri/scoring-core/src/compute/minion.rs` — implemented `compute_minion` + `has_minion_skill` + unit tests.
+- `lebo/src-tauri/scoring-core/src/compute/offense.rs` — set ailment-chance fields to honest `0.0` in the `OffenseStats` literal.
+- `lebo/src-tauri/scoring-core/src/compute/defense.rs` — set ailment-avoidance fields to honest `0.0` in the `DefenseStats` literal.
+- `lebo/src-tauri/scoring-core/src/compute/mod.rs` — orchestrator wiring (attributes/ailment/minion + Some/None presence); 3 new parity/presence tests.
+- `lebo/src-tauri/src/services/game_data_loader.rs` — attribute tag branches in `tags_to_stat_key`, golden-count bump 198→203 (documented), `attribute_tags_land_on_new_keys` test.
+- `lebo/src/shared/types/statSheet.ts` — TS mirror: ailment chances/avoidance, `AttributeStats`, filled `AilmentStats`/`MinionStats`, `StatSheet.attributes`.
+- `lebo/src/features/stat-sheet/StatSheetPanel.test.tsx` — updated `makeStatSheet()` literal + `minion: {}` presence literals for the new fields.
 
 ## Change Log
 
@@ -193,6 +230,7 @@ FR-8's **chances** go on `OffenseStats` and **avoidance** on `DefenseStats` (per
 |------|--------|
 | 2026-06-03 | Story 1.5 drafted by create-story context engine: FR-8 ailment chances (offense, honest-0.0) + avoidance (defense, honest-0.0) + sourced durations; FR-9 attribute totals with 5 new sourced `StatKey`s + loader branches + golden-count bump; FR-10 minion stats (`minion_damage_multi` sourced, count/hp/speed honest-0.0 to preserve player-HP/speed parity). Additive-only; frozen `effective_hp`/score gate preserved. Status → ready-for-dev. |
 | 2026-06-03 | Decision (Alec): full minion correctness deferred to a tracked **post–Epic-5** Phase-4 story (not Phase 5) — blocked on wiring `skill_node_allocations` into the registry + Epic-5 skill DB; de-conflation is a deliberate score re-baseline. Open Question converted to a recorded Decision + follow-up story spec. Story 1.5 scope unchanged. |
+| 2026-06-03 | Implemented: FR-9 attribute totals (5 new sourced `StatKey`s + loader branches, golden count 198→203); FR-8 ailment chances (offense) + avoidance (defense) honest-`0.0` + sourced `IgniteDuration`/`FreezeRateMultiplier` durations on `AilmentStats`; FR-10 minion stats (`minion_damage_multi` sourced, count/hp/speed honest-`0.0`) with `Some`/`None` presence. Audit correction recorded: no `VITALITY` tag ships (key added forward-compat). Additive-only; frozen `effective_hp`/score gate verified byte-identical. TS mirror + test literals updated. All cargo/tsc/vitest checks green; 14-failure vitest baseline unchanged. Status → review. |
 
 ---
 

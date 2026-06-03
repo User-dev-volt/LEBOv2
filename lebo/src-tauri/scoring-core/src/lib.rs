@@ -23,7 +23,7 @@ pub use modifier::{
 pub use gear::run_gear_scoring;
 pub use scan::{run_efficiency_scan, ScanResult};
 pub use stat_sheet::{
-    AilmentStats, DamageTypeBreakdown, DefenseStats, GearAnalysis, MinionStats, NodeEfficiency,
-    OffenseStats, ScoreComponents, StatSheet, StatWarning, SynergyFlag,
+    AilmentStats, AttributeStats, DamageTypeBreakdown, DefenseStats, GearAnalysis, MinionStats,
+    NodeEfficiency, OffenseStats, ScoreComponents, StatSheet, StatWarning, SynergyFlag,
 };
 pub use synergy::run_synergy_detection;

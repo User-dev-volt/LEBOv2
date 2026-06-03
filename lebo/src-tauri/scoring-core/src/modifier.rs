@@ -88,6 +88,16 @@ pub enum StatKey {
     // Minion
     IncreasedMinionCount,
     IncreasedMinionHp,
+    // Attributes (FR-9, Story 1.5). Sourced from standalone passive tags
+    // (`["STRENGTH"]`, `["DEXTERITY"]`, `["INTELLIGENCE"]`, `["ATTUNEMENT"]`) — audit-proven, not
+    // dead keys. VITALITY ships no passive tag in the current Season-4 data (the "Vitality" node is
+    // tagged HEALTH), so Vitality totals 0.0 today; its loader branch keys the real LE tag so a
+    // future VITALITY-tagged source flows in with no further loader change.
+    Strength,
+    Dexterity,
+    Intelligence,
+    Attunement,
+    Vitality,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]

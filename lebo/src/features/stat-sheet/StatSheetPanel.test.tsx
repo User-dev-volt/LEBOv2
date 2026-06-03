@@ -35,6 +35,12 @@ function makeStatSheet(overrides: Partial<StatSheet> = {}): StatSheet {
       physical_penetration: 0,
       void_penetration: 0,
       damage_types: [],
+      bleed_chance: 0,
+      ignite_chance: 0,
+      poison_chance: 0,
+      freeze_chance: 0,
+      shock_chance: 0,
+      armor_shred_chance: 0,
     },
     defense: {
       effective_hp: 5000,
@@ -66,12 +72,22 @@ function makeStatSheet(overrides: Partial<StatSheet> = {}): StatSheet {
       ehp_vs_one_shots: 0,
       stable_ward: 0,
       stable_hp: 0,
+      chill_avoidance: 0,
+      stun_avoidance: 0,
+      bleed_avoidance: 0,
     },
     scores: {
       damage_score: 100,
       survivability_score: 80,
       speed_score: 60,
       build_score: 88,
+    },
+    attributes: {
+      strength: 0,
+      dexterity: 0,
+      intelligence: 0,
+      attunement: 0,
+      vitality: 0,
     },
     ailment: null,
     minion: null,
@@ -123,7 +139,7 @@ describe('StatSheetPanel', () => {
   })
 
   it('renders 5 tabs and shows Minion tab when statSheet.minion is non-null', () => {
-    setupMocks({ statSheet: makeStatSheet({ minion: {} }) })
+    setupMocks({ statSheet: makeStatSheet({ minion: { minion_count: 0, minion_damage_multi: 0, minion_hp_multi: 0, minion_speed: 0 } }) })
     render(<StatSheetPanel />)
     const tabs = screen.getAllByRole('tab')
     expect(tabs).toHaveLength(5)
@@ -236,7 +252,7 @@ describe('StatSheetPanel', () => {
   })
 
   it('passes axe accessibility check on all tabs', async () => {
-    setupMocks({ statSheet: makeStatSheet({ minion: {} }) })
+    setupMocks({ statSheet: makeStatSheet({ minion: { minion_count: 0, minion_damage_multi: 0, minion_hp_multi: 0, minion_speed: 0 } }) })
     const { container } = render(<StatSheetPanel />)
     expect(await axe(container)).toHaveNoViolations()
     for (const tabName of ['Offense', 'Defense', 'Minion', 'Other']) {
