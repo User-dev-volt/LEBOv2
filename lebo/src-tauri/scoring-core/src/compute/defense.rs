@@ -10,6 +10,19 @@ const RESISTANCE_CAP: f64 = 75.0;
 const CRIT_AVOIDANCE_FLOOR: f64 = 80.0;
 const HP_REGEN_SUSTAIN_THRESHOLD: f64 = 100.0;
 const MAX_SUFFIXES_PER_SLOT: usize = 2;
+const BLOCK_CHANCE_CAP: f64 = 100.0;
+/// LE armour mitigation cap for physical hits (Maxroll: 85% phys / 59.5% non-phys = 85%×0.7).
+const ARMOR_MITIGATION_CAP: f64 = 0.85;
+/// Denominator K for the LE armour curve `mitigation = armor / (armor + K)` at the level-100
+/// scoring reference (`11.04 × 100`). Story 1.3 surfaces armor_mitigation_percent as a STANDALONE
+/// display value only — the exact level-scaled K and the 70%-vs-non-physical split are
+/// parity-validated against the tunklab calculators in Story 1.4 (`tests/ehp_reference.rs`).
+/// This value deliberately does NOT feed `effective_hp` (Phase-3 parity gate).
+const ARMOR_MITIGATION_DENOM_REF_L100: f64 = 1104.0;
+/// AR-14 gap floor: a resistance within this epsilon of the 75% cap is treated as capped, so no
+/// `(+0% needed)` warning is ever emitted (float drift like 74.99999 is absorbed). Engine-side fix
+/// per architecture.md AR-14 — the renderer's `warningGap` handling is intentionally left untouched.
+const RESISTANCE_GAP_EPSILON: f64 = 0.05;
 
 pub(super) fn compute_defense(
     snapshot: &BuildSnapshot,
@@ -109,6 +122,13 @@ pub(super) fn compute_defense(
             .iter()
             .map(|m| m.value)
             .sum::<f64>();
+    // 7th resistance (Story 1.3/AC2), mirroring the other six: AllResistances + type-specific.
+    let necrotic_res: f64 = all_res
+        + registry
+            .query(&StatKey::NecroticResistance, active)
+            .iter()
+            .map(|m| m.value)
+            .sum::<f64>();
 
     // Crit avoidance (as percentage 0–100)
     let crit_avoidance: f64 = registry
@@ -144,6 +164,22 @@ pub(super) fn compute_defense(
         .iter()
         .map(|m| m.value)
         .sum();
+
+    // FR-5 layers (Story 1.3). Sourced layers sum their StatKey via the registry (Pattern P4-1).
+    let healing_effectiveness: f64 = registry
+        .query(&StatKey::HealingEffectiveness, active)
+        .iter()
+        .map(|m| m.value)
+        .sum();
+    let block_chance: f64 = registry
+        .query(&StatKey::BlockChance, active)
+        .iter()
+        .map(|m| m.value)
+        .sum::<f64>()
+        .clamp(0.0, BLOCK_CHANCE_CAP);
+    // Derived display value — pure function of `armor`, no StatKey. NOT fed into `effective_hp`.
+    let armor_mitigation_percent =
+        (armor / (armor + ARMOR_MITIGATION_DENOM_REF_L100)).min(ARMOR_MITIGATION_CAP) * 100.0;
 
     // Defensive layers
     let mut layer_count: u32 = 0;
@@ -186,10 +222,21 @@ pub(super) fn compute_defense(
         void_resistance: void_res,
         poison_resistance: poison_res,
         physical_resistance: physical_res,
+        necrotic_resistance: necrotic_res,
         crit_avoidance,
         dodge_chance,
         life_leech_percent: life_leech,
         hp_regen_per_sec: hp_regen,
+        armor_mitigation_percent,
+        healing_effectiveness,
+        block_chance,
+        // Zero-no-key layers (AC5): no shipped source — surfaced 0.0, no StatKey. See struct docs.
+        block_effectiveness: 0.0,
+        glancing_blow_chance: 0.0,
+        parry_chance: 0.0,
+        ward_retention: 0.0,
+        ward_decay_threshold: 0.0,
+        reduced_bonus_damage_from_crits: 0.0,
     }
 }
 
@@ -203,10 +250,13 @@ pub(super) fn run_floor_check(defense: &DefenseStats, snapshot: &BuildSnapshot) 
         ("void_resistance_uncapped", defense.void_resistance),
         ("poison_resistance_uncapped", defense.poison_resistance),
         ("physical_resistance_uncapped", defense.physical_resistance),
+        ("necrotic_resistance_uncapped", defense.necrotic_resistance),
     ];
     for (warning_type, current_value) in resistance_checks {
-        if current_value < RESISTANCE_CAP {
-            let gap = RESISTANCE_CAP - current_value;
+        // AR-14 gap floor: only warn when the gap clears the epsilon. A value at cap (incl. float
+        // drift like 74.99999) yields gap ≈ 0 and emits NO warning — kills the false (+0% needed).
+        let gap = RESISTANCE_CAP - current_value;
+        if gap > RESISTANCE_GAP_EPSILON {
             let suggested_fix = find_slot_with_open_suffix(snapshot)
                 .map(|slot| format!("{} has room for a Resistance suffix", slot));
             warnings.push(StatWarning {

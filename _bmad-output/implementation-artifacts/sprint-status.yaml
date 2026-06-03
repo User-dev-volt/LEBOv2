@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-02
-last_updated: 2026-06-03 (1-3 → ready-for-dev: defensive layer computation story created)
+last_updated: 2026-06-03 (1-3 → review: defensive layer computation complete)
 project: LEBOv2
 project_key: NOKEY
 tracking_system: file-system
@@ -46,7 +46,7 @@ development_status:
   epic-1: in-progress
   1-1-modifiertype-enum-migration-and-compute-module-split: done
   1-2-offense-stats-damage-types-crit-speed-penetration: done
-  1-3-defensive-layer-computation: ready-for-dev
+  1-3-defensive-layer-computation: review
   1-4-ehp-triple-and-stable-ward-hp-equilibrium: backlog
   1-5-ailment-attribute-and-minion-stats: backlog
   1-6-five-tab-stat-sheet-panel-with-live-recompute: backlog

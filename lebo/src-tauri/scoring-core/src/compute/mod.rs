@@ -1060,4 +1060,133 @@ mod tests {
         // Should not panic
         let _sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
     }
+
+    // --- FR-5 defensive layer tests (Story 1.3) ---
+
+    /// Single Flat node of `stat_key`=`value`, allocated once at slider 50.
+    fn single_layer_node(stat_key: StatKey, value: f64) -> (GameData, BuildSnapshot) {
+        let mut node_effects = HashMap::new();
+        node_effects.insert(
+            "layer_node".to_string(),
+            vec![NodeEffect {
+                stat_key,
+                modifier_type: ModifierType::Flat,
+                value,
+                condition: Condition::Always,
+            }],
+        );
+        let game_data = make_game_data_with_effects(node_effects);
+        let mut snapshot = snapshot_at(50);
+        snapshot.node_allocations.insert("layer_node".to_string(), 1);
+        (game_data, snapshot)
+    }
+
+    #[test]
+    fn necrotic_resistance_is_independent_of_poison() {
+        // AC2: a NecroticResistance source feeds necrotic_resistance only — never poison.
+        let (game_data, snapshot) = single_layer_node(StatKey::NecroticResistance, 40.0);
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        assert!(
+            (sheet.defense.necrotic_resistance - 40.0).abs() < 0.01,
+            "necrotic_resistance expected 40 got {}",
+            sheet.defense.necrotic_resistance
+        );
+        assert!(
+            sheet.defense.poison_resistance.abs() < 0.01,
+            "poison_resistance must stay 0 (necrotic no longer conflated), got {}",
+            sheet.defense.poison_resistance
+        );
+    }
+
+    #[test]
+    fn healing_effectiveness_flows_from_stat_key() {
+        let (game_data, snapshot) = single_layer_node(StatKey::HealingEffectiveness, 15.0);
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        assert!((sheet.defense.healing_effectiveness - 15.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn block_chance_flows_and_caps_at_100() {
+        let (game_data, snapshot) = single_layer_node(StatKey::BlockChance, 130.0);
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        assert!(
+            (sheet.defense.block_chance - 100.0).abs() < 0.01,
+            "block_chance must cap at 100, got {}",
+            sheet.defense.block_chance
+        );
+    }
+
+    #[test]
+    fn armor_mitigation_is_derived_and_caps_at_85() {
+        // armor == the reference denominator → mitigation = A/(A+A) = 50%.
+        let (game_data, snapshot) = single_layer_node(StatKey::Armor, 1104.0);
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
+        assert!(
+            (sheet.defense.armor_mitigation_percent - 50.0).abs() < 0.1,
+            "1104 armor → 50% mitigation, got {}",
+            sheet.defense.armor_mitigation_percent
+        );
+        // Extreme armor → capped at 85%.
+        let (gd2, snap2) = single_layer_node(StatKey::Armor, 1_000_000.0);
+        let sheet2 = compute_stats(&snap2, &gd2, ComputeOptions::default());
+        assert!(
+            (sheet2.defense.armor_mitigation_percent - 85.0).abs() < 0.01,
+            "armor mitigation must cap at 85%, got {}",
+            sheet2.defense.armor_mitigation_percent
+        );
+    }
+
+    #[test]
+    fn zero_no_key_layers_surface_zero() {
+        // AC5: FR-5 layers with no shipped source surface 0.0 (and add no dead StatKey).
+        let game_data =
+            GameData { archetype_weights: standard_weight_table(), ..Default::default() };
+        let sheet = compute_stats(&snapshot_at(50), &game_data, ComputeOptions::default());
+        assert_eq!(sheet.defense.parry_chance, 0.0);
+        assert_eq!(sheet.defense.glancing_blow_chance, 0.0);
+        assert_eq!(sheet.defense.block_effectiveness, 0.0);
+        assert_eq!(sheet.defense.ward_retention, 0.0);
+        assert_eq!(sheet.defense.ward_decay_threshold, 0.0);
+        assert_eq!(sheet.defense.reduced_bonus_damage_from_crits, 0.0);
+    }
+
+    #[test]
+    fn floor_check_resistance_at_cap_emits_no_warning() {
+        // AR-14 gap floor: exactly-at-cap AND float-drift-at-cap emit NO *_resistance_uncapped
+        // warning; a genuinely-below value still warns with the right gap. AllResistances drives
+        // all seven resistances (incl. necrotic) at once.
+        let at_cap = single_layer_node(StatKey::AllResistances, 75.0);
+        let sheet = compute_stats(&at_cap.1, &at_cap.0, ComputeOptions::default());
+        assert!(
+            !sheet.warnings.iter().any(|w| w.warning_type.ends_with("_resistance_uncapped")),
+            "at-cap resistances must emit no uncapped warning, got: {:?}",
+            sheet.warnings.iter().map(|w| &w.warning_type).collect::<Vec<_>>()
+        );
+
+        let drift = single_layer_node(StatKey::AllResistances, 74.999_999);
+        let sheet_drift = compute_stats(&drift.1, &drift.0, ComputeOptions::default());
+        assert!(
+            !sheet_drift.warnings.iter().any(|w| w.warning_type.ends_with("_resistance_uncapped")),
+            "float-drift at cap (74.999999) must emit no warning (gap floor), got: {:?}",
+            sheet_drift.warnings.iter().map(|w| &w.warning_type).collect::<Vec<_>>()
+        );
+
+        let below = single_layer_node(StatKey::AllResistances, 68.0);
+        let sheet_below = compute_stats(&below.1, &below.0, ComputeOptions::default());
+        let fire_warn = sheet_below
+            .warnings
+            .iter()
+            .find(|w| w.warning_type == "fire_resistance_uncapped");
+        assert!(fire_warn.is_some(), "68% resistance must still warn");
+        assert!(
+            (fire_warn.unwrap().gap - 7.0).abs() < 0.1,
+            "gap expected ~7 got {}",
+            fire_warn.unwrap().gap
+        );
+        // necrotic is the 7th resistance and must warn at 68 too.
+        assert!(
+            sheet_below.warnings.iter().any(|w| w.warning_type == "necrotic_resistance_uncapped"),
+            "necrotic_resistance_uncapped must be emitted below cap"
+        );
+    }
 }

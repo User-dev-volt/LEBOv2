@@ -54,6 +54,11 @@ pub enum StatKey {
     AllResistances,
     DodgeRating,
     LifeLeechPercent,
+    // FR-5 layers sourced from the shipped passive-tag path (Story 1.3 audit). Only keys with a
+    // proven shipped source live here — Parry/Glancing/WardRetention/WardDecay/ReducedCritBonus
+    // have no shipped source and are surfaced as 0.0 on DefenseStats with no key (no dead keys).
+    HealingEffectiveness,
+    BlockChance,
     // Speed
     AttackSpeed,
     CastSpeed,

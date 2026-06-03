@@ -339,6 +339,10 @@ fn tags_to_stat_key(tags: &[String], modifier_type: &ModifierType) -> Option<Sta
         };
     }
 
+    // Defense — Healing Effectiveness (FR-5, Story 1.3). HEALING is distinct from the HEALTH/HP
+    // tag above; HEALING nodes also carrying DAMAGE already returned in the damage branch.
+    if has("HEALING") { return Some(StatKey::HealingEffectiveness); }
+
     // Defense — Armor/Ward/Leech/Regen
     if has("ARMOUR") || has("ARMOR") { return Some(StatKey::Armor); }
     if has("WARD") {
@@ -352,6 +356,10 @@ fn tags_to_stat_key(tags: &[String], modifier_type: &ModifierType) -> Option<Sta
     if has("LEECH") { return Some(StatKey::LifeLeechPercent); }
     if has("REGEN") || has("REGENERATION") { return Some(StatKey::HpRegenPerSec); }
     if has("DODGE") { return Some(StatKey::DodgeRating); }
+    // Block (FR-5, Story 1.3). Checked AFTER ARMOUR so ARMOUR+BLOCK nodes stay on Armor
+    // (unchanged). BLOCK is the only block-related tag — chance and effectiveness are not
+    // tagged separately, so this sources block_chance only (block_effectiveness has no key).
+    if has("BLOCK") { return Some(StatKey::BlockChance); }
 
     // Defense — Endurance
     if has("ENDURANCE") {
@@ -366,7 +374,10 @@ fn tags_to_stat_key(tags: &[String], modifier_type: &ModifierType) -> Option<Sta
         if has("COLD") || has("ICE") { return Some(StatKey::ColdResistance); }
         if has("LIGHTNING") || has("SHOCK") { return Some(StatKey::LightningResistance); }
         if has("VOID") { return Some(StatKey::VoidResistance); }
-        if has("POISON") || has("NECROTIC") { return Some(StatKey::PoisonResistance); }
+        // Necrotic split (Story 1.3/AC2): NECROTIC is the 7th resistance, no longer conflated
+        // into Poison. Checked before POISON; both keys already exist. Count-neutral remap.
+        if has("NECROTIC") { return Some(StatKey::NecroticResistance); }
+        if has("POISON") { return Some(StatKey::PoisonResistance); }
         if has("PHYSICAL") { return Some(StatKey::PhysicalResistance); }
         return Some(StatKey::AllResistances); // unqualified RESISTANCE = all
     }
@@ -584,7 +595,12 @@ mod tests {
         //         are not modeled (dropped at parse_penetration_clause), so their effect count is
         //         unchanged. Every non-penetration effect still parses byte-identically (path 1 in
         //         parse_node_effects is the unchanged pre-1.2 mapping), preserving aggregate parity.
-        const GOLDEN_EFFECT_COUNT: usize = 185;
+        //   198 — Story 1.3 FR-5 defensive sourcing (+13): wiring the previously-dropped BLOCK tag
+        //         (→ BlockChance, +10 nodes that fell through to None before) and HEALING tag
+        //         (→ HealingEffectiveness, +3 non-DAMAGE-tagged nodes). The Necrotic-resistance
+        //         split (NECROTIC+RESISTANCE: PoisonResistance → NecroticResistance) is
+        //         count-neutral — the one shipped node stays Some, only its key changed.
+        const GOLDEN_EFFECT_COUNT: usize = 198;
         let total = total_parsed_effects();
         assert_eq!(
             total, GOLDEN_EFFECT_COUNT,
@@ -622,6 +638,45 @@ mod tests {
         );
         // A DoT tag without DAMAGE is still dropped (no spurious key, count preserved).
         assert_eq!(tags_to_stat_key(&["BLEED".to_string()], &inc), None);
+    }
+
+    /// Story 1.3/AC2: NECROTIC resistance splits off the Poison bucket onto its own key.
+    #[test]
+    fn necrotic_resistance_splits_off_poison() {
+        let inc = ModifierType::Increased;
+        let rtag = |s: &str| vec![s.to_string(), "RESISTANCE".to_string()];
+        assert_eq!(
+            tags_to_stat_key(&rtag("NECROTIC"), &inc),
+            Some(StatKey::NecroticResistance),
+            "NECROTIC resistance must map to its own key, not Poison"
+        );
+        assert_eq!(
+            tags_to_stat_key(&rtag("POISON"), &inc),
+            Some(StatKey::PoisonResistance),
+            "POISON resistance must keep its key after the split"
+        );
+    }
+
+    /// Story 1.3: the previously-dropped BLOCK and HEALING tags now source their FR-5 keys,
+    /// and ARMOUR+BLOCK still resolves to Armor (BLOCK is checked after ARMOUR — no regression).
+    #[test]
+    fn block_and_healing_tags_are_sourced() {
+        let inc = ModifierType::Increased;
+        assert_eq!(
+            tags_to_stat_key(&["BLOCK".to_string(), "DEFENCE".to_string()], &inc),
+            Some(StatKey::BlockChance),
+            "BLOCK tag must source BlockChance (was previously dropped)"
+        );
+        assert_eq!(
+            tags_to_stat_key(&["HEALING".to_string()], &inc),
+            Some(StatKey::HealingEffectiveness),
+            "HEALING tag must source HealingEffectiveness"
+        );
+        assert_eq!(
+            tags_to_stat_key(&["ARMOUR".to_string(), "BLOCK".to_string()], &inc),
+            Some(StatKey::Armor),
+            "ARMOUR+BLOCK must stay Armor — BLOCK checked after ARMOUR"
+        );
     }
 
     /// Task 9/10/11 (penetration sourcing). Single-clause pure-pen, multi-clause split,

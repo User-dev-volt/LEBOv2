@@ -59,10 +59,34 @@ pub struct DefenseStats {
     pub void_resistance: f64,
     pub poison_resistance: f64,
     pub physical_resistance: f64,
+    /// 7th resistance — split off the Poison bucket in Story 1.3 (FR-5/AC2).
+    pub necrotic_resistance: f64,
     pub crit_avoidance: f64,
     pub dodge_chance: f64,
     pub life_leech_percent: f64,
     pub hp_regen_per_sec: f64,
+    // --- FR-5 layers added in Story 1.3 ---
+    /// Derived display value: LE `armor / (armor + K)` capped at 85%. Pure function of `armor`,
+    /// no StatKey. Does NOT feed `effective_hp` (parity gate) — EHP integration is Story 1.4.
+    pub armor_mitigation_percent: f64,
+    /// Sourced from the `HEALING` passive tag (`StatKey::HealingEffectiveness`).
+    pub healing_effectiveness: f64,
+    /// Sourced from the `BLOCK` passive tag (`StatKey::BlockChance`), capped 100%.
+    pub block_chance: f64,
+    /// No distinct shipped source (the `BLOCK` tag conflates chance + effectiveness); surfaced
+    /// 0.0 per AC5. Base-50% block effectiveness is a Story-1.6 display concern.
+    pub block_effectiveness: f64,
+    /// No `GLANCING` tag in shipped Season-4 data; surfaced 0.0 (cap 100% when later sourced).
+    pub glancing_blow_chance: f64,
+    /// OQ-1 branch 2: Parry is player-accessible (cap 75%) but no shipped node sources it;
+    /// surfaced 0.0 with no StatKey.
+    pub parry_chance: f64,
+    /// No distinct `WARD`+retention source (only prose on Ward-per-sec nodes); surfaced 0.0.
+    pub ward_retention: f64,
+    /// No shipped source; surfaced 0.0.
+    pub ward_decay_threshold: f64,
+    /// No shipped source (all CRIT nodes are offensive); surfaced 0.0.
+    pub reduced_bonus_damage_from_crits: f64,
 }
 
 /// Weighted composite scoring breakdown.

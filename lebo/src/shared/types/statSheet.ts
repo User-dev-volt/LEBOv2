@@ -39,8 +39,20 @@ export interface DefenseStats {
   void_resistance: number
   poison_resistance: number
   physical_resistance: number
+  necrotic_resistance: number
   crit_avoidance: number
   dodge_chance: number
+  // FR-5 layers added in Story 1.3 (snake_case mirror of DefenseStats). Necrotic-row + new-layer
+  // display layout is Story 1.6 — these are type-only additions here.
+  armor_mitigation_percent: number
+  healing_effectiveness: number
+  block_chance: number
+  block_effectiveness: number
+  glancing_blow_chance: number
+  parry_chance: number
+  ward_retention: number
+  ward_decay_threshold: number
+  reduced_bonus_damage_from_crits: number
 }
 
 export interface ScoreComponents {

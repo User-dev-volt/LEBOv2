@@ -1,6 +1,6 @@
 # Story 1.3: Defensive layer computation
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -52,51 +52,51 @@ This story fills out `compute/defense.rs` (created by Story 1.1, partially popul
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Audit the shipped data for defensive sources FIRST (AC: 1, 4, 5)** — *do this before adding any StatKey or field; this is the disaster-prevention step that the Story-1.2 penetration rework proved necessary.*
-  - [ ] Grep the five shipped class JSONs (the loader's ground truth) and the idol/affix/blessing data for defensive tags/keys: `BLOCK`, `PARRY`, `GLANCING`, `HEALING`/`HEALING_EFFECTIVENESS`, `WARD_RETENTION`/`RETENTION`, `DECAY`/`WARD_DECAY`, `REDUCED_CRIT`/`CRIT_DAMAGE_TAKEN`/`BONUS_DAMAGE_FROM_CRITS`, `NECROTIC`+resistance, `ARMOR`, `DODGE`, `ENDURANCE`, `HEAL`. Record which tags actually appear.
-  - [ ] For each FR-5 layer, decide its category per AC5: **sourced** (real tag exists → wire it), **derived** (compute from an existing key → no new key), or **zero-no-key** (no source → surface 0/None, document). Write the table into Dev Notes before coding.
-  - [ ] Confirm whether wiring a previously-unmapped tag (e.g. `BLOCK` currently falls through to `None`) will change the golden effect-count — if so, plan the rebaseline (AC2/Task 6).
+- [x] **Task 1 — Audit the shipped data for defensive sources FIRST (AC: 1, 4, 5)** — *do this before adding any StatKey or field; this is the disaster-prevention step that the Story-1.2 penetration rework proved necessary.*
+  - [x] Grep the five shipped class JSONs (the loader's ground truth) and the idol/affix/blessing data for defensive tags/keys. Recorded which tags appear — see the **Task 1 source-audit table** in the Dev Agent Record. (Idol/affix/blessing data is **not shipped**, so the passive-tag path is the only real source.)
+  - [x] For each FR-5 layer, decided its category per AC5 (sourced / derived / zero-no-key) — full table in Dev Agent Record.
+  - [x] Confirmed `BLOCK` + `HEALING` were previously dropped (`None`); wiring them changes the golden count → rebaselined 185 → **198** (AC2/Task 6).
 
-- [ ] **Task 2 — Necrotic resistance split (AC: 2)** — `game_data_loader.rs` `tags_to_stat_key` + `compute/defense.rs`
-  - [ ] In the resistance branch (`game_data_loader.rs:362-371`), split `if has("POISON") || has("NECROTIC")` so `NECROTIC` → `StatKey::NecroticResistance` and `POISON` → `StatKey::PoisonResistance` (mirror the Story-1.2 damage-tag split; both keys already exist). Check `NECROTIC` resistance *before* the generic fallthrough but after element-specific guards, consistent with the existing ordering.
-  - [ ] Add `necrotic_resistance` to `DefenseStats` and compute it in `compute_defense` exactly like the other six (`AllResistances` sum + `NecroticResistance` sum).
-  - [ ] Add the 7th resistance to the floor-check list in `run_floor_check` (`necrotic_resistance_uncapped`).
+- [x] **Task 2 — Necrotic resistance split (AC: 2)** — `game_data_loader.rs` `tags_to_stat_key` + `compute/defense.rs`
+  - [x] Split the resistance branch: `NECROTIC` → `StatKey::NecroticResistance` (before `POISON` → `StatKey::PoisonResistance`), after the element-specific guards.
+  - [x] Added `necrotic_resistance` to `DefenseStats` and computed it in `compute_defense` (`AllResistances` sum + `NecroticResistance` sum), mirroring the other six.
+  - [x] Added the 7th resistance to the floor-check list (`necrotic_resistance_uncapped`).
 
-- [ ] **Task 3 — Extend `DefenseStats` + add only-sourced/derived StatKeys (AC: 1, 5)** — `stat_sheet.rs`, `modifier.rs`
-  - [ ] Add the FR-5 layer fields to `DefenseStats` (keep all existing fields; keep `#[derive(Default)]`). Suggested additive shape in Dev Notes. Order-stable, snake_case serde.
-  - [ ] Add **only** the `StatKey` variants Task 1 proved are sourced (e.g. `HealingEffectiveness`, `BlockChance`, `GlancingBlowChance`, `WardRetention`, `WardDecayThreshold`, `ReducedBonusDamageFromCrits`, `ParryChance` — *only those with a confirmed source*). Do NOT add a key for any layer that has no shipped source; surface that field as `0.0`/`None` with a comment (AC5).
-  - [ ] Wire each new sourced key in `tags_to_stat_key` (tag path) and/or `stat_key_from_str` (idol/affix/blessing string-key path) as the audit dictates.
+- [x] **Task 3 — Extend `DefenseStats` + add only-sourced/derived StatKeys (AC: 1, 5)** — `stat_sheet.rs`, `modifier.rs`
+  - [x] Added the FR-5 layer fields to `DefenseStats` (all existing fields kept; `#[derive(Default)]` preserved; order-stable snake_case serde).
+  - [x] Added **only** the two sourced `StatKey` variants the audit proved: `HealingEffectiveness`, `BlockChance`. No key added for Parry/Glancing/WardRetention/WardDecay/ReducedBonusDamageFromCrits/BlockEffectiveness (no shipped source → surfaced `0.0`, AC5).
+  - [x] Wired `HEALING` → `HealingEffectiveness` and `BLOCK` → `BlockChance` in `tags_to_stat_key`; `NecroticResistance` wired on the passive-tag path.
 
-- [ ] **Task 4 — Compute the layers in `compute/defense.rs` (AC: 1, 5)**
-  - [ ] **Sourced layers:** sum (or product, per modifier_type) the relevant `StatKey` via the registry. Apply LE caps where the mechanic defines one: Parry ≤ 75%, Glancing Blow ≤ 100%, Block chance ≤ its cap, resistances unchanged (cap is a display concern, raw value may exceed 75).
-  - [ ] **Armor Mitigation% (derived, no new key):** compute from the already-summed `armor`. Use the Last Epoch armor formula and **cite the exact denominator/level assumption in a code comment** (see "Latest tech" below). Cap at 85%. This is a derived display value — it must NOT feed `effective_hp` (parity) in this story; the EHP integration is Story 1.4.
-  - [ ] Keep `effective_hp`, `raw_hp`, and the `layer_count`/`1.05^(n-2)` block exactly as-is (parity gate). Do not move EHP into `ehp.rs` here — that is Story 1.4.
-  - [ ] Registry-only access for all of it (Pattern P4-1). Reading `snapshot.character_level`/`class_id` for base HP is the existing allowed context, unchanged.
+- [x] **Task 4 — Compute the layers in `compute/defense.rs` (AC: 1, 5)**
+  - [x] **Sourced layers:** summed via the registry. `block_chance` clamped to 100%. (Parry/Glancing have no source → 0.0.)
+  - [x] **Armor Mitigation% (derived, no new key):** `armor / (armor + K)` capped at 85%, `K` a named level-100 reference constant cited in-comment; does **not** feed `effective_hp` (parity).
+  - [x] Kept `effective_hp`, `raw_hp`, and the `layer_count`/`1.05^(n-2)` block byte-identical (necrotic deliberately NOT added to `layer_count`).
+  - [x] Registry-only access (Pattern P4-1); base-HP context reads unchanged.
 
-- [ ] **Task 5 — AR-14 gap floor in `run_floor_check` (AC: 3)** — `compute/defense.rs`
-  - [ ] Add an epsilon gap floor: only push a resistance warning when `RESISTANCE_CAP - current_value > GAP_EPSILON` (choose a small epsilon, e.g. `0.05`, documented). A value at cap or within float drift of it emits **no** warning and never a `gap <= 0`.
-  - [ ] Verify the same floor logic guards any other gap-bearing warning that could round to 0 (the `no_sustain_layer` warning intentionally carries `gap: 0.0` as a boolean flag — leave it; it is keyed by `warning_type`, and the renderer fix for that specific case is out of scope. Only the *cap-gap* warnings get the floor).
-  - [ ] Do NOT change `StatSheetPanel.tsx` — the AR-14 directive is engine-side (the renderer's `warningGap !== undefined` check stays; the engine simply stops emitting near-zero gaps).
+- [x] **Task 5 — AR-14 gap floor in `run_floor_check` (AC: 3)** — `compute/defense.rs`
+  - [x] Added `RESISTANCE_GAP_EPSILON = 0.05`; warn only when `RESISTANCE_CAP - current_value > epsilon`. At-cap + float-drift (74.999999) emit no warning, never `gap <= 0`.
+  - [x] Left `no_sustain_layer`'s boolean `gap: 0.0` untouched (keyed by `warning_type`; only cap-gap warnings get the floor).
+  - [x] `StatSheetPanel.tsx` untouched — fix is engine-side.
 
-- [ ] **Task 6 — TS mirror + keep the build green (AC: 1, 2)** — `statSheet.ts`, test helpers
-  - [ ] Mirror every new `DefenseStats` field in `statSheet.ts` `DefenseStats` (snake_case, exact). New numeric fields are `number`; any `Option<f64>` mirrors as `number | null`.
-  - [ ] Update **every** `DefenseStats` object literal in the TS test suite so strict compile passes — at minimum `StatSheetPanel.test.tsx`'s `makeStatSheet()` helper, and any other test that constructs a `DefenseStats`/`StatSheet` literal (grep for `fire_resistance:` and `crit_avoidance:` in test files). Do NOT add the new fields to the `RESISTANCES` array or any visible UI in `StatSheetPanel.tsx` — Necrotic-row display and the new-layer layout are Story 1.6.
-  - [ ] `StatSheetPanel.tsx` and `computeStatDeltas` must still compile; adding fields is additive, so no display changes are required here.
+- [x] **Task 6 — TS mirror + keep the build green (AC: 1, 2)** — `statSheet.ts`, test helpers
+  - [x] Mirrored `necrotic_resistance` + all nine new `DefenseStats` fields in `statSheet.ts` (snake_case, exact, all `number`).
+  - [x] Updated the only real `DefenseStats` literal in the TS suite — `StatSheetPanel.test.tsx`'s `makeStatSheet()`. (The `buildSnapshotSerializer.test.ts` `fire_resistance` match was `enemy_fire_resistance`, a condition string — not a literal.) `RESISTANCES` array + UI left unchanged (Story 1.6).
+  - [x] `StatSheetPanel.tsx`/`computeStatDeltas` still compile (additive only; `tsc` exit 0).
 
-- [ ] **Task 7 — Tests (AC: 1, 2, 3, 4)** — co-located in `compute/defense.rs` `#[cfg(test)]` and orchestrator tests in `compute/mod.rs`
-  - [ ] Per-resistance independence incl. Necrotic: a `NECROTIC`-tagged resistance contributes to `necrotic_resistance` only, not `poison_resistance` (loader remap regression).
-  - [ ] Each new sourced layer: value flows from its `StatKey` through `compute_stats`; caps applied (Parry 75, Glancing 100).
-  - [ ] Armor Mitigation% derived value at a couple of armor points + the 85% cap.
-  - [ ] **AR-14:** a resistance exactly at 75 (and one at `74.999999`) emits **no** `*_resistance_uncapped` warning; a resistance at 68 emits a warning with `gap ≈ 7`. Add `floor_check_resistance_at_cap_emits_no_warning`.
-  - [ ] Parity gate: assert the Phase-3 `effective_hp_*` and `build_score_slider_*` expected values are unchanged (they live in `compute/mod.rs` already — just confirm green).
-  - [ ] Golden loader count unchanged (185) after the Necrotic split; if Task 1 wired a previously-dropped tag, rebaseline with a comment explaining the delta (mirror the Story-1.2 `179 → 185` precedent).
+- [x] **Task 7 — Tests (AC: 1, 2, 3, 4)** — orchestrator tests in `compute/mod.rs`, loader tests in `game_data_loader.rs`
+  - [x] Necrotic independence: `necrotic_resistance_is_independent_of_poison` (compute) + `necrotic_resistance_splits_off_poison` (loader).
+  - [x] Sourced layers flow + caps: `healing_effectiveness_flows_from_stat_key`, `block_chance_flows_and_caps_at_100`, `block_and_healing_tags_are_sourced`.
+  - [x] Armor Mitigation% derived + 85% cap: `armor_mitigation_is_derived_and_caps_at_85`. Zero-no-key surfacing: `zero_no_key_layers_surface_zero`.
+  - [x] **AR-14:** `floor_check_resistance_at_cap_emits_no_warning` (75, 74.999999 → no warning; 68 → gap ≈ 7; necrotic warns below cap).
+  - [x] Parity gate: `effective_hp_*` and `build_score_slider_*` all green, unchanged.
+  - [x] Golden loader count rebaselined 185 → 198 with a comment explaining the +13 (BLOCK +10, HEALING +3; Necrotic split count-neutral).
 
-- [ ] **Task 8 — Verify (AC: all)**
-  - [ ] `cargo test -p scoring-core` (from `lebo/src-tauri/`) — all green, Phase-3 parity tests byte-identical.
-  - [ ] `cargo test -p lebo game_data_loader` — golden count + Necrotic remap green.
-  - [ ] `pnpm build` (from `lebo/`) — TS strict compile passes with extended `statSheet.ts`.
-  - [ ] `pnpm vitest run` — no **new** failures beyond the documented Story-1.1 baseline (1026 pass / 14 pre-existing UI failures; confirm the count and that your changes added none).
-  - [ ] Record the OQ-1 Parry decision (AC4) and the Task-1 source-audit table in the Dev Agent Record.
+- [x] **Task 8 — Verify (AC: all)**
+  - [x] `cargo test -p scoring-core` — **97 passed, 0 failed**; Phase-3 parity tests byte-identical.
+  - [x] `cargo test -p lebo game_data_loader` — golden count (198) + Necrotic remap + BLOCK/HEALING sourcing **green**.
+  - [x] TS strict compile (`tsc`, the `pnpm build` type-check) — **exit 0** with extended `statSheet.ts`. (Full `pnpm build`/`vitest` invoked the local binaries directly because pnpm's no-TTY auto-purge blocked the wrapper.)
+  - [x] `vitest run` — **1026 pass / 14 pre-existing UI failures**, exactly the documented baseline; **no new failures** (none in stat-sheet or any touched file).
+  - [x] Recorded the OQ-1 Parry decision (AC4) and the Task-1 source-audit table in the Dev Agent Record.
 
 ## Dev Notes
 
@@ -206,10 +206,76 @@ Sources: [Maxroll — Defenses Explained](https://maxroll.gg/last-epoch/resource
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+claude-opus-4-8 (Claude Code dev-story workflow)
+
+### Task 1 — Shipped-data source audit (disaster-prevention gate)
+
+Audited the five shipped class JSONs (`resources/game-data/classes/*.json`) — the loader's ground truth — for every defensive tag. Tags are uppercase entries in `effects[].tags`; the loader's `tags_to_stat_key` reads them, `extract_value` takes the first number in the description. Idol/affix/blessing data is **not shipped** (`gear_affixes` is built empty; no idol/blessing JSON exists), so the `stat_key_from_str` idol-path keys (incl. the pre-existing `necrotic_resistance`) are **unsourced in production** — the only real source is the passive-tag path. This is exactly the Story-1.2 trap, so every layer below is sourced through the **passive tag path** or surfaced 0.0 with no key.
+
+**Defensive tags actually present (with raw occurrence counts):** `ARMOUR`(20), `ARMOUR_SHRED`(6), `BLOCK`(14), `HEALTH`(19), `HEALING`(4), `NECROTIC`(11; one is `NECROTIC`+`RESISTANCE`), `RESISTANCE`(8), `WARD`(8), `ENDURANCE`(5), `DODGE`(4), `LEECH`(4), `REGEN`(1), `DAMAGE_REDUCTION`(4), `DEFENCE`(34), `CRIT`(16, all offensive — none `CRIT`+`AVOIDANCE`), `FORTIFY`(2), `DEFLECT`/`PARRY`/`GLANCING`/`RETENTION`/`DECAY` → **absent**.
+
+| FR-5 layer | Category | Decision / source |
+|---|---|---|
+| Health, Health Regen, Life Leech | exists | `raw_hp`, `hp_regen_per_sec`, `life_leech_percent` (unchanged) |
+| Healing Effectiveness | **sourced** | `HEALING` tag → new `StatKey::HealingEffectiveness`; wired in `tags_to_stat_key` |
+| Ward, Ward/sec | exists | `ward` (`WardPerSecond`+`WardOnHit`) — "Ward/sec" *is* this field |
+| Ward Retention | **zero-no-key** | only appears as prose on `WARD`-tagged nodes (already → `WardPerSecond`); no distinct tag → surface `0.0`, comment |
+| Ward Decay Threshold | **zero-no-key** | no tag/source in shipped data → surface `0.0`, comment |
+| Armor | exists | `armor` (unchanged) |
+| Armor Mitigation% | **derived** | pure fn of `armor` (LE `armor/(armor+K)`, cap 85%) — **no new key** |
+| Endurance%, Endurance Threshold | exists | `endurance_percent`, `endurance_threshold` (unchanged) |
+| Dodge | exists | `dodge_chance` (unchanged) |
+| Parry | **zero-no-key (OQ-1 branch 2)** | see OQ-1 below — player-accessible but **no shipped source** → `parry_chance: 0.0`, no key |
+| Block chance | **sourced** | `BLOCK` tag → new `StatKey::BlockChance`; wired in `tags_to_stat_key` (cap 100%) |
+| Block effectiveness | **zero-no-key** | `BLOCK` tag conflates chance/effectiveness in prose; no distinct source → surface `0.0`, comment (base-50% is a Story-1.6 display concern) |
+| Glancing Blow | **zero-no-key** | no `GLANCING` tag in shipped data → surface `0.0`, comment (cap 100% when later sourced) |
+| Crit Avoidance | exists | `crit_avoidance` (unchanged) |
+| Reduced Bonus Damage from Crits | **zero-no-key** | no tag (all `CRIT` nodes are offensive) → surface `0.0`, comment |
+| Fire/Cold/Lightning/Void/Poison/Physical resistance | exists | unchanged |
+| **Necrotic resistance** | **sourced (split)** | `NECROTIC`+`RESISTANCE` (acolyte "+4% Necrotic Resistance") → `StatKey::NecroticResistance` (key already exists); split out of the Poison bucket + compute independently |
+
+**New `StatKey` variants added (both provably sourced):** `HealingEffectiveness`, `BlockChance`. `NecroticResistance` already existed — only its passive-tag source + `compute_defense` consumption were missing.
+
+**Golden-count impact (AC2/Task 6):** the Necrotic split is **count-neutral** (the one `NECROTIC`+`RESISTANCE` node was already `Some(PoisonResistance)`, now `Some(NecroticResistance)` — still one effect). Wiring `BLOCK` and `HEALING` captures previously-dropped (`None`) nodes, so the golden `shipped_class_json_effect_count_is_stable` count **increases** — rebaselined to the actual loader output with a comment (same precedent as Story-1.2's 179→185).
+
+**Block/Healing conflation note (honest limitation):** `BLOCK` and `HEALING` are single tags shared across chance/effectiveness/incidental clauses; `extract_value` takes the first number. This matches the existing loader's single-stat/first-number fidelity model (the same imprecision present project-wide) and is **sourced** (not a dead key). Block *effectiveness* and *healing power* nuance is not separately tagged → block_effectiveness stays zero-no-key.
+
+### OQ-1 — Parry spike resolution (AC4)
+
+**Branch taken: (2) — player-accessible but unsourced.** Per the LE public mechanic (Maxroll/lastepochtools): Parry **is** a player-accessible defensive layer — it fully negates the incoming hit, is checked first, and **caps at 75%**. However, a grep of all five shipped Season-4 class JSONs found **no `PARRY` tag and no "Parry" prose on any node**, and no idol/affix/blessing data is shipped. Per AC4 branch 2 + AC5: `parry_chance` is surfaced as `0.0` with **no new `StatKey`** (a `ParryChance` key would be dead). When a shipped Parry source appears, add the key + 75% cap then.
+
+### Armor-mitigation formula decision (Task 4)
+
+LE caps confirmed via Maxroll *Defenses Explained*: **85% physical**, **59.5% non-physical** (= 85% × 0.7, the "armour 70% as effective vs non-physical" rule). The level-scaled denominator `K` could not be pulled from lastepochtools/tunklab (JS-gated, HTTP 403/empty). Per the story, the ±2% tunklab parity gate is **Story 1.4**'s (`tests/ehp_reference.rs`); for 1.3 `armor_mitigation_percent` is a **standalone display value**. Implemented the structural LE form `mitigation = armor / (armor + K)` capped at 85%, with `K` a named constant documenting the **level-100 scoring reference** assumption, explicitly flagged in-comment for Story-1.4 parity tuning. It does **not** feed `effective_hp` (parity gate preserved).
 
 ### Debug Log References
 
+- **Env (not a code issue):** the `lebo` crate's Tauri build script had a stale cached `OUT_DIR` pointing at the project's prior location (`D:\Obsidian Brain\Brain\10_Active_Projects\LEBOv2\…`), failing with `failed to read plugin permissions … app_hide.toml (os error 3)`. Resolved with `cargo clean -p tauri` (forces the `tauri` dependency's build script to re-record the current path) — no source change. `scoring-core` tests were unaffected.
+- **Tooling:** `pnpm build`/`pnpm vitest` wrappers aborted under no-TTY (`ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`); ran `CI=true pnpm install` then the local `./node_modules/.bin/{tsc,vitest}` binaries directly.
+
 ### Completion Notes List
 
+- **FR-5 defensive layers (AC1):** all FR-5 layers are now computed independently and surfaced on `DefenseStats`. Sourced from shipped passive tags: `healing_effectiveness` (`HEALING`), `block_chance` (`BLOCK`, cap 100%), `necrotic_resistance` (`NECROTIC`+`RESISTANCE`). Derived: `armor_mitigation_percent` (`armor/(armor+K)`, cap 85%, no key). Zero-no-key per AC5 (no shipped source, no dead key): `parry_chance`, `block_effectiveness`, `glancing_blow_chance`, `ward_retention`, `ward_decay_threshold`, `reduced_bonus_damage_from_crits`. All reads via `ModifierRegistry::query` (Pattern P4-1).
+- **Parity gate held (AC1):** `effective_hp`, `raw_hp`, and the `layer_count`/`1.05^(n-2)` bonus are byte-identical — necrotic was intentionally **not** added to the `layer_count` resistance check. `effective_hp_with_ward_and_endurance`, `effective_hp_no_ward_no_endurance`, and all `build_score_slider_*` pass unchanged.
+- **Necrotic = 7th resistance (AC2):** loader split `NECROTIC` off the Poison bucket onto `StatKey::NecroticResistance` (count-neutral); `compute_defense` computes it like the other six; `run_floor_check` emits `necrotic_resistance_uncapped`.
+- **AR-14 (AC3):** engine-side gap floor (`RESISTANCE_GAP_EPSILON = 0.05`) — no `(+0% needed)` false warning at/near cap (incl. float drift). `StatSheetPanel.tsx` untouched.
+- **OQ-1 (AC4):** Parry is player-accessible (cap 75%, checked first) but **no shipped Season-4 source exists** → `parry_chance: 0.0` with no `StatKey` (branch 2). Full rationale in the OQ-1 section above.
+- **No dead keys (AC5):** only `HealingEffectiveness` + `BlockChance` added — both provably produced by shipped class JSONs and consumed in `compute_defense`.
+- **Golden count:** rebaselined 185 → **198** (+13: BLOCK +10, HEALING +3) with an in-test comment; Necrotic split count-neutral.
+- **Pre-existing unrelated failures (not introduced here):** Rust `openrouter_service::tests::models_list_has_four_entries` (asserts 4, list now has 7 — stale assertion, untouched module); TS 14 baseline UI failures (AppHeader/RightPanel/ProviderSelector/Settings/SkillTreeCanvas/TreeControls).
+
 ### File List
+
+- `lebo/src-tauri/scoring-core/src/modifier.rs` — added `StatKey::HealingEffectiveness`, `StatKey::BlockChance` (sourced).
+- `lebo/src-tauri/scoring-core/src/stat_sheet.rs` — extended `DefenseStats` with `necrotic_resistance` + 9 FR-5 fields (additive, `Default` preserved).
+- `lebo/src-tauri/scoring-core/src/compute/defense.rs` — necrotic resistance, healing/block layers, derived armor mitigation, zero-no-key fields, new constants, AR-14 gap floor + 7th resistance in `run_floor_check`.
+- `lebo/src-tauri/scoring-core/src/compute/mod.rs` — new FR-5 orchestrator tests (necrotic independence, healing/block flow + caps, armor mitigation + cap, zero-no-key, AR-14 at-cap/drift/below).
+- `lebo/src-tauri/src/services/game_data_loader.rs` — `tags_to_stat_key`: Necrotic split + `HEALING`/`BLOCK` sourcing; golden count rebaselined to 198; new loader tests.
+- `lebo/src/shared/types/statSheet.ts` — mirrored `necrotic_resistance` + 9 new `DefenseStats` fields (snake_case).
+- `lebo/src/features/stat-sheet/StatSheetPanel.test.tsx` — updated `makeStatSheet()` `DefenseStats` literal with the new fields.
+
+### Change Log
+
+| Date | Change |
+|------|--------|
+| 2026-06-03 | Story 1.3 implemented: FR-5 defensive layers (sourced Healing/Block + 7th Necrotic resistance, derived Armor Mitigation%, AR-14 gap floor, OQ-1 Parry spike resolved as zero-no-key). New StatKeys `HealingEffectiveness`/`BlockChance`; golden effect count rebaselined 185→198. TS mirror extended. Status → review. |
