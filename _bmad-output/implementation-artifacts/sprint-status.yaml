@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-02
-last_updated: 2026-06-03 (1-5 → ready-for-dev: story created, source-audit pre-recorded; FR-9 attrs sourced+golden-count bump, FR-8/FR-10 mostly honest-0.0. DECISION: full minion correctness deferred to a tracked post–Epic-5 story — needs skill_node_allocations→registry wiring + Epic-5 skill DB; see 1-5 Decision section. sprint-planning/correct-course to place it.)
+last_updated: 2026-06-03 (correct-course: added 5-5-minion-stat-correctness (backlog) — completes FR-10 post–Epic-5 per the 1-5 deferral decision; needs skill_node_allocations→registry wiring + Epic-5 skill DB. See sprint-change-proposal-2026-06-03.md.)
 project: LEBOv2
 project_key: NOKEY
 tracking_system: file-system
@@ -91,6 +91,7 @@ development_status:
   5-2-complete-skill-icons: backlog
   5-3-skills-tab-full-picker: backlog
   5-4-popular-builds-database-with-client-side-matching: backlog
+  5-5-minion-stat-correctness: backlog
   epic-5-retrospective: optional
 
   # Epic 6: Complete Build Optimizer

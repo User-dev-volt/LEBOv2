@@ -209,7 +209,7 @@ _First-class design-system work items from the Claude Design handoff (`last-epoc
 | FR-7 | Epic 1 | Stable Ward + Stable HP equilibrium |
 | FR-8 | Epic 1 | Ailment chances + avoidance |
 | FR-9 | Epic 1 | Attribute totals + parseable conversions |
-| FR-10 | Epic 1 | Minion stats + conditional Minion tab |
+| FR-10 | Epic 1 (+ Epic 5 Story 5.5) | Minion stats + conditional Minion tab; full correctness (count/HP/speed, skill-tree wiring) completed post–Epic-5 in Story 5.5 |
 | FR-11 | Epic 1 | Recompute on any build-state change |
 | FR-12 | Epic 1 | ModifierSource tracking + stat_sources field |
 | FR-13 | Epic 1 | Source Breakdown tooltip |
@@ -907,6 +907,33 @@ So that I can see and reuse proven skill combinations for my mastery.
 **Given** a build's class/mastery and currently-assigned skills
 **When** `popularBuildMatch.ts` runs
 **Then** it filters by exact mastery match, sorts by count of skill overlap with assigned skills, and returns the top 3 matches entirely client-side with no network request (NFR-13).
+
+### Story 5.5: Minion stat correctness (skill-tree wiring + de-conflation)
+
+As a theory-crafting player with a minion build,
+I want minion Count, HP, and Speed computed correctly from all real sources,
+So that the Minion tab reflects my actual minion power, not just minion damage.
+
+**Context:** Completes FR-10, deferred from Story 1.5 (see its Decision section). Story 1.5 shipped `minion_damage_multi` real and `MinionStats`/TS mirror/`Some`-`None` plumbing in place; count/HP/speed surfaced honest-`0.0` to preserve the frozen player `effective_hp`/speed parity gate. This story fills those values once its prerequisites land. Depends on **Epic 5** (skill DB) and the skill-allocations→registry capability delivered in AC1.
+
+**Acceptance Criteria:**
+
+**Given** `BuildSnapshot.skill_node_allocations` (today deserialized but consumed nowhere)
+**When** `build_registry` runs
+**Then** skill-specialization-tree node effects contribute modifiers to the registry, so skill-tree scaling reaches the stat engine (AC1).
+**And** this is recognized as a general re-baseline: skill-tree allocations now feed ALL stats (damage_score, effective_hp, speed, etc.) for any build with skill allocations — the change is made deliberately with the `effective_hp_*`/`build_score_slider_*`/`ehp_reference` gates re-baselined and the optimizer/gear-scoring outputs revalidated.
+
+**Given** minion Health/Attack-Speed nodes currently mapped to player `MaxHp`/`AttackSpeed`
+**When** `tags_to_stat_key` is updated
+**Then** `MINION`+`HEALTH` → `IncreasedMinionHp` and `MINION`+`ATTACK_SPEED` → a minion-speed key are matched **before** the player branches, de-conflating minion HP/Speed off player stats; the player-HP/speed re-baseline and the `GOLDEN_EFFECT_COUNT` change are deliberate and documented (the Necrotic-split precedent).
+
+**Given** all minion sources (passives, skill spec trees, uniques, idols)
+**When** `compute_minion` runs
+**Then** `minion_count`, `minion_damage_multi`, `minion_hp_multi`, and `minion_speed` are computed from real sourced values (no dead keys); minion count is sourced from spec trees / uniques / idols.
+
+**Given** Epic 5's skill database (skill tags/metadata)
+**When** minion-skill presence is evaluated
+**Then** Story 1.5's interim signal (`primary_offense_delivery_type == "minion"` ∨ any minion modifier) is replaced with real per-skill minion metadata, so `StatSheet.minion` is `Some(..)` exactly when ≥1 assigned skill is a minion skill (FR-10).
 
 ---
 
