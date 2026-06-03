@@ -13,11 +13,14 @@ use crate::modifier::{ModifierRegistry, StatKey};
 use crate::stat_sheet::MinionStats;
 
 pub(super) fn compute_minion(registry: &ModifierRegistry, active: &[String]) -> MinionStats {
-    let minion_damage_multi: f64 = registry
+    let raw_damage_multi: f64 = registry
         .query(&StatKey::IncreasedMinionDamage, active)
         .iter()
         .map(|m| m.value)
         .sum();
+    // NaN/inf guard: a non-finite total would serialize as JSON `null`, breaking the TS `number`
+    // contract. Mirrors `ailment::sum`. [Story 1.5 code review 2026-06-03]
+    let minion_damage_multi = if raw_damage_multi.is_finite() { raw_damage_multi } else { 0.0 };
 
     MinionStats {
         // No shipped `+N minion` source found in the audit → honest 0.0, no dead key.
@@ -40,7 +43,15 @@ pub(super) fn has_minion_skill(
     registry: &ModifierRegistry,
     active: &[String],
 ) -> bool {
-    if snapshot.primary_offense_delivery_type.as_deref() == Some("minion") {
+    // Trim + case-fold to match the tolerant delivery-type comparison used elsewhere
+    // (`modifier.rs` `from_data_str`) — raw `== "minion"` would miss `"Minion"` / `" minion"`
+    // and hide the Minion sub-sheet for a genuine minion build. [Story 1.5 code review 2026-06-03]
+    if snapshot
+        .primary_offense_delivery_type
+        .as_deref()
+        .map(|s| s.trim().eq_ignore_ascii_case("minion"))
+        == Some(true)
+    {
         return true;
     }
     [

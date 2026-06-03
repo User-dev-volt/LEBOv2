@@ -8,8 +8,16 @@
 use crate::modifier::{ModifierRegistry, StatKey};
 use crate::stat_sheet::AttributeStats;
 
+/// Sum of a key's active modifiers, with a NaN/inf guard (bad data must not poison the sheet —
+/// a non-finite total would serialize as JSON `null`, breaking the TS `number` contract). Mirrors
+/// the guard in `ailment::sum`. [Story 1.5 code review 2026-06-03]
 fn sum(registry: &ModifierRegistry, active: &[String], key: &StatKey) -> f64 {
-    registry.query(key, active).iter().map(|m| m.value).sum()
+    let total: f64 = registry.query(key, active).iter().map(|m| m.value).sum();
+    if total.is_finite() {
+        total
+    } else {
+        0.0
+    }
 }
 
 pub(super) fn compute_attributes(registry: &ModifierRegistry, active: &[String]) -> AttributeStats {

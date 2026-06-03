@@ -308,17 +308,6 @@ fn tags_to_stat_key(tags: &[String], modifier_type: &ModifierType) -> Option<Sta
         return Some(StatKey::IncreasedDamage); // generic
     }
 
-    // Attributes (FR-9, Story 1.5). Ship as standalone single-tag effects (e.g. `["STRENGTH"]`),
-    // so they are placed AFTER the DAMAGE branch: a node co-tagged with DAMAGE (the lone case is
-    // mage runemaster `["SPELL","INTELLIGENCE","DAMAGE"]`) keeps its damage key, leaving these to
-    // catch the pure-attribute nodes. Audit-proven sourced for STR/DEX/INT/ATT; VITALITY keys the
-    // real LE tag for forward-compat (no VITALITY-tagged node ships today).
-    if has("STRENGTH") { return Some(StatKey::Strength); }
-    if has("DEXTERITY") { return Some(StatKey::Dexterity); }
-    if has("INTELLIGENCE") { return Some(StatKey::Intelligence); }
-    if has("ATTUNEMENT") { return Some(StatKey::Attunement); }
-    if has("VITALITY") { return Some(StatKey::Vitality); }
-
     // Crit
     if has("CRIT_AVOIDANCE") || (has("CRIT") && has("AVOIDANCE")) {
         return Some(StatKey::CriticalStrikeAvoidance);
@@ -396,6 +385,21 @@ fn tags_to_stat_key(tags: &[String], modifier_type: &ModifierType) -> Option<Sta
         if has("PHYSICAL") { return Some(StatKey::PhysicalResistance); }
         return Some(StatKey::AllResistances); // unqualified RESISTANCE = all
     }
+
+    // Attributes (FR-9, Story 1.5). Ship as standalone single-tag effects (e.g. `["STRENGTH"]`),
+    // so they are placed LAST — below every player-stat branch (DAMAGE, CRIT, SPEED, HEALTH,
+    // ATTACK_SPEED, RESISTANCE, ...). First-match-wins means a future node co-tagged with a
+    // frozen-gate stat (e.g. `["VITALITY","HEALTH"]` → player HP, `["ATTUNEMENT","ATTACK_SPEED"]`
+    // → speed) keeps that stat instead of being silently diverted onto an attribute total —
+    // protecting the frozen effective_hp / speed parity gate. No standalone attribute node is
+    // co-tagged today, so the golden count is unchanged (203). Audit-proven sourced for
+    // STR/DEX/INT/ATT; VITALITY keys the real LE tag for forward-compat (no VITALITY-tagged node
+    // ships today). [Story 1.5 code review 2026-06-03]
+    if has("STRENGTH") { return Some(StatKey::Strength); }
+    if has("DEXTERITY") { return Some(StatKey::Dexterity); }
+    if has("INTELLIGENCE") { return Some(StatKey::Intelligence); }
+    if has("ATTUNEMENT") { return Some(StatKey::Attunement); }
+    if has("VITALITY") { return Some(StatKey::Vitality); }
 
     None // Unknown tag combination → silently dropped (FR-A6)
 }
