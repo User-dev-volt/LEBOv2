@@ -84,6 +84,17 @@ The legacy `defense.effective_hp` field, the `1.05^(n-2)` multi-layer bonus in `
   - [x] TS strict compile (`pnpm exec tsc --noEmit`) exit 0; `vitest run` — 14 failed / 1026 passed = the documented 14-failure baseline (all pre-existing AppHeader/RightPanel/ProviderSelector/Settings/SkillTree UI; StatSheetPanel 15/15 pass). No new failures.
   - [x] Tunklab reference inputs/outputs, the average-resistance assumption, and the ward-equilibrium formula source recorded in the Dev Agent Record + `ehp_reference.rs`.
 
+### Review Findings
+
+_Code review 2026-06-03 (Blind Hunter + Edge Case Hunter + Acceptance Auditor). All 4 ACs satisfied; frozen `effective_hp`/`survivability_score`/`build_score` parity gate verified byte-identical and green under test. No Critical/High findings._
+
+- [ ] [Review][Decision] `vs_one_shots` is not bounded by the 100×-pool invariant that caps `vs_hits`/`vs_dots` [`ehp.rs:93-102`] — hits/dots divide by a denominator floored at `MIN_DAMAGE_TAKEN` (0.01) so they cap at 100× pool, but `vs_one_shots = post_mitigation_capacity / armor_res_factor` has an unbounded-on-top numerator (`below_capacity = threshold/(1−endurance_dr)`, up to 10× threshold) and can reach ~1000× pool at clamp extremes (90% endurance + 85% armor + 75% res). Stays finite (no AC1/NaN violation) but is asymmetric with the documented 100×-pool guarantee and can surface a misleading display number. Options: (a) cap `vs_one_shots` at 100× pool for consistency, (b) leave uncapped (genuinely accurate for high-threshold builds) and scope the `MIN_DAMAGE_TAKEN` doc-comment so it no longer claims a universal 100× cap, (c) dismiss.
+- [ ] [Review][Patch] Ward module doc describes amount-dependent decay then models a flat constant rate [`ward.rs:1-21`] — opening lines say ward "is lost at a rate that rises with the current ward amount," then `BASE_WARD_DECAY_RATE` is a flat 0.40; the closed form is disclosed on lines 6-8 but the lead sentence reads as a contradiction. Tighten wording to flag the constant-rate form explicitly as the modelled approximation.
+- [x] [Review][Defer] AC3 reference figures are closed-form (Maxroll), not live tunklab captures [`ehp_reference.rs`] — deferred, story-sanctioned fallback; ±2% gate currently proves internal regression-drift, not independent tunklab parity. Swap to live tunklab captures when capturable.
+- [x] [Review][Defer] `ehp_reference.rs` fixtures depend on the unseen `compute_defense` armor formula (Armor 1104→50%) [`ehp_reference.rs`] — deferred, test-coupling note; a change to armor K would break EHP-layer tests for an unrelated reason.
+- [x] [Review][Defer] Cap constants (`ARMOR_DR_CAP`/`RESISTANCE_CAP`/`ENDURANCE_DR_CAP`) re-declared in `ehp.rs` rather than shared with `defense.rs` [`ehp.rs`] — deferred, story scoped the modules standalone; silent desync risk if `defense.rs` caps ever change.
+- [x] [Review][Defer] `stable_ward` has no upper sanity bound below Inf [`ward.rs:45-52`] — deferred, latent/unreachable today (production retention = 0.0); large finite retention from a future source would yield unrealistic values.
+
 ## Dev Notes
 
 ### Scope boundary — what this story IS and is NOT
