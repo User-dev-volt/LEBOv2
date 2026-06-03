@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Launch the parallel adversarial review layers against the 8 files, applying the 4 AC blocks + hard scope boundaries from the story spec as the enforcement matrix.
+Move Story 1.5 from `in-progress` to `review` in sprint-status.yaml (already done); await code review before merge.
 
 ---
 
