@@ -34,8 +34,11 @@ export function useStatSheet(): void {
         useOptimizationStore.getState().setIsComputingStats(true)
 
         const snapshot = toBuildSnapshot(build, gameData)
+        const __nfr10_t0 = performance.now() // TEMP NFR-10 instrumentation — REMOVE BEFORE COMMIT
         invokeCommand<StatSheet>('compute_stats', { snapshot })
           .then((result) => {
+            // TEMP NFR-10 instrumentation — REMOVE BEFORE COMMIT (target: < 16ms steady-state; ignore first/cold call)
+            console.log(`[NFR-10] compute_stats round-trip: ${(performance.now() - __nfr10_t0).toFixed(2)}ms`)
             if (generationRef.current !== generation) return // stale — discard
             useOptimizationStore.getState().setStatSheet(result)
             useOptimizationStore.getState().setIsComputingStats(false)
