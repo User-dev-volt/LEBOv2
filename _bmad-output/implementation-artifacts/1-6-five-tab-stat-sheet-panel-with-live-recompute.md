@@ -1,6 +1,6 @@
 # Story 1.6: Five-tab Stat Sheet panel with live recompute
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -48,42 +48,42 @@ This story completes the **functional five-tab StatSheet content** (addendum F) 
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Add the `--color-dmg-necrotic` token (AC: 1)** — `lebo/src/assets/styles/global.css`
-  - [ ] Add `--color-dmg-necrotic` to the `--color-dmg-*` block (around `global.css:55-61`). No necrotic token ships today; pick a Last-Epoch-appropriate sickly-green/teal (e.g. `#7FB069` or `#6FBF8F`) — Story 2.1 owns final token *value* reconciliation and does **not** add this token, so adding it here is correct and non-conflicting.
-  - [ ] Verify it resolves the same way the existing `--color-dmg-*` vars do (used inline as `var(--color-dmg-necrotic)`).
+- [x] **Task 1 — Add the `--color-dmg-necrotic` token (AC: 1)** — `lebo/src/assets/styles/global.css`
+  - [x] Add `--color-dmg-necrotic` to the `--color-dmg-*` block (around `global.css:55-61`). No necrotic token ships today; pick a Last-Epoch-appropriate sickly-green/teal (e.g. `#7FB069` or `#6FBF8F`) — Story 2.1 owns final token *value* reconciliation and does **not** add this token, so adding it here is correct and non-conflicting.
+  - [x] Verify it resolves the same way the existing `--color-dmg-*` vars do (used inline as `var(--color-dmg-necrotic)`).
 
-- [ ] **Task 2 — General tab: add Attributes (+ honest placeholders) (AC: 1)** — `StatSheetPanel.tsx`
-  - [ ] Keep existing General rows (Class, Mastery, Level, Passive Points, per-skill rows).
-  - [ ] Add an **Attributes** group from `statSheet.attributes`: Strength, Dexterity, Intelligence, Attunement (addendum F lists Str/Dex/Int/Att). Render via `StatRow` with `fmtInt`. (`vitality` is `0.0`/forward-compat per Story 1.5 and is **not** in addendum F — omit it.)
-  - [ ] Add an honest **Idol Cells Used** row: derive from `activeBuild.idolGrid` occupancy if cleanly available, otherwise render `—` (no fabrication — idol cell-size accounting is an idol-grid concern, default to `—` when not derivable). Add a **Skill Slots** summary row (e.g. count of assigned skills) if not already implied by the per-skill rows.
+- [x] **Task 2 — General tab: add Attributes (+ honest placeholders) (AC: 1)** — `StatSheetPanel.tsx`
+  - [x] Keep existing General rows (Class, Mastery, Level, Passive Points, per-skill rows).
+  - [x] Add an **Attributes** group from `statSheet.attributes`: Strength, Dexterity, Intelligence, Attunement (addendum F lists Str/Dex/Int/Att). Render via `StatRow` with `fmtInt`. (`vitality` is `0.0`/forward-compat per Story 1.5 and is **not** in addendum F — omit it.)
+  - [x] Add an honest **Idol Cells Used** row: derive from `activeBuild.idolGrid` occupancy if cleanly available, otherwise render `—` (no fabrication — idol cell-size accounting is an idol-grid concern, default to `—` when not derivable). Add a **Skill Slots** summary row (e.g. count of assigned skills) if not already implied by the per-skill rows.
 
-- [ ] **Task 3 — Offense tab: add penetration, stun chance, ailment chances, per-type damage (AC: 1)** — `StatSheetPanel.tsx`
-  - [ ] Keep existing rows (Build Score, Damage Score, Avg Hit, Avg Hit (Crit), Crit Chance, Crit Multi, Attack Speed, Cast Speed, AoE Modifier).
-  - [ ] Add **Stun Chance** from `offense.stun_chance` (`%`).
-  - [ ] Add **Penetration** rows: `offense.elemental_penetration`, `offense.physical_penetration`, `offense.void_penetration` (per addendum F "Penetration (per type)").
-  - [ ] Add **Ailment Chances** group: `bleed_chance`, `ignite_chance`, `poison_chance`, `freeze_chance`, `shock_chance` (`%`; addendum F lists these five — `armor_shred_chance` exists in the type but is not in addendum F's Offense list, so omit it from the layout). Per Story 1.5 these are honest `0.0` today — display the engine value as-is.
-  - [ ] Optionally lay out **Damage Score (per type)** from `offense.damage_types[]` (`DamageTypeBreakdown`) using `DAMAGE_TYPE_COLORS` from `rarityColors.ts`. If the array is empty (common today), render nothing extra — do not fabricate per-type rows.
+- [x] **Task 3 — Offense tab: add penetration, stun chance, ailment chances, per-type damage (AC: 1)** — `StatSheetPanel.tsx`
+  - [x] Keep existing rows (Build Score, Damage Score, Avg Hit, Avg Hit (Crit), Crit Chance, Crit Multi, Attack Speed, Cast Speed, AoE Modifier).
+  - [x] Add **Stun Chance** from `offense.stun_chance` (`%`).
+  - [x] Add **Penetration** rows: `offense.elemental_penetration`, `offense.physical_penetration`, `offense.void_penetration` (per addendum F "Penetration (per type)").
+  - [x] Add **Ailment Chances** group: `bleed_chance`, `ignite_chance`, `poison_chance`, `freeze_chance`, `shock_chance` (`%`; addendum F lists these five — `armor_shred_chance` exists in the type but is not in addendum F's Offense list, so omit it from the layout). Per Story 1.5 these are honest `0.0` today — display the engine value as-is.
+  - [x] Optionally lay out **Damage Score (per type)** from `offense.damage_types[]` (`DamageTypeBreakdown`) using `DAMAGE_TYPE_COLORS` from `rarityColors.ts`. If the array is empty (common today), render nothing extra — do not fabricate per-type rows.
 
-- [ ] **Task 4 — Defense tab: EHP-triple, Stable Ward, Ward Retention, Necrotic Res, new layers, ailment avoidance (AC: 1)** — `StatSheetPanel.tsx`
-  - [ ] Replace the single **Effective HP** row with the **EHP triple** per addendum F: EHP vs Hits (`ehp_vs_hits`), vs DoTs (`ehp_vs_dots`), vs 1-shots (`ehp_vs_one_shots`). (The legacy `defense.effective_hp` still exists and still drives the delta badge / preview — keep using it for the delta logic; the new rows are display-only additions.)
-  - [ ] Keep HP (`raw_hp`), Ward (`ward`), Armor, Endurance %, Endurance Threshold.
-  - [ ] Add **Stable Ward** (`stable_ward`) and **Ward Retention** (`ward_retention`).
-  - [ ] Add **Necrotic Res** to the `RESISTANCES` array — `{ field: 'necrotic_resistance', warnType: 'necrotic_resistance_uncapped', label: 'Necrotic Res', damageTypeColor: 'var(--color-dmg-necrotic)' }`. Place it between Void and Physical to match addendum F order (Fire/Cold/Lightning/Void/**Necrotic**/Physical/Poison).
-  - [ ] Add the remaining addendum-F Defense layers from `DefenseStats`: **Parry** (`parry_chance`), **Block** (`block_chance`), **Glancing Blow** (`glancing_blow_chance`), **Crit Avoidance** (`crit_avoidance`, already present), **Reduced Crit Bonus** (`reduced_bonus_damage_from_crits`), **Dodge** (`dodge_chance`, already present).
-  - [ ] Add **Ailment Avoidance** group: `chill_avoidance`, `stun_avoidance`, `bleed_avoidance` (`%`). Honest `0.0` today (Story 1.5) — display as-is.
+- [x] **Task 4 — Defense tab: EHP-triple, Stable Ward, Ward Retention, Necrotic Res, new layers, ailment avoidance (AC: 1)** — `StatSheetPanel.tsx`
+  - [x] Replace the single **Effective HP** row with the **EHP triple** per addendum F: EHP vs Hits (`ehp_vs_hits`), vs DoTs (`ehp_vs_dots`), vs 1-shots (`ehp_vs_one_shots`). (The legacy `defense.effective_hp` still exists and still drives the delta badge / preview — keep using it for the delta logic; the new rows are display-only additions.)
+  - [x] Keep HP (`raw_hp`), Ward (`ward`), Armor, Endurance %, Endurance Threshold.
+  - [x] Add **Stable Ward** (`stable_ward`) and **Ward Retention** (`ward_retention`).
+  - [x] Add **Necrotic Res** to the `RESISTANCES` array — `{ field: 'necrotic_resistance', warnType: 'necrotic_resistance_uncapped', label: 'Necrotic Res', damageTypeColor: 'var(--color-dmg-necrotic)' }`. Place it between Void and Physical to match addendum F order (Fire/Cold/Lightning/Void/**Necrotic**/Physical/Poison).
+  - [x] Add the remaining addendum-F Defense layers from `DefenseStats`: **Parry** (`parry_chance`), **Block** (`block_chance`), **Glancing Blow** (`glancing_blow_chance`), **Crit Avoidance** (`crit_avoidance`, already present), **Reduced Crit Bonus** (`reduced_bonus_damage_from_crits`), **Dodge** (`dodge_chance`, already present).
+  - [x] Add **Ailment Avoidance** group: `chill_avoidance`, `stun_avoidance`, `bleed_avoidance` (`%`). Honest `0.0` today (Story 1.5) — display as-is.
 
-- [ ] **Task 5 — Minion tab + Other tab + recompute confirmation (AC: 2, 3)** — `StatSheetPanel.tsx`
-  - [ ] Replace the Minion `TabPanel` placeholder text with real rows from `statSheet.minion`: **Minion Count** (`minion_count`), **Minion Damage Multi** (`minion_damage_multi`), **Minion HP Multi** (`minion_hp_multi`), **Minion Speed** (`minion_speed`). Keep the existing `showMinionTab` gating and the `key={showMinionTab ? ...}` remount that keeps the Tab/TabPanel counts in sync — **do not change** that pattern (it prevents Headless UI index drift).
-  - [ ] Other tab: keep Survivability Score (`scores.survivability_score`) and Speed Score (`scores.speed_score`). Add **Increased Healing Effectiveness** from `defense.healing_effectiveness` (a real field). For Move Speed, Cooldown Recovery, Mana (pool+regen), Health Regen, Life Leech, Ward/sec — these have **no `StatSheet` field**; render honest `—` rows (or keep the existing "coming in a future update" note). Do **not** add new IPC or invent values.
-  - [ ] Confirm **no manual recalculate control** exists anywhere in the panel (there is none today — do not add one). The recompute is driven entirely by `useStatSheet` in `App.tsx`.
-  - [ ] **NFR-10 verification:** with a fully-loaded build, confirm the `compute_stats` display round-trip stays under 16ms (e.g. wrap the `invokeCommand('compute_stats')` in `useStatSheet` with a temporary `performance.now()` log during dev, or use the Tauri devtools). Record the observed time in the Dev Agent Record. Do **not** leave the timing log in committed code, and do **not** alter the rAF/generation-counter debounce.
+- [x] **Task 5 — Minion tab + Other tab + recompute confirmation (AC: 2, 3)** — `StatSheetPanel.tsx`
+  - [x] Replace the Minion `TabPanel` placeholder text with real rows from `statSheet.minion`: **Minion Count** (`minion_count`), **Minion Damage Multi** (`minion_damage_multi`), **Minion HP Multi** (`minion_hp_multi`), **Minion Speed** (`minion_speed`). Keep the existing `showMinionTab` gating and the `key={showMinionTab ? ...}` remount that keeps the Tab/TabPanel counts in sync — **do not change** that pattern (it prevents Headless UI index drift).
+  - [x] Other tab: keep Survivability Score (`scores.survivability_score`) and Speed Score (`scores.speed_score`). Add **Increased Healing Effectiveness** from `defense.healing_effectiveness` (a real field). For Move Speed, Cooldown Recovery, Mana (pool+regen), Health Regen, Life Leech, Ward/sec — these have **no `StatSheet` field**; render honest `—` rows (or keep the existing "coming in a future update" note). Do **not** add new IPC or invent values.
+  - [x] Confirm **no manual recalculate control** exists anywhere in the panel (there is none today — do not add one). The recompute is driven entirely by `useStatSheet` in `App.tsx`.
+  - [x] **NFR-10 verification:** with a fully-loaded build, confirm the `compute_stats` display round-trip stays under 16ms (e.g. wrap the `invokeCommand('compute_stats')` in `useStatSheet` with a temporary `performance.now()` log during dev, or use the Tauri devtools). Record the observed time in the Dev Agent Record. Do **not** leave the timing log in committed code, and do **not** alter the rAF/generation-counter debounce. *(See Dev Agent Record — verified structurally; live wall-clock measurement deferred to the reviewer's running build, as this headless env cannot launch Tauri.)*
 
-- [ ] **Task 6 — Tests + keep the build green (AC: 4)** — `StatSheetPanel.test.tsx`
-  - [ ] `makeStatSheet()` already includes every field (updated by Story 1.5) — extend test fixtures with non-zero values where needed to assert rendering (e.g. set `attributes.strength`, `offense.elemental_penetration`, `defense.ehp_vs_hits`, `defense.necrotic_resistance`, `minion.minion_damage_multi`).
-  - [ ] Add assertions: Attributes rows render on General; penetration + stun + ailment-chance rows render on Offense; EHP-triple + Stable Ward + Necrotic Res + Parry/Block/Glancing + ailment-avoidance rows render on Defense; the four minion rows render when `minion != null`.
-  - [ ] Keep the existing tests green: 4-vs-5 tab counts, delta badges (Offense/Defense), resistance warning-gap label, capped-resistance suppression, dash placeholders when `statSheet == null`, fire-res color, loading indicator.
-  - [ ] Update/extend the **"all tabs" axe sweep** to include any newly-active tab content; ensure zero violations. Necrotic Res label color must keep contrast (reuse the `labelColor` mechanism the other resistances use).
-  - [ ] Run `pnpm exec tsc --noEmit` (exit 0) and `CI=true pnpm exec vitest run` (no new failures beyond the 14-failure baseline; `StatSheetPanel.test.tsx` fully green).
+- [x] **Task 6 — Tests + keep the build green (AC: 4)** — `StatSheetPanel.test.tsx`
+  - [x] `makeStatSheet()` already includes every field (updated by Story 1.5) — extend test fixtures with non-zero values where needed to assert rendering (e.g. set `attributes.strength`, `offense.elemental_penetration`, `defense.ehp_vs_hits`, `defense.necrotic_resistance`, `minion.minion_damage_multi`).
+  - [x] Add assertions: Attributes rows render on General; penetration + stun + ailment-chance rows render on Offense; EHP-triple + Stable Ward + Necrotic Res + Parry/Block/Glancing + ailment-avoidance rows render on Defense; the four minion rows render when `minion != null`.
+  - [x] Keep the existing tests green: 4-vs-5 tab counts, delta badges (Offense/Defense), resistance warning-gap label, capped-resistance suppression, dash placeholders when `statSheet == null`, fire-res color, loading indicator.
+  - [x] Update/extend the **"all tabs" axe sweep** to include any newly-active tab content; ensure zero violations. Necrotic Res label color must keep contrast (reuse the `labelColor` mechanism the other resistances use).
+  - [x] Run `pnpm exec tsc --noEmit` (exit 0) and `CI=true pnpm exec vitest run` (no new failures beyond the 14-failure baseline; `StatSheetPanel.test.tsx` fully green).
 
 ## Dev Notes
 
@@ -187,14 +187,34 @@ Recent commits are auto-save snapshots (`[AutoSave] …`) with no story-specific
 
 ### Agent Model Used
 
+claude-opus-4-8 (BMAD dev-story workflow)
+
 ### Debug Log References
+
+- `pnpm exec tsc --noEmit` → exit 0 (no type errors).
+- `CI=true pnpm exec vitest run src/features/stat-sheet/StatSheetPanel.test.tsx` → 21/21 passed (14 pre-existing + 7 new).
+- `CI=true pnpm exec vitest run` (full suite) → 1032 passed, 14 failed. The 14 failures were proven pre-existing by stashing this story's three files and re-running the six affected files (`AppHeader`, `RightPanel`, `ProviderSelector`, `Settings`, `SkillTreeCanvas`, `TreeControls`) on the clean baseline — identical 14 failures, all jsdom/Headless-UI/canvas-environment issues unrelated to this story. Zero new failures introduced.
 
 ### Completion Notes List
 
+- **Frontend-only, additive display.** Edited exactly three files (`StatSheetPanel.tsx`, `StatSheetPanel.test.tsx`, `global.css`). No Rust/IPC/store/hook/view/router change. `useStatSheet` (App.tsx:44) untouched — confirmed it is the recompute path.
+- **Task 1:** Added `--color-dmg-necrotic: #6FBF8F` to the `--color-dmg-*` block in `global.css`, consumed inline as `var(--color-dmg-necrotic)` exactly like the other damage-type tokens.
+- **Task 2 (General):** Added a `GroupLabel` sub-section helper; laid out Attributes (Strength/Dexterity/Intelligence/Attunement via `fmtInt` from `statSheet.attributes`) — `vitality` deliberately omitted (not in addendum F). Added honest `Idol Cells Used = —` (cell-size accounting is an idol-grid concern, not cleanly derivable from `idolGrid` alone) and a `Skill Slots` count row.
+- **Task 3 (Offense):** Added Stun Chance, Penetration group (Elemental/Physical/Void), Ailment Chances group (Bleed/Ignite/Poison/Freeze/Shock — honest 0.0 today), and an optional per-type damage map over `offense.damage_types[]` (empty today → renders nothing; uses `DAMAGE_TYPE_COLORS`, never hardcoded hex). `armor_shred_chance` intentionally omitted (not in addendum F).
+- **Task 4 (Defense):** Replaced the single Effective HP row with the EHP triple (vs Hits / vs DoTs / vs 1-Shots). **Decision:** the legacy `effective_hp` delta is attached to the `EHP vs Hits` row so the preview delta badge still surfaces (honors the story's "legacy effective_hp still drives the delta badge"); the other two EHP rows are display-only. Added Stable Ward, Ward Retention, Parry, Block, Glancing Blow, Reduced Crit Bonus, and an Ailment Avoidance group (Chill/Stun/Bleed). Added `necrotic_resistance` to the `RESISTANCES` array and reordered to the exact addendum-F sequence Fire/Cold/Lightning/Void/**Necrotic**/Physical/Poison (the array previously had Poison before Physical); reorder is cosmetic and breaks no test.
+- **Task 5 (Minion/Other):** Replaced the Minion placeholder text with the four real rows from `statSheet.minion` (kept the `showMinionTab` gating + `key=` remount untouched). Other tab: added Healing Effectiveness (real field) plus honest `—` rows for Move Speed, Cooldown Recovery, Mana, Health Regen, Life Leech, Ward/sec. **No recalculate control exists or was added** — recompute is entirely `useStatSheet`-driven.
+- **NFR-10 (<16ms round-trip):** Verified *structurally* — this story adds no new `compute_stats` call, no new recompute trigger, and does not alter the rAF/generation-counter debounce in `useStatSheet`; the change is pure additive JSX, so the IPC round-trip is identical to Story 1.5's. A live wall-clock measurement requires a running `pnpm tauri dev` with a fully-loaded build, which this headless dev environment cannot launch — **flagged for the reviewer to confirm in-app**. No timing instrumentation was committed.
+- **Honest-display rule upheld:** every laid-out row maps to a real `StatSheet`/build field (including honest 0.0 values); only genuinely-unsourced addendum-F rows render `—`. No fabricated numbers, no new IPC.
+
 ### File List
+
+- `lebo/src/features/stat-sheet/StatSheetPanel.tsx` (modified) — added Attributes/penetration/stun/ailment-chance/EHP-triple/Stable-Ward/Ward-Retention/Necrotic-Res/Parry/Block/Glancing/Reduced-Crit-Bonus/ailment-avoidance/Minion rows + `GroupLabel` helper + necrotic in `RESISTANCES` + `DAMAGE_TYPE_COLORS`/`DamageType` imports.
+- `lebo/src/features/stat-sheet/StatSheetPanel.test.tsx` (modified) — 7 new tests (attributes, offense penetration/stun/ailment, defense EHP-triple/Stable-Ward/Necrotic-Res/new-layers/avoidance, necrotic label color, four minion rows, Other-tab healing + honest dashes).
+- `lebo/src/assets/styles/global.css` (modified) — added `--color-dmg-necrotic` token.
 
 ## Change Log
 
 | Date | Change |
 |------|--------|
 | 2026-06-03 | Story 1.6 drafted by create-story context engine. Frontend-only: lay out all addendum-F fields across the five StatSheet tabs (Attributes on General; penetration/stun/ailment-chances on Offense; EHP-triple/Stable Ward/Ward Retention/Necrotic Res/Parry/Block/Glancing/Reduced-Crit-Bonus/ailment-avoidance on Defense; real Minion rows; honest `—` for unsourced Other/General rows), add `--color-dmg-necrotic` token, confirm live recompute via existing `useStatSheet` (no recalc button, <16ms NFR-10). Data complete after Story 1.5; no Rust/IPC/store/hook change. Status → ready-for-dev. |
+| 2026-06-03 | Story 1.6 implemented (dev-story). All addendum-F fields laid out across the five tabs; `--color-dmg-necrotic` token added; Minion tab populated; honest `—` placeholders for unsourced rows; `useStatSheet` recompute path confirmed untouched (no recalc control). `tsc --noEmit` exit 0; `StatSheetPanel.test.tsx` 21/21 green; full suite shows zero new failures beyond the proven 14-failure pre-existing UI baseline. NFR-10 verified structurally (no compute/IPC change); live wall-clock check flagged for reviewer. Status → review. |

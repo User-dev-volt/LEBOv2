@@ -251,6 +251,118 @@ describe('StatSheetPanel', () => {
     expect(fireLabel).toHaveStyle({ color: 'var(--color-dmg-fire)' })
   })
 
+  it('renders attribute rows on the General tab and omits vitality (1.6 AC1)', () => {
+    setupMocks({
+      statSheet: makeStatSheet({
+        attributes: { strength: 42, dexterity: 13, intelligence: 7, attunement: 5, vitality: 99 },
+      }),
+    })
+    render(<StatSheetPanel />)
+    // General is the default active tab
+    expect(screen.getByText('Strength')).toBeInTheDocument()
+    expect(screen.getByText('42')).toBeInTheDocument()
+    expect(screen.getByText('Dexterity')).toBeInTheDocument()
+    expect(screen.getByText('Intelligence')).toBeInTheDocument()
+    expect(screen.getByText('Attunement')).toBeInTheDocument()
+    // vitality is forward-compat / not in addendum F — must not be laid out
+    expect(screen.queryByText('Vitality')).toBeNull()
+    expect(screen.getByText('Idol Cells Used')).toBeInTheDocument()
+    expect(screen.getByText('Skill Slots')).toBeInTheDocument()
+  })
+
+  it('renders penetration, stun, and ailment-chance rows on the Offense tab (1.6 AC1)', () => {
+    setupMocks({
+      statSheet: makeStatSheet({
+        offense: {
+          ...makeStatSheet().offense,
+          elemental_penetration: 12,
+          stun_chance: 8,
+        },
+      }),
+    })
+    render(<StatSheetPanel />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Offense' }))
+    expect(screen.getByText('Stun Chance')).toBeInTheDocument()
+    expect(screen.getByText('Elemental Pen')).toBeInTheDocument()
+    expect(screen.getByText('Physical Pen')).toBeInTheDocument()
+    expect(screen.getByText('Void Pen')).toBeInTheDocument()
+    // Ailment Chances group (honest 0.0 today)
+    expect(screen.getByText('Bleed')).toBeInTheDocument()
+    expect(screen.getByText('Ignite')).toBeInTheDocument()
+    expect(screen.getByText('Poison')).toBeInTheDocument()
+    expect(screen.getByText('Freeze')).toBeInTheDocument()
+    expect(screen.getByText('Shock')).toBeInTheDocument()
+  })
+
+  it('renders EHP triple, Stable Ward, Necrotic Res, and new defensive layers (1.6 AC1)', () => {
+    setupMocks({
+      statSheet: makeStatSheet({
+        defense: {
+          ...makeStatSheet().defense,
+          ehp_vs_hits: 5200,
+          ehp_vs_dots: 4800,
+          ehp_vs_one_shots: 6000,
+          stable_ward: 300,
+          parry_chance: 15,
+          block_chance: 20,
+          glancing_blow_chance: 10,
+        },
+      }),
+    })
+    render(<StatSheetPanel />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Defense' }))
+    expect(screen.getByText('EHP vs Hits')).toBeInTheDocument()
+    expect(screen.getByText('EHP vs DoTs')).toBeInTheDocument()
+    expect(screen.getByText('EHP vs 1-Shots')).toBeInTheDocument()
+    expect(screen.getByText('Stable Ward')).toBeInTheDocument()
+    expect(screen.getByText('Ward Retention')).toBeInTheDocument()
+    expect(screen.getByText('Necrotic Res')).toBeInTheDocument()
+    expect(screen.getByText('Parry')).toBeInTheDocument()
+    expect(screen.getByText('Block')).toBeInTheDocument()
+    expect(screen.getByText('Glancing Blow')).toBeInTheDocument()
+    expect(screen.getByText('Reduced Crit Bonus')).toBeInTheDocument()
+    // Ailment Avoidance group
+    expect(screen.getByText('Chill')).toBeInTheDocument()
+    expect(screen.getByText('Stun')).toBeInTheDocument()
+  })
+
+  it('necrotic resistance label uses the necrotic damage-type color', () => {
+    setupMocks({ statSheet: makeStatSheet() })
+    render(<StatSheetPanel />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Defense' }))
+    expect(screen.getByText('Necrotic Res')).toHaveStyle({ color: 'var(--color-dmg-necrotic)' })
+  })
+
+  it('renders the four minion rows (not the placeholder) when minion is non-null (1.6 AC2)', () => {
+    setupMocks({
+      statSheet: makeStatSheet({
+        minion: { minion_count: 3, minion_damage_multi: 150, minion_hp_multi: 120, minion_speed: 100 },
+      }),
+    })
+    render(<StatSheetPanel />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Minion' }))
+    expect(screen.getByText('Minion Count')).toBeInTheDocument()
+    expect(screen.getByText('Minion Damage Multi')).toBeInTheDocument()
+    expect(screen.getByText('Minion HP Multi')).toBeInTheDocument()
+    expect(screen.getByText('Minion Speed')).toBeInTheDocument()
+    expect(screen.queryByText(/available once minion skill data/)).toBeNull()
+  })
+
+  it('renders Healing Effectiveness and honest dashes on the Other tab (1.6 AC1)', () => {
+    setupMocks({
+      statSheet: makeStatSheet({
+        defense: { ...makeStatSheet().defense, healing_effectiveness: 25 },
+      }),
+    })
+    render(<StatSheetPanel />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Other' }))
+    expect(screen.getByText('Healing Effectiveness')).toBeInTheDocument()
+    expect(screen.getByText('Move Speed')).toBeInTheDocument()
+    expect(screen.getByText('Health Regen')).toBeInTheDocument()
+    expect(screen.getByText('Life Leech')).toBeInTheDocument()
+    expect(screen.getByText('Ward / sec')).toBeInTheDocument()
+  })
+
   it('passes axe accessibility check on all tabs', async () => {
     setupMocks({ statSheet: makeStatSheet({ minion: { minion_count: 0, minion_damage_multi: 0, minion_hp_multi: 0, minion_speed: 0 } }) })
     const { container } = render(<StatSheetPanel />)

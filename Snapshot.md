@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Move Story 1.5 from `in-progress` to `review` in sprint-status.yaml (already done); await code review before merge.
+1.
 
 ---
 
