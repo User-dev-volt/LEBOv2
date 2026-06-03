@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-02
-last_updated: 2026-06-03 (1-5 → done: code review passed; 3 patches applied — attribute branches reordered below HEALTH/ATTACK_SPEED to protect frozen gate, NaN/inf guards on attribute+minion sums, minion delivery-type match case-folded; golden count stable 203; parity gate green; 1 low defer tracked)
+last_updated: 2026-06-03 (1-6 → ready-for-dev: five-tab StatSheet panel story created — frontend-only addendum-F layout of all stats; data complete after 1-5; live recompute already wired via useStatSheet, no recalc button; adds --color-dmg-necrotic token)
 project: LEBOv2
 project_key: NOKEY
 tracking_system: file-system
@@ -49,7 +49,7 @@ development_status:
   1-3-defensive-layer-computation: done
   1-4-ehp-triple-and-stable-ward-hp-equilibrium: done
   1-5-ailment-attribute-and-minion-stats: done
-  1-6-five-tab-stat-sheet-panel-with-live-recompute: backlog
+  1-6-five-tab-stat-sheet-panel-with-live-recompute: ready-for-dev
   1-7-modifiersource-tracking-and-opt-in-stat-sources: backlog
   1-8-stat-source-breakdown-tooltip-with-cap-gap-annotation: backlog
   epic-1-retrospective: optional
