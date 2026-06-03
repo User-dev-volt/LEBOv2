@@ -70,6 +70,7 @@ interface StatDeltas {
   cold_resistance: number
   lightning_resistance: number
   void_resistance: number
+  necrotic_resistance: number
   poison_resistance: number
   physical_resistance: number
   crit_avoidance: number
@@ -104,6 +105,7 @@ function computeStatDeltas(base: StatSheet, preview: StatSheet): StatDeltas {
     cold_resistance: preview.defense.cold_resistance - base.defense.cold_resistance,
     lightning_resistance: preview.defense.lightning_resistance - base.defense.lightning_resistance,
     void_resistance: preview.defense.void_resistance - base.defense.void_resistance,
+    necrotic_resistance: preview.defense.necrotic_resistance - base.defense.necrotic_resistance,
     poison_resistance: preview.defense.poison_resistance - base.defense.poison_resistance,
     physical_resistance: preview.defense.physical_resistance - base.defense.physical_resistance,
     crit_avoidance: preview.defense.crit_avoidance - base.defense.crit_avoidance,
@@ -291,7 +293,7 @@ export function StatSheetPanel() {
             <StatRow label="AoE Modifier" value={statSheet ? fmt(statSheet.offense.aoe_modifier) : '—'} delta={deltas?.aoe_modifier} />
             <StatRow label="Stun Chance" value={statSheet ? fmt(statSheet.offense.stun_chance) : '—'} unit="%" />
             {/* Per-type damage breakdown — empty today; renders nothing until the engine populates damage_types[]. */}
-            {statSheet?.offense.damage_types.map((dt) => (
+            {(statSheet?.offense.damage_types ?? []).map((dt) => (
               <StatRow
                 key={dt.damage_type}
                 label={`${dt.damage_type.charAt(0).toUpperCase()}${dt.damage_type.slice(1)} Dmg`}

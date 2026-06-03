@@ -1,6 +1,6 @@
 # Story 1.6: Five-tab Stat Sheet panel with live recompute
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -225,8 +225,8 @@ Three adversarial layers (Blind Hunter / Edge Case Hunter / Acceptance Auditor) 
 
 ### Patch (unresolved — code fixable)
 
-- [ ] [Review][Patch] Guard `offense.damage_types.map` against a missing array — the `.map` is the one consumer that trusts a sub-field (every other read is `statSheet ? … : '—'`); a partial/legacy IPC payload lacking `damage_types` throws `Cannot read properties of undefined (reading 'map')` and crashes the panel. Use `(statSheet?.offense.damage_types ?? []).map(...)`. Currently unreachable (type is non-optional, engine always sends it) but cheap defensive fix. [lebo/src/features/stat-sheet/StatSheetPanel.tsx:294]
-- [ ] [Review][Patch] `necrotic_resistance` missing from `StatDeltas` + `computeStatDeltas` — the reordered `RESISTANCES` array now includes necrotic, and the row does `delta={deltas?.[field as keyof StatDeltas]}` (the `as` cast masks the gap at compile time). At runtime the lookup is `undefined`, so in preview mode **every resistance shows a delta badge except Necrotic Res** — a silent inconsistency. Add `necrotic_resistance: number` to `StatDeltas` and the matching subtraction line in `computeStatDeltas`. [lebo/src/features/stat-sheet/StatSheetPanel.tsx:54-116, 327-340]
+- [x] [Review][Patch] Guard `offense.damage_types.map` against a missing array — the `.map` is the one consumer that trusts a sub-field (every other read is `statSheet ? … : '—'`); a partial/legacy IPC payload lacking `damage_types` throws `Cannot read properties of undefined (reading 'map')` and crashes the panel. Use `(statSheet?.offense.damage_types ?? []).map(...)`. Currently unreachable (type is non-optional, engine always sends it) but cheap defensive fix. [lebo/src/features/stat-sheet/StatSheetPanel.tsx:294]
+- [x] [Review][Patch] `necrotic_resistance` missing from `StatDeltas` + `computeStatDeltas` — the reordered `RESISTANCES` array now includes necrotic, and the row does `delta={deltas?.[field as keyof StatDeltas]}` (the `as` cast masks the gap at compile time). At runtime the lookup is `undefined`, so in preview mode **every resistance shows a delta badge except Necrotic Res** — a silent inconsistency. Add `necrotic_resistance: number` to `StatDeltas` and the matching subtraction line in `computeStatDeltas`. [lebo/src/features/stat-sheet/StatSheetPanel.tsx:54-116, 327-340]
 
 ### Defer (real, out of this story's 3-file scope or pre-existing)
 

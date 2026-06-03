@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-02
-last_updated: 2026-06-03 (1-6 → review: addendum-F five-tab StatSheet content laid out, --color-dmg-necrotic added, Minion tab populated; tsc clean, StatSheetPanel 21/21, zero new vitest failures vs 14-failure baseline)
+last_updated: 2026-06-03 (1-6 → done: code review passed — 2 patches applied (damage_types ?? [] guard; necrotic_resistance added to StatDeltas/computeStatDeltas), 2 deferred, 12 dismissed; tsc clean, StatSheetPanel 21/21 post-patch)
 project: LEBOv2
 project_key: NOKEY
 tracking_system: file-system
@@ -49,7 +49,7 @@ development_status:
   1-3-defensive-layer-computation: done
   1-4-ehp-triple-and-stable-ward-hp-equilibrium: done
   1-5-ailment-attribute-and-minion-stats: done
-  1-6-five-tab-stat-sheet-panel-with-live-recompute: review
+  1-6-five-tab-stat-sheet-panel-with-live-recompute: done
   1-7-modifiersource-tracking-and-opt-in-stat-sources: backlog
   1-8-stat-source-breakdown-tooltip-with-cap-gap-annotation: backlog
   epic-1-retrospective: optional
