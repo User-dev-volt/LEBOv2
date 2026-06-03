@@ -279,3 +279,12 @@ LE caps confirmed via Maxroll *Defenses Explained*: **85% physical**, **59.5% no
 | Date | Change |
 |------|--------|
 | 2026-06-03 | Story 1.3 implemented: FR-5 defensive layers (sourced Healing/Block + 7th Necrotic resistance, derived Armor Mitigation%, AR-14 gap floor, OQ-1 Parry spike resolved as zero-no-key). New StatKeys `HealingEffectiveness`/`BlockChance`; golden effect count rebaselined 185→198. TS mirror extended. Status → review. |
+
+### Review Findings
+
+_Code review 2026-06-03 (Blind Hunter + Edge Case Hunter + Acceptance Auditor). All 5 ACs verified satisfied — incl. the Story-1.2 "computed-but-unsourced" trap (both new keys provably sourced AND consumed). No HIGH/MEDIUM correctness defects. 8 findings dismissed as noise/by-design/documented._
+
+- [ ] [Review][Patch] Clamp `armor_mitigation_percent` to a sane floor — `armor / (armor + 1104.0)` has only an upper `.min(0.85)`; a net-negative armor sum yields a negative mitigation, and `armor == -1104` divides to `-inf` (serializes to a non-finite display value). Add a `.max(0.0)` lower clamp / denominator guard. [lebo/src-tauri/scoring-core/src/compute/defense.rs:181-182] — Low
+- [ ] [Review][Patch] Pin the denominator in `armor_mitigation_is_derived_and_caps_at_85` — the test feeds `armor == ARMOR_MITIGATION_DENOM_REF_L100` (1104), so `A/(A+A)=0.5` passes for *any* K; it does not catch a changed denominator. Use a distinct armor value (e.g. 368 → expect 25%) so the test actually pins K=1104. [lebo/src-tauri/scoring-core/src/compute/mod.rs] — Low (test quality)
+- [ ] [Review][Patch] Add an AR-14 epsilon-band test case — `floor_check_resistance_at_cap_emits_no_warning` only tests 74.999999 (gap ~1e-6), which any positive epsilon suppresses; it does not validate `RESISTANCE_GAP_EPSILON = 0.05` is correctly sized. Add an in-band case (e.g. 74.97 → no warning) and a just-outside case (e.g. 74.9 → warns, gap ≈ 0.1). [lebo/src-tauri/scoring-core/src/compute/mod.rs] — Low (test quality)
+- [ ] [Review][Patch] Document the intentional `HEALTH/HP/LIFE`-before-`HEALING` precedence — a node tagged both Health and Healing maps to HP and never reaches `HealingEffectiveness` (consistent with the documented first-match-wins single-key model; current data has 0 such nodes, the 4th HEALING tag is the Healing+Damage node routed to damage as documented). Add a one-line comment so the precedence isn't read as a misroute. [lebo/src-tauri/src/services/game_data_loader.rs:335-344] — Low
