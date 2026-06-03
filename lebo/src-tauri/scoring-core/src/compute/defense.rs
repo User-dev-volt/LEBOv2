@@ -178,8 +178,11 @@ pub(super) fn compute_defense(
         .sum::<f64>()
         .clamp(0.0, BLOCK_CHANCE_CAP);
     // Derived display value — pure function of `armor`, no StatKey. NOT fed into `effective_hp`.
-    let armor_mitigation_percent =
-        (armor / (armor + ARMOR_MITIGATION_DENOM_REF_L100)).min(ARMOR_MITIGATION_CAP) * 100.0;
+    // Clamped to [0, cap]: a net-negative armor sum (e.g. heavy shred) must not surface a negative
+    // mitigation, and the denominator must never reach 0 (armor == -K → division to ±inf).
+    let armor_mitigation_percent = (armor / (armor + ARMOR_MITIGATION_DENOM_REF_L100))
+        .clamp(0.0, ARMOR_MITIGATION_CAP)
+        * 100.0;
 
     // Defensive layers
     let mut layer_count: u32 = 0;

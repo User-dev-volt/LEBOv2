@@ -1118,12 +1118,13 @@ mod tests {
 
     #[test]
     fn armor_mitigation_is_derived_and_caps_at_85() {
-        // armor == the reference denominator → mitigation = A/(A+A) = 50%.
-        let (game_data, snapshot) = single_layer_node(StatKey::Armor, 1104.0);
+        // armor != the reference denominator so the assertion actually pins K=1104:
+        // 368 / (368 + 1104) = 0.25 → 25%. (A value of A==K would give 50% for ANY denominator.)
+        let (game_data, snapshot) = single_layer_node(StatKey::Armor, 368.0);
         let sheet = compute_stats(&snapshot, &game_data, ComputeOptions::default());
         assert!(
-            (sheet.defense.armor_mitigation_percent - 50.0).abs() < 0.1,
-            "1104 armor → 50% mitigation, got {}",
+            (sheet.defense.armor_mitigation_percent - 25.0).abs() < 0.1,
+            "368 armor with K=1104 → 25% mitigation, got {}",
             sheet.defense.armor_mitigation_percent
         );
         // Extreme armor → capped at 85%.
@@ -1187,6 +1188,32 @@ mod tests {
         assert!(
             sheet_below.warnings.iter().any(|w| w.warning_type == "necrotic_resistance_uncapped"),
             "necrotic_resistance_uncapped must be emitted below cap"
+        );
+
+        // Pin the epsilon WIDTH (RESISTANCE_GAP_EPSILON = 0.05): a value inside the band
+        // (74.97 → gap 0.03 < 0.05) is treated as capped → no warning...
+        let in_band = single_layer_node(StatKey::AllResistances, 74.97);
+        let sheet_in_band = compute_stats(&in_band.1, &in_band.0, ComputeOptions::default());
+        assert!(
+            !sheet_in_band.warnings.iter().any(|w| w.warning_type.ends_with("_resistance_uncapped")),
+            "within-epsilon resistance (74.97, gap 0.03) must emit no warning, got: {:?}",
+            sheet_in_band.warnings.iter().map(|w| &w.warning_type).collect::<Vec<_>>()
+        );
+        // ...but a value just outside the band (74.9 → gap 0.10 > 0.05) still warns.
+        let out_band = single_layer_node(StatKey::AllResistances, 74.9);
+        let sheet_out_band = compute_stats(&out_band.1, &out_band.0, ComputeOptions::default());
+        let out_warn = sheet_out_band
+            .warnings
+            .iter()
+            .find(|w| w.warning_type == "fire_resistance_uncapped");
+        assert!(
+            out_warn.is_some(),
+            "just-outside-epsilon resistance (74.9, gap 0.10) must still warn"
+        );
+        assert!(
+            (out_warn.unwrap().gap - 0.1).abs() < 0.01,
+            "gap expected ~0.1 got {}",
+            out_warn.unwrap().gap
         );
     }
 }

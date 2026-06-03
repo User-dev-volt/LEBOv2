@@ -341,6 +341,10 @@ fn tags_to_stat_key(tags: &[String], modifier_type: &ModifierType) -> Option<Sta
 
     // Defense — Healing Effectiveness (FR-5, Story 1.3). HEALING is distinct from the HEALTH/HP
     // tag above; HEALING nodes also carrying DAMAGE already returned in the damage branch.
+    // Precedence is intentional (first-match-wins, single-key model): a node tagged both HEALTH
+    // and HEALING maps to HP, NOT HealingEffectiveness. No such combined node ships today (all 4
+    // HEALING tags resolve as 3 pure-healing + 1 healing+damage), so this is a documented guard
+    // against future data, not a current misroute.
     if has("HEALING") { return Some(StatKey::HealingEffectiveness); }
 
     // Defense — Armor/Ward/Leech/Regen
