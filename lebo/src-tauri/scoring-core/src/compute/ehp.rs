@@ -29,8 +29,11 @@ const ENDURANCE_DR_CAP: f64 = 0.90;
 const PARRY_DR_CAP: f64 = 0.75;
 /// A glancing blow reduces a hit by 35% (Maxroll).
 const GLANCING_REDUCTION: f64 = 0.35;
-/// Floor on the fraction of damage taken so EHP can never reach `Inf`/`NaN` (caps EHP at 100× pool).
-/// Guards the degenerate full-avoidance case (e.g. 100% dodge → `1/(1−1)`), per AC1.
+/// Floor on the fraction of damage taken so EHP can never reach `Inf`/`NaN`, guarding the degenerate
+/// full-avoidance case (e.g. 100% dodge → `1/(1−1)`), per AC1. As the divisor floor on the `vs_hits`
+/// / `vs_dots` branches this caps those two figures at 100× pool; `vs_one_shots` divides by a
+/// separately-floored `armor_res_factor` and is intentionally NOT capped at 100× (a high endurance
+/// threshold legitimately survives a much larger one-shot — it stays finite via `finite_or_zero`).
 const MIN_DAMAGE_TAKEN: f64 = 0.01;
 
 /// The three independent EHP figures (FR-6).

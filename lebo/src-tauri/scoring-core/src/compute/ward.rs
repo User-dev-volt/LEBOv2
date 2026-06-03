@@ -1,11 +1,13 @@
 //! Ward generation and Stable-Ward / Stable-HP equilibrium computation. FR-7.
 //!
-//! In Last Epoch, Ward is a decaying buffer: it is lost each second at a rate that rises with the
-//! current ward amount and is slowed by Ward Retention. The **stable (equilibrium) ward** is the
-//! amount at which generation exactly offsets decay (Maxroll, "Defenses Explained"; lastepochtools
-//! Ward reference). Modelled here as the closed form the story specifies — *equilibrium ward =
-//! generation ÷ effective-decay-rate* — reproducing the calculator's observable output (SM-1), not
-//! an independently-derived formula. The `tests/ehp_reference.rs` ±2% gate is the parity authority.
+//! In Last Epoch, Ward is a decaying buffer: in-game it is lost each second at a rate that rises with
+//! the current ward amount and is slowed by Ward Retention. We do NOT reproduce that per-tick curve;
+//! instead we model only its **equilibrium** with a single effective decay *rate* (a constant-rate
+//! approximation), because the **stable (equilibrium) ward** — the amount at which generation exactly
+//! offsets decay — is all FR-7 needs (Maxroll, "Defenses Explained"; lastepochtools Ward reference).
+//! Modelled as the closed form the story specifies — *equilibrium ward = generation ÷
+//! effective-decay-rate* — reproducing the calculator's observable output (SM-1), not an
+//! independently-derived formula. The `tests/ehp_reference.rs` ±2% gate is the parity authority.
 //!
 //! **[ASSUMPTION] honesty rule (AC2):** Ward Retention, Ward Decay Threshold, %Current-Health-Lost
 //! /sec and %Missing-Health→Ward/sec have **no shipped Season-4 source** (Story 1.3 audit) — they
