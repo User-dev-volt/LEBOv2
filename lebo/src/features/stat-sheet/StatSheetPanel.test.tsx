@@ -61,6 +61,11 @@ function makeStatSheet(overrides: Partial<StatSheet> = {}): StatSheet {
       ward_retention: 0,
       ward_decay_threshold: 0,
       reduced_bonus_damage_from_crits: 0,
+      ehp_vs_hits: 0,
+      ehp_vs_dots: 0,
+      ehp_vs_one_shots: 0,
+      stable_ward: 0,
+      stable_hp: 0,
     },
     scores: {
       damage_score: 100,

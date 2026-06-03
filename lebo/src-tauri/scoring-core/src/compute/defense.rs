@@ -240,6 +240,14 @@ pub(super) fn compute_defense(
         ward_retention: 0.0,
         ward_decay_threshold: 0.0,
         reduced_bonus_damage_from_crits: 0.0,
+        // FR-6/FR-7 (Story 1.4): written by the orchestrator after compute_defense via
+        // ehp::compute_ehp / ward::compute_ward. Initialized 0.0 here so this function's own
+        // output stays additive-only (it computes none of these).
+        ehp_vs_hits: 0.0,
+        ehp_vs_dots: 0.0,
+        ehp_vs_one_shots: 0.0,
+        stable_ward: 0.0,
+        stable_hp: 0.0,
     }
 }
 

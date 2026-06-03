@@ -35,7 +35,19 @@ pub fn compute_stats(
     offense.avg_hit_damage *= pen_mult;
     offense.avg_hit_damage_crit_weighted *= pen_mult;
 
-    let defense = defense::compute_defense(snapshot, game_data, &registry, active);
+    let mut defense = defense::compute_defense(snapshot, game_data, &registry, active);
+    // FR-6/FR-7: tunklab-aligned EHP triple + Stable Ward/HP, derived from the already-computed
+    // defensive layers. These are additive display-only fields — they deliberately do NOT feed the
+    // `scores` block below (`survivability_score`/`build_score` stay on the frozen `effective_hp`
+    // parity gate). See ehp.rs / ward.rs and Story 1.4.
+    let ehp = ehp::compute_ehp(&defense);
+    let ward_eq = ward::compute_ward(&defense);
+    defense.ehp_vs_hits = ehp.vs_hits;
+    defense.ehp_vs_dots = ehp.vs_dots;
+    defense.ehp_vs_one_shots = ehp.vs_one_shots;
+    defense.stable_ward = ward_eq.stable_ward;
+    defense.stable_hp = ward_eq.stable_hp;
+
     let speed = compute_speed(&registry, active);
     let weights = resolve_archetype_weights(snapshot.slider_position, game_data);
     let scores = ScoreComponents {

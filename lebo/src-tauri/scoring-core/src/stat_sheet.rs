@@ -87,6 +87,22 @@ pub struct DefenseStats {
     pub ward_decay_threshold: f64,
     /// No shipped source (all CRIT nodes are offensive); surfaced 0.0.
     pub reduced_bonus_damage_from_crits: f64,
+    // --- FR-6 EHP triple + FR-7 Stable Ward/HP, added in Story 1.4 ---
+    /// FR-6: tunklab-aligned EHP vs single hits — armor, resistance, endurance%, and the hit-only
+    /// avoidance layers (dodge/parry/block/glancing) applied multiplicatively as average damage
+    /// reduction. Display-only; does NOT feed `effective_hp`/`survivability_score` (parity gate).
+    pub ehp_vs_hits: f64,
+    /// FR-6: EHP vs damage-over-time — excludes armor and all avoidance layers (hits-only in LE);
+    /// only resistance and endurance% apply. Display-only; does NOT feed `effective_hp`.
+    pub ehp_vs_dots: f64,
+    /// FR-6: EHP vs a single un-averaged maximum hit — endurance threshold is a hard floor and the
+    /// avoidance layers are NOT averaged in (a dodge roll cannot be relied on). Display-only.
+    pub ehp_vs_one_shots: f64,
+    /// FR-7: Stable Ward at equilibrium (ward generation == ward decay). Generation-driven in
+    /// production until retention/decay-threshold sources land (Story 1.3 audit). Display-only.
+    pub stable_ward: f64,
+    /// FR-7: Stable HP at equilibrium — `raw_hp + stable_ward`. Display-only; does NOT feed scoring.
+    pub stable_hp: f64,
 }
 
 /// Weighted composite scoring breakdown.

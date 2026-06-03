@@ -53,6 +53,14 @@ export interface DefenseStats {
   ward_retention: number
   ward_decay_threshold: number
   reduced_bonus_damage_from_crits: number
+  // FR-6 EHP triple + FR-7 Stable Ward/HP added in Story 1.4 (snake_case mirror of DefenseStats).
+  // Display-only: these do NOT feed survivability_score/build_score. EHP/Ward display rows are
+  // Story 1.6 — these are type-only additions here.
+  ehp_vs_hits: number
+  ehp_vs_dots: number
+  ehp_vs_one_shots: number
+  stable_ward: number
+  stable_hp: number
 }
 
 export interface ScoreComponents {

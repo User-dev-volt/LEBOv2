@@ -1,6 +1,6 @@
 # Story 1.4: EHP triple and Stable Ward/HP equilibrium
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -49,40 +49,40 @@ The legacy `defense.effective_hp` field, the `1.05^(n-2)` multi-layer bonus in `
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Confirm the parity gate before touching anything (AC: 1)** — *disaster-prevention step; the Story-1.2/1.3 precedent.*
-  - [ ] Read `compute/defense.rs:79-213` (the `effective_hp` / ward-ratio / endurance / `1.05^(n-2)` block) and `compute/mod.rs:491-569` (the `effective_hp_*` + `build_score_slider_*` parity tests). Note the exact expected numbers.
-  - [ ] Confirm the plan: **leave `compute_defense`'s `effective_hp` math and `compute_stats`'s `scores` block untouched.** EHP/Ward additions are new functions in `ehp.rs`/`ward.rs` that the orchestrator calls *after* `compute_defense`, writing only the five new fields.
+- [x] **Task 1 — Confirm the parity gate before touching anything (AC: 1)** — *disaster-prevention step; the Story-1.2/1.3 precedent.*
+  - [x] Read `compute/defense.rs:79-213` (the `effective_hp` / ward-ratio / endurance / `1.05^(n-2)` block) and `compute/mod.rs:491-569` (the `effective_hp_*` + `build_score_slider_*` parity tests). Note the exact expected numbers.
+  - [x] Confirm the plan: **leave `compute_defense`'s `effective_hp` math and `compute_stats`'s `scores` block untouched.** EHP/Ward additions are new functions in `ehp.rs`/`ward.rs` that the orchestrator calls *after* `compute_defense`, writing only the five new fields.
 
-- [ ] **Task 2 — Extend `DefenseStats` (additive only) (AC: 1, 2, 4)** — `stat_sheet.rs`
-  - [ ] Append `ehp_vs_hits`, `ehp_vs_dots`, `ehp_vs_one_shots`, `stable_ward`, `stable_hp` (all `f64`) to `DefenseStats` after the Story-1.3 layer fields. Keep all 26 existing fields; `#[derive(Default)]` preserved; doc-comment each new field with its FR + the "display-only, does not feed `effective_hp`" note.
+- [x] **Task 2 — Extend `DefenseStats` (additive only) (AC: 1, 2, 4)** — `stat_sheet.rs`
+  - [x] Append `ehp_vs_hits`, `ehp_vs_dots`, `ehp_vs_one_shots`, `stable_ward`, `stable_hp` (all `f64`) to `DefenseStats` after the Story-1.3 layer fields. Keep all 26 existing fields; `#[derive(Default)]` preserved; doc-comment each new field with its FR + the "display-only, does not feed `effective_hp`" note.
 
-- [ ] **Task 3 — Implement `compute/ehp.rs` (AC: 1)**
-  - [ ] Add a `compute_ehp(defense: &DefenseStats, registry: &ModifierRegistry, active: &[String]) -> EhpTriple` (or fold the three values directly onto a small struct). Read mitigation inputs from the already-computed `DefenseStats` (`armor_mitigation_percent`, the 7 resistances, `endurance_percent`, `endurance_threshold`, `dodge_chance`, `parry_chance`, `block_chance`, `block_effectiveness`, `glancing_blow_chance`) + `raw_hp` + `ward`.
-  - [ ] Apply layers **multiplicatively** per AC1. Document the tunklab-observable methodology and each layer's hit/DoT/1-shot applicability in-comment (cite Maxroll *Defenses Explained*). Resolve which "resistance" to use for the generic EHP figure (document the choice — e.g. an average or the worst resistance — as tunklab does; record the assumption like Story 1.3 did for armor `K`).
-  - [ ] Guard all divisions (e.g. `1/(1-dr)` where `dr` could be ≥1 after clamping) — clamp DR layers to a sane max so EHP never returns Inf/NaN.
+- [x] **Task 3 — Implement `compute/ehp.rs` (AC: 1)**
+  - [x] Added `compute_ehp(defense: &DefenseStats) -> EhpTriple` (signature simplified — all mitigation inputs already live on the registry-sourced `DefenseStats`, so no `registry`/`active` params are needed, which also avoids unused-param warnings; AC1's "read only via DefenseStats or registry" is satisfied). Reads `armor_mitigation_percent`, the 7 resistances, `endurance_percent`, `endurance_threshold`, `dodge_chance`, `parry_chance`, `block_chance`, `block_effectiveness`, `glancing_blow_chance`, `raw_hp`, `ward`.
+  - [x] Layers applied **multiplicatively** per AC1. Methodology + per-layer hit/DoT/1-shot applicability documented in-comment (cites Maxroll *Defenses Explained*). Generic-resistance choice = **average of the 7 capped resistances**, recorded as the assumption.
+  - [x] All divisions guarded: each DR layer clamped to its cap; `MIN_DAMAGE_TAKEN = 0.01` floors the damage-taken fraction (caps EHP at 100× pool) so 100% dodge etc. never returns Inf/NaN; final `finite_or_zero` guard.
 
-- [ ] **Task 4 — Implement `compute/ward.rs` (AC: 2)**
-  - [ ] Add `compute_ward(defense: &DefenseStats, registry: &ModifierRegistry, active: &[String]) -> WardEquilibrium { stable_ward, stable_hp }`.
-  - [ ] Implement the LE ward decay → equilibrium solve (generation = decay), documented in-comment with the tunklab/Maxroll formula and source. Use the existing `ward` (Ward/sec generation proxy), `ward_retention`, `ward_decay_threshold`, `hp_regen_per_sec` from `DefenseStats`. Degenerate inputs (zero generation, zero retention) → `0.0`, never NaN/Inf.
-  - [ ] **No new `StatKey`** for retention/decay/health-conversion inputs (Story 1.3 proved they are unsourced). Add an in-comment "no shipped source yet — generation-driven in production" note (the AC2 honesty rule).
+- [x] **Task 4 — Implement `compute/ward.rs` (AC: 2)**
+  - [x] Added `compute_ward(defense: &DefenseStats) -> WardEquilibrium { stable_ward, stable_hp }` (same signature simplification as ehp.rs).
+  - [x] LE ward decay → equilibrium solve (`stable_ward = decay_threshold + generation / effective_decay_rate`, `effective_decay_rate = 0.40 / (1 + retention)`), documented in-comment with Maxroll/lastepochtools source. Uses `ward` (gen proxy), `ward_retention`, `ward_decay_threshold`, `raw_hp`. Degenerate inputs (zero gen, negative retention) → `0.0`, never NaN/Inf.
+  - [x] **No new `StatKey`** — retention/decay-threshold/health-conversion inputs reuse the existing zero-no-key fields; in-comment "no shipped source yet — generation-driven in production" note added (AC2 honesty rule).
 
-- [ ] **Task 5 — Wire into the orchestrator (AC: 1, 2, 4)** — `compute/mod.rs`
-  - [ ] After `let defense = defense::compute_defense(...)`, call `ehp::compute_ehp(&defense, &registry, active)` and `ward::compute_ward(&defense, &registry, active)`, then write the five results onto `defense` (make the binding `mut`, or construct the final value). Do **not** change the `scores` block (`survivability_score = defense.effective_hp` stays).
-  - [ ] Leave `ehp`/`ward` as `mod ehp; mod ward;` (already declared) — no `pub` change needed; the orchestrator is the only caller.
+- [x] **Task 5 — Wire into the orchestrator (AC: 1, 2, 4)** — `compute/mod.rs`
+  - [x] After `let mut defense = defense::compute_defense(...)`, calls `ehp::compute_ehp(&defense)` and `ward::compute_ward(&defense)`, then writes the five results onto `defense`. The `scores` block (`survivability_score = defense.effective_hp`) is unchanged.
+  - [x] `ehp`/`ward` stay private `mod`s; functions are `pub(super)` — orchestrator is the only caller. (Note: `compute_defense`'s explicit struct literal also initializes the 5 new fields to `0.0` so the lib compiles — its own math is unchanged.)
 
-- [ ] **Task 6 — Stand up `tests/ehp_reference.rs` parity gate (AC: 3)**
-  - [ ] Create `scoring-core/tests/ehp_reference.rs`. Build ≥3 reference snapshots through the public API; record the tunklab inputs + outputs as in-file literals with source/date; assert ±2% on each `ehp_vs_*` / `stable_ward` / `stable_hp`.
-  - [ ] Cover the three EHP variants distinctly (e.g. one armor+resistance hit-tank, one ward/DoT build, one high-endurance 1-shot case) and at least one ward-equilibrium build.
-  - [ ] Verify Cargo discovers the integration test (`cargo test -p scoring-core` runs it). The reference figures are the **research deliverable** — capture them from the live tunklab calculator (see Dev Notes risk).
+- [x] **Task 6 — Stand up `tests/ehp_reference.rs` parity gate (AC: 3)**
+  - [x] Created `scoring-core/tests/ehp_reference.rs`. 3 reference builds + 1 legacy-parity guard, all via the public API; inputs + hand-computed arithmetic recorded as in-file literals with source/date; ±2% asserted on each `ehp_vs_*` / `stable_ward` / `stable_hp`.
+  - [x] Three EHP variants covered distinctly: A (armor+resistance hit-tank, hits≠dots), B (ward + endurance threshold one-shot + ward equilibrium), C (dodge — hits-only avoidance, hits>one-shots).
+  - [x] Cargo auto-discovers the integration test (`cargo test -p scoring-core --test ehp_reference` → 4 passed). **Reference-figure note:** live tunklab is JS-gated/unreachable from this headless env (Story-1.3 lastepochtools 403 precedent), so per the story's documented fallback the literals come from the **closed-form LE reference** (Maxroll *Defenses Explained*); source/date recorded in-file. Swap to live tunklab numbers when capturable.
 
-- [ ] **Task 7 — TS mirror + keep the build green (AC: 4)** — `statSheet.ts`, test literals
-  - [ ] Mirror the five new fields in `statSheet.ts` `DefenseStats` (snake_case, `number`), with the same "display-only" comment.
-  - [ ] Update any `DefenseStats` object literal in the TS suite (e.g. `StatSheetPanel.test.tsx`'s `makeStatSheet()`) to include the five fields. `RESISTANCES` array + UI layout unchanged (Story 1.6).
+- [x] **Task 7 — TS mirror + keep the build green (AC: 4)** — `statSheet.ts`, test literals
+  - [x] Mirrored the five new fields in `statSheet.ts` `DefenseStats` (snake_case, `number`) with the "display-only" comment.
+  - [x] Updated the `DefenseStats` literal in `StatSheetPanel.test.tsx`'s `makeStatSheet()` with the five fields. No `RESISTANCES`/UI-layout change (Story 1.6).
 
-- [ ] **Task 8 — Verify (AC: all)**
-  - [ ] `cargo test -p scoring-core` — all green, **including the new `ehp_reference` integration tests**; Phase-3 `effective_hp_*` + `build_score_slider_*` parity tests byte-identical.
-  - [ ] TS strict compile (`tsc`) exit 0; `vitest run` — no new failures beyond the documented 14-failure baseline.
-  - [ ] Record the tunklab reference-build inputs/outputs, the resistance-choice assumption, and the ward-equilibrium formula source in the Dev Agent Record.
+- [x] **Task 8 — Verify (AC: all)**
+  - [x] `cargo test -p scoring-core` — all green: 109 lib (12 new ehp/ward unit tests) + 4 `ehp_reference` integration; Phase-3 `effective_hp_*` + `build_score_slider_*` parity byte-identical.
+  - [x] TS strict compile (`pnpm exec tsc --noEmit`) exit 0; `vitest run` — 14 failed / 1026 passed = the documented 14-failure baseline (all pre-existing AppHeader/RightPanel/ProviderSelector/Settings/SkillTree UI; StatSheetPanel 15/15 pass). No new failures.
+  - [x] Tunklab reference inputs/outputs, the average-resistance assumption, and the ward-equilibrium formula source recorded in the Dev Agent Record + `ehp_reference.rs`.
 
 ## Dev Notes
 
@@ -155,13 +155,47 @@ AC3's ±2% gate is only meaningful with **real recorded tunklab outputs**. The d
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+claude-opus-4-8 (Claude Code dev-story workflow)
 
 ### Debug Log References
 
+- `cargo test -p scoring-core` — baseline 97 passed (pre-change) → 109 lib passed (post-change, +12 ehp/ward unit tests) + 4 `ehp_reference` integration tests. Parity tests (`effective_hp_with_ward_and_endurance`, `effective_hp_no_ward_no_endurance`, all `build_score_slider_*`) unchanged.
+- First compile error E0063: `compute_defense`'s explicit `DefenseStats { … }` literal needed the 5 new fields — added them as `0.0` (the orchestrator overwrites; `compute_defense` computes none of them). Resolved.
+- `pnpm exec tsc --noEmit` → exit 0.
+- `CI=true pnpm exec vitest run` → 14 failed / 1026 passed (1040 total) = documented baseline. Failing files all pre-existing & unrelated: AppHeader, RightPanel, ProviderSelector, Settings, SkillTreeCanvas, TreeControls. `StatSheetPanel.test.tsx` → 15/15 pass.
+- scoring-core built independently — no Tauri `OUT_DIR`/pnpm-no-TTY issue hit this session.
+
 ### Completion Notes List
 
+- **Frozen parity gate preserved.** `compute_defense`'s `effective_hp` / `1.05^(n-2)` math and `compute_stats`'s `scores` block are untouched; `survivability_score` still equals the legacy `effective_hp`. A dedicated integration test (`legacy_effective_hp_unchanged_by_ehp_additions`) pins `effective_hp = 2000 × 1.1 × 1/(1-0.30) = 3142.857` and asserts `survivability_score == effective_hp`.
+- **EHP triple (FR-6), multiplicative layering** (`ehp.rs`): `EHP = pool / Π(1 − layer_dr)`, `pool = raw_hp + ward`.
+  - vs Hits: armour (cap 85%) × resistance × endurance% (cap 90%) × hit-only avoidance (dodge/parry/block/glancing).
+  - vs DoTs: resistance × endurance% only (armour + avoidance excluded — LE rule).
+  - vs one-shots: single max hit, endurance threshold as a **hard floor** (`above + threshold/(1−end_dr)` post-armour/res capacity), avoidance excluded.
+- **Generic-resistance assumption (documented choice):** the three EHP scalars collapse the 7 per-type resistances to the **average of the 7 capped (≤75%) resistances** — EHP in a mixed-damage environment. This is the modelling analogue of Story 1.3's armour `K=1104` constant; a per-type EHP breakdown is a future Story-1.6 display concern if ever needed.
+- **Inf/NaN guards:** every DR layer is clamped to its cap; `MIN_DAMAGE_TAKEN = 0.01` floors the damage-taken fraction (so e.g. 100% dodge yields a finite 100×-pool EHP, not Inf); a final `finite_or_zero` sweep on every returned value.
+- **Stable Ward / Stable HP (FR-7)** (`ward.rs`): equilibrium where generation == decay. `effective_decay_rate = BASE_WARD_DECAY_RATE(0.40) / (1 + ward_retention/100)`; `stable_ward = ward_decay_threshold + generation / effective_decay_rate`; `stable_hp = raw_hp + stable_ward`. Zero generation → `stable_ward = 0`, `stable_hp = raw_hp`. Negative-retention divisor guarded with `.max(0.01)`.
+- **AC2 honesty / no dead keys upheld.** `ward_retention`, `ward_decay_threshold`, parry/glancing/block-effectiveness all remain zero-no-key fields (Story 1.3 audit: unshipped in Season-4 data). So in production Stable Ward is purely **generation-driven** (`ward/0.40`) and the hit-avoidance EHP terms are inert until a real source lands — the math is wired so they flow automatically when one does. **No `StatKey` variant was added.**
+- **Tunklab reference figures.** The live tunklab calculator is a client-side JS app and is unreachable from this headless build environment (mirrors the Story-1.3 lastepochtools HTTP-403 precedent). Per the story's documented "primary risk" fallback, the `ehp_reference.rs` expected literals are taken from the **closed-form LE reference** (Maxroll *Defenses Explained*) with each fixture's inputs + arithmetic recorded in-file (date 2026-06-03). The ±2% gate still catches any implementation drift; substitute live tunklab captures when available.
+- **Ward in EHP pool vs Stable Ward are intentionally independent** display values: the EHP pool uses raw ward as a flat buffer (matching the legacy treatment), while `stable_ward` is the separate FR-7 equilibrium figure. Both surfaced; neither feeds scoring.
+- **Open Question for Alec** (re-pointing `survivability_score` at the accurate EHP) is intentionally NOT actioned — left to a future re-baselining story, exactly as the story flags.
+
 ### File List
+
+- `lebo/src-tauri/scoring-core/src/stat_sheet.rs` — appended 5 additive `DefenseStats` fields (`ehp_vs_hits`, `ehp_vs_dots`, `ehp_vs_one_shots`, `stable_ward`, `stable_hp`).
+- `lebo/src-tauri/scoring-core/src/compute/ehp.rs` — implemented FR-6 EHP triple (filled scaffold) + 7 unit tests.
+- `lebo/src-tauri/scoring-core/src/compute/ward.rs` — implemented FR-7 Stable Ward/HP equilibrium (filled scaffold) + 5 unit tests.
+- `lebo/src-tauri/scoring-core/src/compute/defense.rs` — initialized the 5 new fields to `0.0` in the `DefenseStats` literal (no math change).
+- `lebo/src-tauri/scoring-core/src/compute/mod.rs` — orchestrator: `mut defense`, call `compute_ehp`/`compute_ward`, write the 5 fields (scores block untouched).
+- `lebo/src-tauri/scoring-core/tests/ehp_reference.rs` — NEW ±2% tunklab parity gate (3 EHP fixtures + 1 legacy-parity guard).
+- `lebo/src/shared/types/statSheet.ts` — mirrored the 5 new fields on TS `DefenseStats`.
+- `lebo/src/features/stat-sheet/StatSheetPanel.test.tsx` — added the 5 fields to `makeStatSheet()`'s `defense` literal.
+
+## Change Log
+
+| Date | Change |
+|------|--------|
+| 2026-06-03 | Story 1.4 implemented: FR-6 EHP triple (`ehp.rs`), FR-7 Stable Ward/HP (`ward.rs`), 5 additive display-only `DefenseStats` fields + TS mirror, orchestrator wiring, and the `tests/ehp_reference.rs` ±2% parity gate. Frozen `effective_hp`/`survivability_score`/`build_score` gate preserved byte-identical. Status → review. |
 
 ---
 
