@@ -417,7 +417,7 @@ describe('GearSlot', () => {
 
   // Story 6.1 review patches
 
-  it('unique item name renders in unique orange (#E87722)', async () => {
+  it('unique item name renders in unique color (#D4805A)', async () => {
     render(
       <GearSlot slotId="body" slotName="Body" itemDatabase={mockItemDatabase} />
     )
@@ -429,11 +429,11 @@ describe('GearSlot', () => {
 
     await waitFor(() => {
       const nameSpan = screen.getByText('Solarum Plate')
-      expect(nameSpan).toHaveStyle({ color: '#E87722' })
+      expect(nameSpan).toHaveStyle({ color: '#D4805A' })
     })
   })
 
-  it('base item name renders in common light gray (#E8E8E8)', async () => {
+  it('base item name renders in normal color (#C6C0B5)', async () => {
     render(
       <GearSlot slotId="helmet" slotName="Helmet" itemDatabase={mockItemDatabase} />
     )
@@ -445,7 +445,7 @@ describe('GearSlot', () => {
 
     await waitFor(() => {
       const nameSpan = screen.getAllByText('Iron Helm')[0]
-      expect(nameSpan).toHaveStyle({ color: '#E8E8E8' })
+      expect(nameSpan).toHaveStyle({ color: '#C6C0B5' })
     })
   })
 

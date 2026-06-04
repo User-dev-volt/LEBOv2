@@ -1,13 +1,13 @@
 import type { DamageType } from '../types/itemDatabase'
 
 export const RARITY_COLORS: Record<string, string> = {
-  common:    '#E8E8E8',
-  magic:     '#5B9BD5',
-  rare:      '#D4AF37',
-  unique:    '#E87722',
-  set:       '#4CAF50',
+  common:    '#C6C0B5', // Last Epoch "Normal" tier — key kept as `common` (P4-8: no rename)
+  magic:     '#4A7A9E',
+  rare:      '#C9A84C',
+  unique:    '#D4805A',
+  set:       '#5EBD78',
   exalted:   '#9C27B0',
-  legendary: '#C62828',
+  legendary: '#B068E8',
 }
 
 export function getRarityColorForItemType(type: 'base' | 'unique'): string {

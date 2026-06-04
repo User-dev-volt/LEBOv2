@@ -11,42 +11,42 @@ describe('RARITY_COLORS', () => {
     expect(Object.keys(RARITY_COLORS)).toHaveLength(7)
   })
 
-  it('common color is #E8E8E8', () => {
-    expect(RARITY_COLORS.common).toBe('#E8E8E8')
+  it('normal (common key) color is #C6C0B5', () => {
+    expect(RARITY_COLORS.common).toBe('#C6C0B5')
   })
 
-  it('magic color is #5B9BD5', () => {
-    expect(RARITY_COLORS.magic).toBe('#5B9BD5')
+  it('magic color is #4A7A9E', () => {
+    expect(RARITY_COLORS.magic).toBe('#4A7A9E')
   })
 
-  it('rare color is #D4AF37', () => {
-    expect(RARITY_COLORS.rare).toBe('#D4AF37')
+  it('rare color is #C9A84C', () => {
+    expect(RARITY_COLORS.rare).toBe('#C9A84C')
   })
 
-  it('unique color is #E87722', () => {
-    expect(RARITY_COLORS.unique).toBe('#E87722')
+  it('unique color is #D4805A', () => {
+    expect(RARITY_COLORS.unique).toBe('#D4805A')
   })
 
-  it('set color is #4CAF50', () => {
-    expect(RARITY_COLORS.set).toBe('#4CAF50')
+  it('set color is #5EBD78', () => {
+    expect(RARITY_COLORS.set).toBe('#5EBD78')
   })
 
   it('exalted color is #9C27B0', () => {
     expect(RARITY_COLORS.exalted).toBe('#9C27B0')
   })
 
-  it('legendary color is #C62828', () => {
-    expect(RARITY_COLORS.legendary).toBe('#C62828')
+  it('legendary color is #B068E8', () => {
+    expect(RARITY_COLORS.legendary).toBe('#B068E8')
   })
 })
 
 describe('getRarityColorForItemType', () => {
-  it('returns unique color (#E87722) for type "unique"', () => {
-    expect(getRarityColorForItemType('unique')).toBe('#E87722')
+  it('returns unique color (#D4805A) for type "unique"', () => {
+    expect(getRarityColorForItemType('unique')).toBe('#D4805A')
   })
 
-  it('returns common color (#E8E8E8) for type "base"', () => {
-    expect(getRarityColorForItemType('base')).toBe('#E8E8E8')
+  it('returns normal color (#C6C0B5) for type "base"', () => {
+    expect(getRarityColorForItemType('base')).toBe('#C6C0B5')
   })
 })
 

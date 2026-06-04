@@ -1,6 +1,6 @@
 # Story 2.1: Design-token reconciliation
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -55,26 +55,27 @@ This is the **first story of Epic 2 (UI/UX Revamp)** and the keystone of the who
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Reconcile token values + add `--color-bg-sunken` (AC: 1, 3)** — `lebo/src/assets/styles/global.css`
-  - [ ] In the `@theme` block, **confirm** (do not change unless they differ): `--color-accent-gold: #C9A84C`, `--color-bg-base: #0a0a0b`, `--color-bg-surface: #141417`, `--color-bg-elevated: #1c1c21`, `--color-bg-hover: #252530`, `--color-node-suggested: #7B68EE` already equal the Claude palette. (Hex case is irrelevant; do **not** churn lines just to uppercase them.)
-  - [ ] Add `--color-bg-sunken: #060607;` in the Backgrounds group, directly after `--color-bg-hover`.
-  - [ ] Update the seven (currently unused) `--color-rarity-*` token **values** to: common `#C6C0B5`, magic `#4A7A9E`, rare `#C9A84C`, set `#5EBD78`, unique `#D4805A`, legendary `#B068E8`. Leave `--color-rarity-exalted` unchanged. **Do not rename any token** (keep `--color-rarity-common`).
-  - [ ] Leave `--color-accent-gold-soft` / `-dim`, all `--color-dmg-*`, `--color-data-*`, `--color-node-*`, slider/pip/text tokens untouched — they are out of this story's scope.
+- [x] **Task 1 — Reconcile token values + add `--color-bg-sunken` (AC: 1, 3)** — `lebo/src/assets/styles/global.css`
+  - [x] In the `@theme` block, **confirm** (do not change unless they differ): `--color-accent-gold: #C9A84C`, `--color-bg-base: #0a0a0b`, `--color-bg-surface: #141417`, `--color-bg-elevated: #1c1c21`, `--color-bg-hover: #252530`, `--color-node-suggested: #7B68EE` already equal the Claude palette. (Hex case is irrelevant; do **not** churn lines just to uppercase them.) → Confirmed all six already on-palette; left untouched.
+  - [x] Add `--color-bg-sunken: #060607;` in the Backgrounds group, directly after `--color-bg-hover`.
+  - [x] Update the seven (currently unused) `--color-rarity-*` token **values** to: common `#C6C0B5`, magic `#4A7A9E`, rare `#C9A84C`, set `#5EBD78`, unique `#D4805A`, legendary `#B068E8`. Leave `--color-rarity-exalted` unchanged. **Do not rename any token** (keep `--color-rarity-common`).
+  - [x] Leave `--color-accent-gold-soft` / `-dim`, all `--color-dmg-*`, `--color-data-*`, `--color-node-*`, slider/pip/text tokens untouched — they are out of this story's scope.
 
-- [ ] **Task 2 — Reconcile `RARITY_COLORS` values (AC: 2)** — `lebo/src/shared/utils/rarityColors.ts`
-  - [ ] Update `RARITY_COLORS` values only: `common: '#C6C0B5'`, `magic: '#4A7A9E'`, `rare: '#C9A84C'`, `unique: '#D4805A'`, `set: '#5EBD78'`, `legendary: '#B068E8'`. Leave `exalted: '#9C27B0'` unchanged. **Keep the existing keys** (`common`, not `normal`) — see Dev Notes.
-  - [ ] Do **not** change `getRarityColorForItemType` (it reads `RARITY_COLORS.unique` / `RARITY_COLORS.common` — both keys remain) and do **not** touch `DAMAGE_TYPE_COLORS` / `getDamageTypeColor`.
-  - [ ] Confirm no rarity/damage hex is hardcoded anywhere else (grep for the old hexes `#E8E8E8`, `#5B9BD5`, `#D4AF37`, `#E87722`, `#4CAF50`, `#C62828` outside this file + global.css; there should be none in `src/`).
+- [x] **Task 2 — Reconcile `RARITY_COLORS` values (AC: 2)** — `lebo/src/shared/utils/rarityColors.ts`
+  - [x] Update `RARITY_COLORS` values only: `common: '#C6C0B5'`, `magic: '#4A7A9E'`, `rare: '#C9A84C'`, `unique: '#D4805A'`, `set: '#5EBD78'`, `legendary: '#B068E8'`. Leave `exalted: '#9C27B0'` unchanged. **Keep the existing keys** (`common`, not `normal`) — see Dev Notes.
+  - [x] Do **not** change `getRarityColorForItemType` (it reads `RARITY_COLORS.unique` / `RARITY_COLORS.common` — both keys remain) and do **not** touch `DAMAGE_TYPE_COLORS` / `getDamageTypeColor`. → Left unchanged.
+  - [x] Confirm no rarity/damage hex is hardcoded anywhere else (grep for the old hexes `#E8E8E8`, `#5B9BD5`, `#D4AF37`, `#E87722`, `#4CAF50`, `#C62828` outside this file + global.css; there should be none in `src/`). → Grep found old hexes only in `GearSlot.test.tsx` (test assertions, no production source) — updated in Task 3.
 
-- [ ] **Task 3 — Update color-value tests (AC: 4)** — `lebo/src/shared/utils/rarityColors.test.ts`
-  - [ ] Update each `RARITY_COLORS.*` value assertion to the new hex (common `#C6C0B5`, magic `#4A7A9E`, rare `#C9A84C`, unique `#D4805A`, set `#5EBD78`, legendary `#B068E8`); keep the `exalted` `#9C27B0` assertion and the `toHaveLength(7)` count.
-  - [ ] Update `getRarityColorForItemType` assertions: `'base'` → `'#C6C0B5'`, `'unique'` → `'#D4805A'`.
-  - [ ] Leave the `DAMAGE_TYPE_COLORS` / `getDamageTypeColor` describe blocks unchanged.
+- [x] **Task 3 — Update color-value tests (AC: 4)** — `lebo/src/shared/utils/rarityColors.test.ts`
+  - [x] Update each `RARITY_COLORS.*` value assertion to the new hex (common `#C6C0B5`, magic `#4A7A9E`, rare `#C9A84C`, unique `#D4805A`, set `#5EBD78`, legendary `#B068E8`); keep the `exalted` `#9C27B0` assertion and the `toHaveLength(7)` count.
+  - [x] Update `getRarityColorForItemType` assertions: `'base'` → `'#C6C0B5'`, `'unique'` → `'#D4805A'`.
+  - [x] Leave the `DAMAGE_TYPE_COLORS` / `getDamageTypeColor` describe blocks unchanged.
+  - [x] **(Added)** Update the two coupled hardcoded-hex assertions in `GearSlot.test.tsx` (`getRarityColorForItemType` consumers): unique `#E87722`→`#D4805A`, base `#E8E8E8`→`#C6C0B5`. Required for AC4 (no regressions); these were the only other place asserting the old hexes.
 
-- [ ] **Task 4 — Verify build + suite + visual (AC: 1, 4)**
-  - [ ] Run `pnpm exec tsc --noEmit` (exit 0) and `CI=true pnpm exec vitest run` (no new failures vs. the documented UI baseline).
-  - [ ] Run `pnpm build` to confirm the `@theme` block compiles with the new `--color-bg-sunken` token.
-  - [ ] Sanity-check visually (the re-skin is automatic): the app's gold/backgrounds are unchanged (already on-palette) and a gear item's name color reflects the new rarity hex (e.g. a unique now renders `#D4805A`, not `#E87722`). `--color-bg-sunken` will not be visible until later Epic-2 stories consume it.
+- [x] **Task 4 — Verify build + suite + visual (AC: 1, 4)**
+  - [x] Run `pnpm exec tsc --noEmit` (exit 0) and `CI=true pnpm exec vitest run` (no new failures vs. the documented UI baseline). → tsc exit 0; suite 1058 passed / 14 failed = exactly the documented baseline (AppHeader/RightPanel/ProviderSelector/Settings/SkillTreeCanvas/TreeControls).
+  - [x] Run `pnpm build` to confirm the `@theme` block compiles with the new `--color-bg-sunken` token. → exit 0.
+  - [x] Sanity-check visually (the re-skin is automatic): the app's gold/backgrounds are unchanged (already on-palette) and a gear item's name color reflects the new rarity hex (e.g. a unique now renders `#D4805A`, not `#E87722`). `--color-bg-sunken` will not be visible until later Epic-2 stories consume it. → Verified via `GearSlot.test.tsx` style assertions (unique→`#D4805A`, base→`#C6C0B5`); CSS-token re-skin verified by build compile (jsdom can't render `@theme`).
 
 ## Dev Notes
 
@@ -135,8 +136,35 @@ Current `global.css` already has `--color-accent-gold: #C9A84C`, `--color-bg-bas
 
 ### Agent Model Used
 
+claude-opus-4-8 (Claude Code, bmad-dev-story workflow)
+
 ### Debug Log References
+
+- Red phase: `vitest run src/shared/utils/rarityColors.test.ts` → 8 failed (value mismatches) before source change, confirming test correctness.
+- Green phase: same test → 21 passed after `rarityColors.ts` update.
+- Coupled-test discovery: grep for old hexes surfaced `GearSlot.test.tsx` asserting old unique/base hexes via `getRarityColorForItemType`; updated to new palette.
+- `pnpm exec tsc --noEmit` → exit 0.
+- `CI=true pnpm exec vitest run` → 1058 passed / 14 failed; the 14 failures span exactly the documented pre-existing baseline files (AppHeader, RightPanel, ProviderSelector, Settings, SkillTreeCanvas, TreeControls) — jsdom/Headless-UI/canvas env, unrelated to color tokens. Zero new failures.
+- `pnpm build` → exit 0 (`@theme` block compiles with new `--color-bg-sunken`).
 
 ### Completion Notes List
 
+- **Values-only re-skin, fully P4-8-compliant.** No token renamed, no unprefixed `--*` introduced, no rarity/damage hex hardcoded in production source. No component/layout/logic touched.
+- **bg/accent/node-suggested were already on-palette** (Phase 3) — confirmed and left untouched; no manufactured diff. Only net-new token: `--color-bg-sunken: #060607` (provisioned for Epic-2 stories 2.2–2.8; not yet consumed).
+- **Rarity reconciliation** applied in `rarityColors.ts` (source of truth) and mirrored into the previously-unused `--color-rarity-*` token values to prevent the two-sources-of-truth drift (AC3).
+- **Decisions honored** (flagged at story creation): `common` key kept (not renamed to `normal`) per P4-8; `exalted` tier kept intact (no design value supplied).
+- **Scope addition:** `GearSlot.test.tsx` (2 assertions) updated — necessary for AC4 since it hardcoded the old unique/base hexes through the rarity utility. No production code changed there.
+- **Source Audit:** N/A — no new stat introduced/computed/surfaced; no loader/compute/StatKey path touched. Verification is color-value assertion tests (rarityColors.test.ts, GearSlot.test.tsx).
+
 ### File List
+
+- `lebo/src/assets/styles/global.css` (modified) — added `--color-bg-sunken: #060607`; updated 6 `--color-rarity-*` token values to the Claude palette (exalted unchanged).
+- `lebo/src/shared/utils/rarityColors.ts` (modified) — updated 6 `RARITY_COLORS` values (exalted unchanged; keys unchanged).
+- `lebo/src/shared/utils/rarityColors.test.ts` (modified) — updated value + `getRarityColorForItemType` assertions to the new palette.
+- `lebo/src/features/item-database/GearSlot.test.tsx` (modified) — updated 2 coupled hardcoded-hex style assertions (unique `#D4805A`, base `#C6C0B5`).
+
+## Change Log
+
+| Date | Change |
+|------|--------|
+| 2026-06-04 | Implemented Story 2.1 — design-token reconciliation (values-only). Added `--color-bg-sunken`; reconciled rarity palette in `rarityColors.ts` + `--color-rarity-*` tokens; updated coupled tests. tsc/build green; no new test failures vs. baseline. Status → review. |

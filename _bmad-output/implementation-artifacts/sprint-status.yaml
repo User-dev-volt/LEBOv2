@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-02
-last_updated: 2026-06-04 (Story 2.1 design-token-reconciliation created → ready-for-dev; epic-2 → in-progress. Values-only re-skin: rarityColors.ts palette + --color-bg-sunken; bg/accent/node-suggested already on-palette)
+last_updated: 2026-06-04 (Story 2.1 design-token-reconciliation → review; values-only re-skin implemented: --color-bg-sunken added, rarity palette reconciled in rarityColors.ts + --color-rarity-* tokens; tsc/build green, no new test failures vs. baseline)
 project: LEBOv2
 project_key: NOKEY
 tracking_system: file-system
@@ -56,7 +56,7 @@ development_status:
 
   # Epic 2: UI/UX Revamp — Claude Design System
   epic-2: in-progress
-  2-1-design-token-reconciliation: ready-for-dev
+  2-1-design-token-reconciliation: review
   2-2-header-navigation: backlog
   2-3-left-panel-build-identity-and-section-navigator: backlog
   2-4-right-panel-score-gauge-archetype-optimizer-chrome: backlog
