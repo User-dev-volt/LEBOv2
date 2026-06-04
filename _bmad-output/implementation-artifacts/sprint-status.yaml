@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-02
-last_updated: 2026-06-03 (1-6 → done: code review passed — 2 patches applied (damage_types ?? [] guard; necrotic_resistance added to StatDeltas/computeStatDeltas), 2 deferred, 12 dismissed; tsc clean, StatSheetPanel 21/21 post-patch)
+last_updated: 2026-06-03 (1-7 → ready-for-dev: create-story context engine — backend-first scoring-core ModifierSource/SourceType + opt-in ComputeOptions.track_sources + StatSheet.stat_sources, gated source recording in build_registry (no Modifier struct change), display-only track_sources, TS type-sync; tooltip/store deferred to 1.8)
 project: LEBOv2
 project_key: NOKEY
 tracking_system: file-system
@@ -50,7 +50,7 @@ development_status:
   1-4-ehp-triple-and-stable-ward-hp-equilibrium: done
   1-5-ailment-attribute-and-minion-stats: done
   1-6-five-tab-stat-sheet-panel-with-live-recompute: done
-  1-7-modifiersource-tracking-and-opt-in-stat-sources: backlog
+  1-7-modifiersource-tracking-and-opt-in-stat-sources: ready-for-dev
   1-8-stat-source-breakdown-tooltip-with-cap-gap-annotation: backlog
   epic-1-retrospective: optional
 
