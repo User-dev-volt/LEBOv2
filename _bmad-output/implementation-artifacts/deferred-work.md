@@ -243,3 +243,12 @@
 - `collect_sources` (modifier.rs:320-335) returns a `std::collections::HashMap` whose cross-key iteration/serialization order is non-deterministic. Harmless now (current tests index by key), but Story 1.8 must not rely on key order or stable JSON output — switch to a BTreeMap or sort if stable output is ever needed.
 - No NaN/Inf guard on the recorded source `value` (compute/mod.rs source blocks). serde_json serializes non-finite f64 to `null`, so malformed game data would yield `value: null` despite the TS type declaring `value: number`. Pre-existing serialization behavior across the entire StatSheet (not unique to Story 1.7) — best addressed at the game-data ingestion layer.
 - **[Story 1.8 REQUIREMENT]** Fan-out source reconciliation in `StatSourceTooltip`: the tooltip for any element-specific resistance must also surface `AllResistances` (+`AllElementalResistances`) sources; `IncreasedDamage` and `ElementalPenetration` tooltips must likewise fold in their umbrella contributors, so each tooltip's listed sources sum to the displayed stat value. (Resolution of Story 1.7 review decision — 1.7 keys sources by raw StatKey by design; the renderer does the fan-out merge.)
+
+## Deferred from: code review of story-1.8 (2026-06-04)
+
+- `stat_key_key` serde-failure returns `""` key, silently merging stats [`modifier.rs:619`] — pre-existing (Story 1.7 Rust, currently unreachable). Re-confirmation of the 1.7 defer.
+- `collect_sources` duplicates `query`'s active-condition filter logic — maintenance hazard if `query`'s active semantics change without updating `collect_sources` [`modifier.rs`] — pre-existing (Story 1.7 Rust).
+- Tooltip viewport-flip math has no off-screen clamp on `left`/`top` [`StatSourceTooltip.tsx:79-87`] — mirrors the spec-directed `NodeTooltip` pattern; right-panel anchor geometry doesn't produce negative coords in practice. Add `Math.max(8, …)` clamps if a narrower layout ever ships.
+- Fixed-position tooltip anchor captured once on open, not updated on scroll [`StatSheetPanel.tsx:185-190`] — same `NodeTooltip` portal tradeoff; the 320px scroll container can detach the tooltip from its row if scrolled while open.
+- `tracking_does_not_perturb_frozen_aggregates` uses `serde_json` value equality (NaN→null masks divergence) [`compute/mod.rs`] — pre-existing (Story 1.7 test).
+- Net-negative resistance renders an oversized `+105% to cap` annotation [`StatSourceTooltip.tsx:177`] — rare shred/curse edge; handle negative-resistance presentation distinctly if it becomes common.
