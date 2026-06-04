@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { axe } from 'vitest-axe'
 import { StatSheetPanel } from './StatSheetPanel'
-import type { StatSheet } from '../../shared/types/statSheet'
+import type { ModifierSource, StatSheet } from '../../shared/types/statSheet'
 
 vi.mock('../../shared/stores/optimizationStore', () => ({
   useOptimizationStore: vi.fn(),
@@ -180,7 +181,8 @@ describe('StatSheetPanel', () => {
     render(<StatSheetPanel />)
     // Defense tab is not active by default — click it to render panel content
     fireEvent.click(screen.getByRole('tab', { name: 'Defense' }))
-    expect(screen.getByText(/\+23% needed/)).toBeInTheDocument()
+    // FR-14 wording: reconciled from "(+N% needed)" to "(+N to cap)".
+    expect(screen.getByText(/\+23 to cap/)).toBeInTheDocument()
   })
 
   it('does not show gap label for capped resistance', () => {
@@ -188,7 +190,7 @@ describe('StatSheetPanel', () => {
       statSheet: makeStatSheet({ warnings: [] }),
     })
     render(<StatSheetPanel />)
-    expect(screen.queryByText(/needed/)).toBeNull()
+    expect(screen.queryByText(/to cap/)).toBeNull()
   })
 
   it('renders dash placeholders when statSheet is null', () => {
@@ -371,5 +373,100 @@ describe('StatSheetPanel', () => {
       fireEvent.click(screen.getByRole('tab', { name: tabName }))
       expect(await axe(container)).toHaveNoViolations()
     }
+  })
+
+  // ── Story 1.8: Stat Source Breakdown tooltip ──────────────────────────────
+
+  function src(partial: Partial<ModifierSource> & { source_type: ModifierSource['source_type'] }): ModifierSource {
+    return { source_label: 'raw_id', value: 10, modifier_type: 'flat', ...partial }
+  }
+
+  const RES_SOURCES: Record<string, ModifierSource[]> = {
+    FireResistance: [src({ source_type: 'passive_node', source_label: 'fire_node', value: 40 })],
+    AllResistances: [src({ source_type: 'idol', source_label: 'idol_all', value: 18 })],
+  }
+
+  it('opens a Source Breakdown tooltip on hover and folds in AllResistances (AC1)', async () => {
+    const user = userEvent.setup()
+    setupMocks({ statSheet: makeStatSheet({ stat_sources: RES_SOURCES }) })
+    render(<StatSheetPanel />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Defense' }))
+
+    const row = screen.getByText('Fire Res').parentElement!
+    await user.hover(row)
+
+    const tip = screen.getByRole('tooltip')
+    expect(tip).toHaveTextContent('fire_node')
+    // AllResistances fan-in must appear in the element-resistance tooltip.
+    expect(tip).toHaveTextContent('idol_all')
+  })
+
+  it('shows "Base value only." for a sourced row with no entries (AC2)', async () => {
+    const user = userEvent.setup()
+    setupMocks({ statSheet: makeStatSheet({ stat_sources: {} }) })
+    render(<StatSheetPanel />)
+    // Strength is on the default General tab.
+    const row = screen.getByText('Strength').parentElement!
+    await user.hover(row)
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Base value only.')
+  })
+
+  it('renders the FR-14 in-row annotation in the warning color when below cap (AC3)', () => {
+    setupMocks({
+      statSheet: makeStatSheet({
+        defense: { ...makeStatSheet().defense, fire_resistance: 68 },
+        warnings: [{ warning_type: 'fire_resistance_uncapped', current_value: 68, gap: 7 }],
+      }),
+    })
+    render(<StatSheetPanel />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Defense' }))
+    const annotation = screen.getByText(/\(\+7 to cap\)/)
+    expect(annotation).toHaveStyle({ color: 'var(--color-data-negative)' })
+  })
+
+  it('repeats the cap gap in the tooltip footer below cap (AC3)', async () => {
+    const user = userEvent.setup()
+    setupMocks({
+      statSheet: makeStatSheet({
+        defense: { ...makeStatSheet().defense, fire_resistance: 68 },
+        warnings: [{ warning_type: 'fire_resistance_uncapped', current_value: 68, gap: 7 }],
+        stat_sources: { FireResistance: [src({ source_type: 'passive_node', source_label: 'fire_node', value: 68 })] },
+      }),
+    })
+    render(<StatSheetPanel />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Defense' }))
+    await user.hover(screen.getByText('Fire Res').parentElement!)
+    const tip = screen.getByRole('tooltip')
+    expect(tip).toHaveTextContent('+7% to cap')
+  })
+
+  it('opens on keyboard focus and dismisses on Escape and blur (AC1, AC4)', () => {
+    setupMocks({ statSheet: makeStatSheet({ stat_sources: RES_SOURCES }) })
+    render(<StatSheetPanel />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Defense' }))
+    const row = screen.getByText('Fire Res').parentElement!
+
+    fireEvent.focus(row)
+    expect(screen.getByRole('tooltip')).toBeInTheDocument()
+
+    fireEvent.keyDown(row, { key: 'Escape' })
+    expect(screen.queryByRole('tooltip')).toBeNull()
+
+    fireEvent.focus(row)
+    expect(screen.getByRole('tooltip')).toBeInTheDocument()
+    fireEvent.blur(row)
+    expect(screen.queryByRole('tooltip')).toBeNull()
+  })
+
+  it('passes axe with a Source Breakdown tooltip open (AC4)', async () => {
+    const user = userEvent.setup()
+    setupMocks({ statSheet: makeStatSheet({ stat_sources: RES_SOURCES }) })
+    render(<StatSheetPanel />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Defense' }))
+    await user.hover(screen.getByText('Fire Res').parentElement!)
+    expect(screen.getByRole('tooltip')).toBeInTheDocument()
+    // `region` is a page-level landmark rule; the tooltip portals outside the panel's section
+    // landmark by design (WCAG-valid overlay), so it is disabled for this sweep.
+    expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
   })
 })

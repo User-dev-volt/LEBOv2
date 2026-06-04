@@ -1,11 +1,15 @@
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/react'
 import { useOptimizationStore } from '../../shared/stores/optimizationStore'
 import { useBuildStore, selectAvailablePassivePoints } from '../../shared/stores/buildStore'
 import { useGameDataStore } from '../../shared/stores/gameDataStore'
 import { calculateSkillPoints } from '../../shared/utils/budgetCalculator'
+import { useReducedMotion } from '../../shared/hooks/useReducedMotion'
 import { DAMAGE_TYPE_COLORS } from '../../shared/utils/rarityColors'
 import type { DamageType } from '../../shared/types/itemDatabase'
 import type { DefenseStats, StatSheet, StatWarning } from '../../shared/types/statSheet'
+import { StatSourceTooltip, type CapInfo, type ResolvedSource } from './StatSourceTooltip'
+import { buildSourceResolveContext, resolveSourceName } from './statSourceLabels'
 
 type ResistanceFieldKey = Extract<
   keyof DefenseStats,
@@ -18,15 +22,23 @@ type ResistanceFieldKey = Extract<
   | 'physical_resistance'
 >
 
+// Resistances are capped at 75% (FR-14). The displayed defense.[res] is post-cap; the pre-cap
+// total (sum of source values, incl. AllResistances fan-in) may exceed this.
+const RESISTANCE_CAP = 75
+// Umbrella key: the engine folds AllResistances into every element resistance but records it only
+// under its own key — so each resistance tooltip must fold it in (carried Story 1.7 review req).
+const ALL_RESISTANCES_KEY = 'AllResistances'
+
 // Order follows addendum F: Fire / Cold / Lightning / Void / Necrotic / Physical / Poison.
-const RESISTANCES: Array<{ field: ResistanceFieldKey; warnType: string; label: string; damageTypeColor: string }> = [
-  { field: 'fire_resistance',      warnType: 'fire_resistance_uncapped',      label: 'Fire Res',      damageTypeColor: 'var(--color-dmg-fire)'      },
-  { field: 'cold_resistance',      warnType: 'cold_resistance_uncapped',      label: 'Cold Res',      damageTypeColor: 'var(--color-dmg-cold)'      },
-  { field: 'lightning_resistance', warnType: 'lightning_resistance_uncapped', label: 'Lightning Res', damageTypeColor: 'var(--color-dmg-lightning)'  },
-  { field: 'void_resistance',      warnType: 'void_resistance_uncapped',      label: 'Void Res',      damageTypeColor: 'var(--color-dmg-void)'      },
-  { field: 'necrotic_resistance',  warnType: 'necrotic_resistance_uncapped',  label: 'Necrotic Res',  damageTypeColor: 'var(--color-dmg-necrotic)'  },
-  { field: 'physical_resistance',  warnType: 'physical_resistance_uncapped',  label: 'Physical Res',  damageTypeColor: 'var(--color-dmg-physical)'  },
-  { field: 'poison_resistance',    warnType: 'poison_resistance_uncapped',    label: 'Poison Res',    damageTypeColor: 'var(--color-dmg-poison)'    },
+// statKey is the live PascalCase serde name of the Rust StatKey enum (modifier.rs:47-53) — the key of stat_sources.
+const RESISTANCES: Array<{ field: ResistanceFieldKey; warnType: string; label: string; damageTypeColor: string; statKey: string }> = [
+  { field: 'fire_resistance',      warnType: 'fire_resistance_uncapped',      label: 'Fire Res',      damageTypeColor: 'var(--color-dmg-fire)',      statKey: 'FireResistance'      },
+  { field: 'cold_resistance',      warnType: 'cold_resistance_uncapped',      label: 'Cold Res',      damageTypeColor: 'var(--color-dmg-cold)',      statKey: 'ColdResistance'      },
+  { field: 'lightning_resistance', warnType: 'lightning_resistance_uncapped', label: 'Lightning Res', damageTypeColor: 'var(--color-dmg-lightning)',  statKey: 'LightningResistance' },
+  { field: 'void_resistance',      warnType: 'void_resistance_uncapped',      label: 'Void Res',      damageTypeColor: 'var(--color-dmg-void)',      statKey: 'VoidResistance'      },
+  { field: 'necrotic_resistance',  warnType: 'necrotic_resistance_uncapped',  label: 'Necrotic Res',  damageTypeColor: 'var(--color-dmg-necrotic)',  statKey: 'NecroticResistance'  },
+  { field: 'physical_resistance',  warnType: 'physical_resistance_uncapped',  label: 'Physical Res',  damageTypeColor: 'var(--color-dmg-physical)',  statKey: 'PhysicalResistance'  },
+  { field: 'poison_resistance',    warnType: 'poison_resistance_uncapped',    label: 'Poison Res',    damageTypeColor: 'var(--color-dmg-poison)',    statKey: 'PoisonResistance'    },
 ]
 
 const TAB_CLASS =
@@ -148,12 +160,69 @@ interface StatRowProps {
   warningGap?: number
   delta?: number
   labelColor?: string
+  // When statKey is set the row becomes a hover/focus trigger for the Source Breakdown tooltip
+  // (a pure render of statSheet.stat_sources — no IPC). Derived/aggregate rows omit it.
+  statKey?: string
+  sources?: ResolvedSource[]
+  capInfo?: CapInfo
+  reducedMotion?: boolean
 }
 
-function StatRow({ label, value, unit = '', warningGap, delta, labelColor }: StatRowProps) {
+function StatRow({ label, value, unit = '', warningGap, delta, labelColor, statKey, sources, capInfo, reducedMotion }: StatRowProps) {
   const isWarning = warningGap !== undefined
+  const hasTooltip = statKey !== undefined
+  const tooltipId = useId()
+  const [open, setOpen] = useState(false)
+  const [anchor, setAnchor] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const cancelClose = () => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current)
+      closeTimer.current = null
+    }
+  }
+  const openAt = (el: HTMLElement) => {
+    cancelClose()
+    const r = el.getBoundingClientRect()
+    setAnchor({ x: r.right, y: r.top })
+    setOpen(true)
+  }
+  // Delayed close so the pointer can travel the OFFSET gap onto the (hoverable) tooltip — WCAG 1.4.13.
+  const scheduleClose = () => {
+    cancelClose()
+    closeTimer.current = setTimeout(() => setOpen(false), 100)
+  }
+  const closeNow = () => {
+    cancelClose()
+    setOpen(false)
+  }
+  useEffect(() => cancelClose, [])
+
+  const triggerProps = hasTooltip
+    ? {
+        tabIndex: 0,
+        onMouseEnter: (e: React.MouseEvent<HTMLDivElement>) => openAt(e.currentTarget),
+        onMouseLeave: scheduleClose,
+        onFocus: (e: React.FocusEvent<HTMLDivElement>) => openAt(e.currentTarget),
+        onBlur: closeNow,
+        onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
+          if (e.key === 'Escape') closeNow()
+        },
+        'aria-describedby': open ? tooltipId : undefined,
+      }
+    : {}
+
   return (
-    <div className="flex justify-between items-baseline py-0.5 min-w-0">
+    <div
+      className={
+        'flex justify-between items-baseline py-0.5 min-w-0' +
+        (hasTooltip
+          ? ' cursor-help focus:outline focus:outline-2 focus:outline-[var(--color-accent-gold)] focus:outline-offset-[-2px]'
+          : '')
+      }
+      {...triggerProps}
+    >
       <span className="text-xs shrink-0 mr-2" style={{ color: labelColor ?? 'var(--color-text-secondary)' }}>
         {label}
       </span>
@@ -167,13 +236,26 @@ function StatRow({ label, value, unit = '', warningGap, delta, labelColor }: Sta
             className="ml-1 text-[10px]"
             style={{ color: 'var(--color-data-negative)' }}
           >
-            (+{warningGap}% needed)
+            (+{warningGap} to cap)
           </span>
         )}
         {delta !== undefined && delta !== 0 && (
           <DeltaBadge delta={delta} unit={unit} />
         )}
       </span>
+      {hasTooltip && open && (
+        <StatSourceTooltip
+          id={tooltipId}
+          statLabel={label}
+          unit={unit}
+          sources={sources ?? []}
+          capInfo={capInfo}
+          position={anchor}
+          reducedMotion={reducedMotion ?? false}
+          onMouseEnter={cancelClose}
+          onMouseLeave={scheduleClose}
+        />
+      )}
     </div>
   )
 }
@@ -185,8 +267,49 @@ export function StatSheetPanel() {
   const activeBuild = useBuildStore((s) => s.activeBuild)
   const availablePassivePoints = useBuildStore(selectAvailablePassivePoints)
   const gameData = useGameDataStore((s) => s.gameData)
+  const itemDatabase = useGameDataStore((s) => s.itemDatabase)
+  const idolData = useGameDataStore((s) => s.idolData)
+  const blessingsDatabase = useGameDataStore((s) => s.blessingsDatabase)
+  const weaverGameNodes = useGameDataStore((s) => s.weaverGameNodes)
+  const reducedMotion = useReducedMotion()
 
   const showMinionTab = statSheet?.minion != null
+
+  const resolveCtx = useMemo(
+    () =>
+      buildSourceResolveContext({
+        gameData,
+        classId: activeBuild?.classId ?? null,
+        itemDatabase: itemDatabase ?? null,
+        idolData: idolData ?? null,
+        blessingsDatabase: blessingsDatabase ?? null,
+        weaverGameNodes: weaverGameNodes ?? {},
+      }),
+    [gameData, activeBuild?.classId, itemDatabase, idolData, blessingsDatabase, weaverGameNodes]
+  )
+
+  const statSources = statSheet?.stat_sources
+
+  // Pure render of the committed statSheet.stat_sources (preview only drives delta badges).
+  // Concatenates the row's own key with any fan-in keys (AllResistances), resolved to friendly names.
+  const buildSources = (statKey: string, fanInKeys: string[] = []): ResolvedSource[] => {
+    if (!statSources) return []
+    const raw = [
+      ...(statSources[statKey] ?? []),
+      ...fanInKeys.flatMap((k) => statSources[k] ?? []),
+    ]
+    return raw.map((s) => ({
+      sourceType: s.source_type,
+      name: resolveSourceName(s, resolveCtx),
+      value: s.value,
+      modifierType: s.modifier_type,
+    }))
+  }
+
+  // Tooltip props for a non-capped sourced row. Only attached when a statSheet exists (no tooltip
+  // on dash placeholders). Derived/aggregate rows omit this entirely.
+  const tip = (statKey: string) =>
+    statSheet ? { statKey, sources: buildSources(statKey), reducedMotion } : { reducedMotion }
 
   const classData = activeBuild && gameData ? gameData.classes[activeBuild.classId] : null
   const className = classData?.className ?? '—'
@@ -266,10 +389,10 @@ export function StatSheetPanel() {
               )
             })}
             <GroupLabel label="Attributes" />
-            <StatRow label="Strength" value={statSheet ? fmtInt(statSheet.attributes.strength) : '—'} />
-            <StatRow label="Dexterity" value={statSheet ? fmtInt(statSheet.attributes.dexterity) : '—'} />
-            <StatRow label="Intelligence" value={statSheet ? fmtInt(statSheet.attributes.intelligence) : '—'} />
-            <StatRow label="Attunement" value={statSheet ? fmtInt(statSheet.attributes.attunement) : '—'} />
+            <StatRow label="Strength" value={statSheet ? fmtInt(statSheet.attributes.strength) : '—'} {...tip('Strength')} />
+            <StatRow label="Dexterity" value={statSheet ? fmtInt(statSheet.attributes.dexterity) : '—'} {...tip('Dexterity')} />
+            <StatRow label="Intelligence" value={statSheet ? fmtInt(statSheet.attributes.intelligence) : '—'} {...tip('Intelligence')} />
+            <StatRow label="Attunement" value={statSheet ? fmtInt(statSheet.attributes.attunement) : '—'} {...tip('Attunement')} />
           </TabPanel>
 
           {/* Offense */}
@@ -278,20 +401,22 @@ export function StatSheetPanel() {
             <StatRow label="Damage Score" value={statSheet ? fmt(statSheet.offense.damage_score) : '—'} delta={deltas?.damage_score} />
             <StatRow label="Avg Hit" value={statSheet ? fmtInt(statSheet.offense.avg_hit_damage) : '—'} delta={deltas?.avg_hit_damage} />
             <StatRow label="Avg Hit (Crit)" value={statSheet ? fmtInt(statSheet.offense.avg_hit_damage_crit_weighted) : '—'} delta={deltas?.avg_hit_damage_crit_weighted} />
-            <StatRow label="Crit Chance" value={statSheet ? fmt(statSheet.offense.critical_strike_chance) : '—'} unit="%" delta={deltas?.critical_strike_chance} />
-            <StatRow label="Crit Multi" value={statSheet ? fmt(statSheet.offense.critical_strike_multiplier) : '—'} unit="%" delta={deltas?.critical_strike_multiplier} />
+            <StatRow label="Crit Chance" value={statSheet ? fmt(statSheet.offense.critical_strike_chance) : '—'} unit="%" delta={deltas?.critical_strike_chance} {...tip('CriticalStrikeChance')} />
+            <StatRow label="Crit Multi" value={statSheet ? fmt(statSheet.offense.critical_strike_multiplier) : '—'} unit="%" delta={deltas?.critical_strike_multiplier} {...tip('CriticalStrikeMultiplier')} />
             <StatRow
               label="Attack Speed"
               value={statSheet?.offense.attack_speed != null ? fmt(statSheet.offense.attack_speed) : '—'}
               delta={deltas?.attack_speed ?? undefined}
+              {...tip('AttackSpeed')}
             />
             <StatRow
               label="Cast Speed"
               value={statSheet?.offense.cast_speed != null ? fmt(statSheet.offense.cast_speed) : '—'}
               delta={deltas?.cast_speed ?? undefined}
+              {...tip('CastSpeed')}
             />
-            <StatRow label="AoE Modifier" value={statSheet ? fmt(statSheet.offense.aoe_modifier) : '—'} delta={deltas?.aoe_modifier} />
-            <StatRow label="Stun Chance" value={statSheet ? fmt(statSheet.offense.stun_chance) : '—'} unit="%" />
+            <StatRow label="AoE Modifier" value={statSheet ? fmt(statSheet.offense.aoe_modifier) : '—'} delta={deltas?.aoe_modifier} {...tip('AreaOfEffect')} />
+            <StatRow label="Stun Chance" value={statSheet ? fmt(statSheet.offense.stun_chance) : '—'} unit="%" {...tip('StunChance')} />
             {/* Per-type damage breakdown — empty today; renders nothing until the engine populates damage_types[]. */}
             {(statSheet?.offense.damage_types ?? []).map((dt) => (
               <StatRow
@@ -302,9 +427,9 @@ export function StatSheetPanel() {
               />
             ))}
             <GroupLabel label="Penetration" />
-            <StatRow label="Elemental Pen" value={statSheet ? fmt(statSheet.offense.elemental_penetration) : '—'} unit="%" />
-            <StatRow label="Physical Pen" value={statSheet ? fmt(statSheet.offense.physical_penetration) : '—'} unit="%" />
-            <StatRow label="Void Pen" value={statSheet ? fmt(statSheet.offense.void_penetration) : '—'} unit="%" />
+            <StatRow label="Elemental Pen" value={statSheet ? fmt(statSheet.offense.elemental_penetration) : '—'} unit="%" {...tip('ElementalPenetration')} />
+            <StatRow label="Physical Pen" value={statSheet ? fmt(statSheet.offense.physical_penetration) : '—'} unit="%" {...tip('PhysicalPenetration')} />
+            <StatRow label="Void Pen" value={statSheet ? fmt(statSheet.offense.void_penetration) : '—'} unit="%" {...tip('VoidPenetration')} />
             <GroupLabel label="Ailment Chances" />
             <StatRow label="Bleed" value={statSheet ? fmt(statSheet.offense.bleed_chance) : '—'} unit="%" />
             <StatRow label="Ignite" value={statSheet ? fmt(statSheet.offense.ignite_chance) : '—'} unit="%" />
@@ -319,15 +444,24 @@ export function StatSheetPanel() {
             <StatRow label="EHP vs Hits" value={statSheet ? fmtInt(statSheet.defense.ehp_vs_hits) : '—'} delta={deltas?.effective_hp} />
             <StatRow label="EHP vs DoTs" value={statSheet ? fmtInt(statSheet.defense.ehp_vs_dots) : '—'} />
             <StatRow label="EHP vs 1-Shots" value={statSheet ? fmtInt(statSheet.defense.ehp_vs_one_shots) : '—'} />
-            <StatRow label="HP" value={statSheet ? fmtInt(statSheet.defense.raw_hp) : '—'} delta={deltas?.raw_hp} />
+            <StatRow label="HP" value={statSheet ? fmtInt(statSheet.defense.raw_hp) : '—'} delta={deltas?.raw_hp} {...tip('MaxHp')} />
             <StatRow label="Ward" value={statSheet ? fmtInt(statSheet.defense.ward) : '—'} delta={deltas?.ward} />
             <StatRow label="Stable Ward" value={statSheet ? fmtInt(statSheet.defense.stable_ward) : '—'} />
             <StatRow label="Ward Retention" value={statSheet ? fmt(statSheet.defense.ward_retention) : '—'} unit="%" />
-            <StatRow label="Armor" value={statSheet ? fmtInt(statSheet.defense.armor) : '—'} delta={deltas?.armor} />
-            <StatRow label="Endurance" value={statSheet ? fmt(statSheet.defense.endurance_percent) : '—'} unit="%" delta={deltas?.endurance_percent} />
-            <StatRow label="End. Threshold" value={statSheet ? fmtInt(statSheet.defense.endurance_threshold) : '—'} delta={deltas?.endurance_threshold} />
-            {RESISTANCES.map(({ field, warnType, label, damageTypeColor }) => {
+            <StatRow label="Armor" value={statSheet ? fmtInt(statSheet.defense.armor) : '—'} delta={deltas?.armor} {...tip('Armor')} />
+            <StatRow label="Endurance" value={statSheet ? fmt(statSheet.defense.endurance_percent) : '—'} unit="%" delta={deltas?.endurance_percent} {...tip('EndurancePercent')} />
+            <StatRow label="End. Threshold" value={statSheet ? fmtInt(statSheet.defense.endurance_threshold) : '—'} delta={deltas?.endurance_threshold} {...tip('EnduranceThreshold')} />
+            {RESISTANCES.map(({ field, warnType, label, damageTypeColor, statKey }) => {
               const warn = statSheet ? findWarning(statSheet.warnings, warnType) : undefined
+              const sources = statSheet ? buildSources(statKey, [ALL_RESISTANCES_KEY]) : undefined
+              // Pre-cap total = sum of the concatenated source values; may exceed the 75% cap.
+              const capInfo: CapInfo | undefined = statSheet
+                ? {
+                    preCapTotal: (sources ?? []).reduce((sum, s) => sum + s.value, 0),
+                    cap: RESISTANCE_CAP,
+                    gap: warn?.gap ?? null,
+                  }
+                : undefined
               return (
                 <StatRow
                   key={field}
@@ -337,14 +471,18 @@ export function StatSheetPanel() {
                   warningGap={warn?.gap}
                   delta={deltas?.[field as keyof StatDeltas] as number | undefined}
                   labelColor={damageTypeColor}
+                  statKey={statSheet ? statKey : undefined}
+                  sources={sources}
+                  capInfo={capInfo}
+                  reducedMotion={reducedMotion}
                 />
               )
             })}
-            <StatRow label="Dodge" value={statSheet ? fmt(statSheet.defense.dodge_chance) : '—'} unit="%" delta={deltas?.dodge_chance} />
+            <StatRow label="Dodge" value={statSheet ? fmt(statSheet.defense.dodge_chance) : '—'} unit="%" delta={deltas?.dodge_chance} {...tip('DodgeRating')} />
             <StatRow label="Parry" value={statSheet ? fmt(statSheet.defense.parry_chance) : '—'} unit="%" />
-            <StatRow label="Block" value={statSheet ? fmt(statSheet.defense.block_chance) : '—'} unit="%" />
+            <StatRow label="Block" value={statSheet ? fmt(statSheet.defense.block_chance) : '—'} unit="%" {...tip('BlockChance')} />
             <StatRow label="Glancing Blow" value={statSheet ? fmt(statSheet.defense.glancing_blow_chance) : '—'} unit="%" />
-            <StatRow label="Crit Avoidance" value={statSheet ? fmt(statSheet.defense.crit_avoidance) : '—'} unit="%" delta={deltas?.crit_avoidance} />
+            <StatRow label="Crit Avoidance" value={statSheet ? fmt(statSheet.defense.crit_avoidance) : '—'} unit="%" delta={deltas?.crit_avoidance} {...tip('CriticalStrikeAvoidance')} />
             <StatRow label="Reduced Crit Bonus" value={statSheet ? fmt(statSheet.defense.reduced_bonus_damage_from_crits) : '—'} unit="%" />
             <GroupLabel label="Ailment Avoidance" />
             <StatRow label="Chill" value={statSheet ? fmt(statSheet.defense.chill_avoidance) : '—'} unit="%" />
@@ -367,7 +505,7 @@ export function StatSheetPanel() {
             <StatRow label="Damage Score" value={statSheet ? fmt(statSheet.scores.damage_score) : '—'} delta={deltas?.score_damage} />
             <StatRow label="Surv. Score" value={statSheet ? fmt(statSheet.scores.survivability_score) : '—'} delta={deltas?.score_survivability} />
             <StatRow label="Speed Score" value={statSheet ? fmt(statSheet.scores.speed_score) : '—'} delta={deltas?.score_speed} />
-            <StatRow label="Healing Effectiveness" value={statSheet ? fmt(statSheet.defense.healing_effectiveness) : '—'} unit="%" />
+            <StatRow label="Healing Effectiveness" value={statSheet ? fmt(statSheet.defense.healing_effectiveness) : '—'} unit="%" {...tip('HealingEffectiveness')} />
             {/* No StatSheet field exists for these — honest dashes, never fabricated (no new IPC). */}
             <StatRow label="Move Speed" value="—" />
             <StatRow label="Cooldown Recovery" value="—" />

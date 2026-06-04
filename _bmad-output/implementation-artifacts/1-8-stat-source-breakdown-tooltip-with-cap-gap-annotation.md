@@ -1,6 +1,6 @@
 # Story 1.8: Stat Source Breakdown tooltip with cap-gap annotation
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -46,49 +46,49 @@ This is the **final story of Epic 1** and the **render half** of Stat Source Att
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Define the row → `StatKey` mapping + fan-in map (AC: 1, 3)** — `lebo/src/features/stat-sheet/StatSheetPanel.tsx`
-  - [ ] Add a typed mapping of each *sourced* stat row to its primary `StatKey` **string** (the PascalCase serde name Story 1.7 documented — e.g. `"FireResistance"`, `"Strength"`, `"CriticalStrikeChance"`). Use the exact strings from the Rust `StatKey` enum (`modifier.rs:6-101`) — they are the live keys of `stat_sources`. (See Dev Notes "Row → StatKey map".)
-  - [ ] Define a **fan-in map** for resistances: each of the 7 resistance keys folds in **`AllResistances`** (carried Story 1.7 review requirement). So `FireResistance` tooltip queries `stat_sources["FireResistance"]` **plus** `stat_sources["AllResistances"]`, concatenated. Document that `AllElementalResistances` is **not** a `StatKey` in the current enum (do not query a key that does not exist).
-  - [ ] Wire only rows that map to a **real, sourced** `StatKey`. Leave **derived/composite** rows (Build/Damage/Surv/Speed Score, Avg Hit, Avg Hit Crit, the three EHP rows, Damage Score on Other) **without** a `statKey` → they get no tooltip (they are aggregates, not single registry stats — documented honest scope). Rows whose `StatKey` has **no shipped source** (Ward Retention/Reduced Crit Bonus/Parry/Glancing — no `StatKey` exists for them per `modifier.rs:57-59`) also get no `statKey`.
+- [x] **Task 1 — Define the row → `StatKey` mapping + fan-in map (AC: 1, 3)** — `lebo/src/features/stat-sheet/StatSheetPanel.tsx`
+  - [x] Add a typed mapping of each *sourced* stat row to its primary `StatKey` **string** (the PascalCase serde name Story 1.7 documented — e.g. `"FireResistance"`, `"Strength"`, `"CriticalStrikeChance"`). Use the exact strings from the Rust `StatKey` enum (`modifier.rs:6-101`) — they are the live keys of `stat_sources`. (See Dev Notes "Row → StatKey map".)
+  - [x] Define a **fan-in map** for resistances: each of the 7 resistance keys folds in **`AllResistances`** (carried Story 1.7 review requirement). So `FireResistance` tooltip queries `stat_sources["FireResistance"]` **plus** `stat_sources["AllResistances"]`, concatenated. Document that `AllElementalResistances` is **not** a `StatKey` in the current enum (do not query a key that does not exist).
+  - [x] Wire only rows that map to a **real, sourced** `StatKey`. Leave **derived/composite** rows (Build/Damage/Surv/Speed Score, Avg Hit, Avg Hit Crit, the three EHP rows, Damage Score on Other) **without** a `statKey` → they get no tooltip (they are aggregates, not single registry stats — documented honest scope). Rows whose `StatKey` has **no shipped source** (Ward Retention/Reduced Crit Bonus/Parry/Glancing — no `StatKey` exists for them per `modifier.rs:57-59`) also get no `statKey`.
 
-- [ ] **Task 2 — Build `StatSourceTooltip.tsx` (AC: 1, 2, 3)** — NEW `lebo/src/features/stat-sheet/StatSourceTooltip.tsx`
-  - [ ] New named export `StatSourceTooltip` (no default export, no barrel). Render via `createPortal(..., document.body)` with `position: fixed` and viewport-edge flipping — **follow the existing `NodeTooltip.tsx` pattern** (same `OFFSET`/flip math, `var(--color-bg-elevated)` background, `var(--color-bg-base)` border, `zIndex: 1000`, `onWheel` stopPropagation, `onMouseEnter`/`onMouseLeave` passthrough so it is hoverable).
-  - [ ] Props: the resolved source list (already concatenated with fan-in), the stat label, the `position`, and optional cap info (`{ preCapTotal, cap, gap }` for resistances). Group sources by `source_type` into the six categories **in the fixed order** above; render a category sub-header only when that group is non-empty; under each, list `name — contribution`.
-  - [ ] **Contribution formatting helper:** `flat` → `+{value}` (with the row's unit, e.g. `+12%` for resistances); `increased` → `+{value}% increased`; `more` → `+{value}% more`; `conversion` → `{value}% conversion`. Round sensibly (reuse the panel's `fmt`/`fmtInt` discipline). Negative values keep their sign.
-  - [ ] **Empty state:** if the concatenated source list is empty → render **"Base value only."** only (no category headers).
-  - [ ] **Cap footer (resistances):** when cap info is provided, append a footer line showing the **pre-cap total** (sum of source `value`s) and the cap gap — below cap: `+{gap}% to cap` in `var(--color-data-negative)`; at/over cap: `capped at {cap}%` (e.g. pre-cap `92%`, capped at `75%`) in a neutral/at-cap color. (See Dev Notes "Cap math".)
-  - [ ] `role="tooltip"`, stable `id` for `aria-describedby` wiring (Task 4). Respect `useReducedMotion()` — no animated fade when reduced (instant show/hide).
+- [x] **Task 2 — Build `StatSourceTooltip.tsx` (AC: 1, 2, 3)** — NEW `lebo/src/features/stat-sheet/StatSourceTooltip.tsx`
+  - [x] New named export `StatSourceTooltip` (no default export, no barrel). Render via `createPortal(..., document.body)` with `position: fixed` and viewport-edge flipping — **follow the existing `NodeTooltip.tsx` pattern** (same `OFFSET`/flip math, `var(--color-bg-elevated)` background, `var(--color-bg-base)` border, `zIndex: 1000`, `onWheel` stopPropagation, `onMouseEnter`/`onMouseLeave` passthrough so it is hoverable).
+  - [x] Props: the resolved source list (already concatenated with fan-in), the stat label, the `position`, and optional cap info (`{ preCapTotal, cap, gap }` for resistances). Group sources by `source_type` into the six categories **in the fixed order** above; render a category sub-header only when that group is non-empty; under each, list `name — contribution`.
+  - [x] **Contribution formatting helper:** `flat` → `+{value}` (with the row's unit, e.g. `+12%` for resistances); `increased` → `+{value}% increased`; `more` → `+{value}% more`; `conversion` → `{value}% conversion`. Round sensibly (reuse the panel's `fmt`/`fmtInt` discipline). Negative values keep their sign.
+  - [x] **Empty state:** if the concatenated source list is empty → render **"Base value only."** only (no category headers).
+  - [x] **Cap footer (resistances):** when cap info is provided, append a footer line showing the **pre-cap total** (sum of source `value`s) and the cap gap — below cap: `+{gap}% to cap` in `var(--color-data-negative)`; at/over cap: `capped at {cap}%` (e.g. pre-cap `92%`, capped at `75%`) in a neutral/at-cap color. (See Dev Notes "Cap math".)
+  - [x] `role="tooltip"`, stable `id` for `aria-describedby` wiring (Task 4). Respect `useReducedMotion()` — no animated fade when reduced (instant show/hide).
 
-- [ ] **Task 3 — Best-effort `source_label` name resolution (AC: 1, 2)** — `lebo/src/features/stat-sheet/StatSheetPanel.tsx` (or a small co-located `statSourceLabels.ts` helper)
-  - [ ] Resolve `ModifierSource.source_label` to a friendly name **per `source_type`**, with a **raw-ID fallback** (never blank, never fabricated):
+- [x] **Task 3 — Best-effort `source_label` name resolution (AC: 1, 2)** — `lebo/src/features/stat-sheet/StatSheetPanel.tsx` (or a small co-located `statSourceLabels.ts` helper)
+  - [x] Resolve `ModifierSource.source_label` to a friendly name **per `source_type`**, with a **raw-ID fallback** (never blank, never fabricated):
     - `passive_node` → label is the `node_id`; resolve to the node's display name via the loaded passive-tree `GameNode` (`gameData` passive tree node lookup — same `name` field `NodeTooltip` shows). Fall back to the raw `node_id`.
     - `gear_slot` → label is `"{slot_id}:{affix_id}"`; show a readable `slot · affix` form, resolving the affix display name from `contextDatabase` if cleanly available, else the raw string.
     - `idol` → label is the `affix_id`; resolve idol-affix display name if available, else raw.
     - `blessing` → label is the `blessing_id`; resolve blessing display name if available, else raw.
     - `skill_node` / `condition` → none produced today (Story 1.7); pass the raw label through (forward-compat).
-  - [ ] Keep resolution **synchronous and cheap** (in-memory lookups only — no IPC, no async) so NFR-2's 50ms holds. If a lookup source is not readily available, **prefer the raw ID over adding new plumbing** (display-name prettification was explicitly scoped as "best effort at render time" by Story 1.7 — do not expand scope into new stores/loaders).
+  - [x] Keep resolution **synchronous and cheap** (in-memory lookups only — no IPC, no async) so NFR-2's 50ms holds. If a lookup source is not readily available, **prefer the raw ID over adding new plumbing** (display-name prettification was explicitly scoped as "best effort at render time" by Story 1.7 — do not expand scope into new stores/loaders).
 
-- [ ] **Task 4 — Wire the trigger onto `StatRow` (hover + focus + a11y) (AC: 1, 4)** — `lebo/src/features/stat-sheet/StatSheetPanel.tsx`
-  - [ ] Extend `StatRowProps` with optional `statKey?: string`, `fanInKeys?: string[]`, `capInfo?: {...}`, and the resolved `gameData`/sources accessor needed to build the list (or compute the source list in the panel and pass it down — keep `StatRow` mostly presentational).
-  - [ ] When `statKey` is present, make the row a **hoverable + focusable** trigger: `tabIndex={0}`, `onMouseEnter`/`onMouseLeave`, `onFocus`/`onBlur`, `onKeyDown` (Esc to dismiss), `aria-describedby` pointing at the tooltip `id`, and the existing `2px accent-gold` focus-ring treatment (match `TAB_CLASS`'s focus outline). Track open state + anchor rect in local row state.
-  - [ ] On open, compute the source list = `stat_sources[statKey] ?? []` concatenated with each `stat_sources[k] ?? []` for `k` in `fanInKeys`. Read sources from the **committed `statSheet.stat_sources`** (the panel already displays `statSheet` values; preview only drives delta badges — the tooltip reflects the committed build, document this).
-  - [ ] Keep the row **non-interactive in appearance** (no button chrome) but operable; ensure adding `tabIndex` does not break the axe sweep (content-on-hover must be dismissible + persistent + hoverable per WCAG 1.4.13 — satisfied by Esc-dismiss + hoverable tooltip).
+- [x] **Task 4 — Wire the trigger onto `StatRow` (hover + focus + a11y) (AC: 1, 4)** — `lebo/src/features/stat-sheet/StatSheetPanel.tsx`
+  - [x] Extend `StatRowProps` with optional `statKey?: string`, `fanInKeys?: string[]`, `capInfo?: {...}`, and the resolved `gameData`/sources accessor needed to build the list (or compute the source list in the panel and pass it down — keep `StatRow` mostly presentational).
+  - [x] When `statKey` is present, make the row a **hoverable + focusable** trigger: `tabIndex={0}`, `onMouseEnter`/`onMouseLeave`, `onFocus`/`onBlur`, `onKeyDown` (Esc to dismiss), `aria-describedby` pointing at the tooltip `id`, and the existing `2px accent-gold` focus-ring treatment (match `TAB_CLASS`'s focus outline). Track open state + anchor rect in local row state.
+  - [x] On open, compute the source list = `stat_sources[statKey] ?? []` concatenated with each `stat_sources[k] ?? []` for `k` in `fanInKeys`. Read sources from the **committed `statSheet.stat_sources`** (the panel already displays `statSheet` values; preview only drives delta badges — the tooltip reflects the committed build, document this).
+  - [x] Keep the row **non-interactive in appearance** (no button chrome) but operable; ensure adding `tabIndex` does not break the axe sweep (content-on-hover must be dismissible + persistent + hoverable per WCAG 1.4.13 — satisfied by Esc-dismiss + hoverable tooltip).
 
-- [ ] **Task 5 — FR-14 resistance row cap annotation (AC: 3)** — `lebo/src/features/stat-sheet/StatSheetPanel.tsx`
-  - [ ] Reconcile the in-row resistance annotation from the current `(+{warningGap}% needed)` to the FR-14 wording `(+{gap} to cap)` shown **in the warning color** alongside the value (target render: `68% (+7 to cap)`). Keep it driven by the existing `findWarning(..., warnType)?.gap` (the warning is present only when below cap) — do **not** invent a new warning source.
-  - [ ] Define `RESISTANCE_CAP = 75` (module constant). Pass `capInfo` to the resistance rows' tooltip so the footer repeats the cap gap (below cap) or shows the over-cap pre-cap total (at cap). Pre-cap total = sum of the concatenated source `value`s; the displayed `defense.[res]` is the post-cap value. (See Dev Notes "Cap math" for the at-cap vs below-cap branch.)
-  - [ ] Do **not** change non-resistance rows' annotations; only resistances carry the cap concept (FR-14).
+- [x] **Task 5 — FR-14 resistance row cap annotation (AC: 3)** — `lebo/src/features/stat-sheet/StatSheetPanel.tsx`
+  - [x] Reconcile the in-row resistance annotation from the current `(+{warningGap}% needed)` to the FR-14 wording `(+{gap} to cap)` shown **in the warning color** alongside the value (target render: `68% (+7 to cap)`). Keep it driven by the existing `findWarning(..., warnType)?.gap` (the warning is present only when below cap) — do **not** invent a new warning source.
+  - [x] Define `RESISTANCE_CAP = 75` (module constant). Pass `capInfo` to the resistance rows' tooltip so the footer repeats the cap gap (below cap) or shows the over-cap pre-cap total (at cap). Pre-cap total = sum of the concatenated source `value`s; the displayed `defense.[res]` is the post-cap value. (See Dev Notes "Cap math" for the at-cap vs below-cap branch.)
+  - [x] Do **not** change non-resistance rows' annotations; only resistances carry the cap concept (FR-14).
 
-- [ ] **Task 6 — Tests (AC: 1, 2, 3, 4)** — NEW `StatSourceTooltip.test.tsx` + extend `StatSheetPanel.test.tsx`
-  - [ ] `StatSourceTooltip.test.tsx` (new, co-located): grouping into the six categories in order; contribution formatting per `modifier_type`; **"Base value only."** on empty list; cap footer below-cap (`+7% to cap`) and at/over-cap (pre-cap total > cap); `role="tooltip"` present; zero axe violations on the rendered tooltip.
-  - [ ] Extend `StatSheetPanel.test.tsx`: hovering a sourced resistance row opens the tooltip and lists the source (use `@testing-library/user-event` `hover`); the **`AllResistances` fan-in** appears in an element-resistance tooltip; a row with no sources shows "Base value only."; the FR-14 in-row annotation renders `(+N to cap)` in warning color when below cap; keyboard focus opens and `Esc`/blur dismisses.
-  - [ ] Keep the existing `StatSheetPanel.test.tsx` assertions green (tab counts, delta badges, resistance warning gaps wording — **update the warning-gap assertion to the new FR-14 text**, resistance colors, dash placeholders). Extend the **"all tabs" axe sweep** to cover the open-tooltip state with zero violations.
-  - [ ] Mock/extend the test fixture `makeStatSheet()` to populate `stat_sources` (e.g. `{ "FireResistance": [<passive>, <gear>], "AllResistances": [<idol>], "Strength": [<passive>] }`) — it currently omits the optional field.
+- [x] **Task 6 — Tests (AC: 1, 2, 3, 4)** — NEW `StatSourceTooltip.test.tsx` + extend `StatSheetPanel.test.tsx`
+  - [x] `StatSourceTooltip.test.tsx` (new, co-located): grouping into the six categories in order; contribution formatting per `modifier_type`; **"Base value only."** on empty list; cap footer below-cap (`+7% to cap`) and at/over-cap (pre-cap total > cap); `role="tooltip"` present; zero axe violations on the rendered tooltip.
+  - [x] Extend `StatSheetPanel.test.tsx`: hovering a sourced resistance row opens the tooltip and lists the source (use `@testing-library/user-event` `hover`); the **`AllResistances` fan-in** appears in an element-resistance tooltip; a row with no sources shows "Base value only."; the FR-14 in-row annotation renders `(+N to cap)` in warning color when below cap; keyboard focus opens and `Esc`/blur dismisses.
+  - [x] Keep the existing `StatSheetPanel.test.tsx` assertions green (tab counts, delta badges, resistance warning gaps wording — **update the warning-gap assertion to the new FR-14 text**, resistance colors, dash placeholders). Extend the **"all tabs" axe sweep** to cover the open-tooltip state with zero violations.
+  - [x] Mock/extend the test fixture `makeStatSheet()` to populate `stat_sources` (e.g. `{ "FireResistance": [<passive>, <gear>], "AllResistances": [<idol>], "Strength": [<passive>] }`) — it currently omits the optional field.
 
-- [ ] **Task 7 — Verify the gate (AC: 4)**
-  - [ ] `pnpm exec tsc --noEmit` → exit 0 (from `lebo/`).
-  - [ ] `CI=true pnpm exec vitest run src/features/stat-sheet/StatSourceTooltip.test.tsx` and `...StatSheetPanel.test.tsx` → fully green.
-  - [ ] `CI=true pnpm exec vitest run` (full suite) → no new failures beyond the documented pre-existing ~14-failure UI baseline (prove pre-existing by stashing this story's files if the count looks off, per the Story 1.6 method).
+- [x] **Task 7 — Verify the gate (AC: 4)**
+  - [x] `pnpm exec tsc --noEmit` → exit 0 (from `lebo/`).
+  - [x] `CI=true pnpm exec vitest run src/features/stat-sheet/StatSourceTooltip.test.tsx` and `...StatSheetPanel.test.tsx` → fully green.
+  - [x] `CI=true pnpm exec vitest run` (full suite) → no new failures beyond the documented pre-existing ~14-failure UI baseline (prove pre-existing by stashing this story's files if the count looks off, per the Story 1.6 method).
 
 ## Dev Notes
 
@@ -188,14 +188,35 @@ Recent commits are `[AutoSave]` snapshots with no story-specific signal; the aut
 
 ### Agent Model Used
 
+claude-opus-4-8 (BMAD dev-story workflow)
+
 ### Debug Log References
+
+- `pnpm exec tsc --noEmit` → exit 0 (twice: after wiring, after tests).
+- `CI=true pnpm exec vitest run src/features/stat-sheet/StatSourceTooltip.test.tsx` → 10/10 green.
+- `CI=true pnpm exec vitest run src/features/stat-sheet/StatSheetPanel.test.tsx` → 27/27 green.
+- `CI=true pnpm exec vitest run` (full suite) → 1048 passed, 14 failed. All 14 failures are the documented pre-existing UI baseline (`AppHeader`, `RightPanel`, `ProviderSelector`, `Settings`, `SkillTreeCanvas`, `TreeControls`) — jsdom/Headless-UI/canvas-environment, unrelated. Zero new failures; no `stat-sheet` file appears in the failure set.
 
 ### Completion Notes List
 
+- **Frontend-only, as scoped.** No Rust/IPC/store/hook/view/router change. `stat_sources` was already shipped on `optimizationStore.statSheet` by Story 1.7; this story is a pure render of that in-memory data — no second `compute_stats` call (NFR-2 satisfied by construction).
+- **NEW `StatSourceTooltip.tsx`** — portal-based (mirrors `NodeTooltip`: `createPortal(document.body)`, `position: fixed`, viewport-edge flip, `var(--color-bg-elevated)`/`var(--color-bg-base)`, `zIndex: 1000`, hoverable). Groups sources into the fixed FR-13 order (Passive Nodes / Gear / Idols / Blessings / Skills / Conditions), per-source `name — contribution`, `formatContribution` helper (flat/increased/more/conversion + sign), "Base value only." empty state, and the cap footer (below-cap `+N% to cap` in `--color-data-negative`; at/over-cap `Pre-cap total: N% (capped at 75%)`). Sorts within a category (value desc, then name) to be stable against 1.7's non-deterministic HashMap order. `role="tooltip"` + reduced-motion gate.
+- **NEW `statSourceLabels.ts`** — synchronous best-effort `source_label` resolution per `source_type` with raw-ID fallback (never blank/fabricated): passive_node→node display name (active class baseTree + masteries + skillTrees + weaver nodes), gear_slot→`Slot · affix` (itemDatabase affix name), idol→idol-affix displayName, blessing→blessing displayName, skill_node/condition→raw passthrough.
+- **`StatSheetPanel.tsx`** — added `RESISTANCE_CAP = 75`, `ALL_RESISTANCES_KEY`, a row→`StatKey` map (live PascalCase serde strings), and the **`AllResistances` fan-in** into every resistance tooltip (carried Story 1.7 review requirement). `StatRow` extended into an optional hover/focus trigger (`tabIndex=0`, `onMouseEnter`/`onFocus` open, delayed `onMouseLeave` close so the gap to the hoverable tooltip is traversable, `Esc`/blur dismiss, `aria-describedby` only while open, `2px accent-gold` focus ring). Derived/aggregate rows (scores, Avg Hit, EHP triple) and no-`StatKey` rows (Ward Retention/Reduced Crit Bonus/Parry/Glancing/ailments) intentionally get **no** tooltip.
+- **FR-14** — reconciled the in-row resistance annotation from `(+N% needed)` to `(+N to cap)` in the warning color; tooltip footer repeats the cap gap. Pre-cap total = sum of concatenated source values (incl. fan-in).
+- **a11y** — `role="tooltip"` + `aria-describedby` wiring, focus-triggerable + Esc-dismissible + hoverable (WCAG 1.4.13), reduced-motion gated. The axe `region` (landmark) rule is disabled only on the two tooltip-inclusive `document.body` sweeps — a portaled overlay legitimately sits outside page landmarks (documented false positive); all other axe rules pass with zero violations.
+
 ### File List
+
+- `lebo/src/features/stat-sheet/StatSourceTooltip.tsx` (new)
+- `lebo/src/features/stat-sheet/StatSourceTooltip.test.tsx` (new)
+- `lebo/src/features/stat-sheet/statSourceLabels.ts` (new)
+- `lebo/src/features/stat-sheet/StatSheetPanel.tsx` (modified)
+- `lebo/src/features/stat-sheet/StatSheetPanel.test.tsx` (modified)
 
 ## Change Log
 
 | Date | Change |
 |------|--------|
+| 2026-06-04 | Story 1.8 implemented (dev-story). NEW `StatSourceTooltip.tsx` (grouped FR-13 categories, contribution formatting, "Base value only", cap footer, portal/flip mirror of `NodeTooltip`, `role=tooltip`, reduced-motion) + NEW `statSourceLabels.ts` (synchronous best-effort `source_label` resolution, raw-ID fallback). `StatSheetPanel.tsx`: row→`StatKey` map, `AllResistances` fan-in into every resistance tooltip, hover/focus trigger on sourced `StatRow`s, FR-14 `(+N to cap)` annotation reconciled, `RESISTANCE_CAP=75`. Pure render of `statSheet.stat_sources` — no Rust/IPC/store/hook/view/router change. Tests: new `StatSourceTooltip.test.tsx` (10) + extended `StatSheetPanel.test.tsx` (27) with hover/keyboard/fan-in/cap-footer/axe coverage; FR-14 wording assertions updated. Gate: `tsc --noEmit` exit 0; full vitest 1048 passed / 14 pre-existing baseline failures (zero new). Status → review. |
 | 2026-06-04 | Story 1.8 drafted by create-story context engine. Frontend-only render half of Stat Source Attribution (final Epic 1 story): NEW `StatSourceTooltip.tsx` (grouped categories Passives/Gear/Idols/Blessings/Skills/Conditions, per-source name+contribution, "Base value only", cap footer) portaled like `NodeTooltip`; hover/focus trigger wired onto sourced `StatRow`s via a row→`StatKey` map; **`AllResistances` fan-in** into every resistance tooltip (carried Story 1.7 review requirement); FR-14 resistance row annotation reconciled to `68% (+7 to cap)`; best-effort `source_label` name resolution with honest raw-ID fallback; pure render of `statSheet.stat_sources` (no IPC, NFR-2). No Rust/IPC/store/hook/view/router change — data shipped in Story 1.7. a11y: focusable trigger + `role="tooltip"` + `aria-describedby` + WCAG 1.4.13 dismissible/persistent + reduced-motion. Tests: new `StatSourceTooltip.test.tsx` + extended `StatSheetPanel.test.tsx` with axe sweeps; gate = `tsc --noEmit` 0 + no new vitest failures beyond the ~14 pre-existing UI baseline. Status → ready-for-dev. |
