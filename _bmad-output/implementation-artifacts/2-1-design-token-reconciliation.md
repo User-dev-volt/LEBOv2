@@ -1,6 +1,6 @@
 # Story 2.1: Design-token reconciliation
 
-Status: review
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -76,6 +76,18 @@ This is the **first story of Epic 2 (UI/UX Revamp)** and the keystone of the who
   - [x] Run `pnpm exec tsc --noEmit` (exit 0) and `CI=true pnpm exec vitest run` (no new failures vs. the documented UI baseline). → tsc exit 0; suite 1058 passed / 14 failed = exactly the documented baseline (AppHeader/RightPanel/ProviderSelector/Settings/SkillTreeCanvas/TreeControls).
   - [x] Run `pnpm build` to confirm the `@theme` block compiles with the new `--color-bg-sunken` token. → exit 0.
   - [x] Sanity-check visually (the re-skin is automatic): the app's gold/backgrounds are unchanged (already on-palette) and a gear item's name color reflects the new rarity hex (e.g. a unique now renders `#D4805A`, not `#E87722`). `--color-bg-sunken` will not be visible until later Epic-2 stories consume it. → Verified via `GearSlot.test.tsx` style assertions (unique→`#D4805A`, base→`#C6C0B5`); CSS-token re-skin verified by build compile (jsdom can't render `@theme`).
+
+## Review Findings
+
+_Code review 2026-06-04 (3-layer adversarial: Blind Hunter / Edge Case Hunter / Acceptance Auditor). All four ACs PASS; hex values consistent across all four files; no stale old hexes remain in `src/`; Edge Hunter returned zero unhandled edge cases. 1 decision-needed, 0 patch, 3 deferred, 5 dismissed as noise._
+
+- [ ] [Review][Decision → RESOLVED: verify against the game first] (Alec, 2026-06-04) Reconciled palette creates color collisions/proximity — `--color-rarity-rare`/`RARITY_COLORS.rare` `#C9A84C` is now byte-identical to `--color-accent-gold #C9A84C` (rare items read as the global gold accent); `legendary` flipped red→purple (`#C62828`→`#B068E8`), joining `exalted #9C27B0` and `--color-node-suggested #7B68EE` in a 3-purple cluster; `unique`/`rare` lost the old vivid-orange↔gold hue separation.
+  - **Provenance discovered during review:** these values are the *prototype designer's palette* (`_bmad-output/last-epoch-build-optimizer-UI-Handoff/styles.css` `--rarity-*`), adopted via ADR-P4-007 as the "Claude Design palette" — **not** sampled from the actual game. This story replaced a `/* Last Epoch canonical */` comment with `/* Claude Design palette */`; neither old nor new values were verified against LE's in-game UI.
+  - **Resolution:** Code is correct per ADR-P4-007, but the *palette source* is in question. Alec chose to **verify against the game first** — use the `/rip` Last Epoch UI Kit extractor to pull LE's real rarity colors, compare to both palettes, then reconcile. This is a **correct-course on ADR-P4-007**, gating story 2.1's `done` status. Story → `in-progress` pending verification. Tracked in `deferred-work.md`.
+
+- [x] [Review][Defer] Two-sources-of-truth: `--color-rarity-*` duplicate `rarityColors.ts` with no sync guard [lebo/src/assets/styles/global.css:47-53] — deferred, pre-existing (tokens are currently **unused** — zero `var(--color-rarity-*)` consumers in `src/`; AC3 keeps them honest but nothing enforces the mirror; consider a sync-guard test or deleting the unused tokens in a future cleanup)
+- [x] [Review][Defer] `getRarityColorForItemType` covers only `base`/`unique`; the other 5 tiers have no item-type-path test [lebo/src/shared/utils/rarityColors.ts:13-14] — deferred, pre-existing (signature is `'base' | 'unique'`; TS closes other paths — recolor of magic/rare/set/exalted/legendary is asserted only at the constant, not through a consumer)
+- [x] [Review][Defer] PixiJS renderer hardcodes inline node-state hexes incl. `#c9a84c` (coincides with new `rare`) [lebo/src/features/skill-tree/pixiRenderer.ts:418-426] — deferred, pre-existing (skill-tree node-state colors, not rarity; the renderer routes none of its colors through `rarityColors.ts` — out of this story's scope)
 
 ## Dev Notes
 

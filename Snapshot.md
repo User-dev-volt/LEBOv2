@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-1.
+-
 
 ---
 
