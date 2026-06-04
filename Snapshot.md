@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Await user confirmation to launch parallel adversarial review layers (security/types layer, logic/correctness layer, spec-compliance layer, test-coverage layer). Once confirmed, triage findings and present actionable results.
+Await user confirmation to launch parallel adversarial review layers (currently paused at summary checkpoint)
 
 ---
 
