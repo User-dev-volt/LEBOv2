@@ -218,6 +218,8 @@ claude-opus-4-8 (BMAD dev-story workflow)
 |------|--------|
 | 2026-06-03 | Story 1.6 drafted by create-story context engine. Frontend-only: lay out all addendum-F fields across the five StatSheet tabs (Attributes on General; penetration/stun/ailment-chances on Offense; EHP-triple/Stable Ward/Ward Retention/Necrotic Res/Parry/Block/Glancing/Reduced-Crit-Bonus/ailment-avoidance on Defense; real Minion rows; honest `—` for unsourced Other/General rows), add `--color-dmg-necrotic` token, confirm live recompute via existing `useStatSheet` (no recalc button, <16ms NFR-10). Data complete after Story 1.5; no Rust/IPC/store/hook change. Status → ready-for-dev. |
 | 2026-06-03 | Story 1.6 implemented (dev-story). All addendum-F fields laid out across the five tabs; `--color-dmg-necrotic` token added; Minion tab populated; honest `—` placeholders for unsourced rows; `useStatSheet` recompute path confirmed untouched (no recalc control). `tsc --noEmit` exit 0; `StatSheetPanel.test.tsx` 21/21 green; full suite shows zero new failures beyond the proven 14-failure pre-existing UI baseline. NFR-10 verified structurally (no compute/IPC change); live wall-clock check flagged for reviewer. Status → review. |
+| 2026-06-03 | Code review passed: 2 patches applied (`damage_types ?? []` crash guard; `necrotic_resistance` added to `StatDeltas`/`computeStatDeltas` so Necrotic Res shows a preview delta), 2 deferred, 12 dismissed; `tsc` clean + `StatSheetPanel.test.tsx` 21/21 post-patch. Status → done. |
+| 2026-06-03 | NFR-10 live-verified in a **release** build: ~4.4ms avg / 9ms max — PASSES (<16ms). Debug-build figures (~10ms + spikes to 170ms) recorded as invalid-for-gate reference. Temporary instrumentation removed; no timing code committed. |
 
 ## Review Findings (Code Review — 2026-06-03)
 
@@ -232,3 +234,11 @@ Three adversarial layers (Blind Hunter / Edge Case Hunter / Acceptance Auditor) 
 
 - [x] [Review][Defer] `DAMAGE_TYPE_COLORS` has no `necrotic` key — per-type necrotic damage rows fall back to `var(--color-text-secondary)` instead of the new `--color-dmg-necrotic`. [lebo/src/shared/utils/rarityColors.ts:17-25] — deferred: fix lives outside this story's three-file scope and is only reachable once the engine populates `offense.damage_types[]` (empty today). Already tracked from the Story 1.2 review.
 - [x] [Review][Defer] Pre-existing duplicate "Damage Score" row on the Other tab not in the addendum-F Other map (which lists only Survivability/Speed Score). [lebo/src/features/stat-sheet/StatSheetPanel.tsx:365] — deferred, pre-existing (unchanged context in the diff; not introduced by Story 1.6).
+
+### NFR-10 (<16ms compute_stats round-trip) — VERIFIED ✅ (2026-06-03)
+
+Live wall-clock measurement (the verification gate the Dev Agent Record had flagged for the reviewer). Method: temporary `performance.now()` instrumentation wrapping the `invokeCommand('compute_stats')` call in `useStatSheet.ts`, on-screen overlay (release builds disable DevTools), heavy active build, edits repeated.
+
+- **Release build (`pnpm tauri dev --release`) — the valid measurement:** ~**4.4ms average, 9ms max**. Comfortably under the 16ms frame budget, with headroom for future stat-sourcing growth. **NFR-10 PASSES.**
+- **Debug build (`pnpm tauri dev`) — for reference only, NOT the gate:** steady-state ~10ms with frequent 25–40ms and occasional 100–170ms spikes. Invalid for NFR-10 (debug Rust is unoptimized; DevTools-open + `console.log` overhead inflate further). Logged here only to document why the first reading looked alarming.
+- Story 1.6 added **no compute cost** (pure additive display JSX; rAF/generation-counter debounce untouched), so this figure reflects the scoring engine (Stories 1.1–1.5) governed by the existing debounce. Temporary instrumentation removed after measurement (no timing code committed).
