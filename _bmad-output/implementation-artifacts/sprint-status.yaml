@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-02
-last_updated: 2026-06-04 (1-7 → done: code review passed — all 4 ACs PASS, gate re-verified green cargo test 134/134 incl. +4 review tests + ehp parity, tsc 0; 1 decision deferred to Story 1.8 fan-out tooltip requirement, 4 defers logged)
+last_updated: 2026-06-04 (1-8 → ready-for-dev: Stat Source Breakdown tooltip story drafted — final Epic 1 story, frontend-only render of stat_sources shipped in 1.7; carries the AllResistances fan-in requirement + FR-14 cap-gap annotation)
 project: LEBOv2
 project_key: NOKEY
 tracking_system: file-system
@@ -51,7 +51,7 @@ development_status:
   1-5-ailment-attribute-and-minion-stats: done
   1-6-five-tab-stat-sheet-panel-with-live-recompute: done
   1-7-modifiersource-tracking-and-opt-in-stat-sources: done
-  1-8-stat-source-breakdown-tooltip-with-cap-gap-annotation: backlog
+  1-8-stat-source-breakdown-tooltip-with-cap-gap-annotation: ready-for-dev
   epic-1-retrospective: optional
 
   # Epic 2: UI/UX Revamp — Claude Design System
