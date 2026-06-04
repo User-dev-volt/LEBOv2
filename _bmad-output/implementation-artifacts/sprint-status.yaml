@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-02
-last_updated: 2026-06-04 (Epic 1 retrospective complete → epic-1 + epic-1-retrospective marked done; retro saved to epic-1-retro-2026-06-04.md. 4 action items, Playwright visual-verification prep for Epic 2, 2 flagged roadmap risks (stun inert, score re-baseline looming))
+last_updated: 2026-06-04 (Story 2.1 design-token-reconciliation created → ready-for-dev; epic-2 → in-progress. Values-only re-skin: rarityColors.ts palette + --color-bg-sunken; bg/accent/node-suggested already on-palette)
 project: LEBOv2
 project_key: NOKEY
 tracking_system: file-system
@@ -55,8 +55,8 @@ development_status:
   epic-1-retrospective: done
 
   # Epic 2: UI/UX Revamp — Claude Design System
-  epic-2: backlog
-  2-1-design-token-reconciliation: backlog
+  epic-2: in-progress
+  2-1-design-token-reconciliation: ready-for-dev
   2-2-header-navigation: backlog
   2-3-left-panel-build-identity-and-section-navigator: backlog
   2-4-right-panel-score-gauge-archetype-optimizer-chrome: backlog
