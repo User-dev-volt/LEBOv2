@@ -1,7 +1,9 @@
 use crate::build_snapshot::BuildSnapshot;
 use crate::compute_options::ComputeOptions;
 use crate::game_data::{ArchetypeWeights, GameData};
-use crate::modifier::{Condition, Modifier, ModifierRegistry, StatKey};
+use crate::modifier::{
+    Condition, Modifier, ModifierRegistry, ModifierSource, SourceType, StatKey,
+};
 use crate::stat_sheet::{ScoreComponents, StatSheet};
 
 mod offense;
@@ -16,9 +18,9 @@ mod minion;
 pub fn compute_stats(
     snapshot: &BuildSnapshot,
     game_data: &GameData,
-    _options: ComputeOptions,
+    options: ComputeOptions,
 ) -> StatSheet {
-    let registry = build_registry(snapshot, game_data);
+    let registry = build_registry(snapshot, game_data, options.track_sources);
     let active = snapshot.active_conditions.as_slice();
     let mut offense = offense::compute_offense(&registry, active);
 
@@ -77,6 +79,13 @@ pub fn compute_stats(
             + weights.w_speed * speed,
     };
     let warnings = defense::run_floor_check(&defense, snapshot);
+    // Additive metadata only — `stat_sources` never feeds any computed field above. `Some` solely
+    // on the display call (`options.track_sources`); loop paths return `None` with zero cost.
+    let stat_sources = if options.track_sources {
+        Some(registry.collect_sources(active))
+    } else {
+        None
+    };
     StatSheet {
         offense,
         defense,
@@ -85,10 +94,15 @@ pub fn compute_stats(
         ailment,
         minion,
         warnings,
+        stat_sources,
     }
 }
 
-pub(crate) fn build_registry(snapshot: &BuildSnapshot, game_data: &GameData) -> ModifierRegistry {
+pub(crate) fn build_registry(
+    snapshot: &BuildSnapshot,
+    game_data: &GameData,
+    track_sources: bool,
+) -> ModifierRegistry {
     let mut registry = ModifierRegistry::new();
     for (node_id, &point_count) in &snapshot.node_allocations {
         if let Some(effects) = game_data.node_effects.get(node_id) {
@@ -101,6 +115,21 @@ pub(crate) fn build_registry(snapshot: &BuildSnapshot, game_data: &GameData) -> 
                         condition: effect.condition.clone(),
                         source: node_id.clone(),
                     });
+                    // One source per point, parallel to `add` — a 3-point node contributing +5
+                    // each shows three sources. The String label allocation lives only here, so
+                    // loop paths (track_sources == false) pay nothing (Pattern P4-2 / NFR-9).
+                    if track_sources {
+                        registry.add_source(
+                            effect.stat_key.clone(),
+                            effect.condition.clone(),
+                            ModifierSource {
+                                source_type: SourceType::PassiveNode,
+                                source_label: node_id.clone(),
+                                value: effect.value,
+                                modifier_type: effect.modifier_type.clone(),
+                            },
+                        );
+                    }
                 }
             }
         }
@@ -120,6 +149,18 @@ pub(crate) fn build_registry(snapshot: &BuildSnapshot, game_data: &GameData) -> 
                 condition: Condition::Always,
                 source: entry.affix_id.clone(),
             });
+            if track_sources {
+                registry.add_source(
+                    effect.stat_key.clone(),
+                    Condition::Always,
+                    ModifierSource {
+                        source_type: SourceType::Idol,
+                        source_label: entry.affix_id.clone(),
+                        value,
+                        modifier_type: effect.modifier_type.clone(),
+                    },
+                );
+            }
         }
     }
 
@@ -134,6 +175,18 @@ pub(crate) fn build_registry(snapshot: &BuildSnapshot, game_data: &GameData) -> 
                     condition: Condition::Always,
                     source: blessing_id.clone(),
                 });
+                if track_sources {
+                    registry.add_source(
+                        effect.stat_key.clone(),
+                        Condition::Always,
+                        ModifierSource {
+                            source_type: SourceType::Blessing,
+                            source_label: blessing_id.clone(),
+                            value: effect.value,
+                            modifier_type: effect.modifier_type.clone(),
+                        },
+                    );
+                }
             }
         }
         // Unknown blessing_id → silently skipped
@@ -152,6 +205,18 @@ pub(crate) fn build_registry(snapshot: &BuildSnapshot, game_data: &GameData) -> 
                 condition: Condition::Always,
                 source: format!("{}:{}", slot_id, entry.affix_id),
             });
+            if track_sources {
+                registry.add_source(
+                    effect.stat_key.clone(),
+                    Condition::Always,
+                    ModifierSource {
+                        source_type: SourceType::GearSlot,
+                        source_label: format!("{}:{}", slot_id, entry.affix_id),
+                        value,
+                        modifier_type: effect.modifier_type.clone(),
+                    },
+                );
+            }
         }
     }
 
@@ -1392,5 +1457,281 @@ mod tests {
         assert_eq!(sheet.defense.chill_avoidance, 0.0);
         assert_eq!(sheet.defense.stun_avoidance, 0.0);
         assert_eq!(sheet.defense.bleed_avoidance, 0.0);
+    }
+
+    // --- Story 1.7 source-tracking tests (FR-12) ---
+
+    use crate::modifier::SourceType;
+
+    /// AC2: `ComputeOptions::default()` → no source collection, `stat_sources == None`.
+    #[test]
+    fn stat_sources_none_by_default() {
+        let game_data =
+            GameData { archetype_weights: standard_weight_table(), ..Default::default() };
+        let sheet = compute_stats(&snapshot_at(50), &game_data, ComputeOptions::default());
+        assert!(sheet.stat_sources.is_none(), "loop path must return None");
+    }
+
+    /// AC1: a single Fire Resistance passive node, tracking on → one PassiveNode source under the
+    /// `"FireResistance"` key with the right label/value/modifier_type.
+    #[test]
+    fn stat_sources_some_when_tracking() {
+        let mut node_effects = HashMap::new();
+        node_effects.insert(
+            "fire_res_node".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::FireResistance,
+                modifier_type: ModifierType::Flat,
+                value: 40.0,
+                condition: Condition::Always,
+            }],
+        );
+        let game_data = make_game_data_with_effects(node_effects);
+        let mut snapshot = snapshot_at(50);
+        snapshot.node_allocations.insert("fire_res_node".to_string(), 1);
+
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions { track_sources: true });
+        let sources = sheet.stat_sources.expect("Some when tracking");
+        let fr = sources.get("FireResistance").expect("FireResistance key present");
+        assert_eq!(fr.len(), 1);
+        assert_eq!(fr[0].source_type, SourceType::PassiveNode);
+        assert_eq!(fr[0].source_label, "fire_res_node");
+        assert_eq!(fr[0].value, 40.0);
+        assert_eq!(fr[0].modifier_type, ModifierType::Flat);
+    }
+
+    /// AC1: a passive node AND a blessing both granting Fire Resistance → both contributors are
+    /// listed under the single `"FireResistance"` key.
+    #[test]
+    fn stat_sources_groups_multiple_contributors() {
+        let mut node_effects = HashMap::new();
+        node_effects.insert(
+            "fr_node".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::FireResistance,
+                modifier_type: ModifierType::Flat,
+                value: 20.0,
+                condition: Condition::Always,
+            }],
+        );
+        let mut blessing_effects: HashMap<String, Vec<NodeEffect>> = HashMap::new();
+        blessing_effects.insert(
+            "fr_blessing".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::FireResistance,
+                modifier_type: ModifierType::Flat,
+                value: 18.0,
+                condition: Condition::Always,
+            }],
+        );
+        let game_data = GameData {
+            node_effects,
+            blessing_effects,
+            archetype_weights: standard_weight_table(),
+            ..Default::default()
+        };
+        let mut snapshot = snapshot_at(50);
+        snapshot.node_allocations.insert("fr_node".to_string(), 1);
+        snapshot.blessings.push("fr_blessing".to_string());
+
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions { track_sources: true });
+        let entries = sheet
+            .stat_sources
+            .expect("Some when tracking")
+            .remove("FireResistance")
+            .expect("FireResistance key present");
+        assert_eq!(entries.len(), 2, "both contributors listed under one key");
+        assert!(entries.iter().any(|s| s.source_type == SourceType::PassiveNode));
+        assert!(entries.iter().any(|s| s.source_type == SourceType::Blessing));
+    }
+
+    /// AC3: one of each origin (node / gear affix / idol affix / blessing) lands with its correct
+    /// `SourceType`. Distinct resistances keep the assertions unambiguous.
+    #[test]
+    fn stat_sources_assigns_source_type_per_origin() {
+        let mut node_effects = HashMap::new();
+        node_effects.insert(
+            "n".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::FireResistance,
+                modifier_type: ModifierType::Flat,
+                value: 10.0,
+                condition: Condition::Always,
+            }],
+        );
+        let mut idol_affixes = HashMap::new();
+        idol_affixes.insert(
+            "ia".to_string(),
+            IdolAffixEffect {
+                stat_key: StatKey::LightningResistance,
+                modifier_type: ModifierType::Flat,
+                values_by_tier: [(2, 12.0)].into_iter().collect(),
+            },
+        );
+        let mut blessing_effects: HashMap<String, Vec<NodeEffect>> = HashMap::new();
+        blessing_effects.insert(
+            "b".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::VoidResistance,
+                modifier_type: ModifierType::Flat,
+                value: 14.0,
+                condition: Condition::Always,
+            }],
+        );
+        let mut gear_affixes = HashMap::new();
+        gear_affixes.insert(
+            "ga".to_string(),
+            crate::game_data::GearAffixData {
+                display_name: "% Cold Resistance".to_string(),
+                stat_key: StatKey::ColdResistance,
+                modifier_type: ModifierType::Flat,
+                values_by_tier: [(3, 16.0)].into_iter().collect(),
+                affix_class: crate::modifier::AffixPosition::Prefix,
+                scope: crate::modifier::Scope::Generic,
+                damage_elements: vec![],
+            },
+        );
+        let game_data = GameData {
+            node_effects,
+            idol_affixes,
+            blessing_effects,
+            gear_affixes,
+            archetype_weights: standard_weight_table(),
+            ..Default::default()
+        };
+        let mut snapshot = snapshot_at(50);
+        snapshot.node_allocations.insert("n".to_string(), 1);
+        snapshot.idol_placements.push(IdolPlacement {
+            row: 0,
+            col: 0,
+            idol_size: "stout-1x3".to_string(),
+            prefix: Some(AffixEntry { affix_id: "ia".to_string(), tier: 2 }),
+            suffix: None,
+        });
+        snapshot.blessings.push("b".to_string());
+        snapshot.gear_slots.insert(
+            "helm".to_string(),
+            crate::build_snapshot::GearSlotSnapshot {
+                item_id: None,
+                prefixes: vec![AffixEntry { affix_id: "ga".to_string(), tier: 3 }],
+                suffixes: vec![],
+            },
+        );
+
+        let s = compute_stats(&snapshot, &game_data, ComputeOptions { track_sources: true })
+            .stat_sources
+            .expect("Some when tracking");
+        assert_eq!(s["FireResistance"][0].source_type, SourceType::PassiveNode);
+        assert_eq!(s["ColdResistance"][0].source_type, SourceType::GearSlot);
+        assert_eq!(s["LightningResistance"][0].source_type, SourceType::Idol);
+        assert_eq!(s["VoidResistance"][0].source_type, SourceType::Blessing);
+    }
+
+    /// AC3 honesty: an inactive `Condition::Named` modifier is absent from `stat_sources`; turning
+    /// its condition on makes it appear — mirroring `query`'s active filter exactly.
+    #[test]
+    fn stat_sources_excludes_inactive_conditional() {
+        let mut node_effects = HashMap::new();
+        node_effects.insert(
+            "cond_node".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::FireResistance,
+                modifier_type: ModifierType::Flat,
+                value: 30.0,
+                condition: Condition::Named("x".to_string()),
+            }],
+        );
+        let game_data = make_game_data_with_effects(node_effects);
+        let mut snapshot = snapshot_at(50);
+        snapshot.node_allocations.insert("cond_node".to_string(), 1);
+
+        let inactive = compute_stats(&snapshot, &game_data, ComputeOptions { track_sources: true });
+        assert!(
+            !inactive.stat_sources.unwrap().contains_key("FireResistance"),
+            "inactive conditional source must be absent"
+        );
+
+        snapshot.active_conditions.push("x".to_string());
+        let active = compute_stats(&snapshot, &game_data, ComputeOptions { track_sources: true });
+        assert!(
+            active.stat_sources.unwrap().contains_key("FireResistance"),
+            "active conditional source must be present"
+        );
+    }
+
+    /// AC4 frozen-parity gate: the same heavy build computed with `track_sources` false vs true is
+    /// byte-identical on every computed field — only `stat_sources` (None vs Some) differs.
+    #[test]
+    fn tracking_does_not_perturb_frozen_aggregates() {
+        let mut effects = story_1_5_base_effects();
+        effects.insert(
+            "attrs".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::Strength,
+                modifier_type: ModifierType::Flat,
+                value: 25.0,
+                condition: Condition::Always,
+            }],
+        );
+        effects.insert(
+            "res".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::AllResistances,
+                modifier_type: ModifierType::Flat,
+                value: 60.0,
+                condition: Condition::Always,
+            }],
+        );
+        effects.insert(
+            "mdmg".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::IncreasedMinionDamage,
+                modifier_type: ModifierType::Increased,
+                value: 40.0,
+                condition: Condition::Always,
+            }],
+        );
+        effects.insert(
+            "ignite".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::IgniteDuration,
+                modifier_type: ModifierType::Increased,
+                value: 30.0,
+                condition: Condition::Always,
+            }],
+        );
+        let gd = make_game_data_with_effects(effects);
+        let mut snap = snapshot_at(50);
+        for n in ["dmg", "ward", "spd", "attrs", "res", "mdmg", "ignite"] {
+            snap.node_allocations.insert(n.to_string(), 1);
+        }
+
+        let base = compute_stats(&snap, &gd, ComputeOptions::default());
+        let tracked = compute_stats(&snap, &gd, ComputeOptions { track_sources: true });
+
+        // Compare every computed field via serde value equality (robust to struct shape).
+        use serde_json::to_value;
+        assert_eq!(to_value(&base.offense).unwrap(), to_value(&tracked.offense).unwrap());
+        assert_eq!(to_value(&base.defense).unwrap(), to_value(&tracked.defense).unwrap());
+        assert_eq!(to_value(&base.scores).unwrap(), to_value(&tracked.scores).unwrap());
+        assert_eq!(to_value(&base.attributes).unwrap(), to_value(&tracked.attributes).unwrap());
+        assert_eq!(to_value(&base.ailment).unwrap(), to_value(&tracked.ailment).unwrap());
+        assert_eq!(to_value(&base.minion).unwrap(), to_value(&tracked.minion).unwrap());
+        assert_eq!(to_value(&base.warnings).unwrap(), to_value(&tracked.warnings).unwrap());
+
+        assert!(base.stat_sources.is_none());
+        assert!(tracked.stat_sources.is_some());
+    }
+
+    /// AC1: an empty build with tracking on yields `Some` with no keys — unsourced stats add no
+    /// empty `Vec`s and no dead keys.
+    #[test]
+    fn unsourced_stat_has_no_key() {
+        let game_data =
+            GameData { archetype_weights: standard_weight_table(), ..Default::default() };
+        let sheet =
+            compute_stats(&snapshot_at(50), &game_data, ComputeOptions { track_sources: true });
+        let sources = sheet.stat_sources.expect("Some even when empty");
+        assert!(sources.is_empty(), "no sources → empty map (no dead keys)");
     }
 }

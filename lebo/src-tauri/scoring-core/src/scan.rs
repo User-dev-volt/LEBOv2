@@ -39,7 +39,7 @@ pub fn run_efficiency_scan(snapshot: &BuildSnapshot, game_data: &GameData) -> Sc
     let build_score_baseline = baseline_sheet.scores.build_score;
 
     let active = snapshot.active_conditions.as_slice();
-    let registry = build_registry(snapshot, game_data);
+    let registry = build_registry(snapshot, game_data, false);
     let increased_pct_sum: f64 = registry
         .query(&StatKey::IncreasedDamage, active)
         .iter()

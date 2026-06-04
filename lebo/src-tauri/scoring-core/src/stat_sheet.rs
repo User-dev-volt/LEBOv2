@@ -251,6 +251,11 @@ pub struct StatSheet {
     /// `Some` only when the build has an active minion skill (Story 1.5 presence signal).
     pub minion: Option<MinionStats>,
     pub warnings: Vec<StatWarning>,
+    /// Opt-in stat-source attribution (FR-12, Story 1.7). `Some` only when `options.track_sources`
+    /// (the display `compute_stats` call); `None` on every loop path. Key = `StatKey` string (e.g.
+    /// `"FireResistance"`); each value lists every active `ModifierSource` contributing to that stat.
+    pub stat_sources:
+        Option<std::collections::HashMap<String, Vec<crate::modifier::ModifierSource>>>,
 }
 
 impl Default for StatSheet {
@@ -263,6 +268,7 @@ impl Default for StatSheet {
             ailment: None,
             minion: None,
             warnings: Vec::new(),
+            stat_sources: None,
         }
     }
 }

@@ -100,6 +100,17 @@ pub enum StatKey {
     Vitality,
 }
 
+/// Canonical `StatKey` → string key used for the `stat_sources` map (FR-12). Derived once via
+/// serde so it can never drift from an 80-arm hand-written match. `StatKey` has no `#[serde(rename)]`,
+/// so this yields the PascalCase variant name (`"FireResistance"`, `"IncreasedDamage"`). Story 1.8
+/// must query the map by this same string.
+pub(crate) fn stat_key_key(k: &StatKey) -> String {
+    match serde_json::to_value(k) {
+        Ok(serde_json::Value::String(s)) => s,
+        _ => String::new(),
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum ModifierType {
@@ -237,6 +248,33 @@ impl Condition {
     }
 }
 
+/// Origin category of a stat modifier, surfaced via opt-in source attribution (FR-12).
+/// Serializes snake_case ("passive_node" | "gear_slot" | "idol" | "blessing" | "skill_node" |
+/// "condition"). Output-only metadata — never feeds a computed stat.
+// Why: all six variants are ADR-defined forward-compat (ADR-P4-D-P4-3). Only PassiveNode/GearSlot/
+// Idol/Blessing are produced today; SkillNode and Condition are reserved like the unused
+// Condition::Stacked/Threshold/Composite variants above — not dead code, do not "clean up."
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SourceType {
+    PassiveNode,
+    GearSlot,
+    Idol,
+    Blessing,
+    SkillNode,
+    Condition,
+}
+
+/// One attributed contribution to a stat, recorded only when `track_sources` is enabled
+/// (the display `compute_stats` call). Output-only — no `Deserialize` needed.
+#[derive(Debug, Clone, Serialize)]
+pub struct ModifierSource {
+    pub source_type: SourceType,
+    pub source_label: String,
+    pub value: f64,
+    pub modifier_type: ModifierType,
+}
+
 /// A single stat modifier from any source (passive node, affix, idol, blessing).
 #[derive(Debug, Clone)]
 pub struct Modifier {
@@ -253,6 +291,11 @@ pub struct Modifier {
 #[derive(Debug, Default, Clone)]
 pub struct ModifierRegistry {
     modifiers: Vec<Modifier>,
+    /// Parallel source-attribution log, populated only when the caller (`build_registry` with
+    /// `track_sources == true`) opts in. Each entry carries the modifier's `Condition` so
+    /// `collect_sources` can honor the exact same active-check `query` applies (FR-12, AC3).
+    /// Empty on every loop path (Pattern P4-2) — zero allocation when tracking is off.
+    sources: Vec<(StatKey, Condition, ModifierSource)>,
 }
 
 impl ModifierRegistry {
@@ -262,6 +305,33 @@ impl ModifierRegistry {
 
     pub fn add(&mut self, modifier: Modifier) {
         self.modifiers.push(modifier);
+    }
+
+    /// Records one attributed source contribution. The caller decides whether to call this
+    /// (gated on `track_sources` in `build_registry`), so this method itself does no gating.
+    pub fn add_source(&mut self, stat_key: StatKey, condition: Condition, source: ModifierSource) {
+        self.sources.push((stat_key, condition, source));
+    }
+
+    /// Groups recorded sources by their `StatKey` string key, including a source only when its
+    /// condition is active under `active` — mirroring `query`'s honesty filter (AC3). Returns
+    /// only keys with ≥1 active source (no empty `Vec`s, no dead keys). Always empty `None`-side
+    /// when nothing was recorded.
+    pub fn collect_sources(
+        &self,
+        active: &[String],
+    ) -> std::collections::HashMap<String, Vec<ModifierSource>> {
+        let mut grouped: std::collections::HashMap<String, Vec<ModifierSource>> =
+            std::collections::HashMap::new();
+        for (stat_key, condition, source) in &self.sources {
+            if condition.is_active(active) {
+                grouped
+                    .entry(stat_key_key(stat_key))
+                    .or_default()
+                    .push(source.clone());
+            }
+        }
+        grouped
     }
 
     /// Returns all modifiers for the given stat that are active under the current conditions.

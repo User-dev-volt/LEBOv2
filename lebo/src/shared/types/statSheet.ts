@@ -161,6 +161,24 @@ export interface SynergyFlag {
   delta_build_score?: number
 }
 
+// FR-12 stat-source attribution added in Story 1.7 (snake_case mirror of Rust SourceType/
+// ModifierSource output). Type-only here — the store consumer (optimizationStore) and the hover
+// tooltip (StatSourceTooltip) are Story 1.8. Do NOT camelCase these field names.
+export type SourceType =
+  | 'passive_node'
+  | 'gear_slot'
+  | 'idol'
+  | 'blessing'
+  | 'skill_node'
+  | 'condition'
+
+export interface ModifierSource {
+  source_type: SourceType
+  source_label: string
+  value: number
+  modifier_type: 'flat' | 'increased' | 'more' | 'conversion'
+}
+
 export interface StatSheet {
   offense: OffenseStats
   defense: DefenseStats
@@ -169,4 +187,7 @@ export interface StatSheet {
   ailment: AilmentStats | null
   minion: MinionStats | null
   warnings: StatWarning[]
+  // `Some` (a record keyed by StatKey string, e.g. "FireResistance") only on the display
+  // compute_stats call; the Rust `Option` serializes to `null` on every loop path.
+  stat_sources?: Record<string, ModifierSource[]> | null
 }

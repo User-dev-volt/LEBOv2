@@ -18,7 +18,8 @@ pub use game_data::{
     ArchetypeWeights, ArchetypeWeightsEntry, BaseClassStats, GameData, NodeEffect, UniqueItem,
 };
 pub use modifier::{
-    AffixPosition, Condition, Modifier, ModifierRegistry, ModifierType, Scope, StatKey,
+    AffixPosition, Condition, Modifier, ModifierRegistry, ModifierSource, ModifierType, Scope,
+    SourceType, StatKey,
 };
 pub use gear::run_gear_scoring;
 pub use scan::{run_efficiency_scan, ScanResult};

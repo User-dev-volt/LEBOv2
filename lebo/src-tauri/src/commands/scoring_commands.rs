@@ -12,7 +12,13 @@ pub fn compute_stats(
 ) -> Result<StatSheet, String> {
     let game_data = state.game_data.read()
         .map_err(|e| format!("SCORING_ERROR: game_data lock poisoned: {}", e))?;
-    Ok(scoring_core::compute_stats(&snapshot, &game_data, ComputeOptions::default()))
+    // The ONLY site in the codebase that enables source tracking (Pattern P4-2) — the display
+    // path can afford the source-collection pass; every loop path stays on ::default() (false).
+    Ok(scoring_core::compute_stats(
+        &snapshot,
+        &game_data,
+        ComputeOptions { track_sources: true, ..Default::default() },
+    ))
 }
 
 /// Full optimization pipeline: compute_stats → run_efficiency_scan → run_synergy_detection,
