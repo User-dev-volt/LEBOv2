@@ -22,8 +22,10 @@ type ResistanceFieldKey = Extract<
   | 'physical_resistance'
 >
 
-// Resistances are capped at 75% (FR-14). The displayed defense.[res] is post-cap; the pre-cap
-// total (sum of source values, incl. AllResistances fan-in) may exceed this.
+// Resistances cap at 75% (FR-14), but the engine returns the raw uncapped value (defense.rs:89),
+// so an over-cap build shows e.g. 92%. We keep that raw value, color it as over-cap, and surface
+// the cuttable overcap headroom (value − cap) — the "which gear can I drop" signal. The pre-cap
+// total (sum of source values, incl. the AllResistances fan-in) equals that raw value.
 const RESISTANCE_CAP = 75
 // Umbrella key: the engine folds AllResistances into every element resistance but records it only
 // under its own key — so each resistance tooltip must fold it in (carried Story 1.7 review req).
@@ -166,13 +168,21 @@ interface StatRowProps {
   sources?: ResolvedSource[]
   capInfo?: CapInfo
   reducedMotion?: boolean
+  // Resistance at/over cap: the cuttable headroom (value − cap). 0 = exactly at cap (gold, no
+  // annotation); > 0 = over cap (gold value + "(N over cap)"). undefined = not a capped row.
+  overCapBy?: number
 }
 
-function StatRow({ label, value, unit = '', warningGap, delta, labelColor, statKey, sources, capInfo, reducedMotion }: StatRowProps) {
+function StatRow({ label, value, unit = '', warningGap, delta, labelColor, statKey, sources, capInfo, reducedMotion, overCapBy }: StatRowProps) {
   const isWarning = warningGap !== undefined
+  const isAtOrOverCap = overCapBy !== undefined
   const hasTooltip = statKey !== undefined
   const tooltipId = useId()
-  const [open, setOpen] = useState(false)
+  // Hover and focus are tracked independently so a stray mouse-leave never dismisses a
+  // keyboard-focused tooltip (WCAG 1.4.13 persistent-on-focus). Open = hovered OR focused.
+  const [hovered, setHovered] = useState(false)
+  const [focused, setFocused] = useState(false)
+  const open = hovered || focused
   const [anchor, setAnchor] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -182,36 +192,50 @@ function StatRow({ label, value, unit = '', warningGap, delta, labelColor, statK
       closeTimer.current = null
     }
   }
-  const openAt = (el: HTMLElement) => {
-    cancelClose()
+  const setAnchorFrom = (el: HTMLElement) => {
     const r = el.getBoundingClientRect()
     setAnchor({ x: r.right, y: r.top })
-    setOpen(true)
   }
-  // Delayed close so the pointer can travel the OFFSET gap onto the (hoverable) tooltip — WCAG 1.4.13.
-  const scheduleClose = () => {
+  // Delayed hover-close so the pointer can travel the OFFSET gap onto the (hoverable) tooltip.
+  // Only clears the hover flag — a focused row keeps the tooltip open.
+  const scheduleHoverClose = () => {
     cancelClose()
-    closeTimer.current = setTimeout(() => setOpen(false), 100)
+    closeTimer.current = setTimeout(() => setHovered(false), 100)
   }
-  const closeNow = () => {
+  const dismiss = () => {
     cancelClose()
-    setOpen(false)
+    setHovered(false)
+    setFocused(false)
   }
   useEffect(() => cancelClose, [])
 
   const triggerProps = hasTooltip
     ? {
         tabIndex: 0,
-        onMouseEnter: (e: React.MouseEvent<HTMLDivElement>) => openAt(e.currentTarget),
-        onMouseLeave: scheduleClose,
-        onFocus: (e: React.FocusEvent<HTMLDivElement>) => openAt(e.currentTarget),
-        onBlur: closeNow,
+        onMouseEnter: (e: React.MouseEvent<HTMLDivElement>) => {
+          cancelClose()
+          setAnchorFrom(e.currentTarget)
+          setHovered(true)
+        },
+        onMouseLeave: scheduleHoverClose,
+        onFocus: (e: React.FocusEvent<HTMLDivElement>) => {
+          cancelClose()
+          setAnchorFrom(e.currentTarget)
+          setFocused(true)
+        },
+        onBlur: () => setFocused(false),
         onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
-          if (e.key === 'Escape') closeNow()
+          if (e.key === 'Escape') dismiss()
         },
         'aria-describedby': open ? tooltipId : undefined,
       }
     : {}
+
+  const valueColor = isWarning
+    ? 'var(--color-data-negative)'
+    : isAtOrOverCap
+      ? 'var(--color-accent-gold)'
+      : 'var(--color-text-primary)'
 
   return (
     <div
@@ -226,10 +250,7 @@ function StatRow({ label, value, unit = '', warningGap, delta, labelColor, statK
       <span className="text-xs shrink-0 mr-2" style={{ color: labelColor ?? 'var(--color-text-secondary)' }}>
         {label}
       </span>
-      <span
-        className="text-xs font-mono"
-        style={{ color: isWarning ? 'var(--color-data-negative)' : 'var(--color-text-primary)' }}
-      >
+      <span className="text-xs font-mono" style={{ color: valueColor }}>
         {value}{unit}
         {isWarning && (
           <span
@@ -237,6 +258,14 @@ function StatRow({ label, value, unit = '', warningGap, delta, labelColor, statK
             style={{ color: 'var(--color-data-negative)' }}
           >
             (+{warningGap} to cap)
+          </span>
+        )}
+        {isAtOrOverCap && overCapBy > 0 && (
+          <span
+            className="ml-1 text-[10px]"
+            style={{ color: 'var(--color-accent-gold)' }}
+          >
+            ({overCapBy} over cap)
           </span>
         )}
         {delta !== undefined && delta !== 0 && (
@@ -252,8 +281,11 @@ function StatRow({ label, value, unit = '', warningGap, delta, labelColor, statK
           capInfo={capInfo}
           position={anchor}
           reducedMotion={reducedMotion ?? false}
-          onMouseEnter={cancelClose}
-          onMouseLeave={scheduleClose}
+          onMouseEnter={() => {
+            cancelClose()
+            setHovered(true)
+          }}
+          onMouseLeave={scheduleHoverClose}
         />
       )}
     </div>
@@ -462,6 +494,12 @@ export function StatSheetPanel() {
                     gap: warn?.gap ?? null,
                   }
                 : undefined
+              // No below-cap warning ⇒ at/over cap. Surface the cuttable headroom (value − cap),
+              // rounded to 1dp; 0 = exactly at cap (gold value, no annotation).
+              const overCapBy =
+                statSheet && warn === undefined
+                  ? Math.max(0, Math.round((statSheet.defense[field] - RESISTANCE_CAP) * 10) / 10)
+                  : undefined
               return (
                 <StatRow
                   key={field}
@@ -474,6 +512,7 @@ export function StatSheetPanel() {
                   statKey={statSheet ? statKey : undefined}
                   sources={sources}
                   capInfo={capInfo}
+                  overCapBy={overCapBy}
                   reducedMotion={reducedMotion}
                 />
               )

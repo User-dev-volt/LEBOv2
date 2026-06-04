@@ -365,14 +365,26 @@ describe('StatSheetPanel', () => {
     expect(screen.getByText('Ward / sec')).toBeInTheDocument()
   })
 
-  it('passes axe accessibility check on all tabs', async () => {
-    setupMocks({ statSheet: makeStatSheet({ minion: { minion_count: 0, minion_damage_multi: 0, minion_hp_multi: 0, minion_speed: 0 } }) })
+  it('passes axe accessibility check on all tabs, including an open tooltip', async () => {
+    const user = userEvent.setup()
+    setupMocks({
+      statSheet: makeStatSheet({
+        minion: { minion_count: 0, minion_damage_multi: 0, minion_hp_multi: 0, minion_speed: 0 },
+        stat_sources: RES_SOURCES,
+      }),
+    })
     const { container } = render(<StatSheetPanel />)
     expect(await axe(container)).toHaveNoViolations()
     for (const tabName of ['Offense', 'Defense', 'Minion', 'Other']) {
       fireEvent.click(screen.getByRole('tab', { name: tabName }))
       expect(await axe(container)).toHaveNoViolations()
     }
+    // Open-tooltip state: the tooltip portals to document.body, so sweep that too. `region` is a
+    // page-level landmark rule the portaled overlay legitimately sits outside (false positive here).
+    fireEvent.click(screen.getByRole('tab', { name: 'Defense' }))
+    await user.hover(screen.getByText('Fire Res').parentElement!)
+    expect(screen.getByRole('tooltip')).toBeInTheDocument()
+    expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
   })
 
   // ── Story 1.8: Stat Source Breakdown tooltip ──────────────────────────────
@@ -397,8 +409,32 @@ describe('StatSheetPanel', () => {
 
     const tip = screen.getByRole('tooltip')
     expect(tip).toHaveTextContent('fire_node')
-    // AllResistances fan-in must appear in the element-resistance tooltip.
-    expect(tip).toHaveTextContent('idol_all')
+    expect(tip).toHaveTextContent('+40%')
+    // AllResistances fan-in must appear in the element-resistance tooltip — and exactly once
+    // (folded in, not double-counted).
+    expect(screen.getAllByText('idol_all')).toHaveLength(1)
+    expect(tip).toHaveTextContent('+18%')
+  })
+
+  it('shows an over-cap resistance in gold with the cuttable headroom (AC3, over-cap)', async () => {
+    const user = userEvent.setup()
+    setupMocks({
+      statSheet: makeStatSheet({
+        // 92% Fire Res, no below-cap warning ⇒ 17% over the 75% cap.
+        defense: { ...makeStatSheet().defense, fire_resistance: 92 },
+        warnings: [],
+        stat_sources: { FireResistance: [src({ source_type: 'passive_node', source_label: 'fire_node', value: 92 })] },
+      }),
+    })
+    render(<StatSheetPanel />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Defense' }))
+    // In-row: raw value kept, colored gold, with the cuttable amount.
+    const annotation = screen.getByText(/\(17 over cap\)/)
+    expect(annotation).toHaveStyle({ color: 'var(--color-accent-gold)' })
+    // Tooltip footer repeats the overcap headroom.
+    await user.hover(screen.getByText('Fire Res').parentElement!)
+    const tip = screen.getByRole('tooltip')
+    expect(tip).toHaveTextContent('17% over cap')
   })
 
   it('shows "Base value only." for a sourced row with no entries (AC2)', async () => {

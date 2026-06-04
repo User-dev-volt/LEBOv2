@@ -42,30 +42,68 @@ describe('StatSourceTooltip', () => {
     expect(tip).toHaveTextContent('+30')
   })
 
-  it('groups sources into the six categories in the fixed FR-13 order', () => {
+  it('groups sources into the six categories in the fixed FR-13 order, each item under its own header', () => {
     render(
       <StatSourceTooltip
         id="t2"
         statLabel="Mixed"
         position={POS}
-        // Intentionally scrambled input order — output must follow the fixed order.
+        // Intentionally scrambled input order — output must follow the fixed order, and each item
+        // must render under its own category header (names are distinct from the headers).
         sources={[
-          src({ sourceType: 'condition', name: 'Cond' }),
-          src({ sourceType: 'gear_slot', name: 'Gear' }),
-          src({ sourceType: 'blessing', name: 'Bless' }),
-          src({ sourceType: 'passive_node', name: 'Passive' }),
-          src({ sourceType: 'skill_node', name: 'Skill' }),
-          src({ sourceType: 'idol', name: 'Idol' }),
+          src({ sourceType: 'condition', name: 'CondItem' }),
+          src({ sourceType: 'gear_slot', name: 'GearItem' }),
+          src({ sourceType: 'blessing', name: 'BlessItem' }),
+          src({ sourceType: 'passive_node', name: 'PassiveItem' }),
+          src({ sourceType: 'skill_node', name: 'SkillItem' }),
+          src({ sourceType: 'idol', name: 'IdolItem' }),
         ]}
       />
     )
     const text = screen.getByRole('tooltip').textContent ?? ''
-    const order = ['Passive Nodes', 'Gear', 'Idols', 'Blessings', 'Skills', 'Conditions']
-    const positions = order.map((h) => text.indexOf(h))
+    // Header immediately followed by its item, in the fixed category order — proves placement,
+    // not merely that the headers appear in order.
+    const sequence = [
+      'Passive Nodes',
+      'PassiveItem',
+      'Gear',
+      'GearItem',
+      'Idols',
+      'IdolItem',
+      'Blessings',
+      'BlessItem',
+      'Skills',
+      'SkillItem',
+      'Conditions',
+      'CondItem',
+    ]
+    const positions = sequence.map((token) => text.indexOf(token))
     expect(positions.every((p) => p >= 0)).toBe(true)
     for (let i = 1; i < positions.length; i++) {
       expect(positions[i]).toBeGreaterThan(positions[i - 1])
     }
+  })
+
+  it('aggregates per-point duplicate sources into one line with a point count', () => {
+    render(
+      <StatSourceTooltip
+        id="t2b"
+        statLabel="Fire Res"
+        unit="%"
+        position={POS}
+        // Story 1.7 records one source per allocated point: a 3-point node arrives as 3 entries.
+        sources={[
+          src({ sourceType: 'passive_node', name: 'Fervor', value: 5, modifierType: 'flat' }),
+          src({ sourceType: 'passive_node', name: 'Fervor', value: 5, modifierType: 'flat' }),
+          src({ sourceType: 'passive_node', name: 'Fervor', value: 5, modifierType: 'flat' }),
+        ]}
+      />
+    )
+    const tip = screen.getByRole('tooltip')
+    // One collapsed line: summed value + point count.
+    expect(screen.getAllByText('Fervor')).toHaveLength(1)
+    expect(tip).toHaveTextContent('+15%')
+    expect(tip).toHaveTextContent('(3 pts)')
   })
 
   it('shows "Base value only." for an empty source list', () => {
@@ -88,7 +126,7 @@ describe('StatSourceTooltip', () => {
     expect(screen.getByText('+7% to cap')).toBeInTheDocument()
   })
 
-  it('renders the at/over-cap footer (pre-cap total above cap, capped at 75%)', () => {
+  it('renders the at/over-cap footer with the cuttable overcap headroom', () => {
     render(
       <StatSourceTooltip
         id="t5"
@@ -100,8 +138,26 @@ describe('StatSourceTooltip', () => {
       />
     )
     expect(screen.getByText(/Pre-cap total: 92%/)).toBeInTheDocument()
-    expect(screen.getByText('capped at 75%')).toBeInTheDocument()
+    // At/over cap: shows the cap and how much resistance can be cut (92 − 75 = 17).
+    expect(screen.getByText(/capped at 75%/)).toBeInTheDocument()
+    expect(screen.getByText(/17% over cap/)).toBeInTheDocument()
+    // No below-cap "+N% to cap" prompt when at/over cap.
     expect(screen.queryByText(/to cap/)).toBeNull()
+  })
+
+  it('omits the overcap suffix when exactly at cap', () => {
+    render(
+      <StatSourceTooltip
+        id="t5b"
+        statLabel="Fire Res"
+        unit="%"
+        position={POS}
+        sources={[src({ sourceType: 'passive_node', name: 'Node', value: 75 })]}
+        capInfo={{ preCapTotal: 75, cap: 75, gap: null }}
+      />
+    )
+    expect(screen.getByText('capped at 75%')).toBeInTheDocument()
+    expect(screen.queryByText(/over cap/)).toBeNull()
   })
 
   it('has zero axe violations', async () => {

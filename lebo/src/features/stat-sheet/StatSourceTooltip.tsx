@@ -45,6 +45,27 @@ function fmtNum(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1)
 }
 
+interface AggregatedSource extends ResolvedSource {
+  count: number
+}
+
+// Story 1.7 records one source per allocated passive point, so a multi-point node appears N times.
+// Collapse identical (name + modifierType) entries into one line, summing value and counting points.
+function aggregateSources(items: ResolvedSource[]): AggregatedSource[] {
+  const map = new Map<string, AggregatedSource>()
+  for (const s of items) {
+    const key = `${s.name}|${s.modifierType}`
+    const existing = map.get(key)
+    if (existing) {
+      existing.value += s.value
+      existing.count += 1
+    } else {
+      map.set(key, { ...s, count: 1 })
+    }
+  }
+  return [...map.values()]
+}
+
 export function formatContribution(source: ResolvedSource, unit: string): string {
   const v = source.value
   const sign = v < 0 ? '-' : '+'
@@ -88,8 +109,7 @@ export function StatSourceTooltip({
 
   const groups = CATEGORY_ORDER.map((c) => ({
     label: c.label,
-    items: sources
-      .filter((s) => s.sourceType === c.type)
+    items: aggregateSources(sources.filter((s) => s.sourceType === c.type))
       // 1.7 collect_sources returns a non-deterministic HashMap order — sort for stable display.
       .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name)),
   })).filter((g) => g.items.length > 0)
@@ -154,6 +174,12 @@ export function StatSourceTooltip({
                 </span>
                 <span style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>
                   {formatContribution(item, unit)}
+                  {item.count > 1 && (
+                    <span style={{ color: 'var(--color-text-muted)' }}>
+                      {' '}
+                      {item.sourceType === 'passive_node' ? `(${item.count} pts)` : `(×${item.count})`}
+                    </span>
+                  )}
                 </span>
               </div>
             ))}
@@ -176,7 +202,12 @@ export function StatSourceTooltip({
           {capInfo.gap != null ? (
             <p style={{ color: 'var(--color-data-negative)' }}>+{fmtNum(capInfo.gap)}% to cap</p>
           ) : (
-            <p style={{ color: 'var(--color-text-muted)' }}>capped at {capInfo.cap}%</p>
+            // At/over cap: surface the cuttable overcap headroom (pre-cap total − cap) so the
+            // player sees how much resistance they can shed (FR-14 "which gear can I drop").
+            <p style={{ color: 'var(--color-accent-gold)' }}>
+              capped at {capInfo.cap}%
+              {capInfo.preCapTotal - capInfo.cap > 0 && ` · ${fmtNum(capInfo.preCapTotal - capInfo.cap)}% over cap`}
+            </p>
           )}
         </div>
       )}
