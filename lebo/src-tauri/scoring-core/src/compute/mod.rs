@@ -1734,4 +1734,164 @@ mod tests {
         let sources = sheet.stat_sources.expect("Some even when empty");
         assert!(sources.is_empty(), "no sources → empty map (no dead keys)");
     }
+
+    /// AC1 / per-point recording: a 3-point node records one `ModifierSource` per allocated point
+    /// (parallel to `add`), so a node contributing +5 each across 3 points lists three sources.
+    #[test]
+    fn stat_sources_records_one_per_allocated_point() {
+        let mut node_effects = HashMap::new();
+        node_effects.insert(
+            "stacking_node".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::FireResistance,
+                modifier_type: ModifierType::Flat,
+                value: 5.0,
+                condition: Condition::Always,
+            }],
+        );
+        let game_data = make_game_data_with_effects(node_effects);
+        let mut snapshot = snapshot_at(50);
+        snapshot.node_allocations.insert("stacking_node".to_string(), 3);
+
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions { track_sources: true });
+        let fr = sheet
+            .stat_sources
+            .expect("Some when tracking")
+            .remove("FireResistance")
+            .expect("FireResistance key present");
+        assert_eq!(fr.len(), 3, "one source per allocated point");
+        assert!(fr.iter().all(|s| s.source_type == SourceType::PassiveNode));
+        assert!(fr.iter().all(|s| s.source_label == "stacking_node"));
+        assert!(fr.iter().all(|s| s.value == 5.0));
+        assert!(fr.iter().all(|s| s.modifier_type == ModifierType::Flat));
+    }
+
+    /// AC1: two distinct passive nodes feeding the same stat are both listed under the one key,
+    /// each carrying its own `source_label` (same-origin grouping, not just node+blessing).
+    #[test]
+    fn stat_sources_groups_same_origin_contributors() {
+        let mut node_effects = HashMap::new();
+        for id in ["fr_node_a", "fr_node_b"] {
+            node_effects.insert(
+                id.to_string(),
+                vec![NodeEffect {
+                    stat_key: StatKey::FireResistance,
+                    modifier_type: ModifierType::Flat,
+                    value: 12.0,
+                    condition: Condition::Always,
+                }],
+            );
+        }
+        let game_data = make_game_data_with_effects(node_effects);
+        let mut snapshot = snapshot_at(50);
+        snapshot.node_allocations.insert("fr_node_a".to_string(), 1);
+        snapshot.node_allocations.insert("fr_node_b".to_string(), 1);
+
+        let fr = compute_stats(&snapshot, &game_data, ComputeOptions { track_sources: true })
+            .stat_sources
+            .expect("Some when tracking")
+            .remove("FireResistance")
+            .expect("FireResistance key present");
+        assert_eq!(fr.len(), 2, "both same-origin contributors listed under one key");
+        assert!(fr.iter().all(|s| s.source_type == SourceType::PassiveNode));
+        assert!(fr.iter().any(|s| s.source_label == "fr_node_a"));
+        assert!(fr.iter().any(|s| s.source_label == "fr_node_b"));
+    }
+
+    /// AC1: idol and gear sources must carry the correct `value` (tier-resolved) and
+    /// `modifier_type`, not just `source_type` — these are the fields most likely to drift from
+    /// what `add` records.
+    #[test]
+    fn stat_sources_idol_and_gear_carry_value_and_modifier_type() {
+        let mut idol_affixes = HashMap::new();
+        idol_affixes.insert(
+            "ia".to_string(),
+            IdolAffixEffect {
+                stat_key: StatKey::LightningResistance,
+                modifier_type: ModifierType::Flat,
+                values_by_tier: [(2, 12.0)].into_iter().collect(),
+            },
+        );
+        let mut gear_affixes = HashMap::new();
+        gear_affixes.insert(
+            "ga".to_string(),
+            crate::game_data::GearAffixData {
+                display_name: "% Cold Resistance".to_string(),
+                stat_key: StatKey::ColdResistance,
+                modifier_type: ModifierType::Flat,
+                values_by_tier: [(3, 16.0)].into_iter().collect(),
+                affix_class: crate::modifier::AffixPosition::Prefix,
+                scope: crate::modifier::Scope::Generic,
+                damage_elements: vec![],
+            },
+        );
+        let game_data = GameData {
+            idol_affixes,
+            gear_affixes,
+            archetype_weights: standard_weight_table(),
+            ..Default::default()
+        };
+        let mut snapshot = snapshot_at(50);
+        snapshot.idol_placements.push(IdolPlacement {
+            row: 0,
+            col: 0,
+            idol_size: "stout-1x3".to_string(),
+            prefix: Some(AffixEntry { affix_id: "ia".to_string(), tier: 2 }),
+            suffix: None,
+        });
+        snapshot.gear_slots.insert(
+            "helm".to_string(),
+            crate::build_snapshot::GearSlotSnapshot {
+                item_id: None,
+                prefixes: vec![AffixEntry { affix_id: "ga".to_string(), tier: 3 }],
+                suffixes: vec![],
+            },
+        );
+
+        let s = compute_stats(&snapshot, &game_data, ComputeOptions { track_sources: true })
+            .stat_sources
+            .expect("Some when tracking");
+
+        let idol = &s["LightningResistance"][0];
+        assert_eq!(idol.source_type, SourceType::Idol);
+        assert_eq!(idol.value, 12.0, "idol source records the tier-resolved value");
+        assert_eq!(idol.modifier_type, ModifierType::Flat);
+
+        let gear = &s["ColdResistance"][0];
+        assert_eq!(gear.source_type, SourceType::GearSlot);
+        assert_eq!(gear.value, 16.0, "gear source records the tier-resolved value");
+        assert_eq!(gear.modifier_type, ModifierType::Flat);
+    }
+
+    /// AC2 (Pattern P4-2) by construction: a build that *would* produce sources records **none**
+    /// when `track_sources == false` — asserted on the registry itself, not just the output flag,
+    /// so a regression that collects then drops the field cannot pass.
+    #[test]
+    fn loop_path_records_no_sources_in_registry() {
+        let mut node_effects = HashMap::new();
+        node_effects.insert(
+            "fr".to_string(),
+            vec![NodeEffect {
+                stat_key: StatKey::FireResistance,
+                modifier_type: ModifierType::Flat,
+                value: 30.0,
+                condition: Condition::Always,
+            }],
+        );
+        let game_data = make_game_data_with_effects(node_effects);
+        let mut snapshot = snapshot_at(50);
+        snapshot.node_allocations.insert("fr".to_string(), 1);
+        let active = snapshot.active_conditions.as_slice();
+
+        let off = build_registry(&snapshot, &game_data, false);
+        assert!(
+            off.collect_sources(active).is_empty(),
+            "loop path must record zero sources (no allocation)"
+        );
+        let on = build_registry(&snapshot, &game_data, true);
+        assert!(
+            !on.collect_sources(active).is_empty(),
+            "display path records sources for the same build"
+        );
+    }
 }
