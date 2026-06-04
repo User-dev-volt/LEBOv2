@@ -38,7 +38,23 @@ export function useStatSheet(): void {
         invokeCommand<StatSheet>('compute_stats', { snapshot })
           .then((result) => {
             // TEMP NFR-10 instrumentation — REMOVE BEFORE COMMIT (target: < 16ms steady-state; ignore first/cold call)
-            console.log(`[NFR-10] compute_stats round-trip: ${(performance.now() - __nfr10_t0).toFixed(2)}ms`)
+            // On-screen overlay (release builds have no DevTools console). Shows latest + max-so-far.
+            {
+              const __ms = performance.now() - __nfr10_t0
+              let __el = document.getElementById('__nfr10')
+              if (!__el) {
+                __el = document.createElement('div')
+                __el.id = '__nfr10'
+                __el.style.cssText =
+                  'position:fixed;bottom:8px;left:8px;z-index:99999;background:#000;color:#0f0;' +
+                  'font:12px monospace;padding:4px 8px;border-radius:4px;pointer-events:none'
+                document.body.appendChild(__el)
+              }
+              const __max = Math.max(Number(__el.dataset.max ?? 0), __ms)
+              __el.dataset.max = String(__max)
+              __el.textContent = `compute_stats: ${__ms.toFixed(1)}ms   max: ${__max.toFixed(1)}ms`
+              console.log(`[NFR-10] compute_stats round-trip: ${__ms.toFixed(2)}ms`)
+            }
             if (generationRef.current !== generation) return // stale — discard
             useOptimizationStore.getState().setStatSheet(result)
             useOptimizationStore.getState().setIsComputingStats(false)
