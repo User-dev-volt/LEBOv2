@@ -55,7 +55,7 @@ export function FineTunePanel() {
             >
               ▼
             </span>
-            Fine Tune{isCustom ? ' (Custom)' : ''}
+            Fine Tune Weights{isCustom ? ' (Custom)' : ''}
           </DisclosureButton>
 
           <DisclosurePanel

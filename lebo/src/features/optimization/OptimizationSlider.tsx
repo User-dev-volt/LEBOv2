@@ -1,5 +1,6 @@
 import { useOptimizationStore } from '../../shared/stores/optimizationStore'
 import { useBuildStore } from '../../shared/stores/buildStore'
+import { getArchetypeZone } from '../../shared/utils/archetypeZone'
 
 export function OptimizationSlider() {
   const sliderPosition = useOptimizationStore((s) => s.sliderPosition)
@@ -8,6 +9,7 @@ export function OptimizationSlider() {
 
   const survivability = 100 - sliderPosition
   const damage = sliderPosition
+  const zone = getArchetypeZone(sliderPosition)
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
@@ -88,6 +90,19 @@ export function OptimizationSlider() {
             onKeyDown={handleKeyDown}
           />
         </div>
+      </div>
+
+      {/* Zone label (UX-DR5) — extra top margin clears the thumb tooltip below the slider */}
+      <div className="flex flex-col items-center mt-5" data-testid="archetype-zone">
+        <span
+          className="text-xs font-semibold uppercase tracking-wide"
+          style={{ color: zone.colorVar }}
+        >
+          {zone.name}
+        </span>
+        <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+          {zone.sub}
+        </span>
       </div>
     </div>
   )

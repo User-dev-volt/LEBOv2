@@ -1,6 +1,6 @@
 # Story 2.4: Right panel — score gauge, archetype, optimizer chrome
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -90,45 +90,45 @@ The SOURCE-AUDIT GUARDRAIL's "map each new stat to real shipped-data, or declare
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Rebuild `ScoreGauge` as a 3/4-arc SVG with center score + delta (AC: 1)** — `lebo/src/features/optimization/ScoreGauge.tsx`
-  - [ ] Keep the **props contract unchanged**: `{ baselineScore: BuildScore | null; previewScore?: BuildScore | null }`, the `role="region"` / `aria-label="Build scores"` wrapper, and `data-testid="score-gauge"`. RightPanel already passes `baselineScore={scores}` and `previewScore={previewScore}` — do not change the call site's props.
-  - [ ] Reuse the existing `computeComposite()` helper (average of non-null axes, `Math.round`). Center text = `formatScore(baseComposite)` ("—" when null); "Build Score" label beneath.
-  - [ ] Draw the **3/4-arc SVG** (180×160 viewBox): a background track `<circle>` (stroke `--color-bg-elevated`) and a gradient value `<circle>` using a `<linearGradient>` of `--color-accent-gold-dim` → `--color-accent-gold` → `--color-accent-gold-soft`; arc length = `Math.PI * r * 1.5` (270°), value sweep = `arc * clamp(composite,0,100)/100`, `transform="rotate(135 cx cy)"`, `strokeLinecap="round"`. Add the 11 tick marks (major/minor) as in the prototype reference. Give the `<svg>` `aria-hidden="true"`.
-  - [ ] **Delta indicator:** when `previewScore != null`, compute `delta = previewComposite − baseComposite`; if `Math.abs(round1(delta)) !== 0`, render `▲ +{|delta|.toFixed(1)}` in `--color-data-positive` (delta>0) or `▼ -{…}` in `--color-data-negative` (delta<0). No delta element otherwise. **This replaces the old `→` comparison string** — update any test that asserted `→` (see Task 6).
-  - [ ] Gate the arc `stroke-dasharray` transition behind `prefers-reduced-motion` via `useReducedMotion()` (no animated sweep when reduced motion).
-  - [ ] Remove the now-unused horizontal-bar `ScoreBar` sub-component and the per-axis bar rows from `ScoreGauge` (the per-axis numbers now live in the pill trio — Task 2). Watch `noUnusedLocals`.
+- [x] **Task 1 — Rebuild `ScoreGauge` as a 3/4-arc SVG with center score + delta (AC: 1)** — `lebo/src/features/optimization/ScoreGauge.tsx`
+  - [x] Keep the **props contract unchanged**: `{ baselineScore: BuildScore | null; previewScore?: BuildScore | null }`, the `role="region"` / `aria-label="Build scores"` wrapper, and `data-testid="score-gauge"`. RightPanel already passes `baselineScore={scores}` and `previewScore={previewScore}` — do not change the call site's props.
+  - [x] Reuse the existing `computeComposite()` helper (average of non-null axes, `Math.round`). Center text = `formatScore(baseComposite)` ("—" when null); "Build Score" label beneath.
+  - [x] Draw the **3/4-arc SVG** (180×160 viewBox): a background track `<circle>` (stroke `--color-bg-elevated`) and a gradient value `<circle>` using a `<linearGradient>` of `--color-accent-gold-dim` → `--color-accent-gold` → `--color-accent-gold-soft`; arc length = `Math.PI * r * 1.5` (270°), value sweep = `arc * clamp(composite,0,100)/100`, `transform="rotate(135 cx cy)"`, `strokeLinecap="round"`. Add the 11 tick marks (major/minor) as in the prototype reference. Give the `<svg>` `aria-hidden="true"`.
+  - [x] **Delta indicator:** when `previewScore != null`, compute `delta = previewComposite − baseComposite`; if `Math.abs(round1(delta)) !== 0`, render `▲ +{|delta|.toFixed(1)}` in `--color-data-positive` (delta>0) or `▼ -{…}` in `--color-data-negative` (delta<0). No delta element otherwise. **This replaces the old `→` comparison string** — update any test that asserted `→` (see Task 6).
+  - [x] Gate the arc `stroke-dasharray` transition behind `prefers-reduced-motion` via `useReducedMotion()` (no animated sweep when reduced motion).
+  - [x] Remove the now-unused horizontal-bar `ScoreBar` sub-component and the per-axis bar rows from `ScoreGauge` (the per-axis numbers now live in the pill trio — Task 2). Watch `noUnusedLocals`.
 
-- [ ] **Task 2 — DMG / SURV / SPD pill trio (AC: 2)** — `lebo/src/features/layout/RightPanel.tsx` (or a small co-located `ScoreTrio` in `optimization/`)
-  - [ ] Beneath `<ScoreGauge>`, render a three-pill row: DMG (`--color-data-damage`), SURV (`--color-data-surv`), SPD (`--color-data-speed`). Each pill: small uppercase label + monospace value (`var(--font-mono)`) = `Math.round(scores.<axis> ?? 0)`, or `—` when `scores` is null / the axis is null.
-  - [ ] Tokens only (no inline hex). Keep it inside the existing `activeBuild ? … : "Select a build…"` guard so it hides with no build.
-  - [ ] If you extract a `ScoreTrio` component, put it in `features/optimization/`, named export, no default, imports grouped external → shared → feature-local.
+- [x] **Task 2 — DMG / SURV / SPD pill trio (AC: 2)** — `lebo/src/features/layout/RightPanel.tsx` (or a small co-located `ScoreTrio` in `optimization/`)
+  - [x] Beneath `<ScoreGauge>`, render a three-pill row: DMG (`--color-data-damage`), SURV (`--color-data-surv`), SPD (`--color-data-speed`). Each pill: small uppercase label + monospace value (`var(--font-mono)`) = `Math.round(scores.<axis> ?? 0)`, or `—` when `scores` is null / the axis is null.
+  - [x] Tokens only (no inline hex). Keep it inside the existing `activeBuild ? … : "Select a build…"` guard so it hides with no build.
+  - [x] If you extract a `ScoreTrio` component, put it in `features/optimization/`, named export, no default, imports grouped external → shared → feature-local.
 
-- [ ] **Task 3 — Optimization Intent zone label + single-source zone helper (AC: 3)** — `lebo/src/features/optimization/OptimizationSlider.tsx` (+ new `lebo/src/shared/utils/archetypeZone.ts`; + one token in `global.css`)
-  - [ ] Add `export function getArchetypeZone(position: number): { name: string; sub: string; colorVar: string }` in `shared/utils/archetypeZone.ts` with the five bands: 0–19 Juggernaut (`--color-slider-juggernaut`, "Survivability first"); 20–39 Bulwark (`--color-node-available`, "Defense over offense"); 40–59 Balanced (`--color-accent-gold`, "Equal weight"); 60–79 Aggressive (`--color-zone-aggressive`, "Offense over defense"); 80–100 Glass Cannon (`--color-slider-glass-cannon`, "Damage at all costs"). Return `colorVar` as a `var(--…)` string so callers never inline hex. (Lives in `shared/utils` because it is presentational cross-cutting and must stay single-sourced.)
-  - [ ] In `global.css` `@theme`, add the **one** missing token next to the existing slider tokens: `--color-zone-aggressive: #C77840;` (a warm orange between gold and crimson). Reuse the existing `--color-slider-juggernaut` / `--color-slider-glass-cannon` and `--color-node-available` / `--color-accent-gold` for the other four zones — do **not** add duplicates.
-  - [ ] In `OptimizationSlider`, keep the **existing native range input** and its keyboard handler / aria attributes verbatim (do not port the prototype's custom mouse-drag `ArchetypeSlider` — it is not keyboard-accessible). Replace/extend the endpoint labels per the design (Juggernaut / Balanced / Glass Cannon endpoint tints are optional polish) and render the live **zone label**: `zone.name` in `zone.colorVar` + a muted `zone.sub` sub-caption, driven by `getArchetypeZone(sliderPosition)`.
-  - [ ] Keep `onChange` → `setSliderPosition(val)` + `setActiveBuildSliderPosition(val)` and the keyboard ±5 behavior unchanged.
+- [x] **Task 3 — Optimization Intent zone label + single-source zone helper (AC: 3)** — `lebo/src/features/optimization/OptimizationSlider.tsx` (+ new `lebo/src/shared/utils/archetypeZone.ts`; + one token in `global.css`)
+  - [x] Add `export function getArchetypeZone(position: number): { name: string; sub: string; colorVar: string }` in `shared/utils/archetypeZone.ts` with the five bands: 0–19 Juggernaut (`--color-slider-juggernaut`, "Survivability first"); 20–39 Bulwark (`--color-node-available`, "Defense over offense"); 40–59 Balanced (`--color-accent-gold`, "Equal weight"); 60–79 Aggressive (`--color-zone-aggressive`, "Offense over defense"); 80–100 Glass Cannon (`--color-slider-glass-cannon`, "Damage at all costs"). Return `colorVar` as a `var(--…)` string so callers never inline hex. (Lives in `shared/utils` because it is presentational cross-cutting and must stay single-sourced.)
+  - [x] In `global.css` `@theme`, add the **one** missing token next to the existing slider tokens: `--color-zone-aggressive: #C77840;` (a warm orange between gold and crimson). Reuse the existing `--color-slider-juggernaut` / `--color-slider-glass-cannon` and `--color-node-available` / `--color-accent-gold` for the other four zones — do **not** add duplicates.
+  - [x] In `OptimizationSlider`, keep the **existing native range input** and its keyboard handler / aria attributes verbatim (do not port the prototype's custom mouse-drag `ArchetypeSlider` — it is not keyboard-accessible). Replace/extend the endpoint labels per the design (Juggernaut / Balanced / Glass Cannon endpoint tints are optional polish) and render the live **zone label**: `zone.name` in `zone.colorVar` + a muted `zone.sub` sub-caption, driven by `getArchetypeZone(sliderPosition)`.
+  - [x] Keep `onChange` → `setSliderPosition(val)` + `setActiveBuildSliderPosition(val)` and the keyboard ±5 behavior unchanged.
 
-- [ ] **Task 4 — Optimize Build button: gold + pulse-while-running, correct labels (AC: 5)** — `lebo/src/features/optimization/OptimizeButton.tsx` (+ `global.css` keyframe) (+ pass `hasSuggestions` from `RightPanel.tsx`)
-  - [ ] Add `@keyframes pulse-gold` to `global.css` (e.g. box-shadow/opacity pulse on the gold accent, ~1.4s ease-in-out infinite). Apply it to the button **only while `isOptimizing` AND not reduced-motion** (`useReducedMotion()`); when reduced motion is set, no pulse — keep the existing static indeterminate-progress bar as the fallback affordance.
-  - [ ] Labels: idle + no suggestions → **"Optimize Build"**; idle + suggestions present → **"Re-Optimize"**; running → **"Analyzing…"**. Add a `hasSuggestions: boolean` prop (default `false`) and pass `suggestions.length > 0` from `RightPanel`. Keep `id`/`data-testid="optimize-button"`, the `disabled`/`aria-disabled`/`aria-busy`/`aria-label` logic, and the `onOptimize` interactivity guard exactly as today.
-  - [ ] Do **not** remove the existing offline-note / empty-context-note / "Using: {model}" affordances from `RightPanel` — they stay.
+- [x] **Task 4 — Optimize Build button: gold + pulse-while-running, correct labels (AC: 5)** — `lebo/src/features/optimization/OptimizeButton.tsx` (+ `global.css` keyframe) (+ pass `hasSuggestions` from `RightPanel.tsx`)
+  - [x] Add `@keyframes pulse-gold` to `global.css` (e.g. box-shadow/opacity pulse on the gold accent, ~1.4s ease-in-out infinite). Apply it to the button **only while `isOptimizing` AND not reduced-motion** (`useReducedMotion()`); when reduced motion is set, no pulse — keep the existing static indeterminate-progress bar as the fallback affordance.
+  - [x] Labels: idle + no suggestions → **"Optimize Build"**; idle + suggestions present → **"Re-Optimize"**; running → **"Analyzing…"**. Add a `hasSuggestions: boolean` prop (default `false`) and pass `suggestions.length > 0` from `RightPanel`. Keep `id`/`data-testid="optimize-button"`, the `disabled`/`aria-disabled`/`aria-busy`/`aria-label` logic, and the `onOptimize` interactivity guard exactly as today.
+  - [x] Do **not** remove the existing offline-note / empty-context-note / "Using: {model}" affordances from `RightPanel` — they stay.
 
-- [ ] **Task 5 — FineTune + section-header chrome reconciliation (AC: 4, 6)** — `lebo/src/features/optimization/FineTunePanel.tsx`, `lebo/src/features/layout/RightPanel.tsx`
-  - [ ] `FineTunePanel`: keep the `Disclosure`/`DisclosureButton`/`DisclosurePanel` and all weight wiring; reconcile the heading text to **"Fine Tune Weights"** and the chevron affordance to the design. Keep the `prefers-reduced-motion` gating on the open/close transition.
-  - [ ] `RightPanel`: add the **"AI Suggestions"** section header (with `{suggestions.length} ranked` muted-mono count when `> 0`) above `<SuggestionsList>`, and a **"Stat Sheet"** header above `<StatSheetPanel>`. Keep the existing dividers (`--color-bg-elevated` hairlines), the 340px/48px widths, the collapsed-rail glyph strip (composite score), and the StatSheet scroll container. Do **not** alter `SuggestionsList` or `StatSheetPanel` internals.
+- [x] **Task 5 — FineTune + section-header chrome reconciliation (AC: 4, 6)** — `lebo/src/features/optimization/FineTunePanel.tsx`, `lebo/src/features/layout/RightPanel.tsx`
+  - [x] `FineTunePanel`: keep the `Disclosure`/`DisclosureButton`/`DisclosurePanel` and all weight wiring; reconcile the heading text to **"Fine Tune Weights"** and the chevron affordance to the design. Keep the `prefers-reduced-motion` gating on the open/close transition.
+  - [x] `RightPanel`: add the **"AI Suggestions"** section header (with `{suggestions.length} ranked` muted-mono count when `> 0`) above `<SuggestionsList>`, and a **"Stat Sheet"** header above `<StatSheetPanel>`. Keep the existing dividers (`--color-bg-elevated` hairlines), the 340px/48px widths, the collapsed-rail glyph strip (composite score), and the StatSheet scroll container. Do **not** alter `SuggestionsList` or `StatSheetPanel` internals.
 
-- [ ] **Task 6 — Update tests + a11y; clear RightPanel from the baseline (AC: 7)** — `lebo/src/features/layout/RightPanel.test.tsx` (+ optional `ScoreGauge.test.tsx` / `OptimizationSlider.test.tsx` if you prefer unit-level coverage of the helper)
-  - [ ] **Fix the stale assertion** that puts RightPanel in the baseline: the test expects `/AI optimization requires internet connectivity/` but the component renders "AI optimization requires internet. Connect and retry." — update the expectation to the actual copy.
-  - [ ] **Replace the `→` comparison-mode assertions** (the bar gauge is gone): assert the **delta indicator** instead — seed `scores` + `previewSuggestionRank` + a `suggestions[0].previewScore` and assert a ▲/▼ delta appears; with `previewSuggestionRank: null` assert no delta.
-  - [ ] Add: center composite score renders for a seeded `scores`; DMG/SURV/SPD pills render the three rounded values (and `—` with no build); zone label matches `sliderPosition` at 10/30/50/70/90 (Juggernaut/Bulwark/Balanced/Aggressive/Glass Cannon — best asserted as a `getArchetypeZone` unit test plus one rendered check); Optimize button label flips "Optimize Build" ↔ "Re-Optimize" with/without suggestions and shows "Analyzing…" while `isOptimizing`; Fine Tune disclosure toggles; existing offline + empty-context guards still pass; `expect(await axe(container)).toHaveNoViolations()`.
-  - [ ] Keep the existing store-seed/restore `beforeEach` pattern and the `useOptimizationStream` / `@tauri-apps/api/event` mocks. Do **not** create a separate vitest config or re-stub the four `test-setup.ts` polyfills.
+- [x] **Task 6 — Update tests + a11y; clear RightPanel from the baseline (AC: 7)** — `lebo/src/features/layout/RightPanel.test.tsx` (+ optional `ScoreGauge.test.tsx` / `OptimizationSlider.test.tsx` if you prefer unit-level coverage of the helper)
+  - [x] **Fix the stale assertion** that puts RightPanel in the baseline: the test expects `/AI optimization requires internet connectivity/` but the component renders "AI optimization requires internet. Connect and retry." — update the expectation to the actual copy.
+  - [x] **Replace the `→` comparison-mode assertions** (the bar gauge is gone): assert the **delta indicator** instead — seed `scores` + `previewSuggestionRank` + a `suggestions[0].previewScore` and assert a ▲/▼ delta appears; with `previewSuggestionRank: null` assert no delta.
+  - [x] Add: center composite score renders for a seeded `scores`; DMG/SURV/SPD pills render the three rounded values (and `—` with no build); zone label matches `sliderPosition` at 10/30/50/70/90 (Juggernaut/Bulwark/Balanced/Aggressive/Glass Cannon — best asserted as a `getArchetypeZone` unit test plus one rendered check); Optimize button label flips "Optimize Build" ↔ "Re-Optimize" with/without suggestions and shows "Analyzing…" while `isOptimizing`; Fine Tune disclosure toggles; existing offline + empty-context guards still pass; `expect(await axe(container)).toHaveNoViolations()`.
+  - [x] Keep the existing store-seed/restore `beforeEach` pattern and the `useOptimizationStream` / `@tauri-apps/api/event` mocks. Do **not** create a separate vitest config or re-stub the four `test-setup.ts` polyfills.
 
-- [ ] **Task 7 — Verify build + suite (AC: 7)**
-  - [ ] `pnpm exec tsc --noEmit` → exit 0 (watch `noUnusedLocals`/`noUnusedParameters` after removing `ScoreBar`).
-  - [ ] `CI=true pnpm exec vitest run src/features/layout/RightPanel.test.tsx` → passes.
-  - [ ] `CI=true pnpm exec vitest run` → no new failures vs. the **updated** baseline (`ProviderSelector`/`Settings`/`SkillTreeCanvas`/`TreeControls` — `RightPanel` removed). Update the baseline note in `sprint-status.yaml` accordingly when the story is marked done.
-  - [ ] `pnpm build` → exit 0 (only the pre-existing >500 kB chunk-size advisory is acceptable).
+- [x] **Task 7 — Verify build + suite (AC: 7)**
+  - [x] `pnpm exec tsc --noEmit` → exit 0 (watch `noUnusedLocals`/`noUnusedParameters` after removing `ScoreBar`).
+  - [x] `CI=true pnpm exec vitest run src/features/layout/RightPanel.test.tsx` → passes.
+  - [x] `CI=true pnpm exec vitest run` → no new failures vs. the **updated** baseline (`ProviderSelector`/`Settings`/`SkillTreeCanvas`/`TreeControls` — `RightPanel` removed). Update the baseline note in `sprint-status.yaml` accordingly when the story is marked done.
+  - [x] `pnpm build` → exit 0 (only the pre-existing >500 kB chunk-size advisory is acceptable).
 
 ## Dev Notes
 
@@ -209,12 +209,41 @@ The prototype `ArchetypeSlider` is a custom `onMouseDown`/`window.mousemove` tra
 
 ### Agent Model Used
 
+claude-opus-4-8 (dev-story workflow)
+
 ### Debug Log References
+
+- `pnpm exec tsc --noEmit` → exit 0
+- `CI=true pnpm exec vitest run src/features/optimization src/features/layout/RightPanel.test.tsx src/shared/utils/archetypeZone.test.ts` → 170 passed (9 files)
+- `CI=true pnpm exec vitest run` → 1100 passed, 8 failed across exactly the documented baseline **minus RightPanel** (`ProviderSelector`/`Settings`/`SkillTreeCanvas`/`TreeControls`). `RightPanel.test.tsx` now passes and has left the baseline — the new baseline is those four files.
+- `pnpm build` → exit 0 (only the pre-existing >500 kB chunk-size advisory)
 
 ### Completion Notes List
 
+- **AC1** — `ScoreGauge.tsx` rebuilt as a **3/4-arc SVG** (180×160, r=64, 270° sweep, `rotate(135)`): background track (`--color-bg-elevated`) + gradient value arc (`--color-accent-gold-dim`→`--color-accent-gold`→`--color-accent-gold-soft`), 11 tick marks, center composite (`computeComposite`, reused) + "Build Score" label. **Delta indicator** (`data-testid="gauge-delta"`) shows `▲ +Δ` / `▼ -Δ` (one-decimal) when `previewScore` present and Δ≠0, else absent. Props contract / `role="region"` / `data-testid="score-gauge"` unchanged; arc transition gated on `useReducedMotion()`; `<svg>` `aria-hidden`. Old `ScoreBar` bar rows removed.
+- **AC2** — New `ScoreTrio.tsx` renders the **DMG/SURV/SPD pills** (`--color-data-damage`/`-surv`/`-speed`), monospace rounded values, `—` for null/no-build; wired beneath the gauge in `RightPanel` inside the `activeBuild` guard.
+- **AC3** — New single-source `shared/utils/archetypeZone.ts` (`getArchetypeZone`) maps `sliderPosition`→five zones (Juggernaut/Bulwark/Balanced/Aggressive/Glass Cannon) returning `var(--…)` color tokens + design sub-captions. `OptimizationSlider` renders the live zone label (`data-testid="archetype-zone"`) below the **kept native accessible range input** (no drag-track regression). One new token `--color-zone-aggressive: #C77840` added to `@theme`; other four zones reuse existing tokens.
+- **AC4** — `FineTunePanel` heading reconciled to **"Fine Tune Weights"** (keeps the Headless UI `Disclosure`, weight wiring, `(Custom)` affordance, reduced-motion-gated transition).
+- **AC5** — `OptimizeButton` gains `hasSuggestions` prop → label flips **"Optimize Build"** / **"Re-Optimize"** / **"Analyzing…"**. New `@keyframes pulse-gold` applied only while `isOptimizing && !reducedMotion`; static indeterminate-progress bar remains the reduced-motion fallback. All disabled/`aria-*`/offline/empty-context guards preserved; `RightPanel` passes `hasSuggestions={suggestions.length > 0}`.
+- **AC6** — `RightPanel` adds the **"AI Suggestions"** header (with `{n} ranked` muted-mono count when >0) above the unchanged `SuggestionsList`, and a **"Stat Sheet"** header above the unchanged `StatSheetPanel`; dividers/widths/collapsed-rail glyph strip preserved. No `SuggestionsList`/`StatSheetPanel` internals touched.
+- **AC7** — `RightPanel.test.tsx` updated: stale offline copy fixed to the actual "AI optimization requires internet. Connect and retry."; `→` comparison assertions replaced with `gauge-delta` ▲/▼ assertions; "Analyzing…" assertion relaxed to `/Analyzing/`; added composite-score, pill-trio (incl. `—`), zone-label (90→Glass Cannon, 50→Balanced), section-header, button-label (Optimize Build/Re-Optimize) and `vitest-axe` tests. Sibling tests reconciled: `ScoreGauge.test.tsx` rewritten for the arc gauge + delta; `OptimizeButton.test.tsx` updated for the new labels; new `archetypeZone.test.ts` covers the five band boundaries + token/sub-caption. **RightPanel removed from the failing baseline.** No new stat (Source Audit: N/A — no-new-stat / no-dead-key); no store schema/type change; no new dependency.
+
 ### File List
+
+- `lebo/src/features/optimization/ScoreGauge.tsx` (modified — bars → 3/4-arc SVG + delta)
+- `lebo/src/features/optimization/ScoreTrio.tsx` (new)
+- `lebo/src/shared/utils/archetypeZone.ts` (new)
+- `lebo/src/shared/utils/archetypeZone.test.ts` (new)
+- `lebo/src/features/optimization/OptimizationSlider.tsx` (modified — zone label)
+- `lebo/src/features/optimization/OptimizeButton.tsx` (modified — pulse + labels + hasSuggestions)
+- `lebo/src/features/optimization/FineTunePanel.tsx` (modified — heading)
+- `lebo/src/features/layout/RightPanel.tsx` (modified — ScoreTrio, headers, hasSuggestions)
+- `lebo/src/assets/styles/global.css` (modified — `--color-zone-aggressive` token, `@keyframes pulse-gold`)
+- `lebo/src/features/layout/RightPanel.test.tsx` (modified)
+- `lebo/src/features/optimization/ScoreGauge.test.tsx` (modified — rewritten for arc gauge)
+- `lebo/src/features/optimization/OptimizeButton.test.tsx` (modified — new labels)
 
 ## Change Log
 
+- 2026-06-05 — Story 2.4 implemented (review): right-panel score-gauge/archetype/optimizer chrome rebuilt to the Claude Design handoff. `ScoreGauge` horizontal bars → 3/4-arc SVG with gradient fill, center composite, and ▲/▼ delta (preview wiring reused); new `ScoreTrio` DMG/SURV/SPD pills; `OptimizationSlider` UX-DR5 five-zone label via single-source `getArchetypeZone` (+1 token `--color-zone-aggressive`, reuse existing for 4/5, native accessible slider kept); `FineTunePanel` heading → "Fine Tune Weights"; `OptimizeButton` gold + `pulse-gold` while running (new keyframe, reduced-motion gated) + Optimize Build/Re-Optimize/Analyzing… labels; "AI Suggestions" / "Stat Sheet" section-header chrome. Tests updated across RightPanel/ScoreGauge/OptimizeButton + new archetypeZone unit test; **RightPanel cleared from the failing baseline**. tsc 0 / build 0 / no new test failures vs the updated baseline. No new stat (Source Audit: N/A). Scope boundary honored: StatSheet content (Epic 1), suggestion-card content + optimization behavior (Epic 3), and all store schema/types untouched.
 - 2026-06-05 — Story 2.4 drafted (ready-for-dev): right-panel score-gauge / archetype / optimizer chrome rebuild to the Claude Design handoff. Extension/reconciliation of the existing `RightPanel.tsx` + children — `ScoreGauge` horizontal bars → 3/4-arc SVG with gradient fill, center composite score, and ▲/▼ delta (preview wiring reused); new DMG/SURV/SPD pill trio; `OptimizationSlider` gains the UX-DR5 five-zone label via a single-source `getArchetypeZone` helper (one new `--color-zone-aggressive` token, reuse existing for the other four); `FineTunePanel` heading reconciled; Optimize Build button gold + `pulse-gold` while running (new keyframe, reduced-motion gated); "AI Suggestions" / "Stat Sheet" section-header chrome; native accessible slider kept (no prototype drag-track regression). No new stat (Source Audit: N/A — no-new-stat / no-dead-key). RightPanel.test.tsx updated (stale offline copy fixed, `→` → delta assertions, zone/pill/label coverage, axe) with the goal of **clearing RightPanel from the failing baseline**. Scope boundary: StatSheet content (Epic 1), suggestion-card content + optimization behavior (Epic 3), and all store schema/types are untouched.

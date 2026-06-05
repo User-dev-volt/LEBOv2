@@ -5,6 +5,7 @@ import { useOptimizationStore } from '../../shared/stores/optimizationStore'
 import { startOptimization } from '../../shared/stores/useOptimizationStream'
 import { PanelCollapseToggle } from './PanelCollapseToggle'
 import { ScoreGauge } from '../optimization/ScoreGauge'
+import { ScoreTrio } from '../optimization/ScoreTrio'
 import { OptimizationSlider } from '../optimization/OptimizationSlider'
 import { FineTunePanel } from '../optimization/FineTunePanel'
 import { OptimizeButton } from '../optimization/OptimizeButton'
@@ -93,9 +94,12 @@ export function RightPanel() {
 
       <div className="flex-1 overflow-y-auto flex flex-col gap-0">
         {/* Score section */}
-        <div className="px-4 pt-4 pb-3">
+        <div className="px-4 pt-4 pb-3 flex flex-col gap-3">
           {activeBuild ? (
-            <ScoreGauge baselineScore={scores} previewScore={previewScore} />
+            <>
+              <ScoreGauge baselineScore={scores} previewScore={previewScore} />
+              <ScoreTrio scores={scores} />
+            </>
           ) : (
             <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
               Select a build to see scores
@@ -114,6 +118,7 @@ export function RightPanel() {
             onOptimize={startOptimization}
             disabled={!activeBuild || !isOnline}
             isOptimizing={isOptimizing}
+            hasSuggestions={suggestions.length > 0}
           />
 
           {isOptimizing && currentModel && (
@@ -163,13 +168,37 @@ export function RightPanel() {
         <div style={{ height: 1, backgroundColor: 'var(--color-bg-elevated)', margin: '0 16px' }} />
 
         {/* AI Suggestions */}
-        <div className="px-4 py-3">
+        <div className="px-4 py-3 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span
+              className="text-[11px] font-semibold uppercase tracking-wide"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
+              AI Suggestions
+            </span>
+            {suggestions.length > 0 && (
+              <span
+                className="text-[10px] tabular-nums"
+                style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-text-muted)' }}
+              >
+                {suggestions.length} ranked
+              </span>
+            )}
+          </div>
           <SuggestionsList onRetry={startOptimization} />
         </div>
 
         <div style={{ height: 1, backgroundColor: 'var(--color-bg-elevated)', margin: '0 16px' }} />
 
         {/* Stat sheet */}
+        <div className="px-4 pt-3">
+          <span
+            className="text-[11px] font-semibold uppercase tracking-wide"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
+            Stat Sheet
+          </span>
+        </div>
         <div
           className="overflow-y-auto"
           style={{ maxHeight: '320px' }}

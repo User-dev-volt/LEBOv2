@@ -1,13 +1,23 @@
+import { useReducedMotion } from '../../shared/hooks/useReducedMotion'
+
 interface OptimizeButtonProps {
   onOptimize: () => void
   disabled: boolean
   isOptimizing: boolean
+  hasSuggestions?: boolean
 }
 
 const BAR_DELAYS = ['0ms', '160ms', '320ms', '480ms', '640ms']
 
-export function OptimizeButton({ onOptimize, disabled, isOptimizing }: OptimizeButtonProps) {
+export function OptimizeButton({
+  onOptimize,
+  disabled,
+  isOptimizing,
+  hasSuggestions = false,
+}: OptimizeButtonProps) {
   const isInteractive = !disabled && !isOptimizing
+  const reducedMotion = useReducedMotion()
+  const idleLabel = hasSuggestions ? 'Re-Optimize' : 'Optimize Build'
 
   return (
     <div className="flex flex-col gap-2">
@@ -27,11 +37,13 @@ export function OptimizeButton({ onOptimize, disabled, isOptimizing }: OptimizeB
           color: disabled ? 'var(--color-text-muted)' : 'var(--color-bg-base)',
           opacity: disabled ? 0.5 : 1,
           cursor: !isInteractive ? 'not-allowed' : 'pointer',
+          animation:
+            isOptimizing && !reducedMotion ? 'pulse-gold 1.4s ease-in-out infinite' : undefined,
         }}
       >
         {isOptimizing ? (
           <>
-            <span>Analyzing...</span>
+            <span>Analyzing…</span>
             <div
               className="flex items-end gap-px"
               style={{ height: '14px' }}
@@ -54,7 +66,7 @@ export function OptimizeButton({ onOptimize, disabled, isOptimizing }: OptimizeB
             </div>
           </>
         ) : (
-          'Optimize'
+          idleLabel
         )}
       </button>
 

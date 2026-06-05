@@ -4,14 +4,21 @@ import userEvent from '@testing-library/user-event'
 import { OptimizeButton } from './OptimizeButton'
 
 describe('OptimizeButton', () => {
-  it('renders "Optimize" text in normal state', () => {
+  it('renders "Optimize Build" text in normal state with no suggestions', () => {
     render(<OptimizeButton onOptimize={vi.fn()} disabled={false} isOptimizing={false} />)
-    expect(screen.getByTestId('optimize-button')).toHaveTextContent('Optimize')
+    expect(screen.getByTestId('optimize-button')).toHaveTextContent('Optimize Build')
   })
 
-  it('renders "Analyzing..." text when isOptimizing', () => {
+  it('renders "Re-Optimize" when suggestions exist', () => {
+    render(
+      <OptimizeButton onOptimize={vi.fn()} disabled={false} isOptimizing={false} hasSuggestions />
+    )
+    expect(screen.getByTestId('optimize-button')).toHaveTextContent('Re-Optimize')
+  })
+
+  it('renders "Analyzing…" text when isOptimizing', () => {
     render(<OptimizeButton onOptimize={vi.fn()} disabled={false} isOptimizing={true} />)
-    expect(screen.getByTestId('optimize-button')).toHaveTextContent('Analyzing...')
+    expect(screen.getByTestId('optimize-button')).toHaveTextContent(/Analyzing/)
   })
 
   it('renders loading indicator when isOptimizing', () => {

@@ -1,22 +1,17 @@
 import type { BuildScore } from '../../shared/types/optimization'
+import { useReducedMotion } from '../../shared/hooks/useReducedMotion'
 
 interface ScoreGaugeProps {
   baselineScore: BuildScore | null
   previewScore?: BuildScore | null
 }
 
-interface AxisConfig {
-  label: string
-  key: keyof BuildScore
-  colorVar: string
-  dataAttr: string
-}
-
-const AXES: AxisConfig[] = [
-  { label: 'Damage', key: 'damage', colorVar: 'var(--color-data-damage)', dataAttr: 'data-damage' },
-  { label: 'Surv', key: 'survivability', colorVar: 'var(--color-data-surv)', dataAttr: 'data-surv' },
-  { label: 'Speed', key: 'speed', colorVar: 'var(--color-data-speed)', dataAttr: 'data-speed' },
-]
+const GAUGE_RADIUS = 64
+const GAUGE_CX = 90
+const GAUGE_CY = 90
+// 3/4 arc (270°) sweep; rotate(135) places the gap at the bottom (UX-DR4).
+const ARC_LENGTH = Math.PI * GAUGE_RADIUS * 1.5
+const TICK_COUNT = 11
 
 function formatScore(val: number | null): string {
   return val === null ? '—' : String(val)
@@ -31,107 +26,110 @@ function computeComposite(score: BuildScore | null): number | null {
   return Math.round(values.reduce((a, b) => a + b, 0) / values.length)
 }
 
-function ScoreBar({ value, colorVar }: { value: number | null; colorVar: string }) {
-  const pct = value === null ? 0 : value
-  return (
-    <div
-      className="h-1.5 rounded-full overflow-hidden flex-1"
-      style={{ backgroundColor: 'var(--color-bg-hover)' }}
-      aria-hidden="true"
-    >
-      <div
-        className="h-full rounded-full transition-[width] duration-200"
-        style={{ width: `${pct}%`, backgroundColor: colorVar }}
-      />
-    </div>
-  )
-}
-
 export function ScoreGauge({ baselineScore, previewScore }: ScoreGaugeProps) {
-  const isComparisonMode = previewScore != null
+  const reducedMotion = useReducedMotion()
+
   const baseComposite = computeComposite(baselineScore)
   const previewComposite = computeComposite(previewScore ?? null)
 
+  const gaugeValue = baseComposite ?? 0
+  const pct = Math.max(0, Math.min(100, gaugeValue)) / 100
+
+  const delta =
+    previewScore != null && baseComposite !== null && previewComposite !== null
+      ? Math.round((previewComposite - baseComposite) * 10) / 10
+      : null
+  const showDelta = delta !== null && delta !== 0
+
   return (
     <div
-      className="flex flex-col gap-2"
+      className="relative flex flex-col items-center"
       role="region"
       aria-label="Build scores"
       data-testid="score-gauge"
     >
-      <p
-        className="text-xs font-semibold uppercase tracking-wide mb-1"
-        style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-ui)' }}
-      >
-        Build Score
-      </p>
+      <svg width="180" height="160" viewBox="0 0 180 160" aria-hidden="true">
+        <defs>
+          <linearGradient id="score-gauge-grad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="var(--color-accent-gold-dim)" />
+            <stop offset="60%" stopColor="var(--color-accent-gold)" />
+            <stop offset="100%" stopColor="var(--color-accent-gold-soft)" />
+          </linearGradient>
+        </defs>
 
-      {AXES.map(({ label, key, colorVar, dataAttr }) => {
-        const baseVal = baselineScore?.[key] ?? null
-        const prevVal = previewScore?.[key] ?? null
+        <circle
+          cx={GAUGE_CX}
+          cy={GAUGE_CY}
+          r={GAUGE_RADIUS}
+          fill="none"
+          stroke="var(--color-bg-elevated)"
+          strokeWidth="8"
+          strokeDasharray={`${ARC_LENGTH} 9999`}
+          transform={`rotate(135 ${GAUGE_CX} ${GAUGE_CY})`}
+          strokeLinecap="round"
+        />
 
-        return (
-          <div key={key} className="flex flex-col gap-1" data-testid={`axis-${key}`}>
-            <div className="flex items-center justify-between gap-2">
-              <span
-                className="text-xs w-10 shrink-0"
-                style={{ color: 'var(--color-text-secondary)' }}
-              >
-                {label}
-              </span>
+        <circle
+          cx={GAUGE_CX}
+          cy={GAUGE_CY}
+          r={GAUGE_RADIUS}
+          fill="none"
+          stroke="url(#score-gauge-grad)"
+          strokeWidth="8"
+          strokeDasharray={`${ARC_LENGTH * pct} 9999`}
+          transform={`rotate(135 ${GAUGE_CX} ${GAUGE_CY})`}
+          strokeLinecap="round"
+          style={reducedMotion ? undefined : { transition: 'stroke-dasharray 400ms ease' }}
+        />
 
-              {isComparisonMode ? (
-                <span
-                  className="text-xs tabular-nums"
-                  style={{ fontFamily: 'var(--font-mono)', color: colorVar }}
-                >
-                  {formatScore(baseVal)} → {formatScore(prevVal)}
-                </span>
-              ) : (
-                <span
-                  className="text-xs tabular-nums"
-                  style={{ fontFamily: 'var(--font-mono)', color: colorVar }}
-                  title={`${label}: ${formatScore(baseVal)} / 100`}
-                  {...{ [dataAttr]: true }}
-                >
-                  {formatScore(baseVal)}
-                </span>
-              )}
-            </div>
-
-            {isComparisonMode ? (
-              <div className="flex gap-1">
-                <ScoreBar value={baseVal} colorVar={colorVar} />
-                <ScoreBar value={prevVal} colorVar={colorVar} />
-              </div>
-            ) : (
-              <ScoreBar value={baseVal} colorVar={colorVar} />
-            )}
-          </div>
-        )
-      })}
+        {Array.from({ length: TICK_COUNT }).map((_, i) => {
+          const angle = -135 + (270 * i) / (TICK_COUNT - 1)
+          const rad = (angle * Math.PI) / 180
+          const major = i % 2 === 0
+          const outer = GAUGE_RADIUS + 8
+          const inner = GAUGE_RADIUS + 4
+          return (
+            <line
+              key={i}
+              x1={GAUGE_CX + Math.cos(rad) * inner}
+              y1={GAUGE_CY + Math.sin(rad) * inner}
+              x2={GAUGE_CX + Math.cos(rad) * outer}
+              y2={GAUGE_CY + Math.sin(rad) * outer}
+              stroke={major ? 'var(--color-text-muted)' : 'var(--color-text-secondary)'}
+              strokeWidth={major ? 1.4 : 1}
+              opacity={major ? 1 : 0.5}
+            />
+          )
+        })}
+      </svg>
 
       <div
-        className="flex items-center justify-between mt-1 pt-2"
-        style={{ borderTop: '1px solid var(--color-bg-elevated)' }}
-        data-testid="composite-row"
+        className="absolute flex flex-col items-center"
+        style={{ top: 52 }}
+        data-testid="gauge-center"
       >
-        <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-          Composite
+        <span
+          className="text-3xl tabular-nums leading-none"
+          style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-text-primary)' }}
+        >
+          {formatScore(baseComposite)}
         </span>
-        {isComparisonMode ? (
+        <span
+          className="text-[10px] font-semibold uppercase tracking-wide mt-1"
+          style={{ color: 'var(--color-text-muted)' }}
+        >
+          Build Score
+        </span>
+        {showDelta && (
           <span
-            className="text-xs tabular-nums"
-            style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-text-secondary)' }}
+            className="text-xs tabular-nums mt-1"
+            style={{
+              fontFamily: 'var(--font-mono)',
+              color: delta > 0 ? 'var(--color-data-positive)' : 'var(--color-data-negative)',
+            }}
+            data-testid="gauge-delta"
           >
-            {formatScore(baseComposite)} → {formatScore(previewComposite)}
-          </span>
-        ) : (
-          <span
-            className="text-xs tabular-nums"
-            style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-text-secondary)' }}
-          >
-            {formatScore(baseComposite)}
+            {delta > 0 ? '▲' : '▼'} {Math.abs(delta).toFixed(1)}
           </span>
         )}
       </div>

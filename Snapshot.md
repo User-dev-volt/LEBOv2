@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Move story to review; address the one open question if the reviewer wants `Complete Build Optimizer` wired live now (requires pulling Epic 6's `currentView` extension forward).
+Review the generated story file at `_bmad-output/implementation-artifacts/2-4-right-panel-score-gauge-archetype-optimizer-chrome.md`, then run `dev-story` to begin implementation.
 
 ---
 

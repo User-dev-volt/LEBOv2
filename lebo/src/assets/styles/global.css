@@ -74,6 +74,9 @@
   --color-slider-glass-cannon: #C73232; /* PixiJS: 0xC73232 — high-saturation crimson-red for damage end */
   --color-slider-juggernaut:   #2A4D7A; /* PixiJS: 0x2A4D7A — deep steel-blue for survivability end */
 
+  /* Archetype zone — Aggressive band (UX-DR5); other 4 zones reuse existing tokens (see archetypeZone.ts) */
+  --color-zone-aggressive: #C77840; /* warm orange between gold and crimson */
+
   /* Text */
   --color-text-primary:   #F0EAE0;
   --color-text-secondary: #9E9494;
@@ -135,6 +138,13 @@
   0% { transform: translateX(-100%); }
   60% { transform: translateX(100%); }
   100% { transform: translateX(100%); }
+}
+
+/* Optimize Build button — pulsing gold glow while a run is in flight (FR-35).
+   Applied only when motion is allowed (gated in JSX via useReducedMotion). */
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.5); }
+  50%      { box-shadow: 0 0 14px 2px rgba(201, 168, 76, 0.65); }
 }
 
 @layer base {
