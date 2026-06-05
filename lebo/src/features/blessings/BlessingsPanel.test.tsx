@@ -98,11 +98,33 @@ describe('BlessingsPanel', () => {
     const bfdCard = screen.getByTestId('blessing-card-blood-frost-death')
     expect(within(bfdCard).getByRole('button', { name: /Twisted Memory/ })).toBeInTheDocument()
     expect(within(bfdCard).getByRole('button', { name: /Bone Armor/ })).toBeInTheDocument()
-    expect(within(bfdCard).getByRole('button', { name: 'None' })).toBeInTheDocument()
+    expect(within(bfdCard).getByRole('button', { name: /^None/ })).toBeInTheDocument()
 
     const aowCard = screen.getByTestId('blessing-card-age-of-winter')
     expect(within(aowCard).getByRole('button', { name: /Gift of Winter/ })).toBeInTheDocument()
-    expect(within(aowCard).getByRole('button', { name: 'None' })).toBeInTheDocument()
+    expect(within(aowCard).getByRole('button', { name: /^None/ })).toBeInTheDocument()
+  })
+
+  it('renders all of a timeline’s entries (None + every blessing), not just the first', () => {
+    render(<BlessingsPanel />)
+    // blood-frost-death has 2 mocked entries → 2 blessing rows + 1 None row = 3 buttons
+    const bfdCard = screen.getByTestId('blessing-card-blood-frost-death')
+    expect(within(bfdCard).getAllByRole('button')).toHaveLength(3)
+    // age-of-winter has 1 mocked entry → 1 blessing row + 1 None row = 2 buttons
+    const aowCard = screen.getByTestId('blessing-card-age-of-winter')
+    expect(within(aowCard).getAllByRole('button')).toHaveLength(2)
+  })
+
+  it('gives each None row an accessible name scoped to its timeline', () => {
+    render(<BlessingsPanel />)
+    const bfdCard = screen.getByTestId('blessing-card-blood-frost-death')
+    expect(
+      within(bfdCard).getByRole('button', { name: 'None — Blood, Frost, and Death' }),
+    ).toBeInTheDocument()
+    const aowCard = screen.getByTestId('blessing-card-age-of-winter')
+    expect(
+      within(aowCard).getByRole('button', { name: 'None — The Age of Winter' }),
+    ).toBeInTheDocument()
   })
 
   it('clicking a blessing row calls setBlessing with timelineId and blessingId', () => {
@@ -116,7 +138,7 @@ describe('BlessingsPanel', () => {
     setupMocks({ activeBlessings: { 'blood-frost-death': 'bfd-twisted-memory' } })
     render(<BlessingsPanel />)
     const bfdCard = screen.getByTestId('blessing-card-blood-frost-death')
-    fireEvent.click(within(bfdCard).getByRole('button', { name: 'None' }))
+    fireEvent.click(within(bfdCard).getByRole('button', { name: /^None/ }))
     expect(mockSetBlessing).toHaveBeenCalledWith('blood-frost-death', null)
   })
 
@@ -132,7 +154,7 @@ describe('BlessingsPanel', () => {
       'aria-pressed',
       'false',
     )
-    expect(within(bfdCard).getByRole('button', { name: 'None' })).toHaveAttribute(
+    expect(within(bfdCard).getByRole('button', { name: /^None/ })).toHaveAttribute(
       'aria-pressed',
       'false',
     )
@@ -141,7 +163,7 @@ describe('BlessingsPanel', () => {
   it('marks the None row active when no blessing is set for the timeline', () => {
     render(<BlessingsPanel />)
     const bfdCard = screen.getByTestId('blessing-card-blood-frost-death')
-    expect(within(bfdCard).getByRole('button', { name: 'None' })).toHaveAttribute(
+    expect(within(bfdCard).getByRole('button', { name: /^None/ })).toHaveAttribute(
       'aria-pressed',
       'true',
     )

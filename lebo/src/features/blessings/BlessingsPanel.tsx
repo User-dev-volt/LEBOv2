@@ -23,11 +23,13 @@ function formatStatEffects(entry: BlessingEntry): string {
 
 function OptionRow({
   label,
+  ariaLabel,
   summary,
   isActive,
   onClick,
 }: {
   label: string
+  ariaLabel?: string
   summary?: string
   isActive: boolean
   onClick: () => void
@@ -35,6 +37,7 @@ function OptionRow({
   return (
     <button
       type="button"
+      aria-label={ariaLabel}
       aria-pressed={isActive}
       onClick={onClick}
       className="w-full text-left rounded px-2 py-1 flex flex-col"
@@ -86,6 +89,7 @@ function BlessingCard({
       <div className="flex flex-col gap-1">
         <OptionRow
           label="None"
+          ariaLabel={`None — ${group.timelineName}`}
           isActive={selectedId == null}
           onClick={() => onSelect(group.timelineId, null)}
         />
