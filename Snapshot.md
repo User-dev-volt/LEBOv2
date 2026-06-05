@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Reply with choice (1: Start next story `2-6`, 2: Re-run review, 3: Done) to unblock sprint workflow.
+Story 2.6 marked `review` in sprint-status.yaml. Await code review before merge. No blocking dependencies or follow-up builds required.
 
 ---
 
