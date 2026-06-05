@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Story 2.6 marked `review` in sprint-status.yaml. Await code review before merge. No blocking dependencies or follow-up builds required.
+- User confirms parallel review proceed → launch three adversarial layers (Blind Hunter, Edge Case Hunter, Acceptance Auditor)
 
 ---
 
