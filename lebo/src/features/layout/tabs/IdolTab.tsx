@@ -1,4 +1,4 @@
-import { IdolGrid } from '../../idol-grid/IdolGrid'
+import { IdolEditor } from '../../idol-grid/IdolEditor'
 import { useGameDataStore } from '../../../shared/stores/gameDataStore'
 import { useBuildStore } from '../../../shared/stores/buildStore'
 
@@ -28,7 +28,7 @@ export function IdolTab() {
 
   return (
     <div className="h-full overflow-y-auto p-4">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <h2
           className="text-sm font-semibold uppercase tracking-wide mb-4"
           style={{ color: 'var(--color-text-muted)' }}
@@ -39,7 +39,7 @@ export function IdolTab() {
           className="rounded-lg p-4"
           style={{ backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-bg-elevated)' }}
         >
-          <IdolGrid />
+          <IdolEditor />
         </div>
       </div>
     </div>

@@ -10,7 +10,7 @@ import { GEAR_SLOTS } from './gearData'
 import { SKILL_SLOTS } from './skillData'
 import { GearInput } from './GearInput'
 import { SkillInput } from './SkillInput'
-import { IdolGrid } from '../idol-grid/IdolGrid'
+import { IdolEditor } from '../idol-grid/IdolEditor'
 import { BlessingsPanel } from '../blessings/BlessingsPanel'
 import { ConditionsPanel } from '../conditions/ConditionsPanel'
 
@@ -80,7 +80,7 @@ export function ContextPanel() {
             <span style={{ color: 'var(--color-text-muted)' }}>{filledIdolCount} placed</span>
           </DisclosureButton>
           <DisclosurePanel>
-            <IdolGrid />
+            <IdolEditor />
           </DisclosurePanel>
         </Disclosure>
       </div>

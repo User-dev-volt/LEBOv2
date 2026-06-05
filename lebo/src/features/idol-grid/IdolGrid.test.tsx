@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import { axe } from 'vitest-axe'
-import { IdolGrid } from './IdolGrid'
+import { IdolEditor } from './IdolEditor'
 import type { IdolData } from '../../shared/types/contextDatabase'
 import type { PlacedIdol } from '../../shared/types/build'
 
@@ -87,20 +87,15 @@ function setupMocks(opts: {
 } = {}) {
   const gameDataState = { idolData: opts.idolData !== undefined ? opts.idolData : mockIdolData }
   const idolGrid = opts.idolGrid ?? []
-  const buildState = {
-    activeBuild: { idolGrid },
-  }
+  const buildState = { activeBuild: { idolGrid } }
 
   ;(useGameDataStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(
     (sel: AnySelector) => sel(gameDataState as Record<string, unknown>)
   )
   ;(useBuildStore as unknown as ReturnType<typeof vi.fn>).mockImplementation((sel: AnySelector) => {
-    if (typeof sel === 'function') {
-      return sel(buildState as Record<string, unknown>)
-    }
+    if (typeof sel === 'function') return sel(buildState as Record<string, unknown>)
     return buildState
   })
-  // Provide getState for imperative calls
   ;(useBuildStore as unknown as { getState: () => unknown }).getState = () => ({
     placeIdol: mockPlaceIdol,
     clearIdolSlot: mockClearIdolSlot,
@@ -109,7 +104,19 @@ function setupMocks(opts: {
   })
 }
 
-describe('IdolGrid', () => {
+function selectTray(name: RegExp) {
+  fireEvent.click(screen.getByRole('button', { name }))
+}
+
+function setPrefix(value: string) {
+  fireEvent.change(screen.getByRole('combobox', { name: /Select prefix affix/i }), { target: { value } })
+}
+
+function setSuffix(value: string) {
+  fireEvent.change(screen.getByRole('combobox', { name: /Select suffix affix/i }), { target: { value } })
+}
+
+describe('IdolEditor', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     setupMocks()
@@ -117,44 +124,60 @@ describe('IdolGrid', () => {
 
   it('renders loading placeholder when idolData is null', () => {
     setupMocks({ idolData: null })
-    render(<IdolGrid />)
+    render(<IdolEditor />)
     expect(screen.getByTestId('idol-grid-loading')).toBeInTheDocument()
   })
 
-  it('renders 5×5 grid (20 interactive + 5 blocked cells) when idolData is present', () => {
-    render(<IdolGrid />)
-    const grid = screen.getByTestId('idol-grid')
-    expect(grid).toBeInTheDocument()
-    const blockedCells = grid.querySelectorAll('[aria-disabled="true"]')
-    expect(blockedCells).toHaveLength(5)
-  })
-
-  it('blocked cells have aria-disabled="true" and no click response', () => {
-    render(<IdolGrid />)
+  it('renders the configured grid (5×5) with blocked cells aria-disabled and not buttons', () => {
+    render(<IdolEditor />)
     const grid = screen.getByTestId('idol-grid')
     const blocked = grid.querySelectorAll('[aria-disabled="true"]')
     expect(blocked).toHaveLength(5)
-    blocked.forEach((cell) => {
-      expect(cell.tagName).not.toBe('BUTTON')
-    })
+    blocked.forEach((cell) => expect(cell.tagName).not.toBe('BUTTON'))
   })
 
-  it('clicking empty cell then selecting type and configuring affix calls placeIdol', () => {
-    render(<IdolGrid />)
-    const emptyCells = screen.getAllByRole('button', { name: /Empty cell, row 2 col 2/i })
-    expect(emptyCells.length).toBeGreaterThan(0)
-    fireEvent.click(emptyCells[0])
+  it('tray lists one card per idol type, each with W×H label and name', () => {
+    render(<IdolEditor />)
+    expect(screen.getByRole('button', { name: /Small Idol/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Humble Idol/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Stout Idol/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Grand Idol/i })).toBeInTheDocument()
+    // Humble is 1×2 — its W×H label is present (shape box + descriptor line both show it)
+    expect(within(screen.getByRole('button', { name: /Humble Idol/i })).getAllByText(/1×2/).length).toBeGreaterThan(0)
+  })
 
-    const typeSelect = screen.getByRole('combobox', { name: /Select idol type/i })
-    fireEvent.change(typeSelect, { target: { value: 'small-1x1' } })
+  it('filter input narrows the tray cards by name (case-insensitive)', () => {
+    render(<IdolEditor />)
+    fireEvent.change(screen.getByLabelText(/Filter idols by name/i), { target: { value: 'humble' } })
+    expect(screen.getByRole('button', { name: /Humble Idol/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Small Idol/i })).not.toBeInTheDocument()
+  })
 
-    // IdolAffixPicker appears — select prefix
-    const prefixSelect = screen.getByRole('combobox', { name: /Select prefix affix/i })
-    fireEvent.change(prefixSelect, { target: { value: 'idol-small-fire-res' } })
+  it('selecting a tray card sets aria-pressed and reveals the affix picker', () => {
+    render(<IdolEditor />)
+    const card = screen.getByRole('button', { name: /Small Idol/i })
+    expect(card).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(card)
+    expect(card).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('combobox', { name: /Select prefix affix/i })).toBeInTheDocument()
+  })
 
-    // Place button enabled for small-1x1 (requiresBoth: false)
-    const placeBtn = screen.getByRole('button', { name: /Place idol/i })
-    fireEvent.click(placeBtn)
+  it('clicking the same selected card again deselects it', () => {
+    render(<IdolEditor />)
+    const card = screen.getByRole('button', { name: /Small Idol/i })
+    fireEvent.click(card)
+    expect(card).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(card)
+    expect(card).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByRole('combobox', { name: /Select prefix affix/i })).not.toBeInTheDocument()
+  })
+
+  it('select → configure prefix → click a valid cell calls placeIdol with configured affixes', () => {
+    render(<IdolEditor />)
+    selectTray(/Small Idol/i)
+    setPrefix('idol-small-fire-res')
+
+    fireEvent.click(screen.getByRole('button', { name: /Place Small Idol here, row 2 col 2/i }))
 
     expect(mockPlaceIdol).toHaveBeenCalledOnce()
     const call = mockPlaceIdol.mock.calls[0][0] as PlacedIdol
@@ -166,131 +189,88 @@ describe('IdolGrid', () => {
     expect(typeof call.id).toBe('string')
   })
 
-  it('shows error when overlapping placement is attempted', () => {
-    const existing: PlacedIdol[] = [
-      { id: 'x', row: 1, col: 1, idolTypeId: 'humble-1x2' },
-    ]
-    setupMocks({ idolGrid: existing })
-    render(<IdolGrid />)
+  it('requiresBoth idol with only a prefix set does not place on cell click and shows the requires-both hint', () => {
+    render(<IdolEditor />)
+    selectTray(/Humble Idol/i)
+    setPrefix('idol-humble-max-hp')
 
-    const cell = screen.getByRole('button', { name: /Empty cell, row 2 col 1/i })
-    fireEvent.click(cell)
-    const select = screen.getByRole('combobox', { name: /Select idol type/i })
-    fireEvent.change(select, { target: { value: 'grand-2x2' } })
+    fireEvent.click(screen.getByRole('button', { name: /Place Humble Idol here, row 2 col 2/i }))
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/overlaps/i)
     expect(mockPlaceIdol).not.toHaveBeenCalled()
+    expect(screen.getByRole('alert')).toHaveTextContent(/requires both a prefix and suffix/i)
   })
 
-  it('clicking clear button calls clearIdolSlot with idol id', () => {
-    const existing: PlacedIdol[] = [
-      { id: 'abc', row: 1, col: 1, idolTypeId: 'small-1x1' },
-    ]
-    setupMocks({ idolGrid: existing })
-    render(<IdolGrid />)
+  it('requiresBoth idol with both affixes set places with prefix and suffix', () => {
+    render(<IdolEditor />)
+    selectTray(/Humble Idol/i)
+    setPrefix('idol-humble-max-hp')
+    setSuffix('idol-humble-crit-chance')
 
-    const clearBtn = screen.getByRole('button', { name: /Small Idol placed\. Press to clear\./i })
-    fireEvent.click(clearBtn)
+    fireEvent.click(screen.getByRole('button', { name: /Place Humble Idol here, row 2 col 2/i }))
+
+    expect(mockPlaceIdol).toHaveBeenCalledOnce()
+    const call = mockPlaceIdol.mock.calls[0][0] as PlacedIdol
+    expect(call.idolTypeId).toBe('humble-1x2')
+    expect(call.prefixId).toBe('idol-humble-max-hp')
+    expect(call.suffixId).toBe('idol-humble-crit-chance')
+  })
+
+  it('hovering a valid cell with a configured idol previews the footprint', () => {
+    render(<IdolEditor />)
+    selectTray(/Humble Idol/i)
+    setPrefix('idol-humble-max-hp')
+    setSuffix('idol-humble-crit-chance')
+
+    // Hover the origin of a 1×2 placement — both footprint cells expose the place affordance.
+    fireEvent.mouseEnter(screen.getByRole('button', { name: /Place Humble Idol here, row 2 col 2/i }))
+    expect(screen.getByRole('button', { name: /Place Humble Idol here, row 2 col 3/i })).toBeInTheDocument()
+  })
+
+  it('clicking an occupied cell calls clearIdolSlot with the occupant id', () => {
+    setupMocks({ idolGrid: [{ id: 'abc', row: 1, col: 1, idolTypeId: 'small-1x1' }] })
+    render(<IdolEditor />)
+    fireEvent.click(screen.getByRole('button', { name: /Small Idol placed\. Click to remove\./i }))
     expect(mockClearIdolSlot).toHaveBeenCalledWith('abc')
   })
 
-  it('"Reset all idols" button calls resetIdolGrid', () => {
-    render(<IdolGrid />)
-    const resetBtn = screen.getByRole('button', { name: /Reset all idols/i })
-    fireEvent.click(resetBtn)
+  it('clicking outside the grid deselects the placing idol', () => {
+    render(<IdolEditor />)
+    selectTray(/Small Idol/i)
+    expect(screen.getByRole('combobox', { name: /Select prefix affix/i })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('idol-editor'))
+    expect(screen.queryByRole('combobox', { name: /Select prefix affix/i })).not.toBeInTheDocument()
+  })
+
+  it('Active Idol Stats summary lists a placed idol affix text', () => {
+    setupMocks({
+      idolGrid: [{ id: 'v1', row: 1, col: 1, idolTypeId: 'humble-1x2', prefixId: 'idol-humble-max-hp', prefixTier: 2 }],
+    })
+    render(<IdolEditor />)
+    const summary = screen.getByRole('region', { name: /Active idol stats/i })
+    expect(within(summary).getByText(/Stalwart T2/i)).toBeInTheDocument()
+  })
+
+  it('Active Idol Stats shows empty state when no idols are placed', () => {
+    render(<IdolEditor />)
+    expect(screen.getByText(/No idols placed\./i)).toBeInTheDocument()
+  })
+
+  it('"Reset all idols" calls resetIdolGrid', () => {
+    render(<IdolEditor />)
+    fireEvent.click(screen.getByRole('button', { name: /Reset all idols/i }))
     expect(mockResetIdolGrid).toHaveBeenCalledOnce()
   })
 
-  it('renders occupied cells when store has placed idols', () => {
-    const existing: PlacedIdol[] = [
-      { id: 'z', row: 1, col: 1, idolTypeId: 'humble-1x2' },
-    ]
-    setupMocks({ idolGrid: existing })
-    render(<IdolGrid />)
-    expect(screen.getByText('Humble Idol')).toBeInTheDocument()
+  it('accessibility: no violations (empty grid)', async () => {
+    const { container } = render(<IdolEditor />)
+    expect(await axe(container)).toHaveNoViolations()
   })
 
-  it('accessibility: no violations', async () => {
-    const { container } = render(<IdolGrid />)
-    const results = await axe(container)
-    expect(results).toHaveNoViolations()
-  })
-
-  it('requiresBoth blocks placement when only prefix selected — Place button disabled with error', () => {
-    render(<IdolGrid />)
-    // Click a cell that can fit a 1×2 idol
-    const cell = screen.getByRole('button', { name: /Empty cell, row 2 col 1/i })
-    fireEvent.click(cell)
-    const typeSelect = screen.getByRole('combobox', { name: /Select idol type/i })
-    fireEvent.change(typeSelect, { target: { value: 'humble-1x2' } })
-
-    // Select prefix only
-    const prefixSelect = screen.getByRole('combobox', { name: /Select prefix affix/i })
-    fireEvent.change(prefixSelect, { target: { value: 'idol-humble-max-hp' } })
-
-    // Place button should be disabled because no suffix selected
-    const placeBtn = screen.getByRole('button', { name: /Place idol/i })
-    expect(placeBtn).toHaveAttribute('aria-disabled', 'true')
-    expect(screen.getByRole('alert')).toHaveTextContent(/requires both a prefix and suffix/i)
-    expect(mockPlaceIdol).not.toHaveBeenCalled()
-  })
-
-  it('clicking placed idol cell enters edit mode showing affix pickers', () => {
-    const existing: PlacedIdol[] = [
-      { id: 'e1', row: 1, col: 1, idolTypeId: 'humble-1x2' },
-    ]
-    setupMocks({ idolGrid: existing })
-    render(<IdolGrid />)
-
-    // Click on the placed idol div (not the × button)
-    const idolCell = screen.getByRole('button', { name: /Humble Idol placed\. Click to edit affixes\./i })
-    fireEvent.click(idolCell)
-
-    // Edit mode: affix pickers visible
-    expect(screen.getByRole('combobox', { name: /Select prefix affix/i })).toBeInTheDocument()
-    expect(screen.getByRole('combobox', { name: /Select suffix affix/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Done editing affix/i })).toBeInTheDocument()
-  })
-
-  it('edit mode: changing prefix calls updateIdolAffix with correct args', () => {
-    const existing: PlacedIdol[] = [
-      { id: 'e2', row: 1, col: 1, idolTypeId: 'humble-1x2' },
-    ]
-    setupMocks({ idolGrid: existing })
-    render(<IdolGrid />)
-
-    const idolCell = screen.getByRole('button', { name: /Humble Idol placed\. Click to edit affixes\./i })
-    fireEvent.click(idolCell)
-
-    const prefixSelect = screen.getByRole('combobox', { name: /Select prefix affix/i })
-    fireEvent.change(prefixSelect, { target: { value: 'idol-humble-max-hp' } })
-
-    expect(mockUpdateIdolAffix).toHaveBeenCalledWith('e2', { prefixId: 'idol-humble-max-hp', prefixTier: 1 })
-  })
-
-  it('placed idol shows configured affix displayName in view mode', () => {
-    const existing: PlacedIdol[] = [
-      { id: 'v1', row: 1, col: 1, idolTypeId: 'humble-1x2', prefixId: 'idol-humble-max-hp', prefixTier: 2 },
-    ]
-    setupMocks({ idolGrid: existing })
-    render(<IdolGrid />)
-    expect(screen.getByText(/Stalwart T2/i)).toBeInTheDocument()
-  })
-
-  it('Cancel during placement clears configuringNew — cell returns to empty', () => {
-    render(<IdolGrid />)
-    const cell = screen.getByRole('button', { name: /Empty cell, row 2 col 1/i })
-    fireEvent.click(cell)
-    const typeSelect = screen.getByRole('combobox', { name: /Select idol type/i })
-    fireEvent.change(typeSelect, { target: { value: 'small-1x1' } })
-
-    // Picker is shown
-    expect(screen.getByRole('combobox', { name: /Select prefix affix/i })).toBeInTheDocument()
-
-    const cancelBtn = screen.getByRole('button', { name: /Cancel idol placement/i })
-    fireEvent.click(cancelBtn)
-
-    // Back to empty cell state
-    expect(screen.queryByRole('combobox', { name: /Select prefix affix/i })).not.toBeInTheDocument()
+  it('accessibility: no violations with a selected idol and a placed idol', async () => {
+    setupMocks({ idolGrid: [{ id: 'a', row: 0, col: 1, idolTypeId: 'small-1x1', prefixId: 'idol-small-fire-res', prefixTier: 1 }] })
+    const { container } = render(<IdolEditor />)
+    selectTray(/Humble Idol/i)
+    expect(await axe(container)).toHaveNoViolations()
   })
 })

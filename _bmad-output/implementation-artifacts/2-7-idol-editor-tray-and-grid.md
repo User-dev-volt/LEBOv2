@@ -1,6 +1,6 @@
 # Story 2.7: Idol editor tray and grid
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -94,40 +94,40 @@ The SOURCE-AUDIT GUARDRAIL's "map each new stat to real shipped-data, or declare
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Build the tray + grid editor container and lift placing state (AC: 1, 2, 4, 5)** — `lebo/src/features/idol-grid/`
-  - [ ] Add an editor container (recommended: new `IdolEditor.tsx` in `features/idol-grid/`) that holds the shared placing state with `useState`: `selectedTypeId: string | null`, the in-tray affix config (`prefixId?/prefixTier?/suffixId?/suffixTier?`), and `hoverCell: { row; col } | null`. It reads `idolData` (`useGameDataStore`) and `idolGrid` (`useBuildStore`), and owns `handlePlace` (calls `placeIdol`) / `handleRemove` (calls `clearIdolSlot`) / `handleReset` (`resetIdolGrid`).
-  - [ ] Render the two panes: `<IdolGrid …>` (left) + `<IdolTray …>` (right), and the **Active Idol Stats** summary below the grid (reuse `getPrefixName`/`getSuffixName`-style lookups against `idolData.idolTypes` for each placed idol's affix text; empty state "No idols placed.").
-  - [ ] Preserve the `!idolData` ("Loading idol data…") and `!activeBuild` ("Create or load a build to manage idols.") guards (keep them in `IdolTab` or move into the editor — pick one, no double-guard).
-  - [ ] Keep a "Reset all idols" control wired to `resetIdolGrid` and a placed-count line (existing behavior).
+- [x] **Task 1 — Build the tray + grid editor container and lift placing state (AC: 1, 2, 4, 5)** — `lebo/src/features/idol-grid/`
+  - [x] Add an editor container (recommended: new `IdolEditor.tsx` in `features/idol-grid/`) that holds the shared placing state with `useState`: `selectedTypeId: string | null`, the in-tray affix config (`prefixId?/prefixTier?/suffixId?/suffixTier?`), and `hoverCell: { row; col } | null`. It reads `idolData` (`useGameDataStore`) and `idolGrid` (`useBuildStore`), and owns `handlePlace` (calls `placeIdol`) / `handleRemove` (calls `clearIdolSlot`) / `handleReset` (`resetIdolGrid`).
+  - [x] Render the two panes: `<IdolGrid …>` (left) + `<IdolTray …>` (right), and the **Active Idol Stats** summary below the grid (reuse `getPrefixName`/`getSuffixName`-style lookups against `idolData.idolTypes` for each placed idol's affix text; empty state "No idols placed.").
+  - [x] Preserve the `!idolData` ("Loading idol data…") and `!activeBuild` ("Create or load a build to manage idols.") guards (keep them in `IdolTab` or move into the editor — pick one, no double-guard).
+  - [x] Keep a "Reset all idols" control wired to `resetIdolGrid` and a placed-count line (existing behavior).
 
-- [ ] **Task 2 — Refactor `IdolGrid.tsx` into the tray-driven, preview-capable grid (AC: 2, 3, 4)** — `lebo/src/features/idol-grid/IdolGrid.tsx`
-  - [ ] Make `IdolGrid` receive the selected idol type (+ its configured affixes), `hoverCell`, and callbacks (`onHoverCell`, `onPlace(row,col)`, `onRemove(idolId)`) as props from the container — OR keep store reads but accept the placing state as props. Either way: **remove** the old `pendingCell` size-`<select>` flow and the inline `configuringNew` placement picker (those are superseded by tray-side config).
-  - [ ] Render the grid from `gridConfig.rows/cols` with `blockedCells` non-interactive (`aria-disabled="true"`, not a `<button>`) — **keep this data-driven** (do not hardcode dimensions).
-  - [ ] When a tray idol is selected, compute the **preview cell set** for `hoverCell` via `getCellsForPlacement()` + `validatePlacement()`; highlight valid-fit cells, render the multi-cell footprint, and make overflow/collision cells **non-clickable**.
-  - [ ] Cell click: occupied → `onRemove(occupant.id)` (via `getOccupantAt`); empty + valid + fully-configured selection → `onPlace(row,col)`; empty + invalid/over-budget/`requiresBoth`-unmet → no-op (surface the existing requires-both hint when applicable).
-  - [ ] Occupied cells render the placed idol's footprint (multi-cell span via `gridColumn/gridRow`) with its `displayName` + affix text; clicking removes (no more in-place edit mode — see Dev Notes).
-  - [ ] Keep the global `:focus-visible` 2px gold ring for interactive cells; do not reintroduce the per-element `onFocus/onBlur` inline outline hack unless matching the existing pattern (prefer the global ring).
+- [x] **Task 2 — Refactor `IdolGrid.tsx` into the tray-driven, preview-capable grid (AC: 2, 3, 4)** — `lebo/src/features/idol-grid/IdolGrid.tsx`
+  - [x] Make `IdolGrid` receive the selected idol type (+ its configured affixes), `hoverCell`, and callbacks (`onHoverCell`, `onPlace(row,col)`, `onRemove(idolId)`) as props from the container — OR keep store reads but accept the placing state as props. Either way: **remove** the old `pendingCell` size-`<select>` flow and the inline `configuringNew` placement picker (those are superseded by tray-side config).
+  - [x] Render the grid from `gridConfig.rows/cols` with `blockedCells` non-interactive (`aria-disabled="true"`, not a `<button>`) — **keep this data-driven** (do not hardcode dimensions).
+  - [x] When a tray idol is selected, compute the **preview cell set** for `hoverCell` via `getCellsForPlacement()` + `validatePlacement()`; highlight valid-fit cells, render the multi-cell footprint, and make overflow/collision cells **non-clickable**.
+  - [x] Cell click: occupied → `onRemove(occupant.id)` (via `getOccupantAt`); empty + valid + fully-configured selection → `onPlace(row,col)`; empty + invalid/over-budget/`requiresBoth`-unmet → no-op (surface the existing requires-both hint when applicable).
+  - [x] Occupied cells render the placed idol's footprint (multi-cell span via `gridColumn/gridRow`) with its `displayName` + affix text; clicking removes (no more in-place edit mode — see Dev Notes).
+  - [x] Keep the global `:focus-visible` 2px gold ring for interactive cells; do not reintroduce the per-element `onFocus/onBlur` inline outline hack unless matching the existing pattern (prefer the global ring).
 
-- [ ] **Task 3 — Build `IdolTray.tsx` with shape viz, filter, selection, and in-tray affix config (AC: 1, 2, 3)** — `lebo/src/features/idol-grid/IdolTray.tsx` (new)
-  - [ ] List all `idolData.idolTypes` as cards: a shape rectangle scaled by `rows`×`cols` (proportional, e.g. base + `cols*step` wide × `rows*step` tall) with a `W×H` label, the `displayName`, and a derived affix descriptor (e.g. join the first N `prefixPool`/`suffixPool` `displayName`s, or an affix-count summary — keep it short; this is existing data, no new stat).
-  - [ ] A filter `<input>` (controlled, component-local `useState`) narrows cards by case-insensitive name substring.
-  - [ ] Each card is a `<button>` with `aria-pressed={selectedTypeId === type.id}`; click toggles selection (`onSelect(type.id | null)`). Selected card → gold (`--color-accent-gold` border + gold-soft text + `--color-bg-hover` tint); others → `--color-bg-elevated` hairline + secondary text.
-  - [ ] When a card is selected, render the existing **`IdolAffixPicker`** below/within the tray detail in **edit mode** (omit `onConfirm`/`onCancel` so the Place/Cancel buttons don't render) wired to the container's affix-config setters via `onPrefixChange`/`onSuffixChange`. Show a "Click a valid grid cell to place" hint (and the requires-both hint when `requiresBoth` and affixes incomplete).
+- [x] **Task 3 — Build `IdolTray.tsx` with shape viz, filter, selection, and in-tray affix config (AC: 1, 2, 3)** — `lebo/src/features/idol-grid/IdolTray.tsx` (new)
+  - [x] List all `idolData.idolTypes` as cards: a shape rectangle scaled by `rows`×`cols` (proportional, e.g. base + `cols*step` wide × `rows*step` tall) with a `W×H` label, the `displayName`, and a derived affix descriptor (e.g. join the first N `prefixPool`/`suffixPool` `displayName`s, or an affix-count summary — keep it short; this is existing data, no new stat).
+  - [x] A filter `<input>` (controlled, component-local `useState`) narrows cards by case-insensitive name substring.
+  - [x] Each card is a `<button>` with `aria-pressed={selectedTypeId === type.id}`; click toggles selection (`onSelect(type.id | null)`). Selected card → gold (`--color-accent-gold` border + gold-soft text + `--color-bg-hover` tint); others → `--color-bg-elevated` hairline + secondary text.
+  - [x] When a card is selected, render the existing **`IdolAffixPicker`** below/within the tray detail in **edit mode** (omit `onConfirm`/`onCancel` so the Place/Cancel buttons don't render) wired to the container's affix-config setters via `onPrefixChange`/`onSuffixChange`. Show a "Click a valid grid cell to place" hint (and the requires-both hint when `requiresBoth` and affixes incomplete).
 
-- [ ] **Task 4 — Wire `IdolTab` to the two-pane editor; deselect on outside click (AC: 2, 5)** — `lebo/src/features/layout/tabs/IdolTab.tsx`
-  - [ ] Replace `<IdolGrid />` with the new `<IdolEditor />`; widen the container from `max-w-3xl` to fit grid + tray (e.g. a wider max-width or a two-column flex/grid). Keep the "Idols" heading + card chrome tokens.
-  - [ ] Implement **click-outside-grid deselects**: a click on the editor background (not on a tray card or grid cell) clears `selectedTypeId` (and hover/affix config). Keep it simple and accessible (no global document listeners that leak; an onClick on a wrapper that stops propagation from interactive children is sufficient).
+- [x] **Task 4 — Wire `IdolTab` to the two-pane editor; deselect on outside click (AC: 2, 5)** — `lebo/src/features/layout/tabs/IdolTab.tsx`
+  - [x] Replace `<IdolGrid />` with the new `<IdolEditor />`; widen the container from `max-w-3xl` to fit grid + tray (e.g. a wider max-width or a two-column flex/grid). Keep the "Idols" heading + card chrome tokens.
+  - [x] Implement **click-outside-grid deselects**: a click on the editor background (not on a tray card or grid cell) clears `selectedTypeId` (and hover/affix config). Keep it simple and accessible (no global document listeners that leak; an onClick on a wrapper that stops propagation from interactive children is sufficient).
 
-- [ ] **Task 5 — Rewrite the idol-editor tests to the tray-driven contract (AC: 6)** — `lebo/src/features/idol-grid/IdolGrid.test.tsx` (+ new test file if components split)
-  - [ ] Keep the store-mock harness pattern (`vi.mock` of `gameDataStore`/`buildStore`, `getState` returning `placeIdol`/`clearIdolSlot`/`resetIdolGrid`/`updateIdolAffix`, `mockIdolData` with mixed shapes incl. a `requiresBoth` 1×2 and a 1×1).
-  - [ ] **Remove** the dropdown-era tests (click-empty-cell → `Select idol type` combobox → place; Cancel-during-placement; in-place edit-mode tests). Replace with: tray cards present (one per type, with `W×H` + name); filter narrows cards; select card → `aria-pressed="true"` + affix picker appears; configure prefix (+suffix for requiresBoth) → click valid cell → `placeIdol` called with `{ idolTypeId, prefixId, prefixTier, … }`; requiresBoth with only prefix → cell click does **not** place + requires-both hint shown; click occupied cell → `clearIdolSlot(id)`; click outside grid → deselect (affix picker gone); Active Idol Stats lists placed affix text / empty state; "Reset all idols" → `resetIdolGrid`.
-  - [ ] Keep the blocked-cell assertions (5 blocked, `aria-disabled="true"`, not `BUTTON`) and the `axe` no-violations test.
+- [x] **Task 5 — Rewrite the idol-editor tests to the tray-driven contract (AC: 6)** — `lebo/src/features/idol-grid/IdolGrid.test.tsx` (+ new test file if components split)
+  - [x] Keep the store-mock harness pattern (`vi.mock` of `gameDataStore`/`buildStore`, `getState` returning `placeIdol`/`clearIdolSlot`/`resetIdolGrid`/`updateIdolAffix`, `mockIdolData` with mixed shapes incl. a `requiresBoth` 1×2 and a 1×1).
+  - [x] **Remove** the dropdown-era tests (click-empty-cell → `Select idol type` combobox → place; Cancel-during-placement; in-place edit-mode tests). Replace with: tray cards present (one per type, with `W×H` + name); filter narrows cards; select card → `aria-pressed="true"` + affix picker appears; configure prefix (+suffix for requiresBoth) → click valid cell → `placeIdol` called with `{ idolTypeId, prefixId, prefixTier, … }`; requiresBoth with only prefix → cell click does **not** place + requires-both hint shown; click occupied cell → `clearIdolSlot(id)`; click outside grid → deselect (affix picker gone); Active Idol Stats lists placed affix text / empty state; "Reset all idols" → `resetIdolGrid`.
+  - [x] Keep the blocked-cell assertions (`aria-disabled="true"`, not `BUTTON`) and the `axe` no-violations test.
 
-- [ ] **Task 6 — Verify build + suite (AC: 6)**
-  - [ ] `pnpm exec tsc --noEmit` → exit 0 (drop unused imports/locals from the removed placement flow).
-  - [ ] `CI=true pnpm exec vitest run src/features/idol-grid` → green.
-  - [ ] `CI=true pnpm exec vitest run` → **no new failures** vs the standing baseline (`ProviderSelector` / `Settings` / `SkillTreeCanvas` / `TreeControls`); no baseline file cleared or added.
-  - [ ] `pnpm build` → exit 0 (pre-existing >500 kB chunk advisory only).
+- [x] **Task 6 — Verify build + suite (AC: 6)**
+  - [x] `pnpm exec tsc --noEmit` → exit 0 (drop unused imports/locals from the removed placement flow).
+  - [x] `CI=true pnpm exec vitest run src/features/idol-grid` → green (42/42).
+  - [x] `CI=true pnpm exec vitest run` → **no new failures** vs the standing baseline (`ProviderSelector` / `Settings` / `SkillTreeCanvas` / `TreeControls`); no baseline file cleared or added.
+  - [x] `pnpm build` → exit 0 (pre-existing >500 kB chunk advisory only).
 
 ## Dev Notes
 
@@ -217,6 +217,36 @@ claude-opus-4-8 (dev-story workflow)
 
 ### Debug Log References
 
+- `IdolGrid.test.tsx:146` — `within(card).getByText(/1×2/)` threw "multiple elements" because the W×H label appears twice inside a tray card (the shape box `1×2` and the descriptor line `1×2 · …`). Both are the legitimate UX-DR11 W×H surface. Fixed the test to `getAllByText(/1×2/).length > 0` (assert presence, not uniqueness) rather than altering the source. No source defect.
+
 ### Completion Notes List
 
+**Implementation (visual + interaction rebuild only — idol data wiring untouched, per AC4):**
+- **New `IdolEditor.tsx`** container lifts placing state (`selectedTypeId`, `affixConfig`, `hoverCell`) via `useState`, reads `idolData`/`idolGrid` from the existing stores, and owns `handlePlace`→`placeIdol` / `handleRemove`→`clearIdolSlot` / `handleReset`→`resetIdolGrid`. Renders `<IdolGrid>` (left) + `<IdolTray>` (right), the **Active Idol Stats** summary (placed affix `displayName` + `T{tier}`; empty state "No idols placed."), the placed-count line, and "Reset all idols". Outer wrapper `onClick={deselect}`; both panes `stopPropagation` so background-only clicks deselect (AC2).
+- **`IdolGrid.tsx` refactored** from the `pendingCell` size-`<select>` / `configuringNew` flow into a props-driven, preview-capable grid. Data-driven from `gridConfig.rows/cols` (no hardcoded 5×4); blocked cells render as non-interactive `aria-disabled` `<div>`s. Preview footprint computed via `getCellsForPlacement` gated by `validatePlacement`; cells where the selected idol cannot originate render invalid + non-clickable; valid cells call `onPlace`; occupied head cell spans its footprint (`gridColumn/gridRow`) and calls `onRemove` (AC2/AC3). No collision math reinvented — reuses `idolGridUtils`.
+- **New `IdolTray.tsx`**: one `<button>` card per `idolData.idolTypes` with a proportional `rows×cols` shape box + `W×H` label (UX-DR11), `displayName`, derived affix descriptor (first 2 pooled affix names + "+N more"), a count chip, and a case-insensitive name **filter** input. Cards carry `aria-pressed`; selected → gold border/text + `--color-bg-hover` tint. Selected card reveals the existing **`IdolAffixPicker` in edit mode** (no `onConfirm`/`onCancel`, so Place/Cancel don't render) wired to the container's setters; shows the place hint and the requires-both hint.
+- **`IdolTab.tsx`** swapped `<IdolGrid />` → `<IdolEditor />`, widened `max-w-3xl` → `max-w-5xl` for grid + tray side-by-side; `!activeBuild` / `!idolData` guards preserved.
+- **`ContextPanel.tsx`** (dead Phase-3 consumer, never mounted) swapped its zero-prop `<IdolGrid />` → `<IdolEditor />` — a compile-fix only, since `IdolGrid` is now props-driven and would otherwise fail `tsc`. No behavior change (component is unmounted).
+- **Interaction-model trade documented in story**: in-place affix editing of a placed idol is dropped in favor of place/remove (Alec-confirmed Option A); to change a placed idol, remove and re-place. `requiresBoth` gating preserved — a cell click is a no-op until both prefix and suffix are set, surfacing the existing requires-both hint.
+
+**Source Audit:** N/A — no-new-stat / no-dead-key. Tray descriptor + Active Idol Stats re-present existing `idolData` affix data already rendered on placed cells; placed idols are produced by `placeIdol` and consumed by `toIdolPlacements`/`compute_stats`. No loader/parsing change → guardrail value+element assertion tests do not apply; component-behavior + a11y assertions (AC6) are the relevant verification.
+
+**Verification:** `tsc --noEmit` → 0. `vitest run src/features/idol-grid` → 42/42 green. Full suite → **1125 passed, 8 failed across exactly the standing baseline** (`ProviderSelector` / `Settings` / `SkillTreeCanvas` / `TreeControls`) — no new failures, no baseline file cleared or added. `pnpm build` → exit 0 (pre-existing >500 kB chunk advisory only).
+
 ### File List
+
+**New:**
+- `lebo/src/features/idol-grid/IdolEditor.tsx`
+- `lebo/src/features/idol-grid/IdolTray.tsx`
+
+**Modified:**
+- `lebo/src/features/idol-grid/IdolGrid.tsx`
+- `lebo/src/features/idol-grid/IdolGrid.test.tsx`
+- `lebo/src/features/layout/tabs/IdolTab.tsx`
+- `lebo/src/features/context-panel/ContextPanel.tsx` (compile-fix only — dead consumer)
+
+## Change Log
+
+| Date | Change |
+|------|--------|
+| 2026-06-05 | Story 2.7 implemented — idol editor rebuilt to tray + grid (FR-38, UX-DR11). New `IdolEditor` container + `IdolTray`; `IdolGrid` refactored to props-driven preview/place/remove model; `IdolTab` widened and hosts the editor. Data wiring unchanged from Phase 3. tsc 0 / idol tests 42/42 / full suite 1125 passed, 8 failed across standing baseline (no new failures) / build 0. Status → review. |
