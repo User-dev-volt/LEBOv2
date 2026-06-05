@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
+import { axe } from 'vitest-axe'
 import { useAppStore } from '../../shared/stores/appStore'
+import { useBuildStore } from '../../shared/stores/buildStore'
 import { AppHeader } from './AppHeader'
 
 vi.mock('../../shared/hooks/useUpdateCheck', () => ({
@@ -18,6 +20,7 @@ describe('AppHeader', () => {
 
   beforeEach(() => {
     useAppStore.setState({ ...initialState, currentView: 'main' }, true)
+    useBuildStore.setState({ activeBuild: null })
     vi.clearAllMocks()
     vi.mocked(getPendingUpdate).mockReturnValue(null)
   })
@@ -45,10 +48,14 @@ describe('AppHeader', () => {
     expect(screen.getByTestId('settings-button')).toBeInTheDocument()
   })
 
-  it('hides Settings button when currentView is "settings"', () => {
+  it('keeps the Settings button visible and active when currentView is "settings"', () => {
+    // FR-33 / AC1: the active nav item stays visible with the active treatment + aria-current,
+    // it is NOT hidden (supersedes the old hide-on-active behavior).
     useAppStore.setState({ currentView: 'settings' })
     render(<AppHeader />)
-    expect(screen.queryByTestId('settings-button')).toBeNull()
+    const settings = screen.getByTestId('settings-button')
+    expect(settings).toBeInTheDocument()
+    expect(settings).toHaveAttribute('aria-current', 'page')
   })
 
   it('Settings button navigates to settings view on click', () => {
@@ -170,5 +177,61 @@ describe('AppHeader', () => {
     expect(screen.getByTestId('dismiss-update-button')).toBeInTheDocument()
     expect(screen.queryByTestId('install-update-button')).toBeNull()
     expect(screen.queryByTestId('download-progress-text')).toBeNull()
+  })
+
+  // ── FR-33 navigation: order, items, active state ─────────────────────────
+
+  it('renders the four nav items in FR-33 order', () => {
+    // activeBuild set so the requiresBuild-gated Gear Optimization item shows
+    useBuildStore.setState({ activeBuild: { id: 'b1' } as never })
+    render(<AppHeader />)
+    const nav = screen.getByRole('navigation')
+    const labels = within(nav).getAllByRole('button').map((b) => b.textContent)
+    expect(labels).toEqual(['Builder', 'Complete Build Optimizer', 'Gear Optimization', 'Settings'])
+  })
+
+  it('renders the Complete Build Optimizer item as a disabled, non-navigating control', () => {
+    render(<AppHeader />)
+    const item = screen.getByTestId('complete-optimizer-button')
+    expect(item).toBeInTheDocument()
+    expect(item).toBeDisabled()
+    expect(item).toHaveAttribute('aria-disabled', 'true')
+    fireEvent.click(item)
+    expect(useAppStore.getState().currentView).toBe('main')
+  })
+
+  it('Builder button navigates to main view on click', () => {
+    useAppStore.setState({ currentView: 'settings' })
+    render(<AppHeader />)
+    fireEvent.click(screen.getByTestId('builder-button'))
+    expect(useAppStore.getState().currentView).toBe('main')
+  })
+
+  it('Gear Optimization button navigates to gear-optimization view on click', () => {
+    useBuildStore.setState({ activeBuild: { id: 'b1' } as never })
+    render(<AppHeader />)
+    fireEvent.click(screen.getByTestId('gear-optimization-button'))
+    expect(useAppStore.getState().currentView).toBe('gear-optimization')
+  })
+
+  it('marks the active nav item with aria-current="page"', () => {
+    useAppStore.setState({ currentView: 'main' })
+    render(<AppHeader />)
+    expect(screen.getByTestId('builder-button')).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByTestId('settings-button')).not.toHaveAttribute('aria-current')
+  })
+
+  it('hides Gear Optimization when activeBuild is null and shows it when set', () => {
+    render(<AppHeader />)
+    expect(screen.queryByTestId('gear-optimization-button')).toBeNull()
+
+    useBuildStore.setState({ activeBuild: { id: 'b1' } as never })
+    render(<AppHeader />)
+    expect(screen.getAllByTestId('gear-optimization-button').length).toBeGreaterThan(0)
+  })
+
+  it('header has no axe violations', async () => {
+    const { container } = render(<AppHeader />)
+    expect(await axe(container)).toHaveNoViolations()
   })
 })

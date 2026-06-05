@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-02
-last_updated: 2026-06-04 (Story 2.2 header-navigation → ready-for-dev. Header/nav-chrome only: adds Complete Build Optimizer nav item (inert — currentView union extension owned by Epic 6/Story 6.1), global Esc→Builder from full-screen views, a11y aria-current/focus-ring, and reconciles AppHeader.tsx with its ahead-of-source test spec to clear the AppHeader baseline failure. No new stat → Source Audit N/A.)
+last_updated: 2026-06-04 (Story 2.2 header-navigation → review. Implemented: FR-33 nav order with inert Complete Build Optimizer item (currentView union NOT extended — Epic 6/Story 6.1 owns that), global Esc→Builder from full-screen views, a11y aria-current/focus-ring, and AppHeader source↔test reconciliation. AppHeader cleared from the UI test baseline; tsc/build green, no new suite failures. No new stat → Source Audit N/A.)
 project: LEBOv2
 project_key: NOKEY
 tracking_system: file-system
@@ -57,7 +57,7 @@ development_status:
   # Epic 2: UI/UX Revamp — Claude Design System
   epic-2: in-progress
   2-1-design-token-reconciliation: done
-  2-2-header-navigation: ready-for-dev
+  2-2-header-navigation: review
   2-3-left-panel-build-identity-and-section-navigator: backlog
   2-4-right-panel-score-gauge-archetype-optimizer-chrome: backlog
   2-5-center-canvas-six-tab-bar-with-weaver: backlog

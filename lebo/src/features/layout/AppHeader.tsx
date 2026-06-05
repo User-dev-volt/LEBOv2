@@ -47,11 +47,37 @@ export function AppHeader() {
     await invokeCommand('restart_app')
   }
 
-  const navItems: Array<{ id: 'main' | 'gear-optimization' | 'settings'; label: string; requiresBuild?: boolean }> = [
-    { id: 'main', label: 'Builder' },
-    { id: 'gear-optimization', label: 'Gear Optimization', requiresBuild: true },
-    { id: 'settings', label: 'Settings' },
+  // FR-33 order: Builder | Complete Build Optimizer | Gear Optimization | Settings.
+  // Complete Build Optimizer is rendered separately as an inert item (see below).
+  const navItems: Array<{ id: 'main' | 'gear-optimization' | 'settings'; label: string; testid: string; requiresBuild?: boolean }> = [
+    { id: 'main', label: 'Builder', testid: 'builder-button' },
+    { id: 'gear-optimization', label: 'Gear Optimization', testid: 'gear-optimization-button', requiresBuild: true },
+    { id: 'settings', label: 'Settings', testid: 'settings-button' },
   ]
+
+  function renderNavButton(id: 'main' | 'gear-optimization' | 'settings', label: string, testid: string) {
+    const isActive = currentView === id
+    return (
+      <button
+        key={id}
+        type="button"
+        onClick={() => setCurrentView(id)}
+        data-testid={testid}
+        aria-current={isActive ? 'page' : undefined}
+        className={
+          'flex items-center h-7 px-3 rounded text-xs font-medium' +
+          (isActive ? '' : ' hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated)]')
+        }
+        style={{
+          color: isActive ? 'var(--color-accent-gold)' : 'var(--color-text-secondary)',
+          backgroundColor: isActive ? 'rgba(201,168,76,0.12)' : 'transparent',
+          transition: 'background-color 120ms, color 120ms',
+        }}
+      >
+        {label}
+      </button>
+    )
+  }
 
   return (
     <header
@@ -65,7 +91,7 @@ export function AppHeader() {
       {/* Logo */}
       <div className="flex items-baseline gap-2 shrink-0">
         <span className="font-mono font-bold text-sm tracking-wider" style={{ color: 'var(--color-accent-gold)' }}>
-          LEBO
+          LEBOv2
         </span>
         <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
           Last Epoch Build Optimizer
@@ -74,26 +100,31 @@ export function AppHeader() {
 
       {/* Nav */}
       <nav className="flex items-center gap-0.5 ml-2">
-        {navItems.map(({ id, label, requiresBuild }) => {
-          if (requiresBuild && !activeBuild) return null
-          const isActive = currentView === id
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setCurrentView(id)}
-              data-testid={id === 'settings' ? 'settings-button' : id === 'gear-optimization' ? 'gear-optimization-button' : undefined}
-              className="flex items-center h-7 px-3 rounded text-xs font-medium"
-              style={{
-                color: isActive ? 'var(--color-accent-gold)' : 'var(--color-text-secondary)',
-                backgroundColor: isActive ? 'rgba(201,168,76,0.12)' : 'transparent',
-                transition: 'background-color 120ms, color 120ms',
-              }}
-            >
-              {label}
-            </button>
-          )
-        })}
+        {renderNavButton('main', 'Builder', 'builder-button')}
+
+        {/* Epic 6 / Story 6.1 (D-P4-5) wires this: add 'complete-optimizer' to currentView union + route the view, then remove disabled. */}
+        <button
+          type="button"
+          disabled
+          aria-disabled="true"
+          data-testid="complete-optimizer-button"
+          title="Coming soon"
+          className="flex items-center h-7 px-3 rounded text-xs font-medium"
+          style={{
+            color: 'var(--color-text-muted)',
+            backgroundColor: 'transparent',
+            cursor: 'not-allowed',
+          }}
+        >
+          Complete Build Optimizer
+        </button>
+
+        {navItems
+          .filter(({ id }) => id !== 'main')
+          .map(({ id, label, testid, requiresBuild }) => {
+            if (requiresBuild && !activeBuild) return null
+            return renderNavButton(id, label, testid)
+          })}
       </nav>
 
       {/* Update banner */}
@@ -106,7 +137,7 @@ export function AppHeader() {
           {updateStatus === 'idle' && (
             <>
               <span data-testid="update-version-text">
-                {updateInfo.version} available.
+                LEBOv2 {updateInfo.version} is available.
               </span>
               <button
                 onClick={startDownload}
@@ -119,14 +150,14 @@ export function AppHeader() {
             </>
           )}
           {updateStatus === 'downloading' && (
-            <span data-testid="download-progress-text">Downloading {updateProgress}%</span>
+            <span data-testid="download-progress-text">Downloading... {updateProgress}%</span>
           )}
           {updateStatus === 'error' && (
             <span data-testid="update-error-text">Update failed.</span>
           )}
           {updateStatus === 'ready' && (
             <>
-              <span data-testid="update-ready-text">Ready to restart</span>
+              <span data-testid="update-ready-text">Update ready. Restart LEBOv2 to apply?</span>
               <button
                 onClick={installAndRestart}
                 data-testid="restart-now-button"

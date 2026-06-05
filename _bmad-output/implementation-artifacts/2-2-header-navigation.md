@@ -1,6 +1,6 @@
 # Story 2.2: Header navigation
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -59,20 +59,20 @@ This is the **second story of Epic 2 (UI/UX Revamp)**, building on the already-r
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Add the Complete Build Optimizer nav item (inert) and reorder to FR-33 (AC: 1, 3)** — `lebo/src/features/layout/AppHeader.tsx`
-  - [ ] Reorder `navItems` to FR-33 order: Builder → Complete Build Optimizer → Gear Optimization → Settings.
-  - [ ] Keep the `requiresBuild` gate on Gear Optimization (`if (requiresBuild && !activeBuild) return null`). Builder and Settings stay always-on.
-  - [ ] Render the Complete Build Optimizer item as a **disabled** button: `disabled`, `aria-disabled="true"`, `data-testid="complete-optimizer-button"`, muted color (`--color-text-muted`), `title="Coming soon"`, `cursor: not-allowed`; its `onClick` must be a no-op (do not call `setCurrentView`). Add a one-line comment: `// Epic 6 / Story 6.1 (D-P4-5) wires this: add 'complete-optimizer' to currentView union + route the view, then remove disabled.`
-  - [ ] Add `data-testid` to all four items for testability — keep the existing `settings-button` and `gear-optimization-button`; add `builder-button` and `complete-optimizer-button`.
-  - [ ] On the active item set `aria-current="page"`. Confirm the active/inactive/hover styling matches the prototype `.header-nav-item` (active gold + `rgba(201,168,76,0.12)`; inactive `--color-text-secondary`; hover `--color-text-primary` / `--color-bg-elevated`).
+- [x] **Task 1 — Add the Complete Build Optimizer nav item (inert) and reorder to FR-33 (AC: 1, 3)** — `lebo/src/features/layout/AppHeader.tsx`
+  - [x] Reorder `navItems` to FR-33 order: Builder → Complete Build Optimizer → Gear Optimization → Settings.
+  - [x] Keep the `requiresBuild` gate on Gear Optimization (`if (requiresBuild && !activeBuild) return null`). Builder and Settings stay always-on.
+  - [x] Render the Complete Build Optimizer item as a **disabled** button: `disabled`, `aria-disabled="true"`, `data-testid="complete-optimizer-button"`, muted color (`--color-text-muted`), `title="Coming soon"`, `cursor: not-allowed`; its `onClick` must be a no-op (do not call `setCurrentView`). Add a one-line comment: `// Epic 6 / Story 6.1 (D-P4-5) wires this: add 'complete-optimizer' to currentView union + route the view, then remove disabled.`
+  - [x] Add `data-testid` to all four items for testability — keep the existing `settings-button` and `gear-optimization-button`; add `builder-button` and `complete-optimizer-button`.
+  - [x] On the active item set `aria-current="page"`. Confirm the active/inactive/hover styling matches the prototype `.header-nav-item` (active gold + `rgba(201,168,76,0.12)`; inactive `--color-text-secondary`; hover `--color-text-primary` / `--color-bg-elevated`).
 
-- [ ] **Task 2 — Reconcile AppHeader source strings with the test spec (AC: 4)** — `lebo/src/features/layout/AppHeader.tsx`
-  - [ ] Logo mark: render **`LEBOv2`** (was `LEBO`). Keep the subtitle `Last Epoch Build Optimizer`.
-  - [ ] Update banner strings to match the test spec exactly (see Dev Notes table): version-available → `LEBOv2 {version} is available.` (testid `update-version-text`); downloading → `Downloading... {progress}%` (testid `download-progress-text`); ready → `Update ready. Restart LEBOv2 to apply?` (testid `update-ready-text`). Preserve all existing update-flow logic (`startDownload`, `installAndRestart`, dismiss, error, button testids).
-  - [ ] Do not alter the online/offline indicator or the `v2` version tag logic except as needed for the above (the online dot uses `--color-data-positive` / `--color-data-negative`; leave as-is).
+- [x] **Task 2 — Reconcile AppHeader source strings with the test spec (AC: 4)** — `lebo/src/features/layout/AppHeader.tsx`
+  - [x] Logo mark: render **`LEBOv2`** (was `LEBO`). Keep the subtitle `Last Epoch Build Optimizer`.
+  - [x] Update banner strings to match the test spec exactly (see Dev Notes table): version-available → `LEBOv2 {version} is available.` (testid `update-version-text`); downloading → `Downloading... {progress}%` (testid `download-progress-text`); ready → `Update ready. Restart LEBOv2 to apply?` (testid `update-ready-text`). Preserve all existing update-flow logic (`startDownload`, `installAndRestart`, dismiss, error, button testids).
+  - [x] Do not alter the online/offline indicator or the `v2` version tag logic except as needed for the above (the online dot uses `--color-data-positive` / `--color-data-negative`; leave as-is).
 
-- [ ] **Task 3 — Global `Esc` → Builder from full-screen views (AC: 2)** — `lebo/src/App.tsx`
-  - [ ] In the keydown handler's existing `if (e.key === 'Escape')` branch (currently clears preview rank + dispatches `keyboard:escape`), branch on view first:
+- [x] **Task 3 — Global `Esc` → Builder from full-screen views (AC: 2)** — `lebo/src/App.tsx`
+  - [x] In the keydown handler's existing `if (e.key === 'Escape')` branch (currently clears preview rank + dispatches `keyboard:escape`), branch on view first:
     ```ts
     if (e.key === 'Escape') {
       const { currentView, setCurrentView } = useAppStore.getState()
@@ -82,20 +82,20 @@ This is the **second story of Epic 2 (UI/UX Revamp)**, building on the already-r
       return
     }
     ```
-  - [ ] Verify the existing in-builder `Esc` behavior (preview clear + suggestion-panel collapse) is unchanged when `currentView === 'main'`.
-  - [ ] Leave the existing **"Back to Builder"** controls in `Settings.tsx` and `GearOptimizationView.tsx` intact (they already call `setCurrentView('main')`) — `Esc` is additive, not a replacement.
+  - [x] Verify the existing in-builder `Esc` behavior (preview clear + suggestion-panel collapse) is unchanged when `currentView === 'main'`.
+  - [x] Leave the existing **"Back to Builder"** controls in `Settings.tsx` and `GearOptimizationView.tsx` intact (they already call `setCurrentView('main')`) — `Esc` is additive, not a replacement.
 
-- [ ] **Task 4 — Tests: nav behavior + Esc + a11y (AC: 5)** — `lebo/src/features/layout/AppHeader.test.tsx` (+ App-level Esc test)
-  - [ ] Add tests: four items render in FR-33 order; Complete Build Optimizer is present, `disabled`, and clicking it leaves `currentView` unchanged; Builder/Gear Optimization/Settings clicks set the matching `currentView`; active item has `aria-current="page"`; Gear Optimization hidden when `activeBuild` null, shown when set (set `useBuildStore` state in the test, mirroring existing store-driven test setup).
-  - [ ] Keep/repair the existing update-banner tests — they should now pass against the reconciled strings (AC4). Do **not** weaken them to match old source; fix the source.
-  - [ ] Add an `Esc`-from-full-screen assertion: with `currentView: 'settings'`, dispatch `keydown` `Escape` and assert `currentView === 'main'`; same from `'gear-optimization'`; and assert `Esc` in `'main'` does not change the view. (If cleaner, place the Esc test alongside the App keydown handler rather than in AppHeader.test.tsx — the handler lives in `App.tsx`.)
-  - [ ] Add/keep a `vitest-axe` check on the rendered header: `expect(await axe(container)).toHaveNoViolations()`.
+- [x] **Task 4 — Tests: nav behavior + Esc + a11y (AC: 5)** — `lebo/src/features/layout/AppHeader.test.tsx` (+ App-level Esc test)
+  - [x] Add tests: four items render in FR-33 order; Complete Build Optimizer is present, `disabled`, and clicking it leaves `currentView` unchanged; Builder/Gear Optimization/Settings clicks set the matching `currentView`; active item has `aria-current="page"`; Gear Optimization hidden when `activeBuild` null, shown when set (set `useBuildStore` state in the test, mirroring existing store-driven test setup).
+  - [x] Keep/repair the existing update-banner tests — they should now pass against the reconciled strings (AC4). Do **not** weaken them to match old source; fix the source.
+  - [x] Add an `Esc`-from-full-screen assertion: with `currentView: 'settings'`, dispatch `keydown` `Escape` and assert `currentView === 'main'`; same from `'gear-optimization'`; and assert `Esc` in `'main'` does not change the view. (Placed in a new App-level test `App.keyboard.test.tsx` alongside the App keydown handler.)
+  - [x] Add/keep a `vitest-axe` check on the rendered header: `expect(await axe(container)).toHaveNoViolations()`.
 
-- [ ] **Task 5 — Verify build + suite (AC: 4, 5)**
-  - [ ] `pnpm exec tsc --noEmit` → exit 0.
-  - [ ] `CI=true pnpm exec vitest run` → AppHeader now passes; no new failures vs. the documented baseline (`RightPanel`/`ProviderSelector`/`Settings`/`SkillTreeCanvas`/`TreeControls` may remain in the baseline — AppHeader should drop out of it).
-  - [ ] `pnpm build` → exit 0.
-  - [ ] Manual sanity (commands run from `lebo/`): header shows all four items in order; Complete Build Optimizer is visibly muted/disabled and does nothing on click; Builder/Gear Opt/Settings navigate; `Esc` from Settings and from Gear Optimization returns to Builder; active item underlined/gold with `aria-current`.
+- [x] **Task 5 — Verify build + suite (AC: 4, 5)**
+  - [x] `pnpm exec tsc --noEmit` → exit 0.
+  - [x] `CI=true pnpm exec vitest run` → AppHeader now passes; no new failures vs. the documented baseline (`RightPanel`/`ProviderSelector`/`Settings`/`SkillTreeCanvas`/`TreeControls` remain in the baseline — AppHeader dropped out of it).
+  - [x] `pnpm build` → exit 0.
+  - [x] Manual sanity: verified via automated tests (four items in order; Complete Build Optimizer disabled + non-navigating; Builder/Gear Opt/Settings navigate; `Esc` from Settings and Gear Optimization returns to Builder; active item gold with `aria-current`). Interactive Tauri-window check deferred to reviewer.
 
 ## Dev Notes
 
@@ -185,10 +185,32 @@ The Claude prototype (`app.jsx:275`) does `if (e.key === "Escape") dispatch({ ty
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+claude-opus-4-8 (Claude Code — BMAD Dev Story workflow)
 
 ### Debug Log References
 
+- RED baseline (pre-change): `CI=true pnpm exec vitest run src/features/layout/AppHeader.test.tsx` → 5 failed | 9 passed. The 5 failures were the documented source↔test drift: logo `LEBO`→`LEBOv2`, `update-version-text`, `download-progress-text`, `update-ready-text`, plus the stale `hides Settings button` assertion.
+- GREEN: `CI=true pnpm exec vitest run src/features/layout/AppHeader.test.tsx src/App.keyboard.test.tsx` → 24 passed.
+- Full suite: `CI=true pnpm exec vitest run` → 9 failed | 1073 passed. The 5 failing files are exactly the documented standing baseline (`RightPanel`, `ProviderSelector`, `Settings`, `SkillTreeCanvas`, `TreeControls`); **AppHeader is no longer among them**. No new failures introduced.
+- `pnpm exec tsc --noEmit` → exit 0. `pnpm build` → exit 0 (only the pre-existing >500 kB chunk-size advisory).
+
 ### Completion Notes List
 
+- **AC1** — `navItems` reordered to FR-33 (Builder | Complete Build Optimizer | Gear Optimization | Settings). Active item keeps the gold-on-`rgba(201,168,76,0.12)` treatment; inactive `--color-text-secondary`; added hover (`--color-text-primary` / `--color-bg-elevated`) on inactive items via Tailwind arbitrary-var utilities. Gear Optimization keeps its `requiresBuild` gate; logo/update-banner/online-indicator/right cluster preserved.
+- **AC2** — `App.tsx` Esc branch now navigates to `'main'` first when `currentView !== 'main'`, before the existing preview-clear + `keyboard:escape` dispatch. In `'main'` the original behavior is untouched. Branch still sits ahead of the input-focus guard so Esc works from focused fields in full-screen views. "Back to Builder" controls in Settings/GearOptimizationView left intact.
+- **AC3** — Complete Build Optimizer rendered present-but-inert: `disabled` + `aria-disabled="true"` + muted `--color-text-muted` + `title="Coming soon"` + `cursor: not-allowed`, no `onClick`. `appStore.currentView` union deliberately **not** extended (stays `'main' | 'settings' | 'gear-optimization'`). One-line hand-off comment placed at the nav-item site for Epic 6 / Story 6.1.
+- **AC4** — Source reconciled to the ahead-of-source test spec: logo `LEBOv2`; `LEBOv2 {version} is available.`; `Downloading... {progress}%`; `Update ready. Restart LEBOv2 to apply?`. Subtitle `Last Epoch Build Optimizer` retained; all update-flow logic/testids unchanged. AppHeader moved from the failing baseline to fully passing.
+- **AC5** — Added nav/a11y tests in `AppHeader.test.tsx` (FR-33 order, inert disabled item + no-op click, Builder/Gear-Opt/Settings navigation, `aria-current="page"`, Gear-Opt gating, `vitest-axe` clean) and `App.keyboard.test.tsx` (Esc from settings → main, from gear-optimization → main, and Esc in main does not navigate). Focus ring is supplied by the global `:focus-visible` rule (`global.css`); reduced-motion is globally gated.
+- **Design reconciliation note:** the pre-existing `hides Settings button when currentView is "settings"` test encoded obsolete hide-on-active behavior that contradicts AC1 (active item stays visible + `aria-current`). It was a standing baseline failure (the old source never hid it), so it was updated to assert the AC1 behavior — not weakened.
+- **Open question for Alec (unchanged default taken):** shipped the inert nav-item default per the story. If you'd prefer the button live now, that requires landing Epic 6's `currentView += 'complete-optimizer'` + a placeholder view early — flagged but not done here.
+
 ### File List
+
+- `lebo/src/features/layout/AppHeader.tsx` — MODIFIED (FR-33 reorder; inert Complete Build Optimizer item; `renderNavButton` helper with `aria-current` + hover; logo + update-banner string reconciliation; per-item `data-testid`s)
+- `lebo/src/App.tsx` — MODIFIED (Esc branch: navigate to `'main'` from any full-screen view before existing preview-clear/`keyboard:escape` behavior)
+- `lebo/src/features/layout/AppHeader.test.tsx` — MODIFIED (added FR-33 nav, inert-item, navigation, `aria-current`, gear-gating, and axe tests; updated stale `hides Settings` test to AC1 behavior)
+- `lebo/src/App.keyboard.test.tsx` — ADDED (App-level Esc-from-full-screen navigation tests)
+
+## Change Log
+
+- 2026-06-04 — Story 2.2 implemented: FR-33 header nav (4 items in order, inert Complete Build Optimizer per Epic 6 ownership boundary), global `Esc`→Builder from full-screen views, accessibility (`aria-current`, focus ring), and AppHeader source↔test reconciliation (logo + update-banner strings). AppHeader cleared from the documented UI test baseline. tsc/build green; no new suite failures. (claude-opus-4-8)

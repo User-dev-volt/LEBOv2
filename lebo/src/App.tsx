@@ -99,6 +99,8 @@ export function App() {
 
       // Escape is safe globally — fires before the input guard
       if (e.key === 'Escape') {
+        const { currentView, setCurrentView } = useAppStore.getState()
+        if (currentView !== 'main') { setCurrentView('main'); return }   // FR-33: Esc returns to Builder from any full-screen view
         useOptimizationStore.getState().setPreviewSuggestionRank(null)
         window.dispatchEvent(new CustomEvent('keyboard:escape'))
         return
