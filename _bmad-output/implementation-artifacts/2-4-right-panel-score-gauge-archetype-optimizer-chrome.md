@@ -1,6 +1,6 @@
 # Story 2.4: Right panel — score gauge, archetype, optimizer chrome
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -252,7 +252,7 @@ claude-opus-4-8 (dev-story workflow)
 
 _Code review 2026-06-05 — adversarial: Blind Hunter + Edge Case Hunter + Acceptance Auditor (all layers passed). Acceptance Auditor verified all 7 ACs MET and the scope boundary clean. Triage: 0 decision-needed, 1 patch, 4 deferred, 7 dismissed as noise._
 
-- [ ] [Review][Patch] Add rendered zone-label assertions for the two custom-token zones — only Balanced(50)/Glass Cannon(90) are asserted end-to-end; `getArchetypeZone` unit-tests all five boundaries but the rendered slider path never exercises `--color-node-available` (Bulwark) or `--color-zone-aggressive` (Aggressive) [lebo/src/features/layout/RightPanel.test.tsx]
+- [x] [Review][Patch] Add rendered zone-label assertions for the two custom-token zones — only Balanced(50)/Glass Cannon(90) were asserted end-to-end; `getArchetypeZone` unit-tests all five boundaries but the rendered slider path never exercised `--color-node-available` (Bulwark) or `--color-zone-aggressive` (Aggressive) [lebo/src/features/layout/RightPanel.test.tsx] — APPLIED 2026-06-05: added rendered Juggernaut(10)/Bulwark(30)/Aggressive(70) assertions; RightPanel.test.tsx 30→33 passing
 - [x] [Review][Defer] Composite computed two ways — gauge averages only non-null axes (`computeComposite`); collapsed-rail divides by 3 treating null as 0, so the two disagree on a partial-null score [lebo/src/features/layout/RightPanel.tsx:69] — deferred, pre-existing (rail untouched by this story)
 - [x] [Review][Defer] `getArchetypeZone` has no input-domain guard — NaN falls through to "Glass Cannon"; out-of-range/fractional values pass silently. Store clamp (`optimizationStore.ts:136`) doesn't catch NaN/fractional from the persisted-build restore path [lebo/src/shared/utils/archetypeZone.ts:10] — deferred, low-risk (normal slider flow yields clamped integers)
 - [x] [Review][Defer] Gauge center number and `ScoreTrio` pills are unclamped while the arc clamps to 0–100 — out-of-range sub-scores (if upstream ever emits them) would print e.g. "142" against a full arc [lebo/src/features/optimization/ScoreGauge.tsx:115] — deferred, pre-existing (assumes scoring output is 0–100)

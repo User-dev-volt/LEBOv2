@@ -295,6 +295,27 @@ describe('RightPanel', () => {
     expect(screen.getByTestId('archetype-zone')).toHaveTextContent('Balanced')
   })
 
+  it('shows the Juggernaut zone at the low end', () => {
+    useBuildStore.setState({ activeBuild: MOCK_BUILD })
+    useOptimizationStore.setState({ sliderPosition: 10 })
+    render(<RightPanel />)
+    expect(screen.getByTestId('archetype-zone')).toHaveTextContent('Juggernaut')
+  })
+
+  it('shows the Bulwark zone (custom token) below mid-slider', () => {
+    useBuildStore.setState({ activeBuild: MOCK_BUILD })
+    useOptimizationStore.setState({ sliderPosition: 30 })
+    render(<RightPanel />)
+    expect(screen.getByTestId('archetype-zone')).toHaveTextContent('Bulwark')
+  })
+
+  it('shows the Aggressive zone (custom token) above mid-slider', () => {
+    useBuildStore.setState({ activeBuild: MOCK_BUILD })
+    useOptimizationStore.setState({ sliderPosition: 70 })
+    render(<RightPanel />)
+    expect(screen.getByTestId('archetype-zone')).toHaveTextContent('Aggressive')
+  })
+
   it('renders the AI Suggestions and Stat Sheet section headers', () => {
     useBuildStore.setState({ activeBuild: MOCK_BUILD })
     render(<RightPanel />)
