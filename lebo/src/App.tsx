@@ -97,10 +97,21 @@ export function App() {
         return
       }
 
-      // Escape is safe globally — fires before the input guard
       if (e.key === 'Escape') {
+        // Don't hijack Esc while a field is focused (e.g. the API-key/OpenRouter inputs in Settings) —
+        // navigating away mid-edit is more surprising than letting the field own the keystroke.
+        const escTarget = e.target as HTMLElement
+        if (
+          escTarget instanceof HTMLInputElement ||
+          escTarget instanceof HTMLTextAreaElement ||
+          escTarget.isContentEditable
+        ) return
         const { currentView, setCurrentView } = useAppStore.getState()
-        if (currentView !== 'main') { setCurrentView('main'); return }   // FR-33: Esc returns to Builder from any full-screen view
+        if (currentView !== 'main') {
+          useOptimizationStore.getState().setPreviewSuggestionRank(null)
+          setCurrentView('main')   // FR-33: Esc returns to Builder from any full-screen view
+          return
+        }
         useOptimizationStore.getState().setPreviewSuggestionRank(null)
         window.dispatchEvent(new CustomEvent('keyboard:escape'))
         return

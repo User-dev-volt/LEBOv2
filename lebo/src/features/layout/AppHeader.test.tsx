@@ -194,10 +194,11 @@ describe('AppHeader', () => {
     render(<AppHeader />)
     const item = screen.getByTestId('complete-optimizer-button')
     expect(item).toBeInTheDocument()
+    // disabled + aria-disabled IS the non-navigation guarantee — a disabled <button> never
+    // dispatches onClick (and the element carries no onClick handler at all). Asserting on a
+    // fireEvent.click here would pass trivially in jsdom regardless, so it is intentionally omitted.
     expect(item).toBeDisabled()
     expect(item).toHaveAttribute('aria-disabled', 'true')
-    fireEvent.click(item)
-    expect(useAppStore.getState().currentView).toBe('main')
   })
 
   it('Builder button navigates to main view on click', () => {
@@ -222,12 +223,12 @@ describe('AppHeader', () => {
   })
 
   it('hides Gear Optimization when activeBuild is null and shows it when set', () => {
-    render(<AppHeader />)
+    const { rerender } = render(<AppHeader />)
     expect(screen.queryByTestId('gear-optimization-button')).toBeNull()
 
     useBuildStore.setState({ activeBuild: { id: 'b1' } as never })
-    render(<AppHeader />)
-    expect(screen.getAllByTestId('gear-optimization-button').length).toBeGreaterThan(0)
+    rerender(<AppHeader />)
+    expect(screen.getByTestId('gear-optimization-button')).toBeInTheDocument()
   })
 
   it('header has no axe violations', async () => {

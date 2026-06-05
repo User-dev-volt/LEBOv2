@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { useAppStore } from '../../shared/stores/appStore'
 import { useBuildStore } from '../../shared/stores/buildStore'
 import { getPendingUpdate } from '../../shared/hooks/useUpdateCheck'
@@ -98,33 +99,34 @@ export function AppHeader() {
         </span>
       </div>
 
-      {/* Nav */}
+      {/* Nav — single source: navItems; the inert Complete Build Optimizer is injected after Builder (FR-33 order). */}
       <nav className="flex items-center gap-0.5 ml-2">
-        {renderNavButton('main', 'Builder', 'builder-button')}
-
-        {/* Epic 6 / Story 6.1 (D-P4-5) wires this: add 'complete-optimizer' to currentView union + route the view, then remove disabled. */}
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          data-testid="complete-optimizer-button"
-          title="Coming soon"
-          className="flex items-center h-7 px-3 rounded text-xs font-medium"
-          style={{
-            color: 'var(--color-text-muted)',
-            backgroundColor: 'transparent',
-            cursor: 'not-allowed',
-          }}
-        >
-          Complete Build Optimizer
-        </button>
-
-        {navItems
-          .filter(({ id }) => id !== 'main')
-          .map(({ id, label, testid, requiresBuild }) => {
-            if (requiresBuild && !activeBuild) return null
-            return renderNavButton(id, label, testid)
-          })}
+        {navItems.map(({ id, label, testid, requiresBuild }) => {
+          if (requiresBuild && !activeBuild) return null
+          return (
+            <Fragment key={id}>
+              {renderNavButton(id, label, testid)}
+              {/* Epic 6 / Story 6.1 (D-P4-5) wires this: add 'complete-optimizer' to currentView union + route the view, then remove disabled. */}
+              {id === 'main' && (
+                <button
+                  type="button"
+                  disabled
+                  aria-disabled="true"
+                  data-testid="complete-optimizer-button"
+                  title="Coming soon"
+                  className="flex items-center h-7 px-3 rounded text-xs font-medium"
+                  style={{
+                    color: 'var(--color-text-muted)',
+                    backgroundColor: 'transparent',
+                    cursor: 'not-allowed',
+                  }}
+                >
+                  Complete Build Optimizer
+                </button>
+              )}
+            </Fragment>
+          )
+        })}
       </nav>
 
       {/* Update banner */}
