@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Review the generated story file at `_bmad-output/implementation-artifacts/2-4-right-panel-score-gauge-archetype-optimizer-chrome.md`, then run `dev-story` to begin implementation.
+-
 
 ---
 
