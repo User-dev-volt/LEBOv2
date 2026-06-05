@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-- User confirms parallel review proceed → launch three adversarial layers (Blind Hunter, Edge Case Hunter, Acceptance Auditor)
+Move Story 2.7 from `review` → `merged` once peer review + QA pass; no technical blockers remain.
 
 ---
 
