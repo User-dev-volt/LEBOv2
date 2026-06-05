@@ -1,77 +1,40 @@
 import { useAppStore, type CenterTab } from '../../shared/stores/appStore'
 import { useBuildStore } from '../../shared/stores/buildStore'
 import { useGameDataStore } from '../../shared/stores/gameDataStore'
+import { getSectionStatus } from '../../shared/utils/buildSectionStatus'
+import { showInfoToast } from '../../shared/components/Toast'
 import { saveBuild } from '../build-manager/buildPersistence'
 import { SavedBuildsList } from '../build-manager/SavedBuildsList'
-import { BuildImportInput } from '../build-manager/BuildImportInput'
 import { PanelCollapseToggle } from './PanelCollapseToggle'
+import { ClassGlyph } from './ClassGlyph'
 import { ClassMasterySelector } from '../skill-tree/ClassMasterySelector'
 
-interface NavRow {
-  id: CenterTab
-  label: string
-  getCount: (b: ReturnType<typeof useBuildStore.getState>['activeBuild']) => string
-  full?: (b: ReturnType<typeof useBuildStore.getState>['activeBuild']) => boolean
-}
-
-const NAV_ROWS: NavRow[] = [
-  {
-    id: 'tree',
-    label: 'Skill Trees',
-    getCount: (b) => {
-      if (!b) return '0 pts'
-      const pts = Object.values(b.nodeAllocations).reduce((s, v) => s + v, 0)
-      return `${pts} pts`
-    },
-  },
-  {
-    id: 'gear',
-    label: 'Gear',
-    getCount: (b) => {
-      if (!b) return '0/11'
-      const filled = (b.contextData.gear ?? []).filter((g) => g.itemName.trim() !== '').length
-      return `${filled}/11`
-    },
-    full: (b) => {
-      if (!b) return false
-      return (b.contextData.gear ?? []).filter((g) => g.itemName.trim() !== '').length === 11
-    },
-  },
-  {
-    id: 'skill',
-    label: 'Active Skills',
-    getCount: (b) => {
-      if (!b) return '0/5'
-      const filled = (b.contextData.skills ?? []).filter((s) => s.skillName.trim() !== '').length
-      return `${filled}/5`
-    },
-    full: (b) => {
-      if (!b) return false
-      return (b.contextData.skills ?? []).filter((s) => s.skillName.trim() !== '').length === 5
-    },
-  },
-  {
-    id: 'idol',
-    label: 'Idols',
-    getCount: (b) => {
-      if (!b) return '0 placed'
-      return `${(b.idolGrid ?? []).length} placed`
-    },
-  },
-  {
-    id: 'blessing',
-    label: 'Blessings',
-    getCount: (b) => {
-      if (!b) return '0/5'
-      const filled = Object.values(b.blessings ?? {}).filter((v) => v !== null).length
-      return `${filled}/5`
-    },
-    full: (b) => {
-      if (!b) return false
-      return Object.values(b.blessings ?? {}).filter((v) => v !== null).length === 5
-    },
-  },
+const NAV_ROWS: { id: CenterTab; label: string }[] = [
+  { id: 'tree', label: 'Skill Trees' },
+  { id: 'gear', label: 'Gear' },
+  { id: 'skill', label: 'Active Skills' },
+  { id: 'idol', label: 'Idols' },
+  { id: 'blessing', label: 'Blessings' },
 ]
+
+function CheckGlyph() {
+  return (
+    <svg
+      width={12}
+      height={12}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="var(--color-accent-gold)"
+      strokeWidth={2.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="shrink-0"
+    >
+      <path d="M5 12l4 5L19 6" />
+    </svg>
+  )
+}
 
 export function LeftPanel() {
   const isCollapsed = useAppStore((s) => s.activePanel.left === 'collapsed')
@@ -83,10 +46,16 @@ export function LeftPanel() {
   const gameData = useGameDataStore((s) => s.gameData)
 
   const selectedClass = selectedClassId && gameData ? gameData.classes[selectedClassId] : null
+  const sections = getSectionStatus(activeBuild)
 
   async function handleSave() {
     if (!activeBuild) return
     await saveBuild(activeBuild)
+  }
+
+  function handleImportCharacter() {
+    // Epic 7 / Story 7.1 wires this: replace the toast with the Character Import modal open.
+    showInfoToast('Character import is coming soon.')
   }
 
   if (isCollapsed) {
@@ -160,21 +129,20 @@ export function LeftPanel() {
               style={{ backgroundColor: 'var(--color-bg-elevated)', border: '1px solid rgba(255,255,255,0.06)' }}
             >
               <div
-                className="w-8 h-8 flex items-center justify-center rounded text-xs font-mono shrink-0"
+                className="w-8 h-8 flex items-center justify-center rounded shrink-0"
                 style={{
                   backgroundColor: 'var(--color-bg-base)',
                   border: '1px solid var(--color-accent-gold-dim)',
-                  color: 'var(--color-accent-gold)',
                 }}
               >
-                {selectedClass.className.slice(0, 2).toUpperCase()}
+                <ClassGlyph classId={activeBuild.classId} />
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold truncate" style={{ color: 'var(--color-text-primary)' }}>
                   {activeBuild.name}
                 </p>
                 <p className="text-[10px] uppercase tracking-wide truncate" style={{ color: 'var(--color-accent-gold)' }}>
-                  {selectedClass.className} · {activeBuild.masteryId}
+                  {selectedClass.className} · {selectedClass.masteries[activeBuild.masteryId]?.masteryName ?? activeBuild.masteryId}
                 </p>
               </div>
             </div>
@@ -197,28 +165,29 @@ export function LeftPanel() {
           <div className="flex flex-col gap-0.5">
             {NAV_ROWS.map((row) => {
               const isActive = centerTab === row.id
-              const count = row.getCount(activeBuild)
-              const isFull = row.full?.(activeBuild) ?? false
+              const status = sections[row.id]
               return (
                 <button
                   key={row.id}
                   type="button"
                   onClick={() => setCenterTab(row.id)}
-                  className="flex items-center gap-2.5 px-2.5 py-2 rounded text-left w-full"
+                  aria-current={isActive ? 'true' : undefined}
+                  className="flex items-center gap-2 px-2.5 py-2 rounded text-left w-full"
                   style={{
                     backgroundColor: isActive ? 'rgba(201,168,76,0.12)' : 'transparent',
                     border: `1px solid ${isActive ? 'rgba(201,168,76,0.25)' : 'transparent'}`,
                     transition: 'background-color 120ms',
                   }}
                 >
-                  <span className="flex-1 text-xs font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                  <span className="text-xs font-medium" style={{ color: 'var(--color-text-primary)' }}>
                     {row.label}
                   </span>
+                  {status.done && <CheckGlyph />}
                   <span
-                    className="text-[10px] font-mono shrink-0"
-                    style={{ color: isFull ? 'var(--color-data-positive)' : isActive ? 'var(--color-accent-gold-soft)' : 'var(--color-text-muted)' }}
+                    className="ml-auto text-[10px] font-mono shrink-0"
+                    style={{ color: status.full ? 'var(--color-data-positive)' : isActive ? 'var(--color-accent-gold-soft)' : 'var(--color-text-muted)' }}
                   >
-                    {count}
+                    {status.count}
                   </span>
                 </button>
               )
@@ -244,8 +213,20 @@ export function LeftPanel() {
           </button>
         )}
 
-        {/* Import */}
-        <BuildImportInput />
+        {/* Import character */}
+        <button
+          type="button"
+          data-testid="import-character-button"
+          className="w-full py-2 rounded text-sm font-semibold"
+          style={{
+            backgroundColor: 'transparent',
+            color: 'var(--color-accent-gold)',
+            border: '1px solid var(--color-accent-gold-dim)',
+          }}
+          onClick={handleImportCharacter}
+        >
+          Import Character
+        </button>
 
         <div style={{ height: 1, backgroundColor: 'var(--color-bg-elevated)' }} />
 

@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-02
-last_updated: 2026-06-04 (Story 2.3 left-panel-build-identity-and-section-navigator → ready-for-dev via create-story. Extension/reconciliation of existing LeftPanel.tsx: full 5-class ClassGlyph set (Alec's call), gold gate-threshold checkmarks single-sourced for Epic 6 CompletenessGate reuse, mastery display-name subtitle, "Paste build code" → enabled Import Character button with "coming soon" toast open-intent seam (Epic 7/Story 7.1 wires the modal), gold-when-!isPersisted Save confirmed, new LeftPanel.test.tsx + axe. Source Audit: N/A (no new stat). Scope boundary: CenterTab union unchanged — no Weaver row (Story 2.5); no Character Import modal (Epic 7).)
+last_updated: 2026-06-04 (Story 2.3 → review via dev-story: ClassGlyph 5-class set, mastery display-name subtitle, navigator gold gate-threshold checkmarks single-sourced in shared/utils/buildSectionStatus.ts, Import Character button replaces BuildImportInput (deleted), new LeftPanel.test.tsx 11 tests + axe; tsc/build 0, no new test failures vs baseline. Originally: ready-for-dev via create-story. Extension/reconciliation of existing LeftPanel.tsx: full 5-class ClassGlyph set (Alec's call), gold gate-threshold checkmarks single-sourced for Epic 6 CompletenessGate reuse, mastery display-name subtitle, "Paste build code" → enabled Import Character button with "coming soon" toast open-intent seam (Epic 7/Story 7.1 wires the modal), gold-when-!isPersisted Save confirmed, new LeftPanel.test.tsx + axe. Source Audit: N/A (no new stat). Scope boundary: CenterTab union unchanged — no Weaver row (Story 2.5); no Character Import modal (Epic 7).)
 project: LEBOv2
 project_key: NOKEY
 tracking_system: file-system
@@ -58,7 +58,7 @@ development_status:
   epic-2: in-progress
   2-1-design-token-reconciliation: done
   2-2-header-navigation: done
-  2-3-left-panel-build-identity-and-section-navigator: ready-for-dev
+  2-3-left-panel-build-identity-and-section-navigator: review
   2-4-right-panel-score-gauge-archetype-optimizer-chrome: backlog
   2-5-center-canvas-six-tab-bar-with-weaver: backlog
   2-6-blessing-editor-card-grid: backlog

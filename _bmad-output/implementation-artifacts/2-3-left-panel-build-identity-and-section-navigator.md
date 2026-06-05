@@ -1,6 +1,6 @@
 # Story 2.3: Left panel — build identity and section navigator
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -73,42 +73,42 @@ This is the **third story of Epic 2 (UI/UX Revamp)**, building on the reconciled
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — `ClassGlyph` component: full 5-class gold SVG glyph set (AC: 1)** — NEW `lebo/src/features/layout/ClassGlyph.tsx`
-  - [ ] Create `export function ClassGlyph({ classId, size = 18 }: { classId: string; size?: number })` returning an inline `<svg>` (24×24 viewBox, `stroke="var(--color-accent-gold)"`, `fill="none"` baseline) selected by `classId`.
-  - [ ] Provide one **distinct, abstract, original** glyph per base class — keys: `acolyte`, `mage`, `primalist`, `rogue`, `sentinel` — plus a generic circle fallback for any unknown id. **No game-derived/ripped imagery** (the prototype `icons.jsx` header rule: "abstract, original shapes, no game-derived imagery"). Suggested motifs (dev may refine the exact paths): acolyte = skull/necro (reuse the prototype `glyph-skull` path as a starting point), mage = radiant orb/4-point star, primalist = claw/leaf, rogue = crossed daggers, sentinel = shield/cross.
-  - [ ] Named export only, no default; co-located in the `layout/` feature folder; group imports external → shared → feature-local.
-  - [ ] Reference paths: prototype glyphs `glyph-acolyte` and `glyph-skull` at `_bmad-output/last-epoch-build-optimizer-UI-Handoff/icons.jsx:139-151` (read-only reference — recreate, do not import prototype JSX).
+- [x] **Task 1 — `ClassGlyph` component: full 5-class gold SVG glyph set (AC: 1)** — NEW `lebo/src/features/layout/ClassGlyph.tsx`
+  - [x] Create `export function ClassGlyph({ classId, size = 18 }: { classId: string; size?: number })` returning an inline `<svg>` (24×24 viewBox, `stroke="var(--color-accent-gold)"`, `fill="none"` baseline) selected by `classId`.
+  - [x] Provide one **distinct, abstract, original** glyph per base class — keys: `acolyte`, `mage`, `primalist`, `rogue`, `sentinel` — plus a generic circle fallback for any unknown id. **No game-derived/ripped imagery** (the prototype `icons.jsx` header rule: "abstract, original shapes, no game-derived imagery"). Suggested motifs (dev may refine the exact paths): acolyte = skull/necro (reuse the prototype `glyph-skull` path as a starting point), mage = radiant orb/4-point star, primalist = claw/leaf, rogue = crossed daggers, sentinel = shield/cross.
+  - [x] Named export only, no default; co-located in the `layout/` feature folder; group imports external → shared → feature-local.
+  - [x] Reference paths: prototype glyphs `glyph-acolyte` and `glyph-skull` at `_bmad-output/last-epoch-build-optimizer-UI-Handoff/icons.jsx:139-151` (read-only reference — recreate, do not import prototype JSX).
 
-- [ ] **Task 2 — Wire `ClassGlyph` + mastery display name into the Active Build card (AC: 1)** — `lebo/src/features/layout/LeftPanel.tsx`
-  - [ ] Replace the current 2-letter initials mark (`selectedClass.className.slice(0, 2).toUpperCase()`) with `<ClassGlyph classId={activeBuild.classId} />` inside the existing gold-bordered mark container (keep the container's `--color-bg-base` background + `--color-accent-gold-dim` border styling).
-  - [ ] Change the subtitle from `{selectedClass.className} · {activeBuild.masteryId}` to use the mastery **display name**: resolve `const masteryName = selectedClass.masteries[activeBuild.masteryId]?.masteryName ?? activeBuild.masteryId` and render `{selectedClass.className} · {masteryName}`.
+- [x] **Task 2 — Wire `ClassGlyph` + mastery display name into the Active Build card (AC: 1)** — `lebo/src/features/layout/LeftPanel.tsx`
+  - [x] Replace the current 2-letter initials mark (`selectedClass.className.slice(0, 2).toUpperCase()`) with `<ClassGlyph classId={activeBuild.classId} />` inside the existing gold-bordered mark container (keep the container's `--color-bg-base` background + `--color-accent-gold-dim` border styling).
+  - [x] Change the subtitle from `{selectedClass.className} · {activeBuild.masteryId}` to use the mastery **display name**: resolve `const masteryName = selectedClass.masteries[activeBuild.masteryId]?.masteryName ?? activeBuild.masteryId` and render `{selectedClass.className} · {masteryName}`.
 
-- [ ] **Task 3 — Gate-threshold checkmarks + single-source thresholds (AC: 3, 4)** — `lebo/src/features/layout/LeftPanel.tsx` (+ optional NEW `lebo/src/shared/utils/buildSectionStatus.ts`)
-  - [ ] Define the per-section **gate-threshold (`done`) predicates**: Skill Trees → `passivePts >= 1`; Gear → `filledGear === 11`; Active Skills → `filledSkills >= 2`; Idols → `placedIdols >= 1`; Blessings → `filledBlessings >= 1`. Keep the existing `full`/count-color predicates as-is (they are a separate visual signal).
-  - [ ] **Recommended:** extract these threshold predicates (and the fill-count derivations) into `shared/utils/buildSectionStatus.ts` — e.g. `getSectionStatus(build): Record<CenterTab, { count: string; full: boolean; done: boolean }>` — so Epic 6's `CompletenessGate.tsx` (FR-22) reuses the exact same thresholds and the two can never drift. If you keep them inline instead, add a comment naming Epic 6 as the reuse consumer. (Lives in `shared/utils` because it is cross-feature: LeftPanel + future Epic 6.)
-  - [ ] In each navigator row, render the **`check` glyph** (path `M5 12l4 5L19 6`, `stroke="var(--color-accent-gold)"`, ~12px) adjacent to the label **iff** the row's `done` predicate is true. Below threshold → no checkmark.
-  - [ ] Keep `aria-current` (or the established active marker) on the row matching `centerTab`; keep `onClick={() => setCenterTab(row.id)}`.
+- [x] **Task 3 — Gate-threshold checkmarks + single-source thresholds (AC: 3, 4)** — `lebo/src/features/layout/LeftPanel.tsx` (+ optional NEW `lebo/src/shared/utils/buildSectionStatus.ts`)
+  - [x] Define the per-section **gate-threshold (`done`) predicates**: Skill Trees → `passivePts >= 1`; Gear → `filledGear === 11`; Active Skills → `filledSkills >= 2`; Idols → `placedIdols >= 1`; Blessings → `filledBlessings >= 1`. Keep the existing `full`/count-color predicates as-is (they are a separate visual signal).
+  - [x] **Recommended:** extract these threshold predicates (and the fill-count derivations) into `shared/utils/buildSectionStatus.ts` — e.g. `getSectionStatus(build): Record<CenterTab, { count: string; full: boolean; done: boolean }>` — so Epic 6's `CompletenessGate.tsx` (FR-22) reuses the exact same thresholds and the two can never drift. If you keep them inline instead, add a comment naming Epic 6 as the reuse consumer. (Lives in `shared/utils` because it is cross-feature: LeftPanel + future Epic 6.)
+  - [x] In each navigator row, render the **`check` glyph** (path `M5 12l4 5L19 6`, `stroke="var(--color-accent-gold)"`, ~12px) adjacent to the label **iff** the row's `done` predicate is true. Below threshold → no checkmark.
+  - [x] Keep `aria-current` (or the established active marker) on the row matching `centerTab`; keep `onClick={() => setCenterTab(row.id)}`.
 
-- [ ] **Task 4 — Replace "Paste build code" with the Import Character button (AC: 5)** — `lebo/src/features/layout/LeftPanel.tsx` (+ remove `BuildImportInput`)
-  - [ ] Remove the `<BuildImportInput />` usage and its import from `LeftPanel.tsx`.
-  - [ ] Add an **enabled** full-width **Import Character** button (`data-testid="import-character-button"`, gold-outline/secondary styling per the prototype's import affordance) wired to `handleImportCharacter`.
-  - [ ] Implement `handleImportCharacter` to call `showInfoToast('Character import is coming soon.')` (import from `../../shared/components/Toast`), and add the comment: `// Epic 7 / Story 7.1 wires this: replace the toast with the Character Import modal open.`
-  - [ ] Verify no other module references `BuildImportInput` (grep first). If `LeftPanel` is the only consumer, **delete** `lebo/src/features/build-manager/BuildImportInput.tsx` (and any co-located test); if there are other consumers, leave the file and only detach it from LeftPanel.
+- [x] **Task 4 — Replace "Paste build code" with the Import Character button (AC: 5)** — `lebo/src/features/layout/LeftPanel.tsx` (+ remove `BuildImportInput`)
+  - [x] Remove the `<BuildImportInput />` usage and its import from `LeftPanel.tsx`.
+  - [x] Add an **enabled** full-width **Import Character** button (`data-testid="import-character-button"`, gold-outline/secondary styling per the prototype's import affordance) wired to `handleImportCharacter`.
+  - [x] Implement `handleImportCharacter` to call `showInfoToast('Character import is coming soon.')` (import from `../../shared/components/Toast`), and add the comment: `// Epic 7 / Story 7.1 wires this: replace the toast with the Character Import modal open.`
+  - [x] Verify no other module references `BuildImportInput` (grep first). If `LeftPanel` is the only consumer, **delete** `lebo/src/features/build-manager/BuildImportInput.tsx` (and any co-located test); if there are other consumers, leave the file and only detach it from LeftPanel.
 
-- [ ] **Task 5 — Confirm Save button gold-when-unsaved; collapsed-rail parity (AC: 3)** — `lebo/src/features/layout/LeftPanel.tsx`
-  - [ ] Keep the Save button keyed on `activeBuild.isPersisted` (gold `--color-accent-gold` + "Save Build" when `!isPersisted`; muted + "Saved" when `isPersisted`). `!isPersisted` **is** the canonical "unsaved changes" signal (see Dev Notes "Dirty-state is `!isPersisted`"). Do not invent a separate dirty flag.
-  - [ ] `handleSave` stays `await saveBuild(activeBuild)` — `saveBuild` already calls `setActiveBuildPersisted()` (no extra call needed).
-  - [ ] Collapsed-rail (48px) section icons: keep the existing behavior; matching them to the new glyph aesthetic is optional polish, not required by an AC. Do not regress the collapsed toggle.
+- [x] **Task 5 — Confirm Save button gold-when-unsaved; collapsed-rail parity (AC: 3)** — `lebo/src/features/layout/LeftPanel.tsx`
+  - [x] Keep the Save button keyed on `activeBuild.isPersisted` (gold `--color-accent-gold` + "Save Build" when `!isPersisted`; muted + "Saved" when `isPersisted`). `!isPersisted` **is** the canonical "unsaved changes" signal (see Dev Notes "Dirty-state is `!isPersisted`"). Do not invent a separate dirty flag.
+  - [x] `handleSave` stays `await saveBuild(activeBuild)` — `saveBuild` already calls `setActiveBuildPersisted()` (no extra call needed).
+  - [x] Collapsed-rail (48px) section icons: keep the existing behavior; matching them to the new glyph aesthetic is optional polish, not required by an AC. Do not regress the collapsed toggle.
 
-- [ ] **Task 6 — Tests + a11y (AC: 6)** — NEW `lebo/src/features/layout/LeftPanel.test.tsx`
-  - [ ] Seed stores in `beforeEach` (snapshot + restore pattern, mirroring `AppHeader.test.tsx`): set `useGameDataStore` with a minimal `gameData.classes` containing one class (e.g. `acolyte` with a mastery), and `useBuildStore` with `selectedClassId`, `selectedMasteryId`, and an `activeBuild` (use `createBuild` or a hand-built `BuildState` with `schemaVersion: 2`). Mock Tauri IPC (`vi.mock('../../shared/utils/invokeCommand', ...)`) and the Toast module so `showInfoToast` is observable.
-  - [ ] Assertions: class glyph renders (an `<svg>` inside the card / by role or testid); name + `{className} · {masteryName}` subtitle present; all 5 navigator rows render with correct counts; Gear at 11/11 shows a checkmark and Active Skills with 1 slot does **not** while ≥2 does; clicking a row updates `useAppStore.getState().centerTab`; Save button reflects `isPersisted` (gold "Save Build" vs "Saved"); Import Character button present + enabled, click fires `showInfoToast` and leaves `centerTab`/`currentView`/`activeBuild` unchanged; `expect(await axe(container)).toHaveNoViolations()`.
-  - [ ] Do **not** create a separate vitest config or duplicate the four `test-setup.ts` stubs (jest-dom, vitest-axe, ResizeObserver, matchMedia).
+- [x] **Task 6 — Tests + a11y (AC: 6)** — NEW `lebo/src/features/layout/LeftPanel.test.tsx`
+  - [x] Seed stores in `beforeEach` (snapshot + restore pattern, mirroring `AppHeader.test.tsx`): set `useGameDataStore` with a minimal `gameData.classes` containing one class (e.g. `acolyte` with a mastery), and `useBuildStore` with `selectedClassId`, `selectedMasteryId`, and an `activeBuild` (use `createBuild` or a hand-built `BuildState` with `schemaVersion: 2`). Mock Tauri IPC (`vi.mock('../../shared/utils/invokeCommand', ...)`) and the Toast module so `showInfoToast` is observable.
+  - [x] Assertions: class glyph renders (an `<svg>` inside the card / by role or testid); name + `{className} · {masteryName}` subtitle present; all 5 navigator rows render with correct counts; Gear at 11/11 shows a checkmark and Active Skills with 1 slot does **not** while ≥2 does; clicking a row updates `useAppStore.getState().centerTab`; Save button reflects `isPersisted` (gold "Save Build" vs "Saved"); Import Character button present + enabled, click fires `showInfoToast` and leaves `centerTab`/`currentView`/`activeBuild` unchanged; `expect(await axe(container)).toHaveNoViolations()`.
+  - [x] Do **not** create a separate vitest config or duplicate the four `test-setup.ts` stubs (jest-dom, vitest-axe, ResizeObserver, matchMedia).
 
-- [ ] **Task 7 — Verify build + suite (AC: 6)**
-  - [ ] `pnpm exec tsc --noEmit` → exit 0 (watch `noUnusedLocals`/`noUnusedParameters` — remove the `BuildImportInput` import).
-  - [ ] `CI=true pnpm exec vitest run` → `LeftPanel.test.tsx` passes; no new failures vs. the documented baseline (`RightPanel`/`ProviderSelector`/`Settings`/`SkillTreeCanvas`/`TreeControls`).
-  - [ ] `pnpm build` → exit 0 (only the pre-existing >500 kB chunk-size advisory is acceptable).
+- [x] **Task 7 — Verify build + suite (AC: 6)**
+  - [x] `pnpm exec tsc --noEmit` → exit 0 (watch `noUnusedLocals`/`noUnusedParameters` — remove the `BuildImportInput` import).
+  - [x] `CI=true pnpm exec vitest run` → `LeftPanel.test.tsx` passes; no new failures vs. the documented baseline (`RightPanel`/`ProviderSelector`/`Settings`/`SkillTreeCanvas`/`TreeControls`).
+  - [x] `pnpm build` → exit 0 (only the pre-existing >500 kB chunk-size advisory is acceptable).
 
 ## Dev Notes
 
@@ -196,12 +196,32 @@ Mirrors Story 2.2's "present-but-not-yet-wired control" pattern, but Alec chose 
 
 ### Agent Model Used
 
+claude-opus-4-8 (dev-story workflow)
+
 ### Debug Log References
+
+- `pnpm exec tsc --noEmit` → exit 0
+- `CI=true pnpm exec vitest run src/features/layout/LeftPanel.test.tsx` → 11 passed
+- `CI=true pnpm exec vitest run` → 1084 passed, 9 failed across exactly the 5 documented-baseline files (`RightPanel`/`ProviderSelector`/`Settings`/`SkillTreeCanvas`/`TreeControls`); `LeftPanel.test.tsx` passes and did not join the baseline.
+- `pnpm build` → exit 0 (only the pre-existing >500 kB chunk-size advisory)
 
 ### Completion Notes List
 
+- **AC1** — Active Build card now renders `<ClassGlyph classId={activeBuild.classId} />` (full 5-class gold SVG set + generic fallback) in the gold-bordered mark container, and the subtitle resolves the mastery **display name** via `selectedClass.masteries[activeBuild.masteryId]?.masteryName ?? activeBuild.masteryId` → `{className} · {masteryName}`.
+- **AC2** — `ClassMasterySelector` and `SavedBuildsList` retained, on-palette (tokens only); no behavior change.
+- **AC3/AC4** — Navigator now drives counts/full/done from the new single-source `shared/utils/buildSectionStatus.ts` (`getSectionStatus(build)`), so Epic 6's `CompletenessGate` (FR-22) can reuse the identical thresholds. Gold `check` glyph (path `M5 12l4 5L19 6`, `aria-hidden`) renders iff a row's gate `done` predicate is true (Skill Trees ≥1 pt; Gear 11/11; Active Skills ≥2; Idols ≥1; Blessings ≥1). Active row carries `aria-current="true"` + gold tint; `onClick` calls `setCenterTab(row.id)`. CenterTab union untouched (no Weaver row).
+- **AC5** — `BuildImportInput` ("Paste build code" textarea) removed from `LeftPanel` and the file deleted (LeftPanel was its only active consumer; no co-located test existed). Replaced by an enabled full-width **Import Character** button (`data-testid="import-character-button"`, gold-outline) wired to `handleImportCharacter`, which fires `showInfoToast('Character import is coming soon.')` with the Epic 7 / Story 7.1 hand-off comment. Click does not mutate build/view/tab (asserted in test).
+- **AC6** — New `LeftPanel.test.tsx` (11 tests) covers identity + subtitle, all 5 navigator rows + counts, Gear 11/11 checkmark, Active Skills 1→no-check / 2→check, row click → `centerTab`, `aria-current`, Save gold/"Save Build" vs "Saved", Import Character enabled + toast + no mutation, and `vitest-axe` (zero violations). Save button kept on `!isPersisted` (canonical dirty signal); no new dirty flag, no new dependency, no store schema change.
+
 ### File List
+
+- `lebo/src/features/layout/ClassGlyph.tsx` (new)
+- `lebo/src/shared/utils/buildSectionStatus.ts` (new)
+- `lebo/src/features/layout/LeftPanel.tsx` (modified)
+- `lebo/src/features/layout/LeftPanel.test.tsx` (new)
+- `lebo/src/features/build-manager/BuildImportInput.tsx` (deleted)
 
 ## Change Log
 
+- 2026-06-04 — Story 2.3 implemented (review): `ClassGlyph` 5-class gold glyph set, mastery display-name subtitle, navigator gold gate-threshold checkmarks single-sourced via new `shared/utils/buildSectionStatus.ts`, `aria-current` on active row, "Paste build code" → enabled Import Character button (coming-soon toast, Epic 7/7.1 seam), `BuildImportInput.tsx` deleted, new `LeftPanel.test.tsx` (11 tests, axe clean). tsc 0 / build 0 / no new test failures vs baseline.
 - 2026-06-04 — Story 2.3 drafted (ready-for-dev): left-panel build identity + section navigator. Extension/reconciliation of the existing `LeftPanel.tsx` — full 5-class `ClassGlyph` set (Alec's call), gold gate-threshold checkmarks (single-sourced for Epic 6 reuse), mastery display-name subtitle, "Paste build code" → enabled Import Character button with a "coming soon" toast open-intent seam (Epic 7/Story 7.1 wires the modal), confirmed gold-when-`!isPersisted` Save, and a new `LeftPanel.test.tsx` + axe. No new stat (Source Audit: N/A). Scope boundary: `CenterTab` unchanged (no Weaver row — Story 2.5); no Character Import modal (Epic 7).
