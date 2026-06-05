@@ -1,5 +1,5 @@
 # generated: 2026-06-02
-# last_updated: 2026-06-05 (2-6 → ready-for-dev via create-story: blessing editor card grid, FR-37, visual rebuild only)
+# last_updated: 2026-06-05 (2-6 → review via dev-story: blessing editor card grid (FR-37, visual rebuild only). BlessingsPanel rebuilt per-timeline dropdown+search → two-column card grid (gridTemplateColumns 1fr 1fr); one BlessingCard per timeline (12 timelines × 4), header gold when active; inline <button> OptionRows incl. leading None row preserving setBlessing(timelineId,null) clear path; active row gold border+gold-soft text+bg-hover tint + aria-pressed (color-independent selection), active card gold-dim border; per-row statEffects summary via extracted formatStatEffects() (existing data re-presented, no parse change); removed useState/search/<select>; fixed undefined var(--color-border)→--color-bg-elevated; Dismiss now uses global :focus-visible ring. BlessingTab Blessings column max-w-2xl→max-w-[880px], Conditions + !activeBuild guard untouched. BlessingsPanel.test.tsx rewritten to card-grid contract (13 tests: no combobox, card-per-timeline, inline rows + None, setBlessing(id|null), aria-pressed gold active, statEffects text, staleness, axe). Source Audit: N/A — no-new-stat/no-dead-key (statEffects is shipped blessings.json data re-presented; blessings produced by setBlessing AND consumed by snapshot serializer). tsc 0 / build 0 / full suite 1120 passed, 8 failed across exactly the standing baseline (ProviderSelector/Settings/SkillTreeCanvas/TreeControls) — no new failures, no baseline cleared/added. Scope boundary clean: ConditionsPanel, CenterCanvas tab badge/routing (2.5), RightPanel/LeftPanel/AppHeader/StatusBar, blessing data wiring (setBlessing/gameDataStore/blessings.json/snapshot/compute_stats), stat sheet/optimizer/gear/idols, and all stores/deps/IPC untouched.)
 # project: LEBOv2
 # project_key: NOKEY
 # tracking_system: file-system
@@ -66,7 +66,7 @@ development_status:
   2-3-left-panel-build-identity-and-section-navigator: done
   2-4-right-panel-score-gauge-archetype-optimizer-chrome: done
   2-5-center-canvas-six-tab-bar-with-weaver: done
-  2-6-blessing-editor-card-grid: ready-for-dev
+  2-6-blessing-editor-card-grid: review
   2-7-idol-editor-tray-and-grid: backlog
   2-8-status-bar: backlog
   epic-2-retrospective: optional

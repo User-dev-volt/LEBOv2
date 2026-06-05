@@ -1,6 +1,6 @@
 # Story 2.6: Blessing editor card grid
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -85,30 +85,30 @@ The SOURCE-AUDIT GUARDRAIL's "map each new stat to real shipped-data, or declare
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Rebuild `BlessingsPanel` as a two-column card grid (AC: 1, 2, 3, 4)** — `lebo/src/features/blessings/BlessingsPanel.tsx`
-  - [ ] Keep the top-level store reads and the `timelineGroups` `useMemo` exactly as-is (`blessingsDatabase`, staleness flags/action, `activeBuild.blessings`, `setBlessing`). Keep the empty state ("Blessings data not loaded.") and the staleness banner block verbatim.
-  - [ ] Replace the `TimelineRow` component: render a **card** per `TimelineGroup`. Card container = `--color-bg-surface` background with a `1px solid` border that is `--color-accent-gold-dim` **when the timeline has an active blessing** else `--color-bg-elevated`. Header = `group.timelineName` (gold `--color-accent-gold` when active, else `--color-text-secondary`/`--color-text-muted`).
-  - [ ] Inside each card render selectable **`<button>`** rows: a leading **"None"** row, then one row per `group.entries` blessing. Active row (`selectedId === entry.id`, or the None row when `selectedId` is null/undefined) → gold border `--color-accent-gold` + text `--color-accent-gold-soft`; inactive → `--color-bg-elevated` hairline + `--color-text-secondary`. Each blessing row shows `displayName` + the formatted `statEffects` summary (reuse the existing format rule from `BlessingsPanel.tsx:75-80`; extract a small `formatStatEffects(entry)` helper to share it).
-  - [ ] Wire `onClick`: blessing row → `onSelect(group.timelineId, entry.id)`; None row → `onSelect(group.timelineId, null)`. Add `aria-pressed={isActive}` (or `aria-current`) on each row so selection is conveyed without relying on color.
-  - [ ] Wrap the cards in a grid container: `style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: ... }}` (Tailwind `grid grid-cols-2 gap-2.5` is equivalent and acceptable).
-  - [ ] **Remove the now-dead dropdown + per-timeline search code** (`<select>`, the `useState` search term, the `filtered` memo, the search `<input>`). Confirm `noUnusedLocals`/`noUnusedParameters` stays clean (drop the `useState` import if unused). 12 timelines × 4 blessings means search is unnecessary.
-  - [ ] Replace the existing `var(--color-border)` reference (undefined token) with `var(--color-bg-elevated)`.
+- [x] **Task 1 — Rebuild `BlessingsPanel` as a two-column card grid (AC: 1, 2, 3, 4)** — `lebo/src/features/blessings/BlessingsPanel.tsx`
+  - [x] Keep the top-level store reads and the `timelineGroups` `useMemo` exactly as-is (`blessingsDatabase`, staleness flags/action, `activeBuild.blessings`, `setBlessing`). Keep the empty state ("Blessings data not loaded.") and the staleness banner block verbatim.
+  - [x] Replace the `TimelineRow` component: render a **card** per `TimelineGroup`. Card container = `--color-bg-surface` background with a `1px solid` border that is `--color-accent-gold-dim` **when the timeline has an active blessing** else `--color-bg-elevated`. Header = `group.timelineName` (gold `--color-accent-gold` when active, else `--color-text-secondary`).
+  - [x] Inside each card render selectable **`<button>`** rows: a leading **"None"** row, then one row per `group.entries` blessing. Active row (`selectedId === entry.id`, or the None row when `selectedId` is null/undefined) → gold border `--color-accent-gold` + text `--color-accent-gold-soft`; inactive → `--color-bg-elevated` hairline + `--color-text-secondary`. Each blessing row shows `displayName` + the formatted `statEffects` summary (extracted into a shared `formatStatEffects(entry)` helper).
+  - [x] Wire `onClick`: blessing row → `onSelect(group.timelineId, entry.id)`; None row → `onSelect(group.timelineId, null)`. Added `aria-pressed={isActive}` on each row so selection is conveyed without relying on color.
+  - [x] Wrap the cards in a grid container: `style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}`.
+  - [x] **Removed the now-dead dropdown + per-timeline search code** (`<select>`, the `useState` search term, the `filtered` memo, the search `<input>`). Dropped the now-unused `useState` import — `noUnusedLocals`/`noUnusedParameters` clean.
+  - [x] Replaced the existing `var(--color-border)` reference (undefined token) with `var(--color-bg-elevated)`.
 
-- [ ] **Task 2 — Widen the `BlessingTab` Blessings section; leave Conditions intact (AC: 5)** — `lebo/src/features/layout/tabs/BlessingTab.tsx`
-  - [ ] Widen the container that wraps `BlessingsPanel` so the two-column grid fits (replace the shared `max-w-2xl` with a wider constraint for the Blessings block, ~`max-w-[880px]` / `max-w-4xl`). Keep the existing section heading ("Blessings") and the card chrome (`--color-bg-surface` + `--color-bg-elevated` border).
-  - [ ] Leave the **Conditions** section (`ConditionsPanel` + its heading + card) and the `!activeBuild` guard ("Create or load a build to manage blessings.") **unchanged**.
+- [x] **Task 2 — Widen the `BlessingTab` Blessings section; leave Conditions intact (AC: 5)** — `lebo/src/features/layout/tabs/BlessingTab.tsx`
+  - [x] Widened the shared column container from `max-w-2xl` to `max-w-[880px]` so the two-column grid fits. Kept the existing "Blessings" heading and card chrome (`--color-bg-surface` + `--color-bg-elevated` border).
+  - [x] Left the **Conditions** section (`ConditionsPanel` + its heading + card) and the `!activeBuild` guard ("Create or load a build to manage blessings.") **unchanged**.
 
-- [ ] **Task 3 — Rewrite `BlessingsPanel.test.tsx` to the card-grid contract (AC: 6)** — `lebo/src/features/blessings/BlessingsPanel.test.tsx`
-  - [ ] Keep the existing mock harness (`vi.mock` of `gameDataStore`/`buildStore`, `setupMocks`, `mockBlessings`, `mockSetBlessing`, `mockAcknowledge`).
-  - [ ] **Remove** the dropdown-era tests: "renders dropdown per timeline…", the `combobox`/`getRole('option')` assertions, and the two `search filters…` tests (search is gone). Add an explicit assertion that **no combobox exists**: `expect(screen.queryByRole('combobox')).toBeNull()`.
-  - [ ] Add card-grid tests: timeline-name headers render (`Blood, Frost, and Death`, `The Age of Winter`); each blessing renders as an inline control (`getByRole('button', { name: /Twisted Memory/ })` etc.) plus a **None** row per card; clicking a blessing row calls `setBlessing('blood-frost-death', 'bfd-twisted-memory')`; clicking **None** (with an active blessing seeded) calls `setBlessing('blood-frost-death', null)`; the active blessing's row conveys selection (`aria-pressed="true"` / accessible-name assertion); the `statEffects` summary text renders (`/\+30% increased cold damage/i`).
-  - [ ] Keep the staleness tests (banner shows when stale+unacknowledged, hidden when acknowledged, Dismiss calls `acknowledgeBlessingsDataStaleness`), the empty-state test, and the `axe` no-violations test.
+- [x] **Task 3 — Rewrite `BlessingsPanel.test.tsx` to the card-grid contract (AC: 6)** — `lebo/src/features/blessings/BlessingsPanel.test.tsx`
+  - [x] Kept the existing mock harness (`vi.mock` of `gameDataStore`/`buildStore`, `setupMocks`, `mockBlessings`, `mockSetBlessing`, `mockAcknowledge`).
+  - [x] **Removed** the dropdown-era tests (dropdown-per-timeline, `combobox`/`option` assertions, both `search filters…` tests). Added an explicit `expect(screen.queryByRole('combobox')).toBeNull()`.
+  - [x] Added card-grid tests: timeline-name headers + per-timeline `data-testid` cards; each blessing as an inline `<button>` row plus a **None** row per card (scoped via `within`); click → `setBlessing('blood-frost-death', 'bfd-twisted-memory')`; None → `setBlessing('blood-frost-death', null)`; active row `aria-pressed="true"` (and None active when unset); `statEffects` summary text (`/\+30% increased cold damage/i`).
+  - [x] Kept the staleness tests, the empty-state test, and the `axe` no-violations test.
 
-- [ ] **Task 4 — Verify build + suite (AC: 6)**
-  - [ ] `pnpm exec tsc --noEmit` → exit 0 (watch `noUnusedLocals` after removing the search `useState`/`filtered`).
-  - [ ] `CI=true pnpm exec vitest run src/features/blessings/BlessingsPanel.test.tsx` → green.
-  - [ ] `CI=true pnpm exec vitest run` → **no new failures** vs the standing baseline (`ProviderSelector` / `Settings` / `SkillTreeCanvas` / `TreeControls`); do not clear or add a baseline file.
-  - [ ] `pnpm build` → exit 0 (pre-existing >500 kB chunk advisory only).
+- [x] **Task 4 — Verify build + suite (AC: 6)**
+  - [x] `pnpm exec tsc --noEmit` → exit 0.
+  - [x] `CI=true pnpm exec vitest run src/features/blessings/BlessingsPanel.test.tsx` → green (13/13).
+  - [x] `CI=true pnpm exec vitest run` → **no new failures** vs the standing baseline (`ProviderSelector` / `Settings` / `SkillTreeCanvas` / `TreeControls`); no baseline file cleared or added.
+  - [x] `pnpm build` → exit 0 (pre-existing >500 kB chunk advisory only).
 
 ## Dev Notes
 
@@ -182,8 +182,33 @@ The removed `<select>` had a `— None —` option that called `setBlessing(time
 
 ### Agent Model Used
 
+claude-opus-4-8 (dev-story workflow)
+
 ### Debug Log References
+
+- `CI=true pnpm exec vitest run src/features/blessings/BlessingsPanel.test.tsx` — RED (8 failed / 5 passed against old dropdown component) → GREEN (13/13) after rebuild.
+- `pnpm exec tsc --noEmit` → exit 0.
+- `CI=true pnpm exec vitest run` → 1120 passed, 8 failed across exactly the standing baseline (`ProviderSelector` / `Settings` / `SkillTreeCanvas` / `TreeControls`) — no new failures, no baseline file cleared or added.
+- `pnpm build` → exit 0 (pre-existing >500 kB chunk advisory only).
 
 ### Completion Notes List
 
+- **Visual rebuild only — data wiring untouched.** `BlessingsPanel` keeps the same store reads (`blessingsDatabase`, staleness flags/action, `activeBuild.blessings`, `setBlessing`), the same `timelineGroups` `useMemo`, and the same `setBlessing(timelineId, id | null)` contract. No new store, field, action, prop, dependency, Rust/IPC, or stat — Source Audit N/A (no-new-stat / no-dead-key) holds.
+- **Presentation swap.** Replaced the per-timeline `TimelineRow` (`<select>` + search `<input>` + `useState`) with a two-column CSS grid (`gridTemplateColumns: '1fr 1fr'`) of `BlessingCard`s. Each card = one timeline; header = `group.timelineName` (gold when the timeline has an active blessing). Inside each card, a leading **None** row then one `<button>` per blessing via a shared `OptionRow`. Active row → gold border (`--color-accent-gold`) + gold-soft text + `--color-bg-hover` tint; inactive → `--color-bg-elevated` hairline + `--color-text-secondary`. Active card → `--color-accent-gold-dim` border.
+- **Selection semantics.** Each row carries `aria-pressed={isActive}` so selection is conveyed without relying on color (axe + colorblind). None row is active when `selectedId == null`. Clear path preserved: None → `setBlessing(timelineId, null)`.
+- **Stat text re-presented per row.** Extracted the existing format rule into `formatStatEffects(entry)` (same rule: `increased` → `+{value}%`, non-`flat` → `{value}%`, `flat` → `{value}`, underscores → spaces). The summary that previously rendered only for the active blessing now renders on every blessing row — existing shipped `BlessingEntry.statEffects` data, no parsing change.
+- **Token-bug fix.** Removed the undefined `var(--color-border)` reference (was on the deleted search input) — rebuilt markup uses only real `--color-*` tokens. Dismiss button now relies on the global `:focus-visible` 2px gold ring (dropped the inline `onFocus`/`onBlur` outline hack).
+- **`BlessingTab` widened** `max-w-2xl` → `max-w-[880px]` on the shared column so the two-column grid fits. Conditions section + `!activeBuild` guard untouched.
+- **No new animation added** — nothing to gate behind `prefers-reduced-motion`.
+
+### Change Log
+
+| Date | Change |
+|------|--------|
+| 2026-06-05 | Story 2.6 implemented: rebuilt `BlessingsPanel` from per-timeline dropdown+search into a two-column card grid with inline `<button>` rows, gold active state via `aria-pressed` + `--color-*` tokens, per-row `statEffects` summary, and the undefined `--color-border` bug fixed. Widened `BlessingTab` Blessings column to `max-w-[880px]`. Rewrote `BlessingsPanel.test.tsx` to the card-grid contract (13 tests, no combobox, axe clean). tsc 0 / build 0 / full suite no new failures vs baseline. Status → review. |
+
 ### File List
+
+- `lebo/src/features/blessings/BlessingsPanel.tsx` — modified (dropdown+search → two-column card grid; `OptionRow`/`BlessingCard`/`formatStatEffects`; removed `useState`/search/`<select>`; fixed `--color-border` bug)
+- `lebo/src/features/blessings/BlessingsPanel.test.tsx` — rewritten to the card-grid contract (13 tests)
+- `lebo/src/features/layout/tabs/BlessingTab.tsx` — modified (`max-w-2xl` → `max-w-[880px]` on the Blessings column)

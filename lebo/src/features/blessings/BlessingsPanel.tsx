@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import type { BlessingEntry } from '../../shared/types/contextDatabase'
 import { useGameDataStore } from '../../shared/stores/gameDataStore'
 import { useBuildStore } from '../../shared/stores/buildStore'
@@ -12,7 +12,52 @@ interface TimelineGroup {
   entries: BlessingEntry[]
 }
 
-function TimelineRow({
+function formatStatEffects(entry: BlessingEntry): string {
+  return entry.statEffects
+    .map(
+      (e) =>
+        `${e.modifierType === 'increased' ? '+' : ''}${e.value}${e.modifierType !== 'flat' ? '%' : ''} ${e.statKey.replace(/_/g, ' ')}`,
+    )
+    .join(', ')
+}
+
+function OptionRow({
+  label,
+  summary,
+  isActive,
+  onClick,
+}: {
+  label: string
+  summary?: string
+  isActive: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={isActive}
+      onClick={onClick}
+      className="w-full text-left rounded px-2 py-1 flex flex-col"
+      style={{
+        border: `1px solid ${isActive ? 'var(--color-accent-gold)' : 'var(--color-bg-elevated)'}`,
+        backgroundColor: isActive ? 'var(--color-bg-hover)' : 'transparent',
+        color: isActive ? 'var(--color-accent-gold-soft)' : 'var(--color-text-secondary)',
+      }}
+    >
+      <span className="text-xs">{label}</span>
+      {summary && (
+        <span
+          className="text-[0.6rem]"
+          style={{ color: isActive ? 'var(--color-accent-gold-soft)' : 'var(--color-text-muted)' }}
+        >
+          {summary}
+        </span>
+      )}
+    </button>
+  )
+}
+
+function BlessingCard({
   group,
   selectedId,
   onSelect,
@@ -21,65 +66,39 @@ function TimelineRow({
   selectedId: string | null | undefined
   onSelect: (timelineId: string, blessingId: string | null) => void
 }) {
-  const [searchTerm, setSearchTerm] = useState('')
-
-  const filtered = searchTerm
-    ? group.entries.filter(
-        (b) =>
-          b.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          b.statEffects.some((e) => e.statKey.toLowerCase().includes(searchTerm.toLowerCase())),
-      )
-    : group.entries
-
-  const selectedBlessing = selectedId
-    ? group.entries.find((b) => b.id === selectedId)
-    : undefined
+  const hasActive = selectedId != null && group.entries.some((b) => b.id === selectedId)
 
   return (
-    <div className="mb-2">
-      <p style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', marginBottom: '2px' }}>
+    <div
+      data-testid={`blessing-card-${group.timelineId}`}
+      className="rounded-lg p-2.5"
+      style={{
+        backgroundColor: 'var(--color-bg-surface)',
+        border: `1px solid ${hasActive ? 'var(--color-accent-gold-dim)' : 'var(--color-bg-elevated)'}`,
+      }}
+    >
+      <p
+        className="text-xs font-semibold uppercase tracking-wide mb-2"
+        style={{ color: hasActive ? 'var(--color-accent-gold)' : 'var(--color-text-secondary)' }}
+      >
         {group.timelineName}
       </p>
-      <input
-        type="text"
-        placeholder="Search…"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        aria-label={`Search blessings for ${group.timelineName}`}
-        className="w-full text-xs rounded px-1.5 py-0.5"
-        style={{
-          backgroundColor: 'var(--color-bg-base)',
-          color: 'var(--color-text-primary)',
-          border: '1px solid var(--color-border)',
-        }}
-      />
-      <select
-        value={selectedId ?? ''}
-        onChange={(e) => onSelect(group.timelineId, e.target.value || null)}
-        aria-label={`Select blessing for ${group.timelineName}`}
-        className="w-full text-xs rounded px-1 py-0.5 mt-0.5"
-        style={{ backgroundColor: 'var(--color-bg-elevated)', color: 'var(--color-text-primary)' }}
-      >
-        <option value="">— None —</option>
-        {filtered.map((b) => (
-          <option key={b.id} value={b.id}>
-            {b.displayName}
-          </option>
+      <div className="flex flex-col gap-1">
+        <OptionRow
+          label="None"
+          isActive={selectedId == null}
+          onClick={() => onSelect(group.timelineId, null)}
+        />
+        {group.entries.map((entry) => (
+          <OptionRow
+            key={entry.id}
+            label={entry.displayName}
+            summary={formatStatEffects(entry)}
+            isActive={selectedId === entry.id}
+            onClick={() => onSelect(group.timelineId, entry.id)}
+          />
         ))}
-      </select>
-      {selectedBlessing && (
-        <p
-          aria-label={`Active blessing: ${selectedBlessing.displayName}`}
-          style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', marginTop: '2px' }}
-        >
-          {selectedBlessing.statEffects
-            .map(
-              (e) =>
-                `${e.modifierType === 'increased' ? '+' : ''}${e.value}${e.modifierType !== 'flat' ? '%' : ''} ${e.statKey.replace(/_/g, ' ')}`,
-            )
-            .join(', ')}
-        </p>
-      )}
+      </div>
     </div>
   )
 }
@@ -126,22 +145,21 @@ export function BlessingsPanel() {
             onClick={acknowledgeBlessingsDataStaleness}
             aria-label="Dismiss blessings staleness notice"
             className="opacity-75 hover:opacity-100 ml-2"
-            style={{ outline: 'none' }}
-            onFocus={(e) => { e.currentTarget.style.outline = '2px solid var(--color-accent-gold)' }}
-            onBlur={(e) => { e.currentTarget.style.outline = 'none' }}
           >
             Dismiss
           </button>
         </div>
       )}
-      {timelineGroups.map((group) => (
-        <TimelineRow
-          key={group.timelineId}
-          group={group}
-          selectedId={blessings[group.timelineId]}
-          onSelect={setBlessing}
-        />
-      ))}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
+        {timelineGroups.map((group) => (
+          <BlessingCard
+            key={group.timelineId}
+            group={group}
+            selectedId={blessings[group.timelineId]}
+            onSelect={setBlessing}
+          />
+        ))}
+      </div>
     </div>
   )
 }

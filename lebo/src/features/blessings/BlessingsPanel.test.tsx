@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import { axe } from 'vitest-axe'
 import { BlessingsPanel } from './BlessingsPanel'
 import type { BlessingEntry } from '../../shared/types/contextDatabase'
@@ -80,69 +80,80 @@ describe('BlessingsPanel', () => {
     expect(screen.getByText('Blessings data not loaded.')).toBeInTheDocument()
   })
 
-  it('renders timeline headers', () => {
+  it('renders one card per timeline with timeline-name header', () => {
     render(<BlessingsPanel />)
     expect(screen.getByText('Blood, Frost, and Death')).toBeInTheDocument()
     expect(screen.getByText('The Age of Winter')).toBeInTheDocument()
+    expect(screen.getByTestId('blessing-card-blood-frost-death')).toBeInTheDocument()
+    expect(screen.getByTestId('blessing-card-age-of-winter')).toBeInTheDocument()
   })
 
-  it('renders dropdown per timeline with None option and blessings', () => {
+  it('renders no combobox/dropdown anywhere in the panel', () => {
     render(<BlessingsPanel />)
-    const selects = screen.getAllByRole('combobox')
-    expect(selects).toHaveLength(2)
-    const noneOptions = screen.getAllByRole('option', { name: '— None —' })
-    expect(noneOptions).toHaveLength(2)
-    expect(screen.getByRole('option', { name: 'Twisted Memory' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'Bone Armor' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'Gift of Winter' })).toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).toBeNull()
   })
 
-  it('selecting a blessing calls setBlessing with timelineId and blessingId', () => {
+  it('renders each blessing as an inline button row plus a None row per card', () => {
     render(<BlessingsPanel />)
-    const bfdSelect = screen.getByRole('combobox', {
-      name: 'Select blessing for Blood, Frost, and Death',
-    })
-    fireEvent.change(bfdSelect, { target: { value: 'bfd-twisted-memory' } })
+    const bfdCard = screen.getByTestId('blessing-card-blood-frost-death')
+    expect(within(bfdCard).getByRole('button', { name: /Twisted Memory/ })).toBeInTheDocument()
+    expect(within(bfdCard).getByRole('button', { name: /Bone Armor/ })).toBeInTheDocument()
+    expect(within(bfdCard).getByRole('button', { name: 'None' })).toBeInTheDocument()
+
+    const aowCard = screen.getByTestId('blessing-card-age-of-winter')
+    expect(within(aowCard).getByRole('button', { name: /Gift of Winter/ })).toBeInTheDocument()
+    expect(within(aowCard).getByRole('button', { name: 'None' })).toBeInTheDocument()
+  })
+
+  it('clicking a blessing row calls setBlessing with timelineId and blessingId', () => {
+    render(<BlessingsPanel />)
+    const bfdCard = screen.getByTestId('blessing-card-blood-frost-death')
+    fireEvent.click(within(bfdCard).getByRole('button', { name: /Twisted Memory/ }))
     expect(mockSetBlessing).toHaveBeenCalledWith('blood-frost-death', 'bfd-twisted-memory')
   })
 
-  it('selecting None calls setBlessing with null', () => {
+  it('clicking the None row clears that timeline blessing', () => {
     setupMocks({ activeBlessings: { 'blood-frost-death': 'bfd-twisted-memory' } })
     render(<BlessingsPanel />)
-    const bfdSelect = screen.getByRole('combobox', {
-      name: 'Select blessing for Blood, Frost, and Death',
-    })
-    fireEvent.change(bfdSelect, { target: { value: '' } })
+    const bfdCard = screen.getByTestId('blessing-card-blood-frost-death')
+    fireEvent.click(within(bfdCard).getByRole('button', { name: 'None' }))
     expect(mockSetBlessing).toHaveBeenCalledWith('blood-frost-death', null)
   })
 
-  it('shows selected blessing stat summary', () => {
+  it('marks the active blessing row with aria-pressed', () => {
     setupMocks({ activeBlessings: { 'blood-frost-death': 'bfd-twisted-memory' } })
     render(<BlessingsPanel />)
-    expect(
-      screen.getByLabelText('Active blessing: Twisted Memory'),
-    ).toBeInTheDocument()
+    const bfdCard = screen.getByTestId('blessing-card-blood-frost-death')
+    expect(within(bfdCard).getByRole('button', { name: /Twisted Memory/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(within(bfdCard).getByRole('button', { name: /Bone Armor/ })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(within(bfdCard).getByRole('button', { name: 'None' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+  })
+
+  it('marks the None row active when no blessing is set for the timeline', () => {
+    render(<BlessingsPanel />)
+    const bfdCard = screen.getByTestId('blessing-card-blood-frost-death')
+    expect(within(bfdCard).getByRole('button', { name: 'None' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(within(bfdCard).getByRole('button', { name: /Twisted Memory/ })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+  })
+
+  it('renders the per-row statEffects summary text', () => {
+    render(<BlessingsPanel />)
     expect(screen.getByText(/\+30% increased cold damage/i)).toBeInTheDocument()
-  })
-
-  it('search filters visible options by name', () => {
-    render(<BlessingsPanel />)
-    const searchInput = screen.getByRole('textbox', {
-      name: 'Search blessings for Blood, Frost, and Death',
-    })
-    fireEvent.change(searchInput, { target: { value: 'armor' } })
-    expect(screen.getByRole('option', { name: 'Bone Armor' })).toBeInTheDocument()
-    expect(screen.queryByRole('option', { name: 'Twisted Memory' })).not.toBeInTheDocument()
-  })
-
-  it('search is case-insensitive', () => {
-    render(<BlessingsPanel />)
-    const searchInput = screen.getByRole('textbox', {
-      name: 'Search blessings for Blood, Frost, and Death',
-    })
-    fireEvent.change(searchInput, { target: { value: 'ARMOR' } })
-    expect(screen.getByRole('option', { name: 'Bone Armor' })).toBeInTheDocument()
-    expect(screen.queryByRole('option', { name: 'Twisted Memory' })).not.toBeInTheDocument()
   })
 
   it('staleness banner shows when stale and not acknowledged', () => {

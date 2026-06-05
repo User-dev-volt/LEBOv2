@@ -17,7 +17,7 @@ export function BlessingTab() {
 
   return (
     <div className="h-full overflow-y-auto p-4">
-      <div className="max-w-2xl mx-auto flex flex-col gap-6">
+      <div className="max-w-[880px] mx-auto flex flex-col gap-6">
         <div>
           <h2
             className="text-sm font-semibold uppercase tracking-wide mb-4"
