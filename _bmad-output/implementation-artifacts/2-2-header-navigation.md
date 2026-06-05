@@ -97,6 +97,18 @@ This is the **second story of Epic 2 (UI/UX Revamp)**, building on the already-r
   - [x] `pnpm build` → exit 0.
   - [x] Manual sanity: verified via automated tests (four items in order; Complete Build Optimizer disabled + non-navigating; Builder/Gear Opt/Settings navigate; `Esc` from Settings and Gear Optimization returns to Builder; active item gold with `aria-current`). Interactive Tauri-window check deferred to reviewer.
 
+### Review Findings
+
+_Code review 2026-06-04 (3-layer adversarial: Blind Hunter + Edge Case Hunter + Acceptance Auditor). Acceptance Auditor: all 5 ACs PASS, scope boundary (currentView union unextended) PASS._
+
+- [ ] [Review][Patch] Guard text inputs from the global `Esc` handler (resolved decision, 2026-06-04) — `Esc` while a text/textarea/contenteditable field is focused (e.g. the API-key or OpenRouter field in Settings) currently navigates to Builder mid-edit, overriding the conventional "Esc shouldn't eject you from a focused field." **Alec's call: add an input-target guard** (matching the existing `isInputTarget` pattern at App.tsx:124-128) so `Esc` does nothing while a field is focused; it still returns to Builder from any non-input focus in a full-screen view. This intentionally supersedes the spec's "Esc fires before the input guard" note. (Blind Hunter's "Esc steals modal dismissal" was refuted — no modal mounts outside `main`.) [lebo/src/App.tsx:100-107]
+- [ ] [Review][Patch] `Esc` from a non-main view skips `setPreviewSuggestionRank(null)` (early-return) — leftover preview rank from `main` is not cleared on the keystroke; defensively clear it before the early return [lebo/src/App.tsx:101-103]
+- [ ] [Review][Patch] Disabled-button click test is a trivial pass — jsdom does not fire `onClick` on a `disabled` `<button>`, so `fireEvent.click` + `expect(currentView).toBe('main')` asserts nothing; the `toBeDisabled()`/`aria-disabled` assertions already cover the guarantee, so drop or replace the misleading click assertion [lebo/src/features/layout/AppHeader.test.tsx:~191]
+- [ ] [Review][Patch] `navItems` `'main'` entry is dead data + literal duplication — `'main'`/`'Builder'`/`'builder-button'` are duplicated between the `navItems` array and the explicit `renderNavButton('main', ...)` call, then filtered back out with `.filter(id !== 'main')`; drift risk against the order-asserting test. Render all items from a single source [lebo/src/features/layout/AppHeader.tsx:51-78]
+- [ ] [Review][Patch] "hides Gear Optimization" test mounts two headers in one `it` — second `render(<AppHeader />)` mounts a duplicate header; `getAllByTestId(...).length > 0` tolerates leakage and weakens the assertion. Use `rerender`/scoped query [lebo/src/features/layout/AppHeader.test.tsx:~228]
+
+_Dismissed as noise (6): "no Esc history stack" (spec mandates flat reset to Builder; no nested nav exists); "dead placeholder UI in nav" (AC3 mandates the inert item; Epic 6 hand-off documented); "disabled item out of tab order" (spec-accepted, axe clean); "Settings test rewritten hidden→active" (AC1 mandates the active item stay visible with `aria-current`); "`as never` activeBuild cast" (accepted test stub; component only reads truthiness); "LEBO→LEBOv2 + banner copy churn" (AC4 mandates these exact strings)._
+
 ## Dev Notes
 
 ### Scope discipline (read first)
