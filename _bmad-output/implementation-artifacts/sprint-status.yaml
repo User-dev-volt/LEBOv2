@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-02
-last_updated: 2026-06-04 (Story 2.1 → done. Code review passed all 4 ACs; correct-course applied: rarity palette verified against LastEpochTools.com and reconciled to the real LE colors (designer mockup was wrong on most tiers — legendary purple→red, etc.). rarityColors.ts + --color-rarity-* + tests updated; tsc/tests(50)/build green.)
+last_updated: 2026-06-04 (Story 2.2 header-navigation → ready-for-dev. Header/nav-chrome only: adds Complete Build Optimizer nav item (inert — currentView union extension owned by Epic 6/Story 6.1), global Esc→Builder from full-screen views, a11y aria-current/focus-ring, and reconciles AppHeader.tsx with its ahead-of-source test spec to clear the AppHeader baseline failure. No new stat → Source Audit N/A.)
 project: LEBOv2
 project_key: NOKEY
 tracking_system: file-system
@@ -57,7 +57,7 @@ development_status:
   # Epic 2: UI/UX Revamp — Claude Design System
   epic-2: in-progress
   2-1-design-token-reconciliation: done
-  2-2-header-navigation: backlog
+  2-2-header-navigation: ready-for-dev
   2-3-left-panel-build-identity-and-section-navigator: backlog
   2-4-right-panel-score-gauge-archetype-optimizer-chrome: backlog
   2-5-center-canvas-six-tab-bar-with-weaver: backlog
