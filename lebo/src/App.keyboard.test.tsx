@@ -52,6 +52,12 @@ function pressEscape() {
   })
 }
 
+function pressKey(key: string) {
+  act(() => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { key }))
+  })
+}
+
 describe('App global Escape navigation (FR-33)', () => {
   let initialState: ReturnType<typeof useAppStore.getState>
 
@@ -86,5 +92,43 @@ describe('App global Escape navigation (FR-33)', () => {
     })
     pressEscape()
     expect(useAppStore.getState().currentView).toBe('main')
+  })
+})
+
+describe('App center-tab keyboard shortcuts 1–6 (FR-36)', () => {
+  let initialState: ReturnType<typeof useAppStore.getState>
+
+  beforeEach(() => {
+    initialState = useAppStore.getState()
+    useAppStore.setState(initialState, true)
+    useAppStore.setState({ currentView: 'main', centerTab: 'tree' })
+    vi.clearAllMocks()
+  })
+
+  it('maps keys 1–6 to tree/weaver/gear/skill/idol/blessing', async () => {
+    await act(async () => {
+      render(<App />)
+    })
+    const cases: [string, string][] = [
+      ['1', 'tree'],
+      ['2', 'weaver'],
+      ['3', 'gear'],
+      ['4', 'skill'],
+      ['5', 'idol'],
+      ['6', 'blessing'],
+    ]
+    for (const [key, tab] of cases) {
+      pressKey(key)
+      expect(useAppStore.getState().centerTab).toBe(tab)
+    }
+  })
+
+  it('does not switch tabs when the shortcut is pressed in the settings view', async () => {
+    useAppStore.setState({ currentView: 'settings', centerTab: 'tree' })
+    await act(async () => {
+      render(<App />)
+    })
+    pressKey('2')
+    expect(useAppStore.getState().centerTab).toBe('tree')
   })
 })

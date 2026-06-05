@@ -146,12 +146,13 @@ export function App() {
       // Skip bare-key shortcuts when modifier keys are held (avoid hijacking Ctrl+O, Alt+I, etc.)
       if (e.ctrlKey || e.metaKey || e.altKey) return
 
-      // Center tab shortcuts: 1-5
+      // Center tab shortcuts: 1-6
       if (e.key === '1') { e.preventDefault(); useAppStore.getState().setCenterTab('tree'); return }
-      if (e.key === '2') { e.preventDefault(); useAppStore.getState().setCenterTab('gear'); return }
-      if (e.key === '3') { e.preventDefault(); useAppStore.getState().setCenterTab('skill'); return }
-      if (e.key === '4') { e.preventDefault(); useAppStore.getState().setCenterTab('idol'); return }
-      if (e.key === '5') { e.preventDefault(); useAppStore.getState().setCenterTab('blessing'); return }
+      if (e.key === '2') { e.preventDefault(); useAppStore.getState().setCenterTab('weaver'); return }
+      if (e.key === '3') { e.preventDefault(); useAppStore.getState().setCenterTab('gear'); return }
+      if (e.key === '4') { e.preventDefault(); useAppStore.getState().setCenterTab('skill'); return }
+      if (e.key === '5') { e.preventDefault(); useAppStore.getState().setCenterTab('idol'); return }
+      if (e.key === '6') { e.preventDefault(); useAppStore.getState().setCenterTab('blessing'); return }
 
       // Panel collapse shortcuts
       if (e.key === '[') {

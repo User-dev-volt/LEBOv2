@@ -108,6 +108,8 @@ export function SkillTreeView() {
   const nodeEfficiencies = useOptimizationStore((s) => s.nodeEfficiencies)
   const selectedNodeId = useAppStore((s) => s.selectedNodeId)
   const setSelectedNodeId = useAppStore((s) => s.setSelectedNodeId)
+  const centerTab = useAppStore((s) => s.centerTab)
+  const setCenterTab = useAppStore((s) => s.setCenterTab)
 
   const [activeTabIndex, setActiveTabIndex] = useState(0)
   const [pickerState, setPickerState] = useState<PickerState | null>(null)
@@ -132,6 +134,19 @@ export function SkillTreeView() {
       setActiveTabIndex(0)
     }
   }, [activeTabIndex])
+
+  // Center Weaver tab drives the internal canvas index (coarse passive-vs-weaver mirror only;
+  // activeTabIndex stays the sole authority for which tree renders). Loop-safe: the user-click
+  // path (handleTabChange) pushes index→centerTab; this effect only pushes centerTab→index, and
+  // context tabs (gear/skill/idol/blessing) are no-ops so the internal index is preserved while hidden.
+  useEffect(() => {
+    if (centerTab === 'weaver' && activeTabIndex !== 6) {
+      setActiveTabIndex(6)
+    } else if (centerTab === 'tree' && activeTabIndex === 6) {
+      setActiveTabIndex(0)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on centerTab only
+  }, [centerTab])
 
   // Auto-show when new efficiencies arrive; reset when cleared between runs
   useEffect(() => {
@@ -403,7 +418,10 @@ export function SkillTreeView() {
     setPickerState(null)
     setSearchQuery('')
     setSelectedNodeId(null)
-  }, [setSelectedNodeId])
+    // Keep the center Weaver tab in sync with real user clicks on the internal tab bar.
+    if (index === 6) setCenterTab('weaver')
+    else if (useAppStore.getState().centerTab === 'weaver') setCenterTab('tree')
+  }, [setSelectedNodeId, setCenterTab])
 
   const handleReset = useCallback(() => {
     if (isPassiveTab) {

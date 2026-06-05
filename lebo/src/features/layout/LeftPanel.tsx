@@ -10,7 +10,8 @@ import { ClassGlyph } from './ClassGlyph'
 import { ClassMasterySelector } from '../skill-tree/ClassMasterySelector'
 
 const NAV_ROWS: { id: CenterTab; label: string }[] = [
-  { id: 'tree', label: 'Skill Trees' },
+  { id: 'tree', label: 'Passive Tree' },
+  { id: 'weaver', label: 'Weaver' },
   { id: 'gear', label: 'Gear' },
   { id: 'skill', label: 'Active Skills' },
   { id: 'idol', label: 'Idols' },
@@ -89,7 +90,7 @@ export function LeftPanel() {
                   backgroundColor: isActive ? 'rgba(201,168,76,0.12)' : 'transparent',
                 }}
               >
-                {row.id === 'tree' ? '⬡' : row.id === 'gear' ? '⚔' : row.id === 'skill' ? '✦' : row.id === 'idol' ? '◈' : '✴'}
+                {row.id === 'tree' ? '⬡' : row.id === 'weaver' ? '✷' : row.id === 'gear' ? '⚔' : row.id === 'skill' ? '✦' : row.id === 'idol' ? '◈' : '✴'}
               </button>
             )
           })}

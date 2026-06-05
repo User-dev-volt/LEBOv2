@@ -18,10 +18,18 @@ interface TabDef {
 const TABS: TabDef[] = [
   {
     id: 'tree',
-    label: 'Skill Trees',
+    label: 'Passive Tree',
     getBadge: (b) => {
       if (!b) return '0'
       return String(Object.values(b.nodeAllocations).reduce((s, v) => s + v, 0))
+    },
+  },
+  {
+    id: 'weaver',
+    label: 'Weaver',
+    getBadge: (b) => {
+      if (!b) return '0'
+      return String(Object.values(b.weaverAllocations).reduce((s, v) => s + v, 0))
     },
   },
   {
@@ -62,10 +70,15 @@ const TABS: TabDef[] = [
   },
 ]
 
+const CENTER_TAB_IDS = new Set<CenterTab>(TABS.map((t) => t.id))
+
 export function CenterCanvas() {
   const centerTab = useAppStore((s) => s.centerTab)
   const setCenterTab = useAppStore((s) => s.setCenterTab)
   const activeBuild = useBuildStore((s) => s.activeBuild)
+
+  // Guard the routing value the same way SkillTreeView guards its internal tab index.
+  const safeCenterTab: CenterTab = CENTER_TAB_IDS.has(centerTab) ? centerTab : 'tree'
 
   return (
     <div className="flex flex-col flex-1 min-w-0 overflow-hidden" style={{ backgroundColor: 'var(--color-bg-base)' }}>
@@ -79,7 +92,7 @@ export function CenterCanvas() {
         }}
       >
         {TABS.map((tab) => {
-          const isActive = centerTab === tab.id
+          const isActive = safeCenterTab === tab.id
           const badge = tab.getBadge(activeBuild)
           return (
             <div key={tab.id} className="flex items-center">
@@ -120,13 +133,18 @@ export function CenterCanvas() {
 
       {/* Tab content — non-tree tabs scroll; tree uses full-bleed canvas */}
       <div className="flex-1 min-h-0 relative overflow-hidden">
-        <div style={{ display: centerTab === 'tree' ? 'block' : 'none', height: '100%' }}>
+        <div
+          style={{
+            display: safeCenterTab === 'tree' || safeCenterTab === 'weaver' ? 'block' : 'none',
+            height: '100%',
+          }}
+        >
           <SkillTreeView />
         </div>
-        {centerTab === 'gear' && <GearTab />}
-        {centerTab === 'skill' && <SkillTab />}
-        {centerTab === 'idol' && <IdolTab />}
-        {centerTab === 'blessing' && <BlessingTab />}
+        {safeCenterTab === 'gear' && <GearTab />}
+        {safeCenterTab === 'skill' && <SkillTab />}
+        {safeCenterTab === 'idol' && <IdolTab />}
+        {safeCenterTab === 'blessing' && <BlessingTab />}
       </div>
     </div>
   )

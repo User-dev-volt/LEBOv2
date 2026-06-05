@@ -1,6 +1,6 @@
 # Story 2.5: Center canvas six-tab bar with Weaver
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -96,46 +96,46 @@ The SOURCE-AUDIT GUARDRAIL's "map each new stat to real shipped-data, or declare
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Extend the `CenterTab` union (AC: 1)** — `lebo/src/shared/stores/appStore.ts`
-  - [ ] Change `export type CenterTab = 'tree' | 'gear' | 'skill' | 'idol' | 'blessing'` → `'tree' | 'weaver' | 'gear' | 'skill' | 'idol' | 'blessing'` (insert `'weaver'` between `'tree'` and `'gear'`).
-  - [ ] Leave `setCenterTab`, the `centerTab: 'tree'` default, and all other store fields/actions unchanged. (No persist middleware exists, so no migration needed.)
+- [x] **Task 1 — Extend the `CenterTab` union (AC: 1)** — `lebo/src/shared/stores/appStore.ts`
+  - [x] Change `export type CenterTab = 'tree' | 'gear' | 'skill' | 'idol' | 'blessing'` → `'tree' | 'weaver' | 'gear' | 'skill' | 'idol' | 'blessing'` (insert `'weaver'` between `'tree'` and `'gear'`).
+  - [x] Leave `setCenterTab`, the `centerTab: 'tree'` default, and all other store fields/actions unchanged. (No persist middleware exists, so no migration needed.)
 
-- [ ] **Task 2 — Six-tab bar + divider + Weaver badge + `safeCenterTab` (AC: 1, 2, 3)** — `lebo/src/features/layout/CenterCanvas.tsx`
-  - [ ] Add a `weaver` entry to the `TABS` array between `tree` and `gear`: `{ id: 'weaver', label: 'Weaver', getBadge: (b) => b ? String(Object.values(b.weaverAllocations).reduce((s, v) => s + v, 0)) : '0' }`. Keep `dividerBefore: true` on `gear` (the divider now correctly sits between Weaver and the context tabs). Relabel the `tree` entry to **"Passive Tree"**.
-  - [ ] Add a module-level `const CENTER_TAB_IDS = new Set<CenterTab>(['tree','weaver','gear','skill','idol','blessing'])` (or derive from `TABS`) and a `safeCenterTab = CENTER_TAB_IDS.has(centerTab) ? centerTab : 'tree'`. Use `safeCenterTab` for the active-state comparison and the content switch.
-  - [ ] Content switch: show the `SkillTreeView` container when `safeCenterTab === 'tree' || safeCenterTab === 'weaver'` (`display: 'block'`, else `'none'`); render `GearTab`/`SkillTab`/`IdolTab`/`BlessingTab` for their respective `safeCenterTab` values. Do **not** unmount `SkillTreeView`.
-  - [ ] Tokens only; preserve the existing 40px bar / active-gold styling / badge pill markup.
+- [x] **Task 2 — Six-tab bar + divider + Weaver badge + `safeCenterTab` (AC: 1, 2, 3)** — `lebo/src/features/layout/CenterCanvas.tsx`
+  - [x] Add a `weaver` entry to the `TABS` array between `tree` and `gear`: `{ id: 'weaver', label: 'Weaver', getBadge: (b) => b ? String(Object.values(b.weaverAllocations).reduce((s, v) => s + v, 0)) : '0' }`. Keep `dividerBefore: true` on `gear` (the divider now correctly sits between Weaver and the context tabs). Relabel the `tree` entry to **"Passive Tree"**.
+  - [x] Add a module-level `const CENTER_TAB_IDS = new Set<CenterTab>(['tree','weaver','gear','skill','idol','blessing'])` (derived from `TABS`) and a `safeCenterTab = CENTER_TAB_IDS.has(centerTab) ? centerTab : 'tree'`. Use `safeCenterTab` for the active-state comparison and the content switch.
+  - [x] Content switch: show the `SkillTreeView` container when `safeCenterTab === 'tree' || safeCenterTab === 'weaver'` (`display: 'block'`, else `'none'`); render `GearTab`/`SkillTab`/`IdolTab`/`BlessingTab` for their respective `safeCenterTab` values. Do **not** unmount `SkillTreeView`.
+  - [x] Tokens only; preserve the existing 40px bar / active-gold styling / badge pill markup.
 
-- [ ] **Task 3 — Keyboard 1–6 (AC: 5)** — `lebo/src/App.tsx`
-  - [ ] Remap the center-tab number shortcuts to: `1→'tree'`, `2→'weaver'`, `3→'gear'`, `4→'skill'`, `5→'idol'`, `6→'blessing'`. Add the new `6` case. Keep `e.preventDefault()` + `return` per branch and the surrounding guards (input-focus skip, `settings`-view skip, `ctrl/meta/alt` skip) untouched. Do not change `[`/`]`/`o`/`i`.
+- [x] **Task 3 — Keyboard 1–6 (AC: 5)** — `lebo/src/App.tsx`
+  - [x] Remap the center-tab number shortcuts to: `1→'tree'`, `2→'weaver'`, `3→'gear'`, `4→'skill'`, `5→'idol'`, `6→'blessing'`. Add the new `6` case. Keep `e.preventDefault()` + `return` per branch and the surrounding guards (input-focus skip, `settings`-view skip, `ctrl/meta/alt` skip) untouched. Do not change `[`/`]`/`o`/`i`.
 
-- [ ] **Task 4 — Center Weaver ⟷ SkillTreeView sync (AC: 4)** — `lebo/src/features/skill-tree/SkillTreeView.tsx`
-  - [ ] Read `centerTab` from `appStore` and `setCenterTab`. Add a loop-safe sync so the center Weaver tab drives the canvas:
+- [x] **Task 4 — Center Weaver ⟷ SkillTreeView sync (AC: 4)** — `lebo/src/features/skill-tree/SkillTreeView.tsx`
+  - [x] Read `centerTab` from `appStore` and `setCenterTab`. Add a loop-safe sync so the center Weaver tab drives the canvas:
     - **Effect (centerTab → index):** when `centerTab === 'weaver'` and `activeTabIndex !== 6` → `setActiveTabIndex(6)`; when `centerTab === 'tree'` and `activeTabIndex === 6` → `setActiveTabIndex(0)`. Depend on `[centerTab]` (and the setter). When `centerTab` is a context tab (`gear`/`skill`/`idol`/`blessing`) the effect is a no-op (preserve the internal index while hidden).
-    - **In `handleTabChange(index)`:** when the user selects internal index `6` → also `setCenterTab('weaver')`; when they select a non-`6` index while `centerTab === 'weaver'` → `setCenterTab('tree')`. (User clicks only — `setActiveTabIndex` from the effect does not call `handleTabChange`, so there is no cycle.)
-  - [ ] Keep `safeTabIndex`, `isWeaverTab = safeTabIndex === 6`, all hooks-before-early-return ordering, and every existing branch **exactly as-is**. Do not change `SkillTreeTabBar`, the weaver canvas branch, or any node logic. Watch `noUnusedLocals` if you add the store reads.
-  - [ ] Verify the StrictMode double-mount / `initChainRef` WebGL serialization is unaffected (no new `Application.init` path is introduced — you are only nudging an existing state value).
+    - **In `handleTabChange(index)`:** when the user selects internal index `6` → also `setCenterTab('weaver')`; when they select a non-`6` index while `centerTab === 'weaver'` → `setCenterTab('tree')` (read live via `useAppStore.getState()` to avoid dep churn). (User clicks only — `setActiveTabIndex` from the effect does not call `handleTabChange`, so there is no cycle.)
+  - [x] Keep `safeTabIndex`, `isWeaverTab = safeTabIndex === 6`, all hooks-before-early-return ordering, and every existing branch **exactly as-is**. Do not change `SkillTreeTabBar`, the weaver canvas branch, or any node logic. (`noUnusedLocals` clean — both store reads are used.)
+  - [x] Verify the StrictMode double-mount / `initChainRef` WebGL serialization is unaffected (no new `Application.init` path is introduced — only an existing state value is nudged).
 
-- [ ] **Task 5 — `buildSectionStatus.ts` weaver entry (compile-required) (AC: 6)** — `lebo/src/shared/utils/buildSectionStatus.ts`
-  - [ ] Add a `weaverPoints(build)` helper (`Σ build.weaverAllocations`) mirroring `passivePoints`.
-  - [ ] Add a `weaver` entry to **both** returned objects: no-build → `{ count: '0 pts', full: false, done: false }`; with-build → `{ count: `${weaver} pts`, full: false, done: weaver >= 1 }`. Position it after `tree` for readability. Leave all other entries unchanged.
+- [x] **Task 5 — `buildSectionStatus.ts` weaver entry (compile-required) (AC: 6)** — `lebo/src/shared/utils/buildSectionStatus.ts`
+  - [x] Add a `weaverPoints(build)` helper (`Σ build.weaverAllocations`) mirroring `passivePoints`.
+  - [x] Add a `weaver` entry to **both** returned objects: no-build → `{ count: '0 pts', full: false, done: false }`; with-build → `{ count: `${weaver} pts`, full: false, done: weaver >= 1 }`. Positioned after `tree`. Leave all other entries unchanged.
 
-- [ ] **Task 6 — LeftPanel Weaver nav row + Passive Tree label (AC: 7)** — `lebo/src/features/layout/LeftPanel.tsx`
-  - [ ] In `NAV_ROWS`, relabel `{ id: 'tree', label: 'Skill Trees' }` → `{ id: 'tree', label: 'Passive Tree' }` and insert `{ id: 'weaver', label: 'Weaver' }` immediately after it (before `gear`).
-  - [ ] No other change: the row renders through the existing `.map` over `NAV_ROWS` using `getSectionStatus(activeBuild)[row.id]` (now includes `weaver`), the existing `CheckGlyph`, active-state, and collapsed-rail treatment. Confirm both the expanded list and the collapsed rail iterate `NAV_ROWS` so the row appears in both.
+- [x] **Task 6 — LeftPanel Weaver nav row + Passive Tree label (AC: 7)** — `lebo/src/features/layout/LeftPanel.tsx`
+  - [x] In `NAV_ROWS`, relabel `{ id: 'tree', label: 'Skill Trees' }` → `{ id: 'tree', label: 'Passive Tree' }` and insert `{ id: 'weaver', label: 'Weaver' }` immediately after it (before `gear`).
+  - [x] No other change: the row renders through the existing `.map` over `NAV_ROWS` using `getSectionStatus(activeBuild)[row.id]` (now includes `weaver`), the existing `CheckGlyph`, active-state, and collapsed-rail treatment. Both the expanded list and the collapsed rail iterate `NAV_ROWS`; a distinct collapsed-rail glyph (`✷`) was added for the weaver row.
 
-- [ ] **Task 7 — Tests + a11y (AC: 8)**
-  - [ ] **New `lebo/src/features/layout/CenterCanvas.test.tsx`:** render with a seeded `useBuildStore` build + `useAppStore`; assert the six tab labels in order; assert a divider element precedes "Gear"; assert the Weaver badge = `Σ weaverAllocations` (seed e.g. `{ a: 2, b: 1 }` → `3`; and `0` with no build); click each tab → `setCenterTab` called with the right id (or assert the rendered active state / content swap); with `centerTab: 'weaver'` assert the `SkillTreeView` container is shown and no `GearTab` etc.; with `centerTab: 'gear'` assert `GearTab` renders and the tree container is `display: none`; set an invalid `centerTab` (cast) → assert it renders as `tree`; `expect(await axe(container)).toHaveNoViolations()`. Mock `SkillTreeView` and the four tab components to lightweight stubs to avoid PixiJS/WebGL in jsdom (follow the existing layout-test mocking style; `SkillTreeView` is not unit-testable with real WebGL).
-  - [ ] **Extend `lebo/src/App.keyboard.test.tsx`:** add a block dispatching `keydown` for `1`–`6` and asserting `useAppStore.getState().centerTab` becomes `tree/weaver/gear/skill/idol/blessing`; add one guard assertion (e.g. key `2` while `currentView: 'settings'` does **not** change `centerTab`). Reuse the existing mocks and `act()` pattern.
-  - [ ] **`buildSectionStatus.test.ts`** (create if missing, co-located in `shared/utils/`): assert `getSectionStatus(null).weaver` = `{ count: '0 pts', full: false, done: false }`; a build with `weaverAllocations: {}` → `done: false`; with `weaverAllocations: { x: 1 }` → `count: '1 pts', done: true`. Keep/extend coverage of the other sections only if trivial.
-  - [ ] **Reconcile `lebo/src/features/layout/LeftPanel.test.tsx`:** update any assertion of the exact nav-row count (5→6), row order, or the "Skill Trees" label (→ "Passive Tree"); add a check that the **Weaver** row renders and routes `setCenterTab('weaver')`. Keep the existing store-seed/`beforeEach` + axe pattern; do not re-stub the four `test-setup.ts` polyfills.
-  - [ ] Confirm no other test hardcodes the 5-tab center bar, the `1–5` mapping, or `getSectionStatus` exhaustiveness in a way the union change breaks (grep `setCenterTab`, `'Skill Trees'`, `NAV_ROWS`, `getSectionStatus`).
+- [x] **Task 7 — Tests + a11y (AC: 8)**
+  - [x] **New `lebo/src/features/layout/CenterCanvas.test.tsx`:** seeded `useBuildStore`/`useAppStore`; asserts the six tab labels in order; the divider sits as the Gear wrapper's first child (none before Weaver); Weaver badge = `Σ weaverAllocations` (`{a:2,b:1}`→`3`; `0` with no build); clicking each tab sets `centerTab` to the right id; `centerTab:'weaver'` shows the `SkillTreeView` container (`display: block`) with no context tab; `centerTab:'gear'` renders `GearTab` with the tree container `display: none`; an invalid `centerTab` falls back to `tree`; `axe` clean. `SkillTreeView` + the four tabs + `DataStalenessBar` are mocked to lightweight stubs.
+  - [x] **Extended `lebo/src/App.keyboard.test.tsx`:** new block dispatching `keydown` `1`–`6` → `tree/weaver/gear/skill/idol/blessing`; plus a guard assertion (key `2` in `settings` view leaves `centerTab` unchanged). Reuses the existing mocks/`act()` pattern.
+  - [x] **`buildSectionStatus.test.ts`** (created, co-located in `shared/utils/`): `getSectionStatus(null).weaver` = `{ count: '0 pts', full: false, done: false }`; `weaverAllocations: {}` → `done: false`; `{ x: 1 }` → `count: '1 pts', done: true`; sum across nodes; `tree` entry unchanged.
+  - [x] **Reconciled `lebo/src/features/layout/LeftPanel.test.tsx`:** nav-row count 5→6, "Skill Trees" → "Passive Tree", duplicate "0 pts" handled via `getAllByText` (tree + weaver), and a Weaver-row routing test (`setCenterTab('weaver')`).
+  - [x] Confirmed no other test hardcodes the 5-tab center bar, the `1–5` mapping, or `getSectionStatus` exhaustiveness in a breaking way (grepped `setCenterTab`, `'Skill Trees'`, `NAV_ROWS`, `getSectionStatus`).
 
-- [ ] **Task 8 — Verify build + suite (AC: 8)**
-  - [ ] `pnpm exec tsc --noEmit` → exit 0 (the `getSectionStatus` exhaustiveness is the key gate; also watch unused imports in `SkillTreeView`/`CenterCanvas`).
-  - [ ] `CI=true pnpm exec vitest run src/features/layout/CenterCanvas.test.tsx src/App.keyboard.test.tsx src/features/layout/LeftPanel.test.tsx src/shared/utils/buildSectionStatus.test.ts` → passes.
-  - [ ] `CI=true pnpm exec vitest run` → no new failures vs the standing baseline (`ProviderSelector`/`Settings`/`SkillTreeCanvas`/`TreeControls`). Note the baseline in `sprint-status.yaml` when the story is marked done.
-  - [ ] `pnpm build` → exit 0 (only the pre-existing >500 kB chunk-size advisory is acceptable).
+- [x] **Task 8 — Verify build + suite (AC: 8)**
+  - [x] `pnpm exec tsc --noEmit` → exit 0 (the `getSectionStatus` exhaustiveness gate satisfied; no unused imports).
+  - [x] `CI=true pnpm exec vitest run src/features/layout/CenterCanvas.test.tsx src/App.keyboard.test.tsx src/features/layout/LeftPanel.test.tsx src/shared/utils/buildSectionStatus.test.ts` → 37 passed.
+  - [x] `CI=true pnpm exec vitest run` → 1119 passed, 8 failed across exactly the standing baseline files (`ProviderSelector`/`Settings`/`SkillTreeCanvas`/`TreeControls`); no new failures.
+  - [x] `pnpm build` → exit 0 (only the pre-existing >500 kB chunk-size advisory).
 
 ## Dev Notes
 
@@ -220,14 +220,37 @@ The Weaver badge is `Σ activeBuild.weaverAllocations` — the same sum `SkillTr
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+claude-opus-4-8 (Claude Opus 4.8) — BMAD dev-story workflow
 
 ### Debug Log References
 
+- `pnpm exec tsc --noEmit` → exit 0 (confirmed the union change forces the `getSectionStatus` exhaustive `Record<CenterTab, …>` ripple; satisfied by Task 5).
+- `CI=true pnpm exec vitest run` → 1119 passed / 8 failed across exactly the standing baseline (`ProviderSelector`/`Settings`/`SkillTreeCanvas`/`TreeControls`); the four touched/new test files (CenterCanvas, App.keyboard, LeftPanel, buildSectionStatus) are green.
+- `pnpm build` → exit 0 (only the pre-existing >500 kB chunk advisory).
+
 ### Completion Notes List
+
+- **AR-6 union expansion + center-bar reconciliation only — no rewrite.** Followed the Epic 2 extension discipline: kept `CenterCanvas`/`SkillTreeView`/`SkillTreeTabBar` composition intact and applied targeted deltas.
+- **Loop-safe single source of truth.** `SkillTreeView.activeTabIndex` stays the sole authority for which tree renders; `centerTab` is a coarse passive-vs-weaver mirror. The effect pushes `centerTab → index` (keyed on `[centerTab]`); the user-click `handleTabChange` pushes `index → centerTab` (reading live `centerTab` via `useAppStore.getState()` to avoid dep churn). No setState cycle — the effect's `setActiveTabIndex` never calls `handleTabChange`. No competing "is weaver" boolean added to the store.
+- **Compile gate handled with Task 1.** Adding `'weaver'` to the union made the exhaustive `Record<CenterTab, SectionStatus>` non-exhaustive; the `weaver` entry was added to both branches with `done: weaverPoints >= 1` (the FR-21 "Weaver budget > 0" predicate Epic 6's CompletenessGate will reuse).
+- **No new stat / no dead key.** The Weaver badge is `Σ activeBuild.weaverAllocations`, a UI re-presentation of an existing build field; nothing feeds `compute_stats` (weaver remains excluded from the snapshot).
+- **Scope boundary honored.** PixiJS canvas, `pixiRenderer`, the WebGL patch, `useSkillTree`, the per-skill `SkillTreeTabBar` slots (FR-43/Epic 5), context-tab content (Epics 1/3/4), `RightPanel`/`AppHeader`/`StatusBar`, and all store schema/types beyond the union string are untouched. No new store, dependency, Rust/IPC change, or React Router.
+- **Accessibility:** tabs/rows stay `<button>`s with the global 2px gold focus ring; no new animation added; `vitest-axe` clean on `CenterCanvas` and the reconciled `LeftPanel`.
 
 ### File List
 
+- `lebo/src/shared/stores/appStore.ts` — MODIFIED: `CenterTab` union += `'weaver'`.
+- `lebo/src/features/layout/CenterCanvas.tsx` — MODIFIED: Weaver tab + "Passive Tree" relabel + `CENTER_TAB_IDS`/`safeCenterTab` guard + content switch shows the tree container for `tree`/`weaver`.
+- `lebo/src/App.tsx` — MODIFIED: center-tab keyboard mapping `1–5` → `1–6` (`weaver` at `2`, new `6` → `blessing`).
+- `lebo/src/features/skill-tree/SkillTreeView.tsx` — MODIFIED: loop-safe `centerTab ⟷ activeTabIndex` sync (store reads + effect + `handleTabChange` mirror).
+- `lebo/src/shared/utils/buildSectionStatus.ts` — MODIFIED: `weaverPoints` helper + `weaver` entry in both branches of the exhaustive `Record<CenterTab, SectionStatus>`.
+- `lebo/src/features/layout/LeftPanel.tsx` — MODIFIED: `NAV_ROWS` Weaver row + "Passive Tree" relabel + collapsed-rail weaver glyph.
+- `lebo/src/features/layout/CenterCanvas.test.tsx` — NEW: six-tab order, divider, Weaver badge, per-tab routing, tree/context display toggle, `safeCenterTab` fallback, axe.
+- `lebo/src/shared/utils/buildSectionStatus.test.ts` — NEW: `weaver` entry boundary (`0`/`1` pts) + sum + `tree` unchanged.
+- `lebo/src/App.keyboard.test.tsx` — MODIFIED: `1–6` mapping block + settings-view guard.
+- `lebo/src/features/layout/LeftPanel.test.tsx` — MODIFIED: 6-row reconciliation, "Passive Tree" label, duplicate "0 pts" via `getAllByText`, Weaver-row routing test.
+
 ## Change Log
 
+- 2026-06-05 — Story 2.5 implemented (→ review) via dev-story: `CenterTab` union += `'weaver'`; six-tab bar **Passive Tree | Weaver ┊ Gear | Skills | Idols | Blessings** with Weaver badge (`Σ weaverAllocations`) and `safeCenterTab` guard; keyboard `1–6` remap; loop-safe `centerTab ⟷ SkillTreeView.activeTabIndex` sync; compile-required `weaver` entry in `getSectionStatus`'s exhaustive `Record<CenterTab,…>` (`done: weaverPoints >= 1`); LeftPanel Weaver nav row + "Passive Tree" relabel. New `CenterCanvas.test.tsx` + `buildSectionStatus.test.ts`; extended `App.keyboard.test.tsx` (1–6) and reconciled `LeftPanel.test.tsx`. tsc 0 / build 0 / full suite 1119 passed, 8 failed across exactly the standing baseline (`ProviderSelector`/`Settings`/`SkillTreeCanvas`/`TreeControls`) — no new failures. Source Audit: N/A (no-new-stat / no-dead-key). Scope boundary honored (PixiJS canvas, Epic-5 skill-tree relocation, context-tab content, RightPanel/AppHeader/StatusBar, store schema/types beyond the union string untouched).
 - 2026-06-05 — Story 2.5 drafted (ready-for-dev) via create-story: center canvas six-tab bar with Weaver (FR-36 / AR-6 partial). Extend `CenterTab` union with `'weaver'` (passive + weaver = the two canvas tabs); six-tab bar **Passive Tree | Weaver ┊ Gear | Skills | Idols | Blessings** with divider, Weaver badge (`Σ weaverAllocations`), and `safeCenterTab` guard; keyboard `1–6` remap; thin loop-safe `centerTab ⟷ SkillTreeView.activeTabIndex` sync so the center Weaver tab shows the weaver tree (SkillTreeView/SkillTreeTabBar otherwise untouched — slot relocation is FR-43/Epic 5); compile-required `weaver` entry in `getSectionStatus`'s exhaustive `Record<CenterTab, …>`; LeftPanel Weaver nav row + "Passive Tree" relabel (the row Story 2.3 deferred here). New `CenterCanvas.test.tsx`, extended `App.keyboard.test.tsx` (1–6), `buildSectionStatus.test.ts` weaver boundary, reconciled `LeftPanel.test.tsx`. **Source Audit: N/A (no-new-stat / no-dead-key — Weaver badge re-presents existing `weaverAllocations`).** Scope boundary: PixiJS canvas, per-skill tree relocation (Epic 5), context-tab content (Epics 1/3/4), RightPanel/AppHeader/StatusBar, and all store schema/types beyond the union string are untouched.

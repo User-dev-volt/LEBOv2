@@ -15,6 +15,10 @@ function passivePoints(build: BuildState): number {
   return Object.values(build.nodeAllocations).reduce((sum, v) => sum + v, 0)
 }
 
+function weaverPoints(build: BuildState): number {
+  return Object.values(build.weaverAllocations).reduce((sum, v) => sum + v, 0)
+}
+
 function filledGear(build: BuildState): number {
   return (build.contextData.gear ?? []).filter((g) => (g.itemName ?? '').trim() !== '').length
 }
@@ -35,6 +39,7 @@ export function getSectionStatus(build: BuildState | null): Record<CenterTab, Se
   if (!build) {
     return {
       tree: { count: '0 pts', full: false, done: false },
+      weaver: { count: '0 pts', full: false, done: false },
       gear: { count: '0/11', full: false, done: false },
       skill: { count: '0/5', full: false, done: false },
       idol: { count: '0 placed', full: false, done: false },
@@ -43,6 +48,7 @@ export function getSectionStatus(build: BuildState | null): Record<CenterTab, Se
   }
 
   const pts = passivePoints(build)
+  const weaver = weaverPoints(build)
   const gear = filledGear(build)
   const skills = filledSkills(build)
   const idols = placedIdols(build)
@@ -50,6 +56,7 @@ export function getSectionStatus(build: BuildState | null): Record<CenterTab, Se
 
   return {
     tree: { count: `${pts} pts`, full: false, done: pts >= 1 },
+    weaver: { count: `${weaver} pts`, full: false, done: weaver >= 1 },
     gear: { count: `${gear}/11`, full: gear === 11, done: gear === 11 },
     skill: { count: `${skills}/5`, full: skills === 5, done: skills >= 2 },
     idol: { count: `${idols} placed`, full: false, done: idols >= 1 },

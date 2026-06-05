@@ -118,15 +118,17 @@ describe('LeftPanel', () => {
 
   // ── AC3: navigator rows + fill counts + click ────────────────────────────
 
-  it('renders all 5 navigator rows with their fill counts', () => {
+  it('renders all 6 navigator rows with their fill counts', () => {
     render(<LeftPanel />)
     const nav = screen.getByText('Build Sections').parentElement as HTMLElement
-    expect(within(nav).getByText('Skill Trees')).toBeInTheDocument()
+    expect(within(nav).getByText('Passive Tree')).toBeInTheDocument()
+    expect(within(nav).getByText('Weaver')).toBeInTheDocument()
     expect(within(nav).getByText('Gear')).toBeInTheDocument()
     expect(within(nav).getByText('Active Skills')).toBeInTheDocument()
     expect(within(nav).getByText('Idols')).toBeInTheDocument()
     expect(within(nav).getByText('Blessings')).toBeInTheDocument()
-    expect(within(nav).getByText('0 pts')).toBeInTheDocument()
+    // Passive Tree and Weaver both read "0 pts" with no allocations.
+    expect(within(nav).getAllByText('0 pts')).toHaveLength(2)
     expect(within(nav).getByText('0/11')).toBeInTheDocument()
     expect(within(nav).getByText('0 placed')).toBeInTheDocument()
   })
@@ -135,6 +137,12 @@ describe('LeftPanel', () => {
     render(<LeftPanel />)
     fireEvent.click(screen.getByText('Gear'))
     expect(useAppStore.getState().centerTab).toBe('gear')
+  })
+
+  it('renders the Weaver row and routes to the weaver tab', () => {
+    render(<LeftPanel />)
+    fireEvent.click(screen.getByText('Weaver'))
+    expect(useAppStore.getState().centerTab).toBe('weaver')
   })
 
   it('marks the active navigator row with aria-current', () => {
@@ -187,10 +195,10 @@ describe('LeftPanel', () => {
     expect(skillRow.querySelector('svg')).toBeNull()
   })
 
-  it('shows a checkmark on Skill Trees once at least 1 passive point is allocated', () => {
+  it('shows a checkmark on Passive Tree once at least 1 passive point is allocated', () => {
     useBuildStore.setState({ activeBuild: makeBuild({ nodeAllocations: { n1: 1 } }) })
     render(<LeftPanel />)
-    const treeRow = screen.getByText('Skill Trees').closest('button') as HTMLElement
+    const treeRow = screen.getByText('Passive Tree').closest('button') as HTMLElement
     expect(within(treeRow).getByText('1 pts')).toBeInTheDocument()
     expect(treeRow.querySelector('svg')).toBeInTheDocument()
   })

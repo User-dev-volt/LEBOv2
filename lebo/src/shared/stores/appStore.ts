@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 export type PanelCollapseState = 'expanded' | 'collapsed'
-export type CenterTab = 'tree' | 'gear' | 'skill' | 'idol' | 'blessing'
+export type CenterTab = 'tree' | 'weaver' | 'gear' | 'skill' | 'idol' | 'blessing'
 
 interface PanelState {
   left: PanelCollapseState
