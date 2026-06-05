@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
--
+Write the comprehensive Story 2.5 file (ready to paste once you confirm the API error is resolved or ask me to proceed).
 
 ---
 
