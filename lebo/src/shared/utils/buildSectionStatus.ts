@@ -16,11 +16,11 @@ function passivePoints(build: BuildState): number {
 }
 
 function filledGear(build: BuildState): number {
-  return (build.contextData.gear ?? []).filter((g) => g.itemName.trim() !== '').length
+  return (build.contextData.gear ?? []).filter((g) => (g.itemName ?? '').trim() !== '').length
 }
 
 function filledSkills(build: BuildState): number {
-  return (build.contextData.skills ?? []).filter((s) => s.skillName.trim() !== '').length
+  return (build.contextData.skills ?? []).filter((s) => (s.skillName ?? '').trim() !== '').length
 }
 
 function placedIdols(build: BuildState): number {

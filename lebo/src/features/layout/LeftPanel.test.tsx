@@ -4,9 +4,10 @@ import { axe } from 'vitest-axe'
 import { useAppStore } from '../../shared/stores/appStore'
 import { useBuildStore } from '../../shared/stores/buildStore'
 import { useGameDataStore } from '../../shared/stores/gameDataStore'
-import type { BuildState } from '../../shared/types/build'
+import type { BuildState, GearItemV2, ActiveSkill, PlacedIdol } from '../../shared/types/build'
 import type { GameData } from '../../shared/types/gameData'
 import { LeftPanel } from './LeftPanel'
+import { ClassGlyph } from './ClassGlyph'
 
 vi.mock('../../shared/utils/invokeCommand', () => ({
   invokeCommand: vi.fn().mockResolvedValue(undefined),
@@ -70,12 +71,16 @@ function makeBuild(overrides: Partial<BuildState> = {}): BuildState {
   }
 }
 
-function gear(name: string) {
+function gear(name: string): GearItemV2 {
   return { slotId: name, itemName: name, affixes: [] }
 }
 
-function skill(name: string) {
+function skill(name: string): ActiveSkill {
   return { slotId: name, skillName: name, skillId: name }
+}
+
+function idol(id: string): PlacedIdol {
+  return { id, row: 0, col: 0, idolTypeId: 'minor-1x1' }
 }
 
 describe('LeftPanel', () => {
@@ -166,6 +171,46 @@ describe('LeftPanel', () => {
     expect(twoRow.querySelector('svg')).toBeInTheDocument()
   })
 
+  it('excludes empty (blank-name) gear and skill slots from the fill count', () => {
+    useBuildStore.setState({
+      activeBuild: makeBuild({
+        contextData: { gear: [gear('helm'), gear(''), gear('   ')], skills: [skill('a'), skill('')], idols: [] },
+      }),
+    })
+    render(<LeftPanel />)
+    const gearRow = screen.getByText('Gear').closest('button') as HTMLElement
+    expect(within(gearRow).getByText('1/11')).toBeInTheDocument()
+    const skillRow = screen.getByText('Active Skills').closest('button') as HTMLElement
+    expect(within(skillRow).getByText('1/5')).toBeInTheDocument()
+    // Below their gate thresholds → no checkmark.
+    expect(gearRow.querySelector('svg')).toBeNull()
+    expect(skillRow.querySelector('svg')).toBeNull()
+  })
+
+  it('shows a checkmark on Skill Trees once at least 1 passive point is allocated', () => {
+    useBuildStore.setState({ activeBuild: makeBuild({ nodeAllocations: { n1: 1 } }) })
+    render(<LeftPanel />)
+    const treeRow = screen.getByText('Skill Trees').closest('button') as HTMLElement
+    expect(within(treeRow).getByText('1 pts')).toBeInTheDocument()
+    expect(treeRow.querySelector('svg')).toBeInTheDocument()
+  })
+
+  it('shows a checkmark on Idols once at least 1 idol is placed', () => {
+    useBuildStore.setState({ activeBuild: makeBuild({ idolGrid: [idol('i1')] }) })
+    render(<LeftPanel />)
+    const idolRow = screen.getByText('Idols').closest('button') as HTMLElement
+    expect(within(idolRow).getByText('1 placed')).toBeInTheDocument()
+    expect(idolRow.querySelector('svg')).toBeInTheDocument()
+  })
+
+  it('shows a checkmark on Blessings once at least 1 non-null blessing is set, ignoring null slots', () => {
+    useBuildStore.setState({ activeBuild: makeBuild({ blessings: { s1: 'b1', s2: null } }) })
+    render(<LeftPanel />)
+    const blessingRow = screen.getByText('Blessings').closest('button') as HTMLElement
+    expect(within(blessingRow).getByText('1/5')).toBeInTheDocument()
+    expect(blessingRow.querySelector('svg')).toBeInTheDocument()
+  })
+
   // ── AC5: Import Character button ─────────────────────────────────────────
 
   it('renders an enabled Import Character button (no Paste build code input)', () => {
@@ -199,5 +244,46 @@ describe('LeftPanel', () => {
   it('has no axe violations', async () => {
     const { container } = render(<LeftPanel />)
     expect(await axe(container)).toHaveNoViolations()
+  })
+})
+
+describe('ClassGlyph', () => {
+  const CLASS_IDS = ['acolyte', 'mage', 'primalist', 'rogue', 'sentinel'] as const
+
+  function glyphPaths(classId: string): string[] {
+    const { container } = render(<ClassGlyph classId={classId} />)
+    const svg = container.querySelector('svg') as SVGElement
+    expect(svg).toBeInTheDocument()
+    return Array.from(svg.querySelectorAll('path')).map((p) => p.getAttribute('d') ?? '')
+  }
+
+  it('renders a distinct, decorative glyph for every base class', () => {
+    const signatures = new Set<string>()
+    for (const id of CLASS_IDS) {
+      const { container, unmount } = render(<ClassGlyph classId={id} />)
+      const svg = container.querySelector('svg') as SVGElement
+      expect(svg).toBeInTheDocument()
+      expect(svg).toHaveAttribute('aria-hidden', 'true')
+      signatures.add(svg.innerHTML)
+      unmount()
+    }
+    // Each class must produce a unique motif — no copy-paste duplication.
+    expect(signatures.size).toBe(CLASS_IDS.length)
+  })
+
+  it('renders the generic circle fallback for an unknown classId', () => {
+    const { container } = render(<ClassGlyph classId="unknown-class" />)
+    const svg = container.querySelector('svg') as SVGElement
+    expect(svg).toBeInTheDocument()
+    expect(svg.querySelector('circle')).toBeInTheDocument()
+    expect(svg.querySelector('path')).toBeNull()
+  })
+
+  it('does not reuse a class motif for the fallback', () => {
+    const fallback = glyphPaths('unknown-class')
+    expect(fallback).toEqual([]) // fallback is a lone <circle>, no paths
+    for (const id of CLASS_IDS) {
+      expect(glyphPaths(id).length).toBeGreaterThan(0)
+    }
   })
 })
