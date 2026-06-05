@@ -43,14 +43,14 @@
   --color-node-locked:    #2A2A35;
   --color-node-suggested: #7B68EE;
 
-  /* Item rarity colors (Claude Design palette; mirror rarityColors.ts — keep values in sync) */
-  --color-rarity-common:    #C6C0B5; /* Last Epoch "Normal" tier */
-  --color-rarity-magic:     #4A7A9E;
-  --color-rarity-rare:      #C9A84C;
-  --color-rarity-unique:    #D4805A;
-  --color-rarity-set:       #5EBD78;
-  --color-rarity-exalted:   #9C27B0;
-  --color-rarity-legendary: #B068E8;
+  /* Item rarity colors — verified against Last Epoch in-game palette; mirror rarityColors.ts — keep values in sync */
+  --color-rarity-common:    #F4F4F4; /* Last Epoch "Normal" tier — white */
+  --color-rarity-magic:     #3096D2;
+  --color-rarity-rare:      #E3D057;
+  --color-rarity-unique:    #BB5D0B;
+  --color-rarity-set:       #6ADA76;
+  --color-rarity-exalted:   #A672DB;
+  --color-rarity-legendary: #E12166;
 
   /* Damage-type colors (Last Epoch canonical) */
   --color-dmg-physical:  #D0D0D0;

@@ -1,6 +1,6 @@
 # Story 2.1: Design-token reconciliation
 
-Status: in-progress
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -83,7 +83,11 @@ _Code review 2026-06-04 (3-layer adversarial: Blind Hunter / Edge Case Hunter / 
 
 - [ ] [Review][Decision → RESOLVED: verify against the game first] (Alec, 2026-06-04) Reconciled palette creates color collisions/proximity — `--color-rarity-rare`/`RARITY_COLORS.rare` `#C9A84C` is now byte-identical to `--color-accent-gold #C9A84C` (rare items read as the global gold accent); `legendary` flipped red→purple (`#C62828`→`#B068E8`), joining `exalted #9C27B0` and `--color-node-suggested #7B68EE` in a 3-purple cluster; `unique`/`rare` lost the old vivid-orange↔gold hue separation.
   - **Provenance discovered during review:** these values are the *prototype designer's palette* (`_bmad-output/last-epoch-build-optimizer-UI-Handoff/styles.css` `--rarity-*`), adopted via ADR-P4-007 as the "Claude Design palette" — **not** sampled from the actual game. This story replaced a `/* Last Epoch canonical */` comment with `/* Claude Design palette */`; neither old nor new values were verified against LE's in-game UI.
-  - **Resolution:** Code is correct per ADR-P4-007, but the *palette source* is in question. Alec chose to **verify against the game first** — use the `/rip` Last Epoch UI Kit extractor to pull LE's real rarity colors, compare to both palettes, then reconcile. This is a **correct-course on ADR-P4-007**, gating story 2.1's `done` status. Story → `in-progress` pending verification. Tracked in `deferred-work.md`.
+  - **Resolution (CLOSED 2026-06-04):** Verified against the game and **reconciled to the real LE palette** (correct-course on ADR-P4-007). The `/rip` route was a dead end (LE is IL2CPP — colors are native-code defaults, not asset-rippable; see `deferred-work.md`), so the palette was captured from **LastEpochTools.com** (faithful LE color reproduction): lossless desktop PNG tooltips for 6 tiers + a docs-page screenshot for Rare. Final verified values now in `rarityColors.ts` + `--color-rarity-*`:
+    - `common #F4F4F4` (white) · `magic #3096D2` (azure) · `rare #E3D057` (gold) · `set #6ADA76` (green) · `unique #BB5D0B` (orange-brown) · `exalted #A672DB` (purple) · `legendary #E12166` (red).
+    - The designer "Claude palette" diverged from the game on nearly every tier — most critically **legendary** (mockup `#B068E8` purple → game `#E12166` red), plus magic/unique/common. `exalted` was also set to the real value (`#9C27B0` → `#A672DB`); Story 2.1 had left it untouched for lack of a design value.
+    - **Minor caveat:** `rare #E3D057` came from a JPEG/phone capture (vivid display), so ±a few values — refinable from a desktop PNG later if pixel-perfection is wanted.
+    - tsc exit 0 · `rarityColors.test.ts` + `GearSlot.test.tsx` 50/50 pass · `pnpm build` green. ADR-P4-007 AR-9 table annotated with the correction.
 
 - [x] [Review][Defer] Two-sources-of-truth: `--color-rarity-*` duplicate `rarityColors.ts` with no sync guard [lebo/src/assets/styles/global.css:47-53] — deferred, pre-existing (tokens are currently **unused** — zero `var(--color-rarity-*)` consumers in `src/`; AC3 keeps them honest but nothing enforces the mirror; consider a sync-guard test or deleting the unused tokens in a future cleanup)
 - [x] [Review][Defer] `getRarityColorForItemType` covers only `base`/`unique`; the other 5 tiers have no item-type-path test [lebo/src/shared/utils/rarityColors.ts:13-14] — deferred, pre-existing (signature is `'base' | 'unique'`; TS closes other paths — recolor of magic/rare/set/exalted/legendary is asserted only at the constant, not through a consumer)
@@ -180,3 +184,4 @@ claude-opus-4-8 (Claude Code, bmad-dev-story workflow)
 | Date | Change |
 |------|--------|
 | 2026-06-04 | Implemented Story 2.1 — design-token reconciliation (values-only). Added `--color-bg-sunken`; reconciled rarity palette in `rarityColors.ts` + `--color-rarity-*` tokens; updated coupled tests. tsc/build green; no new test failures vs. baseline. Status → review. |
+| 2026-06-04 | Code review (3-layer adversarial): all 4 ACs pass, code correct. Review surfaced the palette came from the designer mockup, not the game. Alec correct-coursed: verified rarity colors against LastEpochTools.com and reconciled `rarityColors.ts` + `--color-rarity-*` + tests to the real LE palette (legendary purple→red, magic, unique, common, exalted all corrected). tsc/tests(50)/build green. Status → done. |

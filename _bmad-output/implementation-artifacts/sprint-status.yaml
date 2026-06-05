@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-02
-last_updated: 2026-06-04 (Story 2.1 code review: all 4 ACs pass, code correct; but review found the rarity palette comes from the designer mockup (ADR-P4-007 "Claude Design palette"), NOT verified against the actual game — Alec chose to verify LE's real rarity colors via /rip first. 2.1 → in-progress pending that correct-course on ADR-P4-007.)
+last_updated: 2026-06-04 (Story 2.1 → done. Code review passed all 4 ACs; correct-course applied: rarity palette verified against LastEpochTools.com and reconciled to the real LE colors (designer mockup was wrong on most tiers — legendary purple→red, etc.). rarityColors.ts + --color-rarity-* + tests updated; tsc/tests(50)/build green.)
 project: LEBOv2
 project_key: NOKEY
 tracking_system: file-system
@@ -56,7 +56,7 @@ development_status:
 
   # Epic 2: UI/UX Revamp — Claude Design System
   epic-2: in-progress
-  2-1-design-token-reconciliation: in-progress
+  2-1-design-token-reconciliation: done
   2-2-header-navigation: backlog
   2-3-left-panel-build-identity-and-section-navigator: backlog
   2-4-right-panel-score-gauge-archetype-optimizer-chrome: backlog

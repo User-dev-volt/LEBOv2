@@ -1,13 +1,15 @@
 import type { DamageType } from '../types/itemDatabase'
 
+// Verified against Last Epoch's in-game palette (via LastEpochTools.com, 2026-06-04).
+// Keys kept as-is (P4-8: no rename); `common` = LE "Normal" tier.
 export const RARITY_COLORS: Record<string, string> = {
-  common:    '#C6C0B5', // Last Epoch "Normal" tier — key kept as `common` (P4-8: no rename)
-  magic:     '#4A7A9E',
-  rare:      '#C9A84C',
-  unique:    '#D4805A',
-  set:       '#5EBD78',
-  exalted:   '#9C27B0',
-  legendary: '#B068E8',
+  common:    '#F4F4F4', // Normal — white
+  magic:     '#3096D2', // azure
+  rare:      '#E3D057', // gold
+  unique:    '#BB5D0B', // orange-brown
+  set:       '#6ADA76', // green
+  exalted:   '#A672DB', // purple
+  legendary: '#E12166', // red
 }
 
 export function getRarityColorForItemType(type: 'base' | 'unique'): string {

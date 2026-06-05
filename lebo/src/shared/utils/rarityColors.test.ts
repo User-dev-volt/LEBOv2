@@ -11,42 +11,42 @@ describe('RARITY_COLORS', () => {
     expect(Object.keys(RARITY_COLORS)).toHaveLength(7)
   })
 
-  it('normal (common key) color is #C6C0B5', () => {
-    expect(RARITY_COLORS.common).toBe('#C6C0B5')
+  it('normal (common key) color is #F4F4F4', () => {
+    expect(RARITY_COLORS.common).toBe('#F4F4F4')
   })
 
-  it('magic color is #4A7A9E', () => {
-    expect(RARITY_COLORS.magic).toBe('#4A7A9E')
+  it('magic color is #3096D2', () => {
+    expect(RARITY_COLORS.magic).toBe('#3096D2')
   })
 
-  it('rare color is #C9A84C', () => {
-    expect(RARITY_COLORS.rare).toBe('#C9A84C')
+  it('rare color is #E3D057', () => {
+    expect(RARITY_COLORS.rare).toBe('#E3D057')
   })
 
-  it('unique color is #D4805A', () => {
-    expect(RARITY_COLORS.unique).toBe('#D4805A')
+  it('unique color is #BB5D0B', () => {
+    expect(RARITY_COLORS.unique).toBe('#BB5D0B')
   })
 
-  it('set color is #5EBD78', () => {
-    expect(RARITY_COLORS.set).toBe('#5EBD78')
+  it('set color is #6ADA76', () => {
+    expect(RARITY_COLORS.set).toBe('#6ADA76')
   })
 
-  it('exalted color is #9C27B0', () => {
-    expect(RARITY_COLORS.exalted).toBe('#9C27B0')
+  it('exalted color is #A672DB', () => {
+    expect(RARITY_COLORS.exalted).toBe('#A672DB')
   })
 
-  it('legendary color is #B068E8', () => {
-    expect(RARITY_COLORS.legendary).toBe('#B068E8')
+  it('legendary color is #E12166', () => {
+    expect(RARITY_COLORS.legendary).toBe('#E12166')
   })
 })
 
 describe('getRarityColorForItemType', () => {
-  it('returns unique color (#D4805A) for type "unique"', () => {
-    expect(getRarityColorForItemType('unique')).toBe('#D4805A')
+  it('returns unique color (#BB5D0B) for type "unique"', () => {
+    expect(getRarityColorForItemType('unique')).toBe('#BB5D0B')
   })
 
-  it('returns normal color (#C6C0B5) for type "base"', () => {
-    expect(getRarityColorForItemType('base')).toBe('#C6C0B5')
+  it('returns normal color (#F4F4F4) for type "base"', () => {
+    expect(getRarityColorForItemType('base')).toBe('#F4F4F4')
   })
 })
 

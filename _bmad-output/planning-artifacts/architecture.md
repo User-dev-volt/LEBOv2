@@ -296,8 +296,10 @@ type CenterTab = 'tree' | 'weaver' | 'gear' | 'skill' | 'idol' | 'blessing'     
 | `--color-accent-gold` | `#C9A84C` |
 | `--color-bg-base` / `-surface` / `-elevated` / `-hover` | `#0A0A0B` / `#141417` / `#1C1C21` / `#252530` |
 | `--color-node-suggested` | `#7B68EE` |
-| rarity tokens (via `rarityColors.ts`) | normal `#C6C0B5`, magic `#4A7A9E`, rare `#C9A84C`, set `#5EBD78`, unique `#D4805A`, legendary `#B068E8` |
+| rarity tokens (via `rarityColors.ts`) | ⚠️ SUPERSEDED — see correction below |
 | NEW: `--color-bg-sunken` | `#060607` |
+
+> **⚠️ Correction (2026-06-04, Story 2.1 code review — correct-course):** The rarity values above came from the prototype designer's mockup, **not** the game, and diverged from Last Epoch on nearly every tier (most critically legendary, which the mockup made purple). They were verified against the actual game (via LastEpochTools.com) and **superseded** by the real LE palette: **normal `#F4F4F4`, magic `#3096D2`, rare `#E3D057`, set `#6ADA76`, unique `#BB5D0B`, exalted `#A672DB`, legendary `#E12166`**. A Last Epoch companion app must match the game's rarity colors. The "no rename / values-only / route through `rarityColors.ts`" discipline (Pattern P4-8) is unchanged; only the *target values* corrected. The bg/accent/node-suggested/`--color-bg-sunken` rows above remain valid.
 
 **Rationale:** The codebase references `--color-*` everywhere and `rarityColors.ts` keys off them; the handoff uses unprefixed `--*` tokens with a different gold and an added legendary rarity. Renaming tokens would touch every component and the rarity utility for zero visual benefit. Updating values in the single global stylesheet (Tailwind v4 CSS-first, no config file) re-skins the whole app at once, and `rarityColors.ts` keeps working. FR-7 also revises Phase 3's rarity hex list (`#E87722` unique → `#D4805A`, etc.) — this is the place that reconciliation lands. Components are then rebuilt to the Claude Design layout (FR-33–39) consuming these tokens — a faithful recreation, not a wrapping of the prototype JSX (PRD §4.7).
 
