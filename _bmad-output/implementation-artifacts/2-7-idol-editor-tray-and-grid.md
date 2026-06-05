@@ -129,6 +129,15 @@ The SOURCE-AUDIT GUARDRAIL's "map each new stat to real shipped-data, or declare
   - [x] `CI=true pnpm exec vitest run` → **no new failures** vs the standing baseline (`ProviderSelector` / `Settings` / `SkillTreeCanvas` / `TreeControls`); no baseline file cleared or added.
   - [x] `pnpm build` → exit 0 (pre-existing >500 kB chunk advisory only).
 
+### Review Findings
+
+_Code review 2026-06-05 (Blind Hunter + Edge Case Hunter + Acceptance Auditor, pinned diff f9f60a5..eab9ccb). All 6 ACs verified MET by the Acceptance Auditor; every Critical scope boundary clean (idol data wiring untouched, no DnD/store/dep/IPC, grid data-driven, token discipline). 0 patch findings — implementation is correct as shipped. 1 decision, 3 deferred, 21 dismissed as noise/false-positives._
+
+- [ ] [Review][Decision] Tray filter that excludes the currently-selected idol leaves its affix-config panel open below the list — `selectedType` derives from full `idolTypes`, not the filtered `visible` set [IdolTray.tsx:42,133]. Selection persists and stays placeable (panel header names it), only the card highlight leaves the list. Decision: deselect when the selected card is filtered out, or keep as-is?
+- [x] [Review][Defer] Stale/removed `idolTypeId` → placed idol becomes invisible on the grid and un-removable via click, yet still listed in Active Idol Stats; another idol can overlap its untracked footprint [idolGridUtils.ts:79; IdolEditor.tsx:132] — deferred, pre-existing util behavior (`getOccupantAt`/`isOccupiedByAnother` unchanged by this story), data-staleness path already flagged by the app's staleness system; idol data wiring is explicitly out of scope.
+- [x] [Review][Defer] Malformed/degenerate idol-type or grid data isn't defensively annotated: empty `prefixPool` (non-`requiresBoth`), `requiresBoth` with empty `suffixPool`, `tiers: []`, or `rows/cols: 0` produce a selectable-but-never-placeable card / empty grid with no guard message [IdolTray.tsx; IdolAffixPicker.tsx; IdolGrid.tsx:59] — deferred, data-quality only; Phase-3 idol data is valid, no crash, out of scope for a visual rebuild.
+- [x] [Review][Defer] `crypto.randomUUID()` unguarded in `handlePlace` [IdolEditor.tsx:69] — deferred, pre-existing pattern (old code used it too) and available in Tauri secure-context webviews.
+
 ## Dev Notes
 
 ### This is a visual + interaction rebuild — keep the data wiring, swap the placement UX
