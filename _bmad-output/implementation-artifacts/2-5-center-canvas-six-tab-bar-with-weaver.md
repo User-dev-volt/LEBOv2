@@ -1,6 +1,6 @@
 # Story 2.5: Center canvas six-tab bar with Weaver
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -136,6 +136,13 @@ The SOURCE-AUDIT GUARDRAIL's "map each new stat to real shipped-data, or declare
   - [x] `CI=true pnpm exec vitest run src/features/layout/CenterCanvas.test.tsx src/App.keyboard.test.tsx src/features/layout/LeftPanel.test.tsx src/shared/utils/buildSectionStatus.test.ts` → 37 passed.
   - [x] `CI=true pnpm exec vitest run` → 1119 passed, 8 failed across exactly the standing baseline files (`ProviderSelector`/`Settings`/`SkillTreeCanvas`/`TreeControls`); no new failures.
   - [x] `pnpm build` → exit 0 (only the pre-existing >500 kB chunk-size advisory).
+
+### Review Findings
+
+_Code review 2026-06-05 (Blind Hunter + Edge Case Hunter + Acceptance Auditor). All 8 ACs verified MET; all stated scope boundaries respected. 0 patch, 1 deferred, 13 dismissed as noise/false-positives/resolved-by-design (mostly Blind Hunter findings that dissolve once the actual sync code is read). The lone decision-needed item was resolved as "keep as-is" by Alec — the coarse passive-vs-weaver mirror is intended._
+
+- [x] [Review][Dismiss] Center "Passive Tree" tab / key 1 is a no-op from a skill slot — RESOLVED keep-as-is (Alec, 2026-06-05). When the internal canvas is on a skill slot (`activeTabIndex` 1–5), `centerTab` is already `'tree'`, so clicking "Passive Tree" / pressing `1` is a no-op. This is spec-consistent (AC4 only requires the weaver→passive transition; the center bar is an explicit *coarse* passive-vs-weaver mirror with `activeTabIndex` as the sole canvas authority). By-design, no change. [`SkillTreeView.tsx:135-148`]
+- [x] [Review][Defer] LeftPanel nav highlights raw `centerTab`, not a `safeCenterTab` guard like `CenterCanvas` [`LeftPanel.tsx:80`, `LeftPanel.tsx`] — deferred, pre-existing: only manifests if `centerTab` holds an invalid value, which is unreachable today (`setCenterTab` is typed and `appStore` is not persisted). One-line fix if defensive consistency is wanted.
 
 ## Dev Notes
 
