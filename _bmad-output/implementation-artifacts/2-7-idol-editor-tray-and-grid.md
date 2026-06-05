@@ -1,6 +1,6 @@
 # Story 2.7: Idol editor tray and grid
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -133,7 +133,7 @@ The SOURCE-AUDIT GUARDRAIL's "map each new stat to real shipped-data, or declare
 
 _Code review 2026-06-05 (Blind Hunter + Edge Case Hunter + Acceptance Auditor, pinned diff f9f60a5..eab9ccb). All 6 ACs verified MET by the Acceptance Auditor; every Critical scope boundary clean (idol data wiring untouched, no DnD/store/dep/IPC, grid data-driven, token discipline). 0 patch findings — implementation is correct as shipped. 1 decision, 3 deferred, 21 dismissed as noise/false-positives._
 
-- [ ] [Review][Decision] Tray filter that excludes the currently-selected idol leaves its affix-config panel open below the list — `selectedType` derives from full `idolTypes`, not the filtered `visible` set [IdolTray.tsx:42,133]. Selection persists and stays placeable (panel header names it), only the card highlight leaves the list. Decision: deselect when the selected card is filtered out, or keep as-is?
+- [x] [Review][Decision → keep-as-is, Alec] Tray filter that excludes the currently-selected idol leaves its affix-config panel open below the list — `selectedType` derives from full `idolTypes`, not the filtered `visible` set [IdolTray.tsx:42,133]. **Resolved keep-as-is:** persisting selection + in-progress affix config across a filter keystroke protects the user's work (filtering to double-check another idol won't wipe configured affixes); the panel header still names the selection and it stays placeable. Matches how a normal user expects it to behave. No change.
 - [x] [Review][Defer] Stale/removed `idolTypeId` → placed idol becomes invisible on the grid and un-removable via click, yet still listed in Active Idol Stats; another idol can overlap its untracked footprint [idolGridUtils.ts:79; IdolEditor.tsx:132] — deferred, pre-existing util behavior (`getOccupantAt`/`isOccupiedByAnother` unchanged by this story), data-staleness path already flagged by the app's staleness system; idol data wiring is explicitly out of scope.
 - [x] [Review][Defer] Malformed/degenerate idol-type or grid data isn't defensively annotated: empty `prefixPool` (non-`requiresBoth`), `requiresBoth` with empty `suffixPool`, `tiers: []`, or `rows/cols: 0` produce a selectable-but-never-placeable card / empty grid with no guard message [IdolTray.tsx; IdolAffixPicker.tsx; IdolGrid.tsx:59] — deferred, data-quality only; Phase-3 idol data is valid, no crash, out of scope for a visual rebuild.
 - [x] [Review][Defer] `crypto.randomUUID()` unguarded in `handlePlace` [IdolEditor.tsx:69] — deferred, pre-existing pattern (old code used it too) and available in Tauri secure-context webviews.
