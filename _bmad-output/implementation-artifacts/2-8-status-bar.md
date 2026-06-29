@@ -1,6 +1,6 @@
 # Story 2.8: Status bar
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -35,33 +35,33 @@ No new `StatKey`, no `StatSheet` field, no compute change → the guardrail's va
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Rebuild `StatusBar.tsx` to the three-segment prototype layout (AC: 1)**
-  - [ ] Keep the `<footer>` landmark. Layout per prototype `app.jsx:375-381` + `styles.css:412-422`: flex row, left-aligned data segment, center flex-1 unsaved segment (`text-align: center`), right LLM segment. Map prototype tokens → real ones: `--bg-base` → `--color-bg-base` (background), `--hairline` → `--color-bg-elevated` (border-top), `--text-muted` → `--color-text-muted` (base text), `--text-secondary` → `--color-text-secondary` (value text). 11px ≈ keep existing `text-xs`; dates/model ids in `font-mono` (prototype `.mono`).
-  - [ ] Left segment: `Data: {dataVersion} — {date}` — keep the existing render logic verbatim (hide when `dataVersion` null; date = `dataUpdatedAt.split('T')[0]`, omitted when null). It already produces "Data: Season 4 (Shattered Omens) — 2026-03-26" from the shipped manifest.
-  - [ ] Remove the visible Online/Offline dot+text from the footer — it duplicates the AppHeader indicator (Story 2.2, `AppHeader.tsx:188-200`) and the prototype's status bar has no online segment. **Preserve the announcement**: see Task 4.
-- [ ] **Task 2 — Unsaved-state middle segment (AC: 1)**
-  - [ ] Read `useBuildStore((s) => s.activeBuild)`. Dirty = `activeBuild && !activeBuild.isPersisted`.
-  - [ ] Dirty → `● Unsaved changes` in `var(--color-accent-gold)` (the FR-39 gold dot; prototype app.jsx:378). Persisted build → `● All changes saved` in muted text. No active build → render the segment empty (keep the flex-1 spacer so left/right stay pinned; "All changes saved" with no build would be noise).
-  - [ ] The dot is text-accompanied ("Unsaved changes") so state is not conveyed by color alone — no extra ARIA needed; do NOT make this segment aria-live (it flips on every build mutation → screen-reader spam; UX-DR12 reserves polite regions for suggestion/loading/import-progress).
-- [ ] **Task 3 — LLM provider + model segment (AC: 1)**
-  - [ ] Read `useAppStore((s) => s.llmProvider)`. Render `LLM: {Provider} · {model}`:
+- [x] **Task 1 — Rebuild `StatusBar.tsx` to the three-segment prototype layout (AC: 1)**
+  - [x] Keep the `<footer>` landmark. Layout per prototype `app.jsx:375-381` + `styles.css:412-422`: flex row, left-aligned data segment, center flex-1 unsaved segment (`text-align: center`), right LLM segment. Map prototype tokens → real ones: `--bg-base` → `--color-bg-base` (background), `--hairline` → `--color-bg-elevated` (border-top), `--text-muted` → `--color-text-muted` (base text), `--text-secondary` → `--color-text-secondary` (value text). 11px ≈ keep existing `text-xs`; dates/model ids in `font-mono` (prototype `.mono`).
+  - [x] Left segment: `Data: {dataVersion} — {date}` — keep the existing render logic verbatim (hide when `dataVersion` null; date = `dataUpdatedAt.split('T')[0]`, omitted when null). It already produces "Data: Season 4 (Shattered Omens) — 2026-03-26" from the shipped manifest.
+  - [x] Remove the visible Online/Offline dot+text from the footer — it duplicates the AppHeader indicator (Story 2.2, `AppHeader.tsx:188-200`) and the prototype's status bar has no online segment. **Preserve the announcement**: see Task 4.
+- [x] **Task 2 — Unsaved-state middle segment (AC: 1)**
+  - [x] Read `useBuildStore((s) => s.activeBuild)`. Dirty = `activeBuild && !activeBuild.isPersisted`.
+  - [x] Dirty → `● Unsaved changes` in `var(--color-accent-gold)` (the FR-39 gold dot; prototype app.jsx:378). Persisted build → `● All changes saved` in muted text. No active build → render the segment empty (keep the flex-1 spacer so left/right stay pinned; "All changes saved" with no build would be noise).
+  - [x] The dot is text-accompanied ("Unsaved changes") so state is not conveyed by color alone — no extra ARIA needed; do NOT make this segment aria-live (it flips on every build mutation → screen-reader spam; UX-DR12 reserves polite regions for suggestion/loading/import-progress).
+- [x] **Task 3 — LLM provider + model segment (AC: 1)**
+  - [x] Read `useAppStore((s) => s.llmProvider)`. Render `LLM: {Provider} · {model}`:
     - `'claude'` → `LLM: Claude · claude-sonnet-4-6` — define `const CLAUDE_MODEL_LABEL = 'claude-sonnet-4-6'` in `StatusBar.tsx` with a comment that it mirrors `CLAUDE_MODEL` in `lebo/src-tauri/src/services/claude_service.rs:8` and must be updated together (no IPC exists to read it; adding a command is out of scope).
     - `'openrouter'` → `LLM: OpenRouter · free rotation` (honest label — see Source Audit; do NOT copy the prototype's mocked "gemini-2.0-flash").
     - `null` (startup, pre-vault-read) → render nothing for this segment; `App.tsx` resolves the provider (or falls back to `'claude'`) shortly after mount.
-  - [ ] Model id in `font-mono`, provider name in `--color-text-secondary` (prototype app.jsx:380).
-- [ ] **Task 4 — Preserve the connectivity announcement (AC: 2)**
-  - [ ] Keep an `sr-only` span inside the footer with `aria-live="polite"` `aria-atomic="true"` whose text is `Online`/`Offline` from `useAppStore((s) => s.isOnline)`. The current StatusBar is the app's only aria-live connectivity announcer (AppHeader's indicator is visual-only) — removing the visible segment must not silently drop the screen-reader announcement.
-- [ ] **Task 5 — Rewrite `StatusBar.test.tsx` to the new contract (AC: 1, 2)**
-  - [ ] Keep the existing reset harness (capture initial store state, `setState(initial, true)` in `beforeEach`) and extend it to `useBuildStore`. No Tauri IPC to mock — the component reads only store state.
-  - [ ] Assert: data segment with version+date / version-only / hidden-when-null (keep the three existing cases, using the real-shaped value `'Season 4 (Shattered Omens)'` in at least one); dirty build → "Unsaved changes" rendered and gold (assert text presence + `var(--color-accent-gold)` on the segment is acceptable here since text conveys the state); persisted build → "All changes saved"; no build → neither string; `llmProvider 'claude'` → `Claude` + `claude-sonnet-4-6`; `'openrouter'` → `OpenRouter` + `free rotation`; `null` → no "LLM:" text; visible Online/Offline text gone but the sr-only live region still announces (query `[aria-live="polite"]` inside `contentinfo`, assert textContent flips with `setOnline`).
-  - [ ] `vitest-axe`: `expect(await axe(container)).toHaveNoViolations()` (AC2 — zero new violations).
-  - [ ] Build state stub: a minimal `BuildState`-shaped object is enough; set via `useBuildStore.setState({ activeBuild: {...} })` — remember new-build shape uses `schemaVersion: 2` and `isPersisted: boolean`.
-- [ ] **Task 6 — Epic 2 a11y closeout + verification (AC: 2)**
-  - [ ] StatusBar itself has zero interactive elements (no focus-ring surface) and zero animation (no reduced-motion surface) — AC2 for this component is the axe test + correct aria-live usage. The epic-wide AC2 sweep is verified by the full suite: every 2.x component test already carries its own axe assertion; "no new failures vs baseline" is the closeout evidence.
-  - [ ] `pnpm exec tsc --noEmit` → exit 0 (watch `noUnusedLocals` after removing the online segment's imports if any become unused).
-  - [ ] `CI=true pnpm exec vitest run src/features/layout/StatusBar.test.tsx` → green.
-  - [ ] `CI=true pnpm exec vitest run` → **no new failures** vs the standing baseline (`ProviderSelector` / `Settings` / `SkillTreeCanvas` / `TreeControls`, 8 failures / ~1125 passing); no baseline file cleared or added.
-  - [ ] `pnpm build` → exit 0 (pre-existing >500 kB chunk advisory only).
+  - [x] Model id in `font-mono`, provider name in `--color-text-secondary` (prototype app.jsx:380).
+- [x] **Task 4 — Preserve the connectivity announcement (AC: 2)**
+  - [x] Keep an `sr-only` span inside the footer with `aria-live="polite"` `aria-atomic="true"` whose text is `Online`/`Offline` from `useAppStore((s) => s.isOnline)`. The current StatusBar is the app's only aria-live connectivity announcer (AppHeader's indicator is visual-only) — removing the visible segment must not silently drop the screen-reader announcement.
+- [x] **Task 5 — Rewrite `StatusBar.test.tsx` to the new contract (AC: 1, 2)**
+  - [x] Keep the existing reset harness (capture initial store state, `setState(initial, true)` in `beforeEach`) and extend it to `useBuildStore`. No Tauri IPC to mock — the component reads only store state.
+  - [x] Assert: data segment with version+date / version-only / hidden-when-null (keep the three existing cases, using the real-shaped value `'Season 4 (Shattered Omens)'` in at least one); dirty build → "Unsaved changes" rendered and gold (assert text presence + `var(--color-accent-gold)` on the segment is acceptable here since text conveys the state); persisted build → "All changes saved"; no build → neither string; `llmProvider 'claude'` → `Claude` + `claude-sonnet-4-6`; `'openrouter'` → `OpenRouter` + `free rotation`; `null` → no "LLM:" text; visible Online/Offline text gone but the sr-only live region still announces (query `[aria-live="polite"]` inside `contentinfo`, assert textContent flips with `setOnline`).
+  - [x] `vitest-axe`: `expect(await axe(container)).toHaveNoViolations()` (AC2 — zero new violations).
+  - [x] Build state stub: a minimal `BuildState`-shaped object is enough; set via `useBuildStore.setState({ activeBuild: {...} })` — remember new-build shape uses `schemaVersion: 2` and `isPersisted: boolean`.
+- [x] **Task 6 — Epic 2 a11y closeout + verification (AC: 2)**
+  - [x] StatusBar itself has zero interactive elements (no focus-ring surface) and zero animation (no reduced-motion surface) — AC2 for this component is the axe test + correct aria-live usage. The epic-wide AC2 sweep is verified by the full suite: every 2.x component test already carries its own axe assertion; "no new failures vs baseline" is the closeout evidence.
+  - [x] `pnpm exec tsc --noEmit` → exit 0 (watch `noUnusedLocals` after removing the online segment's imports if any become unused).
+  - [x] `CI=true pnpm exec vitest run src/features/layout/StatusBar.test.tsx` → green.
+  - [x] `CI=true pnpm exec vitest run` → **no new failures** vs the standing baseline (`ProviderSelector` / `Settings` / `SkillTreeCanvas` / `TreeControls`, 8 failures / ~1125 passing); no baseline file cleared or added.
+  - [x] `pnpm build` → exit 0 (pre-existing >500 kB chunk advisory only).
 
 ## Dev Notes
 
@@ -167,14 +167,31 @@ Available: `--color-bg-base/-surface/-elevated/-hover/-sunken`, `--color-accent-
 
 ### Agent Model Used
 
+claude-opus-4-8 (Opus 4.8)
+
 ### Debug Log References
+
+None — implementation was clean; no debugging cycles required. All four verification gates passed on the first run.
 
 ### Completion Notes List
 
+- Rebuilt `StatusBar.tsx` into the prototype's three-segment footer: left `Data: {version} — {date}` (value in `--color-text-secondary`, date in `font-mono`), center `flex-1` unsaved-state segment, right LLM provider+model. Footer tokens remapped — background `--color-bg-base`, hairline (border-top) `--color-bg-elevated`, base text `--color-text-muted`.
+- Center segment: dirty (`activeBuild && !isPersisted`) → gold `● Unsaved changes`; persisted → muted `● All changes saved`; no active build → empty (flex-1 spacer retained so left/right stay pinned). Not aria-live (mutation spam).
+- LLM segment honest labels: `Claude · claude-sonnet-4-6` via `CLAUDE_MODEL_LABEL` const mirroring `claude_service.rs:8` (commented drift note — no IPC exposes it); `OpenRouter · free rotation` (7-model per-request rotation, `get_model_preference` unregistered — no single honest model); `null` → segment hidden.
+- Removed the visible Online/Offline segment (duplicate of AppHeader 2.2) but preserved it as an `sr-only` `aria-live="polite"` region — verified during implementation to be the app's ONLY spoken connectivity announcer (AppHeader indicator has no live region; the three `App.tsx` global live regions cover import/AI/error only).
+- No store / IPC / Rust / dependency change. Source Audit N/A — no-new-stat / no-dead-key (every value re-presents existing store state).
+- Rewrote `StatusBar.test.tsx` to the three-segment contract: 11 tests (data version+date / version-only / hidden, dirty→gold, persisted, no-build, claude/openrouter/null LLM, sr-only connectivity flip, axe). Extended the reset harness to `useBuildStore`; typed `makeBuild` factory mirrors the store's own build shape.
+- Out-of-scope items left untouched as documented: `openrouter_service.rs:484` asserts `MODELS.len() == 4` vs the actual 7 (pre-existing Rust-side inconsistency; not in the vitest gate); no `get_model_preference` command registration.
+- Verification: `tsc --noEmit` → 0; `StatusBar.test.tsx` → 11/11; full `vitest run` → 1129 passed, 8 failed across exactly the standing baseline (ProviderSelector / Settings / SkillTreeCanvas / TreeControls) — no new failures, no baseline file cleared or added; `pnpm build` → 0 (pre-existing >500 kB chunk + font advisories only).
+
 ### File List
+
+- `lebo/src/features/layout/StatusBar.tsx` (modified)
+- `lebo/src/features/layout/StatusBar.test.tsx` (modified)
 
 ## Change Log
 
 | Date | Change |
 |------|--------|
 | 2026-06-10 | Story created (create-story workflow) — ultimate context engine analysis completed; comprehensive developer guide created. Status: ready-for-dev. |
+| 2026-06-28 | Implemented via dev-story — three-segment footer rebuild (data / unsaved / LLM), Online/Offline moved to sr-only aria-live, honest LLM labels, token remap; StatusBar.test.tsx rewritten (11 tests + axe). tsc 0 / StatusBar 11/11 / full suite 1129 pass, 8 standing-baseline fail / build 0. Status: ready-for-dev → review. |

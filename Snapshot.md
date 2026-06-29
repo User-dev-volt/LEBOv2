@@ -22,7 +22,7 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 ---
 
 ## Next Action
-Move Story 2.7 from `review` → `merged` once peer review + QA pass; no technical blockers remain.
+Run
 
 ---
 
