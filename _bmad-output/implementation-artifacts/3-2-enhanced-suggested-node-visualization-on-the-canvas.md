@@ -1,6 +1,6 @@
 # Story 3.2: Enhanced suggested-node visualization on the canvas
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -66,6 +66,21 @@ So that I can spot the best nodes to allocate at a glance, without hunting or ho
   - [x] **`pixiRenderer.test.ts`** (extend the existing mocked-Graphics tests): assert **per-tier** behavior — a gold node draws at radius ≈ `r×1.4` with a glow ring; silver at `r×1.2` with a steady ring; **a dim-tier node draws identically to a plain available node** (base radius `r`, available stroke, **no** scale, **no** glow — the confirmed AC1 scope). Assert the **reduced-motion** path: with `setReducedMotion(true)`, the gold glow ring draw is **absent** while the scaled gold node + ring remain. Assert the dashed path line is drawn between the correct two node coordinates and is **not** drawn for a dim-tier node. These are value/element assertions on the draw calls — **no snapshot tests**, no count-only "N rings drawn."
   - [x] **Guardrail:** a count-only or golden-snapshot test is insufficient — it would pass even if every node rendered the wrong tier. Assert the tier→scale/glow mapping and the path endpoints by value.
   - [x] `pnpm build` (tsc + vite) clean; full `pnpm vitest` shows **no new failures** vs the standing baseline (ProviderSelector / Settings / SkillTreeCanvas / TreeControls). Note `SkillTreeCanvas.test.tsx` is already in the failing baseline — do not let it regress further, and do not "fix" unrelated baseline failures here.
+
+---
+
+## Review Findings
+
+_Adversarial code review (bmad-code-review, 2026-06-29) — Blind Hunter + Edge Case Hunter + Acceptance Auditor, all Opus, run blind/parallel. **Verdict: AC1 / AC2 / AC3 + scope + test-quality all PASS** (Acceptance Auditor, source-verified). 22 raw findings → 1 decision-needed, 3 patch, 2 deferred, 13 dismissed. The two highest-severity blind findings ("silver gets a gold path line"; "z-order / hop-count nearest") were **dismissed as spec-compliant** — AC2 mandates a **gold** path for **both** gold and silver tiers, and Task 3 specifies graph-distance BFS + the under-nodes layering. The `isDimmed`-hides-tier finding is **moot**: `dimmed` is `EMPTY_SET` for the passive canvas (SkillTreeView.tsx:50)._
+
+- [x] [Review][Decision] **Dim-tier node in `locked` state renders as `drawLocked`, not the literal AC1 "available"** [`pixiRenderer.ts:454-471`] — the tier branch sits before `locked`, so dim/untreated nodes fall through to their *natural* state: dim+available → `drawAvailable` (correct), dim+`locked` → `drawLocked` (X-cross). **RESOLVED 2026-06-29 (Alec): accept as-is** — rendering an unallocatable dim node as locked is the honest behavior and not a regression (only the thin dim ring was removed); the deviation from AC1's literal "available" wording is ratified. No code change.
+- [x] [Review][Patch] **BFS has no empty-allocation short-circuit** [`nearestAllocatedPath.ts` / `pixiRenderer.ts` overlay gate ~`:423-426`] — on a fresh build (overlay on, nothing allocated — reachable: users run the optimizer before allocating), every gold/silver node BFS-walks the whole connected component only to return `null`, on each change-driven render. Guard at the overlay gate: skip path derivation when no node is allocated. (blind+edge)
+- [x] [Review][Patch] **BFS dequeues with `queue.shift()` (O(N) → O(N²) walk)** [`nearestAllocatedPath.ts` BFS while-loop] — replace with an index cursor (`let head = 0; const id = queue[head++]`). Lower value once the empty-allocation guard lands, but cheap and safe. (blind+edge)
+- [x] [Review][Patch] **BFS checks `isAllocated(neighbor)` before `nodes.has(neighbor)`** [`nearestAllocatedPath.ts` neighbor loop] — a dangling `connections` id that is also in `nodeAllocations` would be returned as the path terminus, then silently dropped by `addDashedPathSegments`. Add `if (!nodes.has(neighborId)) continue;` before the allocated check. Defensive (requires malformed `treeData`). (blind+edge)
+- [x] [Review][Defer] **`isGlowing` (System A hover-glow) precedes the tier branch** [`pixiRenderer.ts:449-454`] — a gold/silver suggestion whose card is hovered shows the purple System-A glow instead of its tier treatment. Owned by Story 3.3 (card↔node cross-highlight, FR-18); 3.2 deliberately preserves `glowing` as the 3.3 substrate. — deferred, owned by Story 3.3
+- [x] [Review][Defer] **Test-coverage hardening for the tier overlay** [`pixiRenderer.test.ts` / `nearestAllocatedPath.test.ts`] — value/element guardrail is met (Auditor PASS); untested edges: ticker teardown in `destroy()`, the **silver** dashed path line, same-depth BFS tie-break, dim+`locked` rendering, dash-ends-short geometry. — deferred, non-blocking
+
+**Patches applied 2026-06-29** — P1/P2/P3 fixed in `nearestAllocatedPath.ts` + the `pixiRenderer.ts` overlay gate (empty-allocation short-circuit; `queue.shift()` → head cursor; `nodes.has()` guard before `isAllocated`). Verified: `nearestAllocatedPath.test.ts` + `pixiRenderer.test.ts` **29/29 pass**, `pnpm build` clean (**tsc 0**), full `pnpm vitest` **1156 passed / 8 failed = the exact standing baseline** (ProviderSelector / Settings / SkillTreeCanvas / TreeControls) — no new failures. Status → **done**.
 
 ---
 

@@ -25,15 +25,20 @@ export function nearestAllocatedPath(
   if (start.connections.some(isAllocated)) return null
 
   // BFS with parent pointers — reconstruct the path once on the first allocated hit, rather than
-  // copying a growing path array at every visited node.
+  // copying a growing path array at every visited node. A head cursor walks the queue instead of
+  // Array.shift() (which is O(n) per dequeue → O(n^2) over the walk).
   const parent = new Map<string, string | null>([[startNodeId, null]])
   const queue: string[] = [startNodeId]
-  while (queue.length > 0) {
-    const currentId = queue.shift()!
+  let head = 0
+  while (head < queue.length) {
+    const currentId = queue[head++]
     const current = nodes.get(currentId)
     if (!current) continue
     for (const neighborId of current.connections) {
       if (parent.has(neighborId)) continue
+      // Skip dangling connection ids absent from the node map — never route through or terminate at
+      // a node the dashed-path drawer can't resolve (it would silently drop that segment).
+      if (!nodes.has(neighborId)) continue
       parent.set(neighborId, currentId)
       if (isAllocated(neighborId)) {
         const path: string[] = [neighborId]

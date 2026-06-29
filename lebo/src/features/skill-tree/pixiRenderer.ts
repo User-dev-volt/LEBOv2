@@ -425,6 +425,10 @@ export async function initRenderer(
     // skill/weaver canvases never receive nodeEfficiencies, so this stays null there.
     const overlayActive = !!(nodeEfficiencies && nodeEfficiencies.length > 0 && showOverlay)
     const effMap = overlayActive ? new Map(nodeEfficiencies!.map((e) => [e.node_id, e])) : null
+    // A dashed path can only terminate at an allocated node, so when nothing is allocated (e.g. a
+    // fresh build before the first allocation) skip every per-node BFS — otherwise each gold/silver
+    // node walks the whole connected component only to return null on every change-driven render.
+    const anyAllocated = overlayActive && Object.values(nodeAllocations).some((v) => v > 0)
     let dashedPathDrawn = false
 
     for (const node of data.nodes) {
@@ -463,7 +467,8 @@ export async function initRenderer(
         }
         // AC2: dashed gold path to the nearest allocated node — drawn only when prerequisites are
         // not yet allocated (the helper returns null when a direct prerequisite is already allocated).
-        const path = nearestAllocatedPath(data, nodeAllocations, node.id, nodeMap)
+        // Skipped entirely when nothing is allocated — no allocated target can exist (see anyAllocated).
+        const path = anyAllocated ? nearestAllocatedPath(data, nodeAllocations, node.id, nodeMap) : null
         if (path && addDashedPathSegments(dashedPathGraphics, nodeMap, path)) dashedPathDrawn = true
       } else if (node.state === 'locked') {
         drawLocked(lockedGraphics, node.x, node.y, r)
