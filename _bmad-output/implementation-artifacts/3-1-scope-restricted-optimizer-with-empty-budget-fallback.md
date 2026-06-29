@@ -1,6 +1,6 @@
 # Story 3.1: Scope-restricted optimizer with empty-budget fallback
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -32,35 +32,35 @@ So that I get actionable tree advice instead of off-tree resistance/gear warning
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Scope-restrict `assemble_run_optimization_payload` to passive-node suggestions (AC1, AC2)**
-  - [ ] In `lebo/src-tauri/src/commands/scoring_commands.rs`, edit `assemble_run_optimization_payload` so the `suggestions` vec is built **only** from the knapsack passive-node allocations (current category 4, `"efficiency"`).
-  - [ ] Remove the three off-tree suggestion categories from the emitted list: category 1 `critical_warning` (sourced from `stat_sheet.warnings`), category 2 `game_changer` + category 3 `mismatched_affix` + category 5 `zero_value_allocation` (all sourced from `synergy_flags`).
-  - [ ] Tag each emitted suggestion with an explicit discriminator `"kind": "passive_node"` (self-documents the contract and makes the guard test assert on `kind`, per the architecture's `suggestion.kind == PassiveNode` vocabulary).
-  - [ ] Keep `rank` sequential starting at 1 over the surviving (passive-node) suggestions only — do not leave gaps from the removed categories.
-  - [ ] **Do NOT touch** the `optimization:node-efficiencies` emit (lines ~56–58) — that is the canvas overlay feed (Story 3.2), not a suggestion.
-  - [ ] Simplify now-unused inputs: after removal, `assemble_run_optimization_payload` no longer reads `stat_sheet` or `synergy_flags`. Either drop those params (preferred — Rust `unused_variables`/clippy will flag them) **or**, if you keep computing them in `run_optimization`, prefix with `_`. See Dev Notes "AC2 nuance" before deciding whether to also drop the now-dead top-level `compute_stats`/`run_synergy_detection` calls.
-  - [ ] The Claude NDJSON instruction line and `buildContext` block stay as-is (buildContext already uses `snapshot` + `scan_result.build_score_baseline`, not `stat_sheet`).
-- [ ] **Task 2 — Rust guard test for the filter (AC1, AC2)**
-  - [ ] Add a `#[cfg(test)] mod tests` to `scoring_commands.rs` (none exists today — this command is currently untested).
-  - [ ] Construct fixtures that exercise every removed category: a `ScanResult` with a non-empty `knapsack_solution` + `node_efficiencies`, a list of `StatWarning`, and `SynergyFlag`s of `flag_type` `game_changer` / `mismatched_affix` / `zero_value_allocation`.
-  - [ ] Call `assemble_run_optimization_payload`, parse the returned JSON, and assert **element-level** (not count-only): every entry in `suggestions[]` has `kind == "passive_node"`, and **no** entry has a `toNodeId` beginning `warning:`, `unique:`, or `synergy:`, and no `type`/`kind` of `critical_warning`/`game_changer`/`mismatched_affix`/`zero_value_allocation`.
-  - [ ] Add the inverse assertion: when `knapsack_solution` is empty, `suggestions[]` is empty (no off-tree leakage to fill the gap).
-- [ ] **Task 3 — Frontend empty-budget guard (AC3)**
-  - [ ] Add `selectUnspentPassivePoints` selector to `buildStore.ts` (parallel to `selectAvailablePassivePoints`): `calculatePassivePoints(level) - Σ nodeAllocations.values()`. Reuse the exact idiom already at `buildStore.ts:205–206` / `296–298`.
-  - [ ] Add `optimizationNotice: string | null` + `setOptimizationNotice(notice)` to `optimizationStore.ts`; clear it inside `clearSuggestions()` (alongside the other reset fields).
-  - [ ] In `startOptimization()` (`useOptimizationStream.ts`): after resolving `activeBuild`/`gameData`, compute unspent points. If `<= 0`, call `setOptimizationNotice(EMPTY_BUDGET_MESSAGE)` and **return early** — do **not** call `invokeCommand('run_optimization')`, do **not** set `isOptimizing`. Define `EMPTY_BUDGET_MESSAGE` as the exact AC3 string.
-  - [ ] `clearSuggestions()` runs at the top of `startOptimization` today — ensure the notice is cleared on every fresh run before the guard sets it (so a prior notice doesn't linger after points are added).
-- [ ] **Task 4 — Render the notice (AC3)**
-  - [ ] In `SuggestionsList.tsx`, add a render branch for `optimizationNotice` (informational styling — NOT the red `streamError` banner, NOT `isRetryable`). Give it a `data-testid` (e.g. `empty-budget-notice`).
-  - [ ] Precedence: show the notice when present and `!isOptimizing`; it should take priority over the generic `suggestions-empty-state` / `suggestions-well-optimized` text so the user sees the specific reason.
-  - [ ] Do **not** add unspent-points to `OptimizeButton`'s `disabled` prop in `RightPanel.tsx` — the button must stay clickable so the run can produce the message (disabled stays `!activeBuild || !isOnline`).
-- [ ] **Task 5 — Frontend tests (AC3)**
-  - [ ] In `useOptimizationStream.test.ts`: with `activeBuild.characterLevel` and `nodeAllocations` set so unspent `== 0` (e.g. level 3 → budget 1, allocations sum 1), call `startOptimization()`; assert `invokeCommand` was **not** called with `'run_optimization'` and `optimizationStore.optimizationNotice` equals the exact AC3 string.
-  - [ ] Inverse: unspent `> 0` → `invokeCommand('run_optimization', …)` **is** called and notice stays `null`.
-  - [ ] In `SuggestionsList.test.tsx`: when `optimizationNotice` is set, the notice text renders; add/keep an axe check.
-- [ ] **Task 6 — Verify no regression to off-tree UI scaffolding**
-  - [ ] Confirm the `isSyntheticNodeId` / informational-card paths in `SuggestionsList.tsx` and `SuggestionCard.tsx` are left intact (see Dev Notes "Dead-but-keep"). Run the full suite; `SuggestionCard.test.tsx` / `SuggestionsList.test.tsx` synthetic-variant tests must stay green.
-  - [ ] `pnpm build` (tsc + vite) clean; `cargo test -p scoring-core` and the new `scoring_commands` test green; full `pnpm vitest` shows no new failures vs the standing baseline (ProviderSelector / Settings / SkillTreeCanvas / TreeControls).
+- [x] **Task 1 — Scope-restrict `assemble_run_optimization_payload` to passive-node suggestions (AC1, AC2)**
+  - [x] In `lebo/src-tauri/src/commands/scoring_commands.rs`, edit `assemble_run_optimization_payload` so the `suggestions` vec is built **only** from the knapsack passive-node allocations (current category 4, `"efficiency"`).
+  - [x] Remove the three off-tree suggestion categories from the emitted list: category 1 `critical_warning` (sourced from `stat_sheet.warnings`), category 2 `game_changer` + category 3 `mismatched_affix` + category 5 `zero_value_allocation` (all sourced from `synergy_flags`).
+  - [x] Tag each emitted suggestion with an explicit discriminator `"kind": "passive_node"` (self-documents the contract and makes the guard test assert on `kind`, per the architecture's `suggestion.kind == PassiveNode` vocabulary).
+  - [x] Keep `rank` sequential starting at 1 over the surviving (passive-node) suggestions only — do not leave gaps from the removed categories.
+  - [x] **Do NOT touch** the `optimization:node-efficiencies` emit (lines ~56–58) — that is the canvas overlay feed (Story 3.2), not a suggestion.
+  - [x] Simplify now-unused inputs: after removal, `assemble_run_optimization_payload` no longer reads `stat_sheet` or `synergy_flags`. Either drop those params (preferred — Rust `unused_variables`/clippy will flag them) **or**, if you keep computing them in `run_optimization`, prefix with `_`. See Dev Notes "AC2 nuance" before deciding whether to also drop the now-dead top-level `compute_stats`/`run_synergy_detection` calls.
+  - [x] The Claude NDJSON instruction line and `buildContext` block stay as-is (buildContext already uses `snapshot` + `scan_result.build_score_baseline`, not `stat_sheet`).
+- [x] **Task 2 — Rust guard test for the filter (AC1, AC2)**
+  - [x] Add a `#[cfg(test)] mod tests` to `scoring_commands.rs` (none exists today — this command is currently untested).
+  - [x] Construct fixtures that exercise every removed category: a `ScanResult` with a non-empty `knapsack_solution` + `node_efficiencies`, a list of `StatWarning`, and `SynergyFlag`s of `flag_type` `game_changer` / `mismatched_affix` / `zero_value_allocation`.
+  - [x] Call `assemble_run_optimization_payload`, parse the returned JSON, and assert **element-level** (not count-only): every entry in `suggestions[]` has `kind == "passive_node"`, and **no** entry has a `toNodeId` beginning `warning:`, `unique:`, or `synergy:`, and no `type`/`kind` of `critical_warning`/`game_changer`/`mismatched_affix`/`zero_value_allocation`.
+  - [x] Add the inverse assertion: when `knapsack_solution` is empty, `suggestions[]` is empty (no off-tree leakage to fill the gap).
+- [x] **Task 3 — Frontend empty-budget guard (AC3)**
+  - [x] Add `selectUnspentPassivePoints` selector to `buildStore.ts` (parallel to `selectAvailablePassivePoints`): `calculatePassivePoints(level) - Σ nodeAllocations.values()`. Reuse the exact idiom already at `buildStore.ts:205–206` / `296–298`.
+  - [x] Add `optimizationNotice: string | null` + `setOptimizationNotice(notice)` to `optimizationStore.ts`; clear it inside `clearSuggestions()` (alongside the other reset fields).
+  - [x] In `startOptimization()` (`useOptimizationStream.ts`): after resolving `activeBuild`/`gameData`, compute unspent points. If `<= 0`, call `setOptimizationNotice(EMPTY_BUDGET_MESSAGE)` and **return early** — do **not** call `invokeCommand('run_optimization')`, do **not** set `isOptimizing`. Define `EMPTY_BUDGET_MESSAGE` as the exact AC3 string.
+  - [x] `clearSuggestions()` runs at the top of `startOptimization` today — ensure the notice is cleared on every fresh run before the guard sets it (so a prior notice doesn't linger after points are added).
+- [x] **Task 4 — Render the notice (AC3)**
+  - [x] In `SuggestionsList.tsx`, add a render branch for `optimizationNotice` (informational styling — NOT the red `streamError` banner, NOT `isRetryable`). Give it a `data-testid` (e.g. `empty-budget-notice`).
+  - [x] Precedence: show the notice when present and `!isOptimizing`; it should take priority over the generic `suggestions-empty-state` / `suggestions-well-optimized` text so the user sees the specific reason.
+  - [x] Do **not** add unspent-points to `OptimizeButton`'s `disabled` prop in `RightPanel.tsx` — the button must stay clickable so the run can produce the message (disabled stays `!activeBuild || !isOnline`).
+- [x] **Task 5 — Frontend tests (AC3)**
+  - [x] In `useOptimizationStream.test.ts`: with `activeBuild.characterLevel` and `nodeAllocations` set so unspent `== 0` (e.g. level 3 → budget 1, allocations sum 1), call `startOptimization()`; assert `invokeCommand` was **not** called with `'run_optimization'` and `optimizationStore.optimizationNotice` equals the exact AC3 string.
+  - [x] Inverse: unspent `> 0` → `invokeCommand('run_optimization', …)` **is** called and notice stays `null`.
+  - [x] In `SuggestionsList.test.tsx`: when `optimizationNotice` is set, the notice text renders; add/keep an axe check.
+- [x] **Task 6 — Verify no regression to off-tree UI scaffolding**
+  - [x] Confirm the `isSyntheticNodeId` / informational-card paths in `SuggestionsList.tsx` and `SuggestionCard.tsx` are left intact (see Dev Notes "Dead-but-keep"). Run the full suite; `SuggestionCard.test.tsx` / `SuggestionsList.test.tsx` synthetic-variant tests must stay green.
+  - [x] `pnpm build` (tsc + vite) clean; `cargo test -p scoring-core` and the new `scoring_commands` test green; full `pnpm vitest` shows no new failures vs the standing baseline (ProviderSelector / Settings / SkillTreeCanvas / TreeControls).
 
 ---
 
@@ -195,8 +195,38 @@ This story introduces **no** new `StatKey`, no new `StatSheet` field, and no new
 
 ### Agent Model Used
 
+claude-opus-4-8 — Claude Code dev-story workflow with ultracode multi-agent adversarial verification (5 parallel review lenses: AC1, AC2, AC3, scope/regression, task-fidelity).
+
 ### Debug Log References
+
+- `cargo test -p scoring-core`: 138 passed / 0 failed — engine regression intact (floor check + `zero_budget_produces_empty_knapsack_solution` green).
+- `cargo test -p lebo`: 3 new `scoring_commands` guard tests pass. The lone failure `openrouter_service::models_list_has_four_entries` (7 vs 4) is the pre-existing, documented out-of-scope baseline — `openrouter_service.rs` untouched.
+- `pnpm build` (tsc + vite): clean (pre-existing >500 kB chunk + variable-font runtime-resolution advisories only).
+- `pnpm vitest` (full): 1140 passed / 8 failed — the 8 are exactly the standing baseline (ProviderSelector / Settings / SkillTreeCanvas / TreeControls). No new failures; +11 new tests (6 notice/guard + 5 selector).
 
 ### Completion Notes List
 
+- **AC1 (passive-node-only):** `assemble_run_optimization_payload` rebuilt to emit suggestions ONLY from the knapsack passive-node category, each tagged `"kind":"passive_node"`. The four off-tree categories (`critical_warning`, `game_changer`, `mismatched_affix`, `zero_value_allocation`) removed.
+- **AC2 (floor check still computes; suggestions scope-filtered):** Took the story's *Recommended* path — dropped the now-dead top-level `compute_stats` + `run_synergy_detection` calls inside `run_optimization` (the scan computes its own baseline) and dropped the `stat_sheet`/`synergy_flags` params from the assemble fn. The user-facing floor-check path (`useStatSheet` → `compute_stats` → `StatSheet.warnings`) and the scoring-core engine are byte-unchanged. The `optimization:node-efficiencies` overlay emit (Story 3.2) is preserved.
+- **Task 1 / Task 2 reconciliation (documented decision):** Dropping the off-tree params makes leakage *structurally impossible* (the removed categories' inputs are no longer parameters) — a stronger guarantee than the runtime fixture-feed Task 2 literally described, which is incompatible with the (preferred) dropped-params signature. The Rust guard test asserts element-level `kind=="passive_node"`, sequential rank-from-1, and no `warning:`/`unique:`/`synergy:` leakage on the knapsack output, plus the empty-knapsack→empty inverse and an empty-path-no-gap case; the bridge→target fixture exercises `find_map` target-resolution (not the `path.last()` fallback). The off-tree assertions are commented as forward-regression guards against a future off-tree branch being reintroduced in this function.
+- **AC3 (empty-budget fallback):** Frontend pre-flight guard (Alec-confirmed) in `startOptimization` — when `selectUnspentPassivePoints(state) <= 0` it sets the verbatim `EMPTY_BUDGET_MESSAGE` and returns BEFORE any `run_optimization` IPC (no paid Claude call) and without setting `isOptimizing`. `clearSuggestions` runs first (now also resets `optimizationNotice`) so the notice never lingers after points are added. `SuggestionsList` renders an informational `role="status"` card (gold border, `data-testid="empty-budget-notice"`) taking precedence over the generic empty-state / well-optimized copy. `OptimizeButton` disabled logic in `RightPanel` left untouched (stays clickable).
+- **Dead-but-keep:** `isSyntheticNodeId` / `getSyntheticVariant` / `formatSyntheticLabel` in `SuggestionsList` and `SuggestionCard`'s informational props intentionally retained (unreachable from `run_optimization` now, but the home for Epic 6's Complete Build Optimizer). Not a regression.
+- **Adversarial verification (ultracode):** 5 parallel skeptic agents — AC1, AC2, AC3, scope/regression all PASS; task-fidelity CONCERN on 2 LOW non-blocking nuances. 3 LOW findings actioned (direct `selectUnspentPassivePoints` unit tests; clarifying comment on the now-vacuous off-tree assertions; hardened the bridge→target fixture).
+- **Deferred (out of scope):** `invoke_claude_api` is a second, currently frontend-orphaned command that can emit off-tree-contextualized suggestions into the `optimization:*` namespace (still registered in `lib.rs` invoke_handler). Removing it would touch `lib.rs` invoke_handler — explicitly on this story's "Do not touch" list. Flagged for future cleanup / Epic 6.
+
 ### File List
+
+- `lebo/src-tauri/src/commands/scoring_commands.rs` — filter `assemble_run_optimization_payload` to passive-node only (+`kind`), drop dead engine calls + unused params; new `#[cfg(test)] mod tests` (3 guard tests)
+- `lebo/src/shared/stores/buildStore.ts` — add `selectUnspentPassivePoints` selector
+- `lebo/src/shared/stores/optimizationStore.ts` — add `optimizationNotice` + `setOptimizationNotice`; reset in `clearSuggestions`
+- `lebo/src/shared/stores/useOptimizationStream.ts` — `EMPTY_BUDGET_MESSAGE` + empty-budget guard in `startOptimization`
+- `lebo/src/features/optimization/SuggestionsList.tsx` — render the empty-budget notice with precedence
+- `lebo/src/shared/stores/useOptimizationStream.test.ts` — empty-budget guard tests; bump mock build level + export selector in mock
+- `lebo/src/features/optimization/SuggestionsList.test.tsx` — notice render / precedence / axe tests
+- `lebo/src/shared/stores/buildStore.test.ts` — direct `selectUnspentPassivePoints` unit tests
+
+## Change Log
+
+| Date | Change |
+|------|--------|
+| 2026-06-29 | Story 3.1 implemented (dev-story + ultracode). Backend: `run_optimization` payload scope-restricted to passive-node (knapsack) suggestions per Pattern P4-3 — off-tree categories removed, `kind:passive_node` tag added, dead `compute_stats`/`run_synergy_detection` calls + unused params dropped, `node-efficiencies` emit preserved; new Rust guard tests. Frontend: empty-budget pre-flight guard (verbatim AC3 message, no paid Claude call), `selectUnspentPassivePoints` selector, `optimizationNotice` store field, informational notice in `SuggestionsList`. Adversarially verified across 5 lenses (all ACs PASS); 3 LOW test-hardening findings actioned, 1 (`invoke_claude_api`/`lib.rs`) deferred as out-of-scope. Status → review. |

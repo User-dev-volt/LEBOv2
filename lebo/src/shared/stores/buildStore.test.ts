@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { useBuildStore, selectAvailablePassivePoints } from './buildStore'
+import { useBuildStore, selectAvailablePassivePoints, selectUnspentPassivePoints } from './buildStore'
 import type { BuildState, BuildMeta } from '../types/build'
 import type { TreeData } from '../types/treeData'
 
@@ -31,6 +31,42 @@ const mockMeta: BuildMeta = {
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
 }
+
+// Story 3.1: the empty-budget guard's selector. Tested against the REAL export (the
+// useOptimizationStream guard test mocks a re-implementation), so the production formula
+// — calculatePassivePoints(level) − Σ nodeAllocations — is guarded independently.
+describe('selectUnspentPassivePoints', () => {
+  beforeEach(() => {
+    useBuildStore.setState(initialState, true)
+  })
+
+  it('returns 0 when there is no active build', () => {
+    expect(selectUnspentPassivePoints(useBuildStore.getState())).toBe(0)
+  })
+
+  it('floors available points at 0 for levels 1-2 (level never yields a negative budget)', () => {
+    useBuildStore.getState().setActiveBuild({ ...mockBuild, characterLevel: 2, nodeAllocations: {} })
+    expect(selectUnspentPassivePoints(useBuildStore.getState())).toBe(0)
+  })
+
+  it('is (level - 2) minus the allocation sum', () => {
+    useBuildStore.getState().setActiveBuild({ ...mockBuild, characterLevel: 10, nodeAllocations: { 'node-a': 1, 'node-b': 2 } })
+    // available = 8, allocated = 3 → unspent = 5
+    expect(selectUnspentPassivePoints(useBuildStore.getState())).toBe(5)
+  })
+
+  it('returns exactly 0 when every available point is spent', () => {
+    useBuildStore.getState().setActiveBuild({ ...mockBuild, characterLevel: 3, nodeAllocations: { 'node-a': 1 } })
+    // available = 1, allocated = 1 → unspent = 0 (the guard treats this as empty budget)
+    expect(selectUnspentPassivePoints(useBuildStore.getState())).toBe(0)
+  })
+
+  it('is negative when an unenforced build is over-allocated', () => {
+    useBuildStore.getState().setActiveBuild({ ...mockBuild, characterLevel: 3, budgetEnforced: false, nodeAllocations: { 'node-a': 2, 'node-b': 2 } })
+    // available = 1, allocated = 4 → unspent = -3 (guard's <= 0 still fires)
+    expect(selectUnspentPassivePoints(useBuildStore.getState())).toBe(-3)
+  })
+})
 
 describe('buildStore', () => {
   beforeEach(() => {

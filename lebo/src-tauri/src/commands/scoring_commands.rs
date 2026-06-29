@@ -448,10 +448,11 @@ mod tests {
                 make_efficiency("passive_beta", 2.0, 1, "silver"),
             ],
             build_score_baseline: 100.0,
-            // A single-node path and a bridge→target path (path.last() is NOT the scored node).
             knapsack_solution: vec![
                 vec!["passive_alpha".to_string()],
-                vec!["bridge_node".to_string(), "passive_beta".to_string()],
+                // bridge→target→bridge: path.last() ("bridge_tail") is NOT the scored node, so
+                // this exercises the find_map target-resolution, not the path.last() fallback.
+                vec!["bridge_node".to_string(), "passive_beta".to_string(), "bridge_tail".to_string()],
             ],
         };
 
@@ -462,6 +463,10 @@ mod tests {
 
         assert_eq!(suggestions.len(), 2, "one suggestion per non-empty knapsack path");
 
+        // NOTE: off-tree inputs (StatWarning / SynergyFlag) are no longer parameters of this
+        // function, so the warning:/unique:/synergy: + off-tree-type assertions below pass
+        // vacuously today — they are forward-regression guards against a future off-tree-emitting
+        // branch being (re)introduced inside assemble_run_optimization_payload.
         for (i, s) in suggestions.iter().enumerate() {
             // Every suggestion is explicitly tagged passive_node (the kind discriminator).
             assert_eq!(
@@ -486,13 +491,18 @@ mod tests {
             );
         }
 
-        // Element-level: the surviving suggestions are exactly the knapsack passive targets.
+        // Element-level: the surviving suggestions are exactly the knapsack passive targets,
+        // and target resolution prefers the node_efficiencies match over path.last().
         let targets: Vec<&str> = suggestions
             .iter()
             .map(|s| s["toNodeId"].as_str().unwrap())
             .collect();
         assert!(targets.contains(&"passive_alpha"), "single-node path target survives");
-        assert!(targets.contains(&"passive_beta"), "bridge→target path resolves to the scored node");
+        assert!(targets.contains(&"passive_beta"), "bridge→target resolves to the scored node");
+        assert!(
+            !targets.contains(&"bridge_tail"),
+            "resolution must use node_efficiencies, not path.last()"
+        );
     }
 
     /// AC2 inverse: an empty knapsack yields zero suggestions. node_efficiencies are present
