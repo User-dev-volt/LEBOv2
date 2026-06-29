@@ -305,7 +305,7 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
       const allocated = Object.values(activeBuild.nodeAllocations).reduce((sum, v) => sum + v, 0)
       const budget = available - allocated
       if (budget <= 0) return { success: false }
-      toAllocate = nodeSpace
+      toAllocate = Math.min(nodeSpace, budget)
     }
 
     const newPoints = current + toAllocate
