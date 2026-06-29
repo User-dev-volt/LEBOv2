@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
+import { axe } from 'vitest-axe'
 import { useOptimizationStore } from '../../shared/stores/optimizationStore'
 import { useBuildStore } from '../../shared/stores/buildStore'
 import { useGameDataStore } from '../../shared/stores/gameDataStore'
@@ -623,5 +624,57 @@ describe('SuggestionsList', () => {
     })
     // After escape, focus styling should be cleared
     expect(card1.style.outline).toBeFalsy()
+  })
+
+  // Story 3.1: empty-budget notice (AC3)
+  const EMPTY_BUDGET_NOTICE =
+    'No unspent passive points available. Allocate additional points or use the Complete Build Optimizer for a full reallocation analysis.'
+
+  it('renders the empty-budget notice when optimizationNotice is set and not optimizing', () => {
+    useOptimizationStore.setState({
+      suggestions: [],
+      isOptimizing: false,
+      streamError: null,
+      optimizationNotice: EMPTY_BUDGET_NOTICE,
+    })
+    render(<SuggestionsList onRetry={vi.fn()} />)
+    expect(screen.getByTestId('empty-budget-notice')).toBeInTheDocument()
+    expect(screen.getByText(/No unspent passive points available/)).toBeInTheDocument()
+  })
+
+  it('empty-budget notice takes precedence over the generic empty-state copy', () => {
+    useOptimizationStore.setState({
+      suggestions: [],
+      isOptimizing: false,
+      streamError: null,
+      hasOptimizationCompleted: false,
+      optimizationNotice: EMPTY_BUDGET_NOTICE,
+    })
+    render(<SuggestionsList onRetry={vi.fn()} />)
+    expect(screen.getByTestId('empty-budget-notice')).toBeInTheDocument()
+    expect(screen.queryByTestId('suggestions-empty-state')).toBeNull()
+    expect(screen.queryByTestId('suggestions-well-optimized')).toBeNull()
+  })
+
+  it('does not render the empty-budget notice while optimizing', () => {
+    useOptimizationStore.setState({
+      suggestions: [],
+      isOptimizing: true,
+      streamError: null,
+      optimizationNotice: EMPTY_BUDGET_NOTICE,
+    })
+    render(<SuggestionsList onRetry={vi.fn()} />)
+    expect(screen.queryByTestId('empty-budget-notice')).toBeNull()
+  })
+
+  it('empty-budget notice has no axe violations', async () => {
+    useOptimizationStore.setState({
+      suggestions: [],
+      isOptimizing: false,
+      streamError: null,
+      optimizationNotice: EMPTY_BUDGET_NOTICE,
+    })
+    const { container } = render(<SuggestionsList onRetry={vi.fn()} />)
+    expect(await axe(container)).toHaveNoViolations()
   })
 })

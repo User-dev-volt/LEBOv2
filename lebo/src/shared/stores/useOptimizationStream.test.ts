@@ -33,7 +33,9 @@ vi.mock('../../features/optimization/scoringEngine', () => ({
   calculateScore: vi.fn(() => ({ damage: 50, survivability: 30, speed: 10 })),
 }))
 
-// Mock buildStore
+// Mock buildStore.
+// characterLevel 20 + node_a:2 → 18 available − 2 allocated = 16 unspent, so the default
+// build passes the empty-budget guard and existing tests still reach run_optimization.
 vi.mock('./buildStore', () => ({
   useBuildStore: {
     getState: vi.fn(() => ({
@@ -49,10 +51,20 @@ vi.mock('./buildStore', () => ({
         updatedAt: '2026-01-01T00:00:00Z',
         schemaVersion: 1,
         budgetEnforced: false,
-        characterLevel: 1,
+        characterLevel: 20,
         activeSkillLevels: {},
       },
     })),
+  },
+  // Mirrors the real selector: calculatePassivePoints(level) − Σ nodeAllocations.
+  selectUnspentPassivePoints: (s: {
+    activeBuild?: { characterLevel?: number; nodeAllocations?: Record<string, number> } | null
+  }) => {
+    const b = s?.activeBuild
+    if (!b) return 0
+    const available = Math.max(0, (b.characterLevel ?? 1) - 2)
+    const allocated = Object.values(b.nodeAllocations ?? {}).reduce((sum, v) => sum + v, 0)
+    return available - allocated
   },
 }))
 
@@ -68,6 +80,7 @@ vi.mock('./gameDataStore', () => ({
 
 import { listen } from '@tauri-apps/api/event'
 import { invokeCommand } from '../utils/invokeCommand'
+import { useBuildStore } from './buildStore'
 import { useGameDataStore } from './gameDataStore'
 import { useOptimizationStore } from './optimizationStore'
 import { useOptimizationStream, startOptimization } from './useOptimizationStream'
@@ -344,6 +357,38 @@ describe('useOptimizationStream', () => {
     expect(stored![0].tier).toBe('gold')
     expect(stored![1].tier).toBe('silver')
     expect(stored![2].tier).toBe('dim')
+  })
+
+  // Story 3.1: empty-budget guard (AC3)
+  it('startOptimization sets the empty-budget notice and skips run_optimization when no unspent points', async () => {
+    vi.mocked(useBuildStore.getState).mockReturnValueOnce({
+      activeBuild: {
+        id: 'test',
+        characterLevel: 3,
+        nodeAllocations: { node_a: 1 },
+      },
+    } as unknown as ReturnType<typeof useBuildStore.getState>)
+
+    await act(async () => {
+      await startOptimization()
+    })
+
+    expect(mockInvokeCommand).not.toHaveBeenCalledWith('run_optimization', expect.anything())
+    expect(useOptimizationStore.getState().optimizationNotice).toBe(
+      'No unspent passive points available. Allocate additional points or use the Complete Build Optimizer for a full reallocation analysis.'
+    )
+    expect(useOptimizationStore.getState().isOptimizing).toBe(false)
+  })
+
+  it('startOptimization runs optimization and leaves the notice null when unspent points remain', async () => {
+    await act(async () => {
+      await startOptimization()
+    })
+
+    expect(mockInvokeCommand).toHaveBeenCalledWith('run_optimization', expect.objectContaining({
+      snapshot: expect.any(Object),
+    }))
+    expect(useOptimizationStore.getState().optimizationNotice).toBeNull()
   })
 
 })

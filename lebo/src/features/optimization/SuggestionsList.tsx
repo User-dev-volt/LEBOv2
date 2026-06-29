@@ -88,6 +88,7 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
   const clearSuggestions = useOptimizationStore((s) => s.clearSuggestions)
   const setPreviewStatSheet = useOptimizationStore((s) => s.setPreviewStatSheet)
   const isComputingStats = useOptimizationStore((s) => s.isComputingStats)
+  const optimizationNotice = useOptimizationStore((s) => s.optimizationNotice)
 
   const activeBuild = useBuildStore((s) => s.activeBuild)
   const applyNodeChange = useBuildStore((s) => s.applyNodeChange)
@@ -482,7 +483,22 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
         </div>
       )}
 
-      {suggestions.length === 0 && !isOptimizing && !streamError && (
+      {optimizationNotice && !isOptimizing && (
+        <div
+          role="status"
+          className="px-3 py-2 rounded text-xs"
+          style={{
+            backgroundColor: 'var(--color-bg-elevated)',
+            color: 'var(--color-text-secondary)',
+            borderLeft: '2px solid var(--color-accent-gold)',
+          }}
+          data-testid="empty-budget-notice"
+        >
+          {optimizationNotice}
+        </div>
+      )}
+
+      {suggestions.length === 0 && !isOptimizing && !streamError && !optimizationNotice && (
         hasOptimizationCompleted ? (
           <p
             className="text-xs"

@@ -37,6 +37,7 @@ interface OptimizationStore {
   setIsGeneratingNarrative: (generating: boolean) => void
   appendGearNarrativeChunk: (chunk: string) => void
   streamError: AppError | null
+  optimizationNotice: string | null
   currentModel: string | null
   optimizationBuildId: string | null
   setGoal: (goal: OptimizationGoal) => void
@@ -48,6 +49,7 @@ interface OptimizationStore {
   setHasOptimizationCompleted: (value: boolean) => void
   setScores: (scores: BuildScore | null) => void
   setStreamError: (error: AppError | null) => void
+  setOptimizationNotice: (notice: string | null) => void
   skipSuggestion: (rank: number) => void
   setAppliedRank: (rank: number) => void
   setPreviewSuggestionRank: (rank: number | null) => void
@@ -88,6 +90,7 @@ export const useOptimizationStore = create<OptimizationStore>()((set) => ({
   appendGearNarrativeChunk: (chunk) =>
     set((s) => ({ gearNarrative: (s.gearNarrative ?? '') + chunk })),
   streamError: null,
+  optimizationNotice: null,
   currentModel: null,
   optimizationBuildId: null,
   setGoal: (goal) => set({ goal }),
@@ -102,6 +105,7 @@ export const useOptimizationStore = create<OptimizationStore>()((set) => ({
       previewSuggestionRank: null,
       highlightedNodeIds: null,
       streamError: null,
+      optimizationNotice: null,
       hasOptimizationCompleted: false,
       currentModel: null,
       isOptimizing: false,
@@ -116,6 +120,7 @@ export const useOptimizationStore = create<OptimizationStore>()((set) => ({
   setHasOptimizationCompleted: (value) => set({ hasOptimizationCompleted: value }),
   setScores: (scores) => set({ scores }),
   setStreamError: (error) => set({ streamError: error }),
+  setOptimizationNotice: (notice) => set({ optimizationNotice: notice }),
   skipSuggestion: (rank) =>
     set((s) => {
       const suggestion = s.suggestions.find((sg) => sg.rank === rank)

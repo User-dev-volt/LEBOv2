@@ -21,10 +21,12 @@ pub fn compute_stats(
     ))
 }
 
-/// Full optimization pipeline: compute_stats → run_efficiency_scan → run_synergy_detection,
-/// then assembles a ranked payload and delegates to the existing Claude streaming infrastructure.
+/// Passive-tree optimization pipeline: run_efficiency_scan → assemble passive-node payload →
+/// delegate to the existing Claude streaming infrastructure.
 /// Pattern 3: clone game_data BEFORE spawn_blocking; never hold a read lock across await.
-/// ADR-003: all three pure engine stages run in one spawn_blocking call.
+/// Pattern P4-3 / ADR-P4-003: suggestions are filtered to passive-node (knapsack) allocations
+/// only. The defensive floor check still runs in `compute_stats` (driven by `useStatSheet`) and
+/// populates `StatSheet.warnings`; it is intentionally NOT re-presented as a suggestion here.
 #[tauri::command]
 pub async fn run_optimization(
     app_handle: tauri::AppHandle,
@@ -37,19 +39,11 @@ pub async fn run_optimization(
 
     let snapshot_for_engine = snapshot.clone();
 
-    let (stat_sheet, scan_result, synergy_flags) =
-        tauri::async_runtime::spawn_blocking(move || {
-            let sheet = scoring_core::compute_stats(
-                &snapshot_for_engine,
-                &game_data,
-                scoring_core::ComputeOptions::default(),
-            );
-            let scan = scoring_core::run_efficiency_scan(&snapshot_for_engine, &game_data);
-            let synergy = scoring_core::run_synergy_detection(&snapshot_for_engine, &game_data);
-            (sheet, scan, synergy)
-        })
-        .await
-        .map_err(|e| format!("SCORING_ERROR: optimization compute panicked: {}", e))?;
+    let scan_result = tauri::async_runtime::spawn_blocking(move || {
+        scoring_core::run_efficiency_scan(&snapshot_for_engine, &game_data)
+    })
+    .await
+    .map_err(|e| format!("SCORING_ERROR: optimization compute panicked: {}", e))?;
 
     // Emit node efficiencies for the passive tree overlay (Story 4.4).
     // Emitted before Claude delegation so the overlay appears as soon as the engine finishes.
@@ -58,7 +52,7 @@ pub async fn run_optimization(
     }
 
     let user_message = assemble_run_optimization_payload(
-        &snapshot, &stat_sheet, &scan_result, &synergy_flags,
+        &snapshot, &scan_result,
     ).map_err(|e| {
         let _ = app_handle.emit(
             "optimization:error",
@@ -344,83 +338,23 @@ fn extract_optimization_error_type(err: &str) -> String {
     "UNKNOWN".to_string()
 }
 
-/// Priority-merges stat_sheet warnings + synergy flags + knapsack paths into a ranked
-/// JSON string for the Claude user_message. Priority order:
-/// 1. Critical warnings (defensive floors)  2. Game-changer synergies
-/// 3. High-priority mismatched affixes       4. Knapsack solution paths
-/// 5. Medium-priority zero-value reallocations
+/// Builds the ranked passive-node suggestion payload for the Claude user_message.
+/// Per Pattern P4-3 / ADR-P4-003, `run_optimization` emits ONLY passive-node (knapsack)
+/// allocations. The off-tree categories that previously fed this payload — defensive-floor
+/// warnings (`StatSheet.warnings`) and synergy flags (`game_changer` / `mismatched_affix` /
+/// `zero_value_allocation`) — are deliberately excluded: the floor check still runs in
+/// `compute_stats` and surfaces via `StatSheet.warnings`, it is simply not re-presented here
+/// as a suggestion. Those off-tree inputs are no longer parameters, so leakage is impossible
+/// by construction (the strongest form of the Pattern P4-3 filter).
 fn assemble_run_optimization_payload(
     snapshot: &scoring_core::BuildSnapshot,
-    stat_sheet: &scoring_core::StatSheet,
     scan_result: &scoring_core::ScanResult,
-    synergy_flags: &[scoring_core::SynergyFlag],
 ) -> Result<String, String> {
     let mut suggestions: Vec<serde_json::Value> = Vec::new();
     let mut rank: u32 = 1;
 
-    // 1. Critical defensive warnings (highest priority)
-    for warning in &stat_sheet.warnings {
-        suggestions.push(serde_json::json!({
-            "rank": rank,
-            "type": "critical_warning",
-            "toNodeId": format!("warning:{}", warning.warning_type),
-            "fromNodeId": serde_json::Value::Null,
-            "pointCost": 0,
-            "deltaBuildScore": serde_json::Value::Null,
-            "context": format!(
-                "Defensive floor failure: {} (current: {:.0}, gap: {:.0}). Fix this before optimizing offensively.",
-                warning.warning_type, warning.current_value, warning.gap
-            )
-        }));
-        rank += 1;
-    }
-
-    // 2. Game-changer synergy flags sorted by delta_build_score descending
-    let mut game_changers: Vec<&scoring_core::SynergyFlag> = synergy_flags
-        .iter()
-        .filter(|f| f.flag_type == "game_changer")
-        .collect();
-    game_changers.sort_by(|a, b| {
-        b.delta_build_score.unwrap_or(0.0)
-            .partial_cmp(&a.delta_build_score.unwrap_or(0.0))
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
-    for flag in game_changers {
-        let to_node_id = flag.node_id
-            .as_deref()
-            .map(|n| format!("unique:{}", n))
-            .unwrap_or_else(|| "unique:unknown".to_string());
-        suggestions.push(serde_json::json!({
-            "rank": rank,
-            "type": "game_changer",
-            "toNodeId": to_node_id,
-            "fromNodeId": serde_json::Value::Null,
-            "pointCost": 0,
-            "deltaBuildScore": flag.delta_build_score,
-            "context": flag.description
-        }));
-        rank += 1;
-    }
-
-    // 3. High-priority synergy flags (mismatched affixes, not game_changers)
-    for flag in synergy_flags.iter().filter(|f| f.priority == "high" && f.flag_type != "game_changer") {
-        let to_node_id = flag.slot
-            .as_deref()
-            .map(|s| format!("synergy:affix:{}", s))
-            .unwrap_or_else(|| "synergy:affix:unknown".to_string());
-        suggestions.push(serde_json::json!({
-            "rank": rank,
-            "type": "mismatched_affix",
-            "toNodeId": to_node_id,
-            "fromNodeId": serde_json::Value::Null,
-            "pointCost": 0,
-            "deltaBuildScore": serde_json::Value::Null,
-            "context": flag.description
-        }));
-        rank += 1;
-    }
-
-    // 4. Knapsack solution paths (optimal passive allocations)
+    // Knapsack solution paths (optimal passive allocations) — the ONLY suggestion kind
+    // run_optimization emits (suggestion.kind == PassiveNode).
     // solve_knapsack sorts each path cheapest-first (scan.rs:327), so path.last() is NOT
     // reliably the efficiency target. Find the target by locating the path node that was
     // scored for efficiency (bridge nodes are never in node_efficiencies).
@@ -438,6 +372,7 @@ fn assemble_run_optimization_payload(
         let from_node: Option<&str> = if path.len() > 1 { Some(path[0].as_str()) } else { None };
         suggestions.push(serde_json::json!({
             "rank": rank,
+            "kind": "passive_node",
             "type": "efficiency",
             "toNodeId": target_node,
             "fromNodeId": from_node,
@@ -450,24 +385,6 @@ fn assemble_run_optimization_payload(
                 point_cost,
                 path.join(" → ")
             )
-        }));
-        rank += 1;
-    }
-
-    // 5. Medium-priority synergy flags (zero-value reallocations)
-    for flag in synergy_flags.iter().filter(|f| f.priority == "medium") {
-        let to_node_id = flag.node_id
-            .as_deref()
-            .unwrap_or("synergy:unknown")
-            .to_string();
-        suggestions.push(serde_json::json!({
-            "rank": rank,
-            "type": "zero_value_allocation",
-            "toNodeId": to_node_id,
-            "fromNodeId": serde_json::Value::Null,
-            "pointCost": 0,
-            "deltaBuildScore": serde_json::Value::Null,
-            "context": flag.description
         }));
         rank += 1;
     }
@@ -488,4 +405,138 @@ fn assemble_run_optimization_payload(
 
     serde_json::to_string(&payload)
         .map_err(|e| format!("SCORING_ERROR: failed to serialize optimization payload: {e}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_efficiency(node_id: &str, delta: f64, cost: u32, tier: &str) -> scoring_core::NodeEfficiency {
+        scoring_core::NodeEfficiency {
+            node_id: node_id.to_string(),
+            efficiency: if cost > 0 { delta / cost as f64 } else { 0.0 },
+            path_delta_score: delta,
+            effective_point_cost: cost,
+            tier: tier.to_string(),
+        }
+    }
+
+    fn make_snapshot() -> scoring_core::BuildSnapshot {
+        let mut s = scoring_core::BuildSnapshot::default();
+        s.class_id = "sentinel".to_string();
+        s.mastery_id = "void_knight".to_string();
+        s.character_level = 20;
+        s.slider_position = 50;
+        s
+    }
+
+    // The off-tree synthetic prefixes the OLD payload emitted (warnings / uniques / synergies).
+    // Element-level assertions below prove none of these can survive the Pattern P4-3 filter.
+    const OFF_TREE_PREFIXES: [&str; 3] = ["warning:", "unique:", "synergy:"];
+    const OFF_TREE_TYPES: [&str; 4] =
+        ["critical_warning", "game_changer", "mismatched_affix", "zero_value_allocation"];
+
+    /// AC1 / AC2: every emitted suggestion is a passive node sourced from the knapsack;
+    /// no off-tree category (warning / unique / synergy) can leak into the payload, and ranks
+    /// are sequential from 1 over the surviving passive-node suggestions only.
+    #[test]
+    fn run_optimization_payload_emits_only_passive_node_suggestions() {
+        let snapshot = make_snapshot();
+        let scan_result = scoring_core::ScanResult {
+            node_efficiencies: vec![
+                make_efficiency("passive_alpha", 4.0, 2, "gold"),
+                make_efficiency("passive_beta", 2.0, 1, "silver"),
+            ],
+            build_score_baseline: 100.0,
+            // A single-node path and a bridge→target path (path.last() is NOT the scored node).
+            knapsack_solution: vec![
+                vec!["passive_alpha".to_string()],
+                vec!["bridge_node".to_string(), "passive_beta".to_string()],
+            ],
+        };
+
+        let json = assemble_run_optimization_payload(&snapshot, &scan_result)
+            .expect("payload must serialize");
+        let value: serde_json::Value = serde_json::from_str(&json).expect("valid JSON");
+        let suggestions = value["suggestions"].as_array().expect("suggestions array");
+
+        assert_eq!(suggestions.len(), 2, "one suggestion per non-empty knapsack path");
+
+        for (i, s) in suggestions.iter().enumerate() {
+            // Every suggestion is explicitly tagged passive_node (the kind discriminator).
+            assert_eq!(
+                s["kind"].as_str(),
+                Some("passive_node"),
+                "suggestion {i} must be kind=passive_node"
+            );
+            // Rank is sequential from 1, no gaps from removed categories.
+            assert_eq!(s["rank"].as_u64(), Some((i + 1) as u64), "rank must be sequential from 1");
+
+            // No off-tree discriminator survives on either `kind` or `type`.
+            let kind = s["kind"].as_str().unwrap_or("");
+            let typ = s["type"].as_str().unwrap_or("");
+            assert!(!OFF_TREE_TYPES.contains(&kind), "kind {kind} must not be an off-tree category");
+            assert!(!OFF_TREE_TYPES.contains(&typ), "type {typ} must not be an off-tree category");
+
+            // The target id is a real passive node, never a synthetic off-tree id.
+            let to_node = s["toNodeId"].as_str().expect("toNodeId is a string");
+            assert!(
+                !OFF_TREE_PREFIXES.iter().any(|p| to_node.starts_with(p)),
+                "toNodeId {to_node} must not carry an off-tree synthetic prefix"
+            );
+        }
+
+        // Element-level: the surviving suggestions are exactly the knapsack passive targets.
+        let targets: Vec<&str> = suggestions
+            .iter()
+            .map(|s| s["toNodeId"].as_str().unwrap())
+            .collect();
+        assert!(targets.contains(&"passive_alpha"), "single-node path target survives");
+        assert!(targets.contains(&"passive_beta"), "bridge→target path resolves to the scored node");
+    }
+
+    /// AC2 inverse: an empty knapsack yields zero suggestions. node_efficiencies are present
+    /// (the canvas-overlay feed) but must NOT become suggestions, and nothing off-tree fills the gap.
+    #[test]
+    fn run_optimization_payload_is_empty_when_knapsack_is_empty() {
+        let snapshot = make_snapshot();
+        let scan_result = scoring_core::ScanResult {
+            node_efficiencies: vec![make_efficiency("passive_alpha", 4.0, 2, "gold")],
+            build_score_baseline: 100.0,
+            knapsack_solution: vec![],
+        };
+
+        let json = assemble_run_optimization_payload(&snapshot, &scan_result)
+            .expect("payload must serialize");
+        let value: serde_json::Value = serde_json::from_str(&json).expect("valid JSON");
+        let suggestions = value["suggestions"].as_array().expect("suggestions array");
+
+        assert!(suggestions.is_empty(), "empty knapsack must produce zero suggestions");
+    }
+
+    /// Degenerate (empty) knapsack paths are skipped without leaving rank gaps.
+    #[test]
+    fn run_optimization_payload_skips_empty_paths_without_rank_gaps() {
+        let snapshot = make_snapshot();
+        let scan_result = scoring_core::ScanResult {
+            node_efficiencies: vec![
+                make_efficiency("passive_alpha", 4.0, 2, "gold"),
+                make_efficiency("passive_beta", 2.0, 1, "silver"),
+            ],
+            build_score_baseline: 100.0,
+            knapsack_solution: vec![
+                vec!["passive_alpha".to_string()],
+                vec![], // degenerate path — skipped, must not create a rank gap
+                vec!["passive_beta".to_string()],
+            ],
+        };
+
+        let json = assemble_run_optimization_payload(&snapshot, &scan_result).unwrap();
+        let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let suggestions = value["suggestions"].as_array().unwrap();
+
+        assert_eq!(suggestions.len(), 2, "the empty path is skipped");
+        assert_eq!(suggestions[0]["rank"].as_u64(), Some(1));
+        assert_eq!(suggestions[1]["rank"].as_u64(), Some(2));
+    }
 }

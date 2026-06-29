@@ -5,7 +5,7 @@ import { calculateScore } from '../../features/optimization/scoringEngine'
 import { invokeCommand } from '../utils/invokeCommand'
 import { normalizeAppError } from '../utils/errorNormalizer'
 import { toBuildSnapshot } from '../utils/buildSnapshotSerializer'
-import { useBuildStore } from './buildStore'
+import { useBuildStore, selectUnspentPassivePoints } from './buildStore'
 import { useGameDataStore } from './gameDataStore'
 import { useOptimizationStore } from './optimizationStore'
 import type { SuggestionResult } from '../types/optimization'
@@ -34,16 +34,30 @@ interface ModelActivePayload {
   model_name: string
 }
 
+// AC3: shown verbatim when the optimizer is run with zero unspent passive points.
+export const EMPTY_BUDGET_MESSAGE =
+  'No unspent passive points available. Allocate additional points or use the Complete Build Optimizer for a full reallocation analysis.'
+
 export async function startOptimization() {
-  const activeBuild = useBuildStore.getState().activeBuild
+  const buildState = useBuildStore.getState()
+  const activeBuild = buildState.activeBuild
   if (!activeBuild) return
 
   const gameData = useGameDataStore.getState().gameData
   if (!gameData) return
 
+  useOptimizationStore.getState().clearSuggestions()
+
+  // AC3: empty-budget pre-flight guard. With no unspent passive points there is nothing the
+  // passive optimizer can suggest — surface the reason (client-known) instead of making a paid
+  // Claude call and falling through to the generic "well-optimized" copy.
+  if (selectUnspentPassivePoints(buildState) <= 0) {
+    useOptimizationStore.getState().setOptimizationNotice(EMPTY_BUDGET_MESSAGE)
+    return
+  }
+
   const snapshot = toBuildSnapshot(activeBuild, gameData)
 
-  useOptimizationStore.getState().clearSuggestions()
   useOptimizationStore.getState().setIsOptimizing(true)
   useOptimizationStore.getState().setOptimizationBuildId(activeBuild.id)
 

@@ -73,6 +73,14 @@ export interface BuildStore {
 export const selectAvailablePassivePoints = (s: BuildStore): number =>
   calculatePassivePoints(s.activeBuild?.characterLevel ?? 1)
 
+export const selectUnspentPassivePoints = (s: BuildStore): number => {
+  const build = s.activeBuild
+  if (!build) return 0
+  const available = calculatePassivePoints(build.characterLevel)
+  const allocated = Object.values(build.nodeAllocations).reduce((sum, v) => sum + v, 0)
+  return available - allocated
+}
+
 export const useBuildStore = create<BuildStore>()((set, get) => ({
   activeBuild: null,
   savedBuilds: [],

@@ -77,7 +77,7 @@ development_status:
 
   # Epic 3: Passive Tree Optimizer & Allocation
   epic-3: in-progress
-  3-1-scope-restricted-optimizer-with-empty-budget-fallback: ready-for-dev
+  3-1-scope-restricted-optimizer-with-empty-budget-fallback: in-progress
   3-2-enhanced-suggested-node-visualization-on-the-canvas: backlog
   3-3-suggestion-card-content-and-tree-cross-highlight: backlog
   3-4-shift-click-fill-node-to-max: backlog
