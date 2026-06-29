@@ -382,7 +382,7 @@ describe('initRenderer', () => {
     expect(instancesWithCircle(MED_R).some((g) => hasStroke(g, AVAILABLE_STROKE))).toBe(false)
   })
 
-  it('AC1: a silver-tier node draws at 1.2× radius with a silver ring (no gold-radius node)', async () => {
+  it('AC1: a silver-tier node draws at 1.2× radius with a silver ring + steady glow, glow suppressed under reduced motion', async () => {
     const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
     const tree: TreeData = { nodes: [medNode('n1')], edges: [] }
     renderer.renderTree(tree, {}, emptyHl(), new Map(), null, [effOf('n1', 'silver')], true)
@@ -390,6 +390,16 @@ describe('initRenderer', () => {
     const silverNodes = instancesWithCircle(MED_R * 1.2)
     expect(silverNodes.some((g) => hasStroke(g, SILVER))).toBe(true)
     expect(instancesWithCircle(MED_R * 1.4).length).toBe(0)
+    // steady silver glow halo present (a silver FILL, distinct from the silver ring stroke)
+    expect(anyFill(SILVER)).toBe(true)
+    // it replaced drawAvailable — no base-radius available node left behind
+    expect(instancesWithCircle(MED_R).some((g) => hasStroke(g, AVAILABLE_STROKE))).toBe(false)
+
+    // reduced motion suppresses the steady glow but keeps the 1.2× scale + ring
+    renderer.setReducedMotion(true)
+    renderer.renderTree(tree, {}, emptyHl(), new Map(), null, [effOf('n1', 'silver')], true)
+    expect(anyFill(SILVER)).toBe(false)
+    expect(instancesWithCircle(MED_R * 1.2).some((g) => hasStroke(g, SILVER))).toBe(true)
   })
 
   it('AC1 scope: a dim-tier node renders identically to a plain available node (no scale, no glow)', async () => {
@@ -443,6 +453,11 @@ describe('initRenderer', () => {
     // The dashed line starts at the suggested node C and traces back toward the allocated tree.
     expect(firstMove!.x).toBeCloseTo(100)
     expect(firstMove!.y).toBeCloseTo(0)
+    // ...and reaches the allocated node A at (0,0) — the far endpoint of the traced path.
+    const reachesAllocated = opsOf(dashed).some(
+      (o) => o.op === 'lineTo' && Math.abs(o.x ?? NaN) < 0.5 && Math.abs(o.y ?? NaN) < 0.5
+    )
+    expect(reachesAllocated).toBe(true)
   })
 
   it('AC2: no dashed path line is drawn for a dim-tier node', async () => {

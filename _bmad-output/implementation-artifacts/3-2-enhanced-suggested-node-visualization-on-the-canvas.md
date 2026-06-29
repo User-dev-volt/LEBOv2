@@ -1,6 +1,6 @@
 # Story 3.2: Enhanced suggested-node visualization on the canvas
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
