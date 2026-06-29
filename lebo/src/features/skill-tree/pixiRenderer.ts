@@ -463,7 +463,7 @@ export async function initRenderer(
         }
         // AC2: dashed gold path to the nearest allocated node — drawn only when prerequisites are
         // not yet allocated (the helper returns null when a direct prerequisite is already allocated).
-        const path = nearestAllocatedPath(data, nodeAllocations, node.id)
+        const path = nearestAllocatedPath(data, nodeAllocations, node.id, nodeMap)
         if (path && addDashedPathSegments(dashedPathGraphics, nodeMap, path)) dashedPathDrawn = true
       } else if (node.state === 'locked') {
         drawLocked(lockedGraphics, node.x, node.y, r)

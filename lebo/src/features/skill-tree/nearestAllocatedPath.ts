@@ -7,31 +7,44 @@ import type { TreeData, TreeNode } from './types'
 //
 // Returns null when a direct prerequisite is already allocated (the node is immediately allocatable,
 // so no path line is needed) or when no allocated node is reachable.
+//
+// `nodeMap` is an optional precomputed id→node map. renderTree already builds one per frame and passes
+// it in so this stays O(edges) per call instead of rebuilding an O(nodes) map for every suggestion.
 export function nearestAllocatedPath(
   treeData: TreeData,
   nodeAllocations: Record<string, number>,
-  startNodeId: string
+  startNodeId: string,
+  nodeMap?: Map<string, TreeNode>
 ): string[] | null {
-  const nodeMap = new Map<string, TreeNode>(treeData.nodes.map((n) => [n.id, n]))
-  const start = nodeMap.get(startNodeId)
+  const nodes = nodeMap ?? new Map<string, TreeNode>(treeData.nodes.map((n) => [n.id, n]))
+  const start = nodes.get(startNodeId)
   if (!start) return null
 
   const isAllocated = (id: string): boolean => (nodeAllocations[id] ?? 0) > 0
   if (isAllocated(startNodeId)) return null
   if (start.connections.some(isAllocated)) return null
 
-  const visited = new Set<string>([startNodeId])
-  const queue: string[][] = [[startNodeId]]
+  // BFS with parent pointers — reconstruct the path once on the first allocated hit, rather than
+  // copying a growing path array at every visited node.
+  const parent = new Map<string, string | null>([[startNodeId, null]])
+  const queue: string[] = [startNodeId]
   while (queue.length > 0) {
-    const path = queue.shift()!
-    const current = nodeMap.get(path[path.length - 1])
+    const currentId = queue.shift()!
+    const current = nodes.get(currentId)
     if (!current) continue
     for (const neighborId of current.connections) {
-      if (visited.has(neighborId)) continue
-      visited.add(neighborId)
-      const nextPath = [...path, neighborId]
-      if (isAllocated(neighborId)) return nextPath
-      queue.push(nextPath)
+      if (parent.has(neighborId)) continue
+      parent.set(neighborId, currentId)
+      if (isAllocated(neighborId)) {
+        const path: string[] = [neighborId]
+        let p: string | null = currentId
+        while (p !== null) {
+          path.push(p)
+          p = parent.get(p) ?? null
+        }
+        return path.reverse()
+      }
+      queue.push(neighborId)
     }
   }
   return null
