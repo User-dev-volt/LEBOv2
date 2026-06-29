@@ -693,4 +693,91 @@ describe('SuggestionsList', () => {
     // With no notice displayed, the generic empty-state copy returns.
     expect(screen.getByTestId('suggestions-empty-state')).toBeInTheDocument()
   })
+
+  // ── Story 3.3 — card → tree cross-highlight activation (AC2) ──
+
+  it('clicking a card activates the cross-highlight (glowing toNodeId)', () => {
+    useOptimizationStore.setState({ suggestions: [makeSuggestion(1, 'target-node')], isOptimizing: false, streamError: null })
+    render(<SuggestionsList onRetry={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('suggestion-card-1'))
+    expect(useOptimizationStore.getState().highlightedNodeIds?.glowing.has('target-node')).toBe(true)
+  })
+
+  it('clicking a card requests canvas focus (focusNodeId set + nonce bumped)', () => {
+    useOptimizationStore.setState({ suggestions: [makeSuggestion(1, 'target-node')], isOptimizing: false, streamError: null })
+    const before = useOptimizationStore.getState().focusNonce
+    render(<SuggestionsList onRetry={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('suggestion-card-1'))
+    expect(useOptimizationStore.getState().focusNodeId).toBe('target-node')
+    expect(useOptimizationStore.getState().focusNonce).toBeGreaterThan(before)
+  })
+
+  it('keyboard-focusing a card (ArrowDown) activates the cross-highlight', () => {
+    useOptimizationStore.setState({ suggestions: [makeSuggestion(1, 'kbd-node')], isOptimizing: false, streamError: null })
+    render(<SuggestionsList onRetry={vi.fn()} />)
+    const list = screen.getByRole('list', { name: /optimization suggestions/i })
+    fireEvent.keyDown(list, { key: 'ArrowDown' })
+    expect(useOptimizationStore.getState().highlightedNodeIds?.glowing.has('kbd-node')).toBe(true)
+  })
+
+  it('a SWAP suggestion activation glows the target and dims the source node', () => {
+    const swap = { ...makeSuggestion(1), nodeChange: { fromNodeId: 'from-node', toNodeId: 'to-node', pointsChange: 1 } }
+    useOptimizationStore.setState({ suggestions: [swap], isOptimizing: false, streamError: null })
+    render(<SuggestionsList onRetry={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('suggestion-card-1'))
+    const hl = useOptimizationStore.getState().highlightedNodeIds
+    expect(hl?.glowing.has('to-node')).toBe(true)
+    expect(hl?.dimmed.has('from-node')).toBe(true)
+  })
+
+  it('announces the active selection in a polite live region', () => {
+    useBuildStore.setState({ activeBuild: MOCK_BUILD })
+    useOptimizationStore.setState({ suggestions: [makeSuggestion(1, 'target-node')], isOptimizing: false, streamError: null })
+    render(<SuggestionsList onRetry={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('suggestion-card-1'))
+    const region = screen.getByTestId('suggestions-live-region')
+    expect(region).toHaveAttribute('aria-live', 'polite')
+    expect(region).toHaveTextContent(/Selected .*suggestion 1/)
+  })
+
+  it('renders the exact score delta and point/path cost for a known fixture (FR-19 value+element)', () => {
+    const gn = (id: string, prerequisiteNodeIds: string[], pointCost: number) => ({
+      id, name: id, pointCost, maxPoints: 5, prerequisiteNodeIds,
+      effectDescription: '', tags: [], position: { x: 0, y: 0 }, size: 'small' as const,
+    })
+    useBuildStore.setState({ activeBuild: { ...MOCK_BUILD, nodeAllocations: { root: 1 } } })
+    useGameDataStore.setState({
+      gameData: {
+        manifest: { schemaVersion: 1, gameVersion: '1', dataVersion: '1', generatedAt: 'x', classes: ['sentinel'] },
+        classes: {
+          sentinel: {
+            classId: 'sentinel', className: 'Sentinel', baseTree: {},
+            masteries: {
+              void_knight: {
+                masteryId: 'void_knight', masteryName: 'Void Knight',
+                nodes: { root: gn('root', [], 1), mid: gn('mid', ['root'], 3), target: gn('target', ['mid'], 5) },
+              },
+            },
+            skills: [], skillTrees: {},
+          },
+        },
+      } as unknown as GameData,
+    })
+    useOptimizationStore.setState({
+      suggestions: [{
+        rank: 1,
+        nodeChange: { fromNodeId: null, toNodeId: 'target', pointsChange: 2 },
+        explanation: 'why',
+        deltaDamage: 6, deltaSurvivability: 0, deltaSpeed: 0,
+        baselineScore: { damage: 10, survivability: 10, speed: 10 },
+        previewScore: { damage: 16, survivability: 10, speed: 10 },
+      }],
+      isOptimizing: false, streamError: null,
+    })
+    render(<SuggestionsList onRetry={vi.fn()} />)
+    // composite: base round(30/3)=10, preview round(36/3)=12 → +2.0
+    expect(screen.getByTestId('suggestion-score-delta')).toHaveTextContent('2.0')
+    // point cost = |pointsChange| = 2; path cost = interior 'mid' (3) between target and allocated root.
+    expect(screen.getByTestId('suggestion-cost')).toHaveTextContent('2 pts / 3 pts to reach')
+  })
 })

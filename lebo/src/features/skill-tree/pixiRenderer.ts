@@ -45,9 +45,13 @@ export const NODE_RADIUS = { small: 12, medium: 18, large: 26 }
 const COLOR_SUGGESTED_GOLD = 0xc9a84c // --color-accent-gold
 const COLOR_SUGGESTED_GOLD_SOFT = 0xd4b96a // --color-accent-gold-soft (gold pulse peak)
 const COLOR_SUGGESTED_SILVER = 0xc0c6d2 // --color-node-suggested-silver
+const COLOR_NODE_SUGGESTED = 0x7b68ee // --color-node-suggested (System-A hover-glow + untreated emphasis)
 const GOLD_TIER_SCALE = 1.4
 const SILVER_TIER_SCALE = 1.2
 const GOLD_PULSE_PERIOD_MS = 1800
+// Card-interaction emphasis pulse (FR-18) — faster than the steady gold tier pulse so the highlight
+// reads as "intensified". Independent of the gold tier pulse; reduced-motion drops the animation.
+const EMPHASIS_PULSE_PERIOD_MS = 1200
 // Dashed gold path line (AC2) — PixiJS v8 Graphics has no native dash, so segments are hand-cut.
 const DASH_LENGTH = 9
 const DASH_GAP = 6
@@ -80,10 +84,18 @@ function drawLocked(g: Graphics, x: number, y: number, r: number) {
 
 function drawSuggested(g: Graphics, x: number, y: number, r: number, reducedMotion = false) {
   if (!reducedMotion) {
-    g.circle(x, y, r + 6).fill({ color: 0x7b68ee, alpha: 0.25 })
+    g.circle(x, y, r + 6).fill({ color: COLOR_NODE_SUGGESTED, alpha: 0.25 })
   }
   g.circle(x, y, r).fill(0x141417)
-  g.circle(x, y, r).stroke({ color: 0x7b68ee, width: 3 })
+  g.circle(x, y, r).stroke({ color: COLOR_NODE_SUGGESTED, width: 3 })
+}
+
+// Additive card-interaction emphasis (FR-18): a bright ring hugging the node at its EFFECTIVE
+// (tier-scaled) radius, layered ON TOP of the already-drawn base/tier node (drawn on suggestedGraphics,
+// which sits above tier + icons). It AMPLIFIES rather than replaces the Story 3.2 tier treatment —
+// the colour is the node's own tier colour (gold-soft / silver / suggested-purple for untreated).
+function drawEmphasis(g: Graphics, x: number, y: number, r: number, color: number) {
+  g.circle(x, y, r + 3).stroke({ color, width: 3 })
 }
 
 function drawDimmed(g: Graphics, x: number, y: number, r: number) {
@@ -209,6 +221,9 @@ export async function initRenderer(
   // Static scaled gold/silver suggested nodes (AC1) — below icons so icon sprites render on top
   const tierGraphics = new Graphics()
   const allocatedGraphics = new Graphics()
+  // Animated card-interaction emphasis pulse (FR-18) — below the static emphasis ring (suggestedGraphics)
+  // so the halo reads behind the node's amplified outline.
+  const emphasisPulseGraphics = new Graphics()
   const suggestedGraphics = new Graphics()
   const dimmedGraphics = new Graphics()
   const previewRemovedGraphics = new Graphics()
@@ -240,6 +255,7 @@ export async function initRenderer(
     allocatedGraphics,
     iconContainer,
     dimmedGraphics,
+    emphasisPulseGraphics,
     suggestedGraphics,
     previewRemovedGraphics,
     previewAddedGraphics,
@@ -353,6 +369,23 @@ export async function initRenderer(
   }
   app.ticker.add(goldPulseTick)
 
+  // Card-interaction emphasis pulse (FR-18). renderTree populates these targets for every glowing
+  // node at its effective (tier-scaled) radius; the ticker animates ONLY this layer and reads
+  // reducedMotionEnabled each frame — under reduced motion it stays cleared (the static emphasis ring
+  // on suggestedGraphics still renders, so hover/click always produces a locatable highlight).
+  const emphasisPulseTargets: { x: number; y: number; r: number; color: number }[] = []
+  const emphasisPulseTick = () => {
+    emphasisPulseGraphics.clear()
+    if (reducedMotionEnabled || emphasisPulseTargets.length === 0) return
+    const t = performance.now() % EMPHASIS_PULSE_PERIOD_MS
+    const norm = (Math.sin((2 * Math.PI * t) / EMPHASIS_PULSE_PERIOD_MS) + 1) / 2 // 0..1
+    const alpha = 0.2 + 0.4 * norm
+    for (const { x, y, r, color } of emphasisPulseTargets) {
+      emphasisPulseGraphics.circle(x, y, r + 4 + 8 * norm).fill({ color, alpha })
+    }
+  }
+  app.ticker.add(emphasisPulseTick)
+
   function renderTree(
     data: TreeData,
     nodeAllocations: Record<string, number>,
@@ -392,6 +425,7 @@ export async function initRenderer(
     lockedGraphics.clear()
     availableGraphics.clear()
     goldPulseGraphics.clear()
+    emphasisPulseGraphics.clear()
     tierGraphics.clear()
     allocatedGraphics.clear()
     suggestedGraphics.clear()
@@ -405,6 +439,7 @@ export async function initRenderer(
     hitAreaContainer.removeChildren()
     labelContainer.removeChildren()
     goldPulseTargets.length = 0
+    emphasisPulseTargets.length = 0
 
     const nodeMap = new Map(data.nodes.map((n) => [n.id, n]))
 
@@ -450,8 +485,10 @@ export async function initRenderer(
         drawPreviewAdded(previewAddedGraphics, node.x, node.y, r)
       } else if (isAllocated || node.state === 'allocated') {
         drawAllocated(allocatedGraphics, node.x, node.y, r)
-      } else if (isGlowing || node.state === 'suggested') {
-        // System A hover glow stays orthogonal to the tier overlay (Story 3.3 substrate).
+      } else if (node.state === 'suggested') {
+        // Dead-but-kept: node.state is never 'suggested' on the passive tree. `isGlowing` is no longer
+        // in this mutually-exclusive chain (Story 3.2 precedence bug) — it now drives an ADDITIVE
+        // emphasis pass below, so a glowing gold/silver node keeps its tier scale/ring/pulse/path.
         drawSuggested(suggestedGraphics, node.x, node.y, r, reducedMotionEnabled)
       } else if (isDimmed) {
         drawDimmed(dimmedGraphics, node.x, node.y, r)
@@ -474,6 +511,22 @@ export async function initRenderer(
         drawLocked(lockedGraphics, node.x, node.y, r)
       } else {
         drawAvailable(availableGraphics, node.x, node.y, r)
+      }
+
+      // Additive emphasis pass (FR-18) — layered ON TOP of whatever base/tier draw ran above, at the
+      // node's effective (tier-scaled) radius, using the node's own amplified tier colour. This is how
+      // the card cross-highlight COMPOSES with the 3.2 tier treatment instead of clobbering it.
+      if (isGlowing) {
+        const effR =
+          tier === 'gold' ? r * GOLD_TIER_SCALE : tier === 'silver' ? r * SILVER_TIER_SCALE : r
+        const emphasisColor =
+          tier === 'gold'
+            ? COLOR_SUGGESTED_GOLD_SOFT
+            : tier === 'silver'
+              ? COLOR_SUGGESTED_SILVER
+              : COLOR_NODE_SUGGESTED
+        drawEmphasis(suggestedGraphics, node.x, node.y, effR, emphasisColor)
+        emphasisPulseTargets.push({ x: node.x, y: node.y, r: effR, color: emphasisColor })
       }
 
       const isSearchHighlighted = highlightedNodes.searchHighlighted.has(node.id)
@@ -657,6 +710,11 @@ export async function initRenderer(
     app.canvas.removeEventListener('contextmenu', onContextMenu)
     app.ticker.remove(iconAnimTick)
     app.ticker.remove(goldPulseTick)
+    app.ticker.remove(emphasisPulseTick)
+    if (activeFocusTick) {
+      app.ticker.remove(activeFocusTick)
+      activeFocusTick = null
+    }
     pendingIconAnimations = []
     // false = do not remove canvas from DOM; React owns the canvas element's lifecycle
     app.destroy(false, { children: true })
@@ -673,6 +731,7 @@ export async function initRenderer(
   }
 
   let activeTick: (() => void) | null = null
+  let activeFocusTick: (() => void) | null = null
 
   function triggerFlash(nodeIds: string[]) {
     if (reducedMotionEnabled || nodeIds.length === 0) return
@@ -724,6 +783,61 @@ export async function initRenderer(
     app.ticker.add(tick)
   }
 
+  // Smoothly pans the camera to centre an off-screen node (AC3 / AR-6). Renderer-owned camera state
+  // only — the nodeId is passed in, never a store read (the canvas stays props/ref-only). Mirrors the
+  // fitToTree centering math; uses a self-removing app.ticker tween like triggerFlash.
+  function focusNode(nodeId: string) {
+    const node = lastRenderedNodeMap.get(nodeId)
+    if (!node) return
+    if (canvasW === 0 || canvasH === 0) return // no dimensions yet — cannot compute a centred transform
+
+    const scale = worldContainer.scale.x
+    const targetX = canvasW / 2 - node.x * scale
+    const targetY = canvasH / 2 - node.y * scale
+
+    // Cancel any in-flight focus tween — the latest request supersedes.
+    if (activeFocusTick) {
+      app.ticker.remove(activeFocusTick)
+      activeFocusTick = null
+    }
+
+    // Off-screen test against the current transform (AC3: only pan when the node is off-screen; when
+    // already comfortably visible, skip — a visible node should not jump).
+    const screenX = worldContainer.x + node.x * scale
+    const screenY = worldContainer.y + node.y * scale
+    const onScreen =
+      screenX > canvasW * 0.1 && screenX < canvasW * 0.9 &&
+      screenY > canvasH * 0.1 && screenY < canvasH * 0.9
+    if (onScreen) return
+
+    if (reducedMotionEnabled) {
+      // Reduced motion JUMPS to the centred transform. Must NOT copy triggerFlash's reduced-motion
+      // early-return — that would make focusNode a no-op and never centre.
+      worldContainer.x = targetX
+      worldContainer.y = targetY
+      return
+    }
+
+    const startX = worldContainer.x
+    const startY = worldContainer.y
+    const startTime = performance.now()
+    const DURATION = 350
+    const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+
+    const tick = () => {
+      const progress = Math.min((performance.now() - startTime) / DURATION, 1)
+      const e = ease(progress)
+      worldContainer.x = startX + (targetX - startX) * e
+      worldContainer.y = startY + (targetY - startY) * e
+      if (progress >= 1) {
+        app.ticker.remove(tick)
+        activeFocusTick = null
+      }
+    }
+    activeFocusTick = tick
+    app.ticker.add(tick)
+  }
+
   return {
     renderTree,
     resize,
@@ -733,6 +847,7 @@ export async function initRenderer(
     setReducedMotion,
     triggerFlash,
     fitToTree,
+    focusNode,
     zoomIn,
     zoomOut,
   }

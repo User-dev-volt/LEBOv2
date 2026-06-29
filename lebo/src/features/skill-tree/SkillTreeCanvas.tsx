@@ -49,6 +49,8 @@ export function SkillTreeCanvas({
   // Expose viewport control to parent via ref (React 19 ref-as-prop)
   useImperativeHandle(ref, () => ({
     fitToTree: () => rendererRef.current?.fitToTree(treeDataRef.current.nodes),
+    focusNode: (id: string) => rendererRef.current?.focusNode(id),
+    getViewport: () => rendererRef.current?.getViewport() ?? { x: 0, y: 0, scale: 1 },
     zoomIn: () => rendererRef.current?.zoomIn(),
     zoomOut: () => rendererRef.current?.zoomOut(),
   }))

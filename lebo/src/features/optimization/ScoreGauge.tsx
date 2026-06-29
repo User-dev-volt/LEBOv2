@@ -1,5 +1,6 @@
 import type { BuildScore } from '../../shared/types/optimization'
 import { useReducedMotion } from '../../shared/hooks/useReducedMotion'
+import { computeComposite } from '../../shared/utils/scoreComposite'
 
 interface ScoreGaugeProps {
   baselineScore: BuildScore | null
@@ -15,15 +16,6 @@ const TICK_COUNT = 11
 
 function formatScore(val: number | null): string {
   return val === null ? '—' : String(val)
-}
-
-function computeComposite(score: BuildScore | null): number | null {
-  if (!score) return null
-  const values = [score.damage, score.survivability, score.speed].filter(
-    (v): v is number => v !== null
-  )
-  if (values.length === 0) return null
-  return Math.round(values.reduce((a, b) => a + b, 0) / values.length)
 }
 
 export function ScoreGauge({ baselineScore, previewScore }: ScoreGaugeProps) {

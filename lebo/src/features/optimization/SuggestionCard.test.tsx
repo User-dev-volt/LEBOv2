@@ -251,4 +251,66 @@ describe('SuggestionCard', () => {
     render(<SuggestionCard {...DEFAULT_HANDLERS} suggestion={makeSuggestion()} toNodeName="Node A" applyError={null} />)
     expect(screen.queryByTestId('suggestion-apply-error')).toBeNull()
   })
+
+  // ── Story 3.3 — FR-19 content + cross-highlight activation ──
+
+  it('renders the composite score delta with sign and indicator', () => {
+    render(<SuggestionCard {...DEFAULT_HANDLERS} suggestion={makeSuggestion()} toNodeName="Node A" scoreDelta={4.2} />)
+    const delta = screen.getByTestId('suggestion-score-delta')
+    expect(delta).toHaveTextContent('▲')
+    expect(delta).toHaveTextContent('4.2')
+  })
+
+  it('uses the down indicator and negative color for a negative score delta', () => {
+    render(<SuggestionCard {...DEFAULT_HANDLERS} suggestion={makeSuggestion()} toNodeName="Node A" scoreDelta={-1.5} />)
+    const delta = screen.getByTestId('suggestion-score-delta')
+    expect(delta).toHaveTextContent('▼')
+    expect(delta).toHaveTextContent('1.5')
+    expect(delta).toHaveStyle({ color: 'var(--color-data-negative)' })
+  })
+
+  it('omits the score delta when scoreDelta is null/undefined', () => {
+    render(<SuggestionCard {...DEFAULT_HANDLERS} suggestion={makeSuggestion()} toNodeName="Node A" scoreDelta={null} />)
+    expect(screen.queryByTestId('suggestion-score-delta')).toBeNull()
+  })
+
+  it('renders the FR-19 point cost + path cost line', () => {
+    render(<SuggestionCard {...DEFAULT_HANDLERS} suggestion={makeSuggestion()} toNodeName="Node A" pointCost={2} pathCost={4} />)
+    expect(screen.getByTestId('suggestion-cost')).toHaveTextContent('2 pts / 4 pts to reach')
+  })
+
+  it('drops the "to reach" clause when the node is directly reachable (pathCost 0)', () => {
+    render(<SuggestionCard {...DEFAULT_HANDLERS} suggestion={makeSuggestion()} toNodeName="Node A" pointCost={2} pathCost={0} />)
+    const cost = screen.getByTestId('suggestion-cost')
+    expect(cost).toHaveTextContent('2 pts')
+    expect(cost.textContent).not.toContain('to reach')
+  })
+
+  it('shows the Claude explanation by default (no hover/expand needed)', () => {
+    render(<SuggestionCard {...DEFAULT_HANDLERS} suggestion={makeSuggestion({ explanation: 'Crit synergy' })} toNodeName="Node A" />)
+    expect(screen.getByTestId('suggestion-explanation')).toHaveTextContent('Crit synergy')
+  })
+
+  it('fires onActivate when the card body is clicked', () => {
+    const onActivate = vi.fn()
+    render(<SuggestionCard {...DEFAULT_HANDLERS} onActivate={onActivate} suggestion={makeSuggestion()} toNodeName="Node A" />)
+    fireEvent.click(screen.getByTestId('suggestion-card-1'))
+    expect(onActivate).toHaveBeenCalledOnce()
+  })
+
+  it('does NOT fire onActivate when an action button is clicked (stopPropagation)', () => {
+    const onActivate = vi.fn()
+    const onApply = vi.fn()
+    render(<SuggestionCard {...DEFAULT_HANDLERS} onActivate={onActivate} onApply={onApply} suggestion={makeSuggestion()} toNodeName="Node A" />)
+    fireEvent.click(screen.getByTestId('suggestion-apply-btn'))
+    expect(onApply).toHaveBeenCalledOnce()
+    expect(onActivate).not.toHaveBeenCalled()
+  })
+
+  it('extends the aria-label with the score delta and cost when provided', () => {
+    render(<SuggestionCard {...DEFAULT_HANDLERS} suggestion={makeSuggestion()} toNodeName="Node A" scoreDelta={4.2} pointCost={2} pathCost={4} />)
+    const label = screen.getByRole('article').getAttribute('aria-label') ?? ''
+    expect(label).toContain('Score +4.2')
+    expect(label).toContain('2 pts / 4 pts to reach')
+  })
 })

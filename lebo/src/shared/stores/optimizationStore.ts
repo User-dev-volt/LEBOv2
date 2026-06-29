@@ -15,6 +15,11 @@ interface OptimizationStore {
   appliedRanks: number[]
   previewSuggestionRank: number | null
   highlightedNodeIds: HighlightedNodeIds | null
+  // Right-panel → canvas focus request (AC3). A nonce paired with the id so re-activating the SAME
+  // node re-fires the SkillTreeView effect (a plain unchanged id would not re-run it). Read by
+  // SkillTreeView only — never inside the canvas (AR-6).
+  focusNodeId: string | null
+  focusNonce: number
   isOptimizing: boolean
   hasOptimizationCompleted: boolean
   scores: BuildScore | null
@@ -54,6 +59,7 @@ interface OptimizationStore {
   setAppliedRank: (rank: number) => void
   setPreviewSuggestionRank: (rank: number | null) => void
   setHighlightedNodeIds: (nodes: HighlightedNodeIds | null) => void
+  requestNodeFocus: (id: string) => void
   setCurrentModel: (model: string | null) => void
   sliderPosition: number
   fineTuneWeights: FineTuneWeights | null
@@ -68,6 +74,8 @@ export const useOptimizationStore = create<OptimizationStore>()((set) => ({
   appliedRanks: [],
   previewSuggestionRank: null,
   highlightedNodeIds: null,
+  focusNodeId: null,
+  focusNonce: 0,
   isOptimizing: false,
   hasOptimizationCompleted: false,
   scores: null,
@@ -104,6 +112,8 @@ export const useOptimizationStore = create<OptimizationStore>()((set) => ({
       appliedRanks: [],
       previewSuggestionRank: null,
       highlightedNodeIds: null,
+      focusNodeId: null,
+      focusNonce: 0,
       streamError: null,
       optimizationNotice: null,
       hasOptimizationCompleted: false,
@@ -134,6 +144,7 @@ export const useOptimizationStore = create<OptimizationStore>()((set) => ({
     set((s) => ({ appliedRanks: [...s.appliedRanks, rank] })),
   setPreviewSuggestionRank: (rank) => set({ previewSuggestionRank: rank }),
   setHighlightedNodeIds: (nodes) => set({ highlightedNodeIds: nodes }),
+  requestNodeFocus: (id) => set((s) => ({ focusNodeId: id, focusNonce: s.focusNonce + 1 })),
   setCurrentModel: (model) => set({ currentModel: model }),
   sliderPosition: 50,
   fineTuneWeights: null,

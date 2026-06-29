@@ -24,6 +24,9 @@ import { SkillLevelInput } from './SkillLevelInput'
 import { calculateSkillPoints, calculateWeaverPoints } from '../../shared/utils/budgetCalculator'
 import { WeaverTreePlaceholder } from '../weaver-tree/WeaverTreePlaceholder'
 import { getIconCachePath } from '../../shared/commands/iconCommands'
+import { pathPointCost } from '../../shared/utils/pathPointCost'
+import { compositeDelta } from '../../shared/utils/scoreComposite'
+import { tooltipStatDeltaEntries } from '../../shared/utils/statDeltas'
 
 const DAMAGE_TYPE_TAGS = ['FIRE', 'COLD', 'LIGHTNING', 'VOID', 'POISON'] as const
 
@@ -106,6 +109,11 @@ export function SkillTreeView() {
   const previewSuggestionRank = useOptimizationStore((s) => s.previewSuggestionRank)
   const suggestions = useOptimizationStore((s) => s.suggestions)
   const nodeEfficiencies = useOptimizationStore((s) => s.nodeEfficiencies)
+  // Story 3.3: right-panel → canvas focus signal + the stat sheets that feed the compact card tooltip.
+  const focusNodeId = useOptimizationStore((s) => s.focusNodeId)
+  const focusNonce = useOptimizationStore((s) => s.focusNonce)
+  const statSheet = useOptimizationStore((s) => s.statSheet)
+  const previewStatSheet = useOptimizationStore((s) => s.previewStatSheet)
   const selectedNodeId = useAppStore((s) => s.selectedNodeId)
   const setSelectedNodeId = useAppStore((s) => s.setSelectedNodeId)
   const centerTab = useAppStore((s) => s.centerTab)
@@ -122,6 +130,10 @@ export function SkillTreeView() {
   const passiveCanvasRef = useRef<SkillTreeCanvasHandle>(null)
   const skillCanvasRef = useRef<SkillTreeCanvasHandle>(null)
   const weaverCanvasRef = useRef<SkillTreeCanvasHandle>(null)
+  // Passive-canvas wrapper, for translating a node's world coords → screen coords for the card tooltip.
+  const passiveContainerRef = useRef<HTMLDivElement>(null)
+  // Story 3.3: compact tooltip driven by a card interaction (not canvas hover).
+  const [cardTooltip, setCardTooltip] = useState<{ nodeId: string; x: number; y: number } | null>(null)
 
   useEffect(() => {
     setActiveTabIndex(0)
@@ -267,6 +279,46 @@ export function SkillTreeView() {
         : null,
     [classData, selectedMasteryId, nodeAllocations]
   )
+
+  // AC3 + Task 7: a card's focus signal forces the passive tab active, pans the canvas to centre the
+  // node, and anchors the compact card tooltip. Keyed on the store nonce so re-activating the same node
+  // re-fires. The store read lives HERE (React glue) — never inside the canvas; focusNode gets the id
+  // as an argument (AR-6).
+  useEffect(() => {
+    if (!focusNodeId) return
+    if (centerTab !== 'tree') setCenterTab('tree')
+    setActiveTabIndex(0)
+    // Defer one frame so a tab switch has mounted the passive canvas before we focus/measure it.
+    const raf = requestAnimationFrame(() => {
+      passiveCanvasRef.current?.focusNode(focusNodeId)
+      const container = passiveContainerRef.current
+      const vp = passiveCanvasRef.current?.getViewport()
+      const node = treeData?.nodes.find((n) => n.id === focusNodeId)
+      if (container && vp && node) {
+        const rect = container.getBoundingClientRect()
+        const screenX = vp.x + node.x * vp.scale
+        const screenY = vp.y + node.y * vp.scale
+        const onScreen =
+          screenX > rect.width * 0.1 && screenX < rect.width * 0.9 &&
+          screenY > rect.height * 0.1 && screenY < rect.height * 0.9
+        // focusNode centres off-screen nodes → anchor at the container centre; else at the node.
+        const localX = onScreen ? screenX : rect.width / 2
+        const localY = onScreen ? screenY : rect.height / 2
+        setCardTooltip({ nodeId: focusNodeId, x: rect.left + localX, y: rect.top + localY })
+      } else {
+        setCardTooltip({ nodeId: focusNodeId, x: 0, y: 0 })
+      }
+    })
+    return () => cancelAnimationFrame(raf)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the focus nonce
+  }, [focusNonce])
+
+  // Dismiss the compact tooltip when the cross-highlight clears (hover-leave / Escape).
+  useEffect(() => {
+    if (!highlightedNodeIds || highlightedNodeIds.glowing.size === 0) {
+      setCardTooltip(null)
+    }
+  }, [highlightedNodeIds])
 
   const safeTabIndex = activeTabIndex > 6 ? 0 : activeTabIndex
   const isPassiveTab = safeTabIndex === 0
@@ -684,6 +736,15 @@ export function SkillTreeView() {
   // Active canvas ref (for any external calls)
   const activeCanvasRef = isPassiveTab ? passiveCanvasRef : skillCanvasRef
 
+  // Story 3.3 compact card tooltip data (passive tree only). previewStatSheet may lag the interaction
+  // → statDeltas is [] until it arrives (the tooltip renders a graceful pending state).
+  const cardTooltipNode = cardTooltip ? (allGameNodes[cardTooltip.nodeId] ?? null) : null
+  const cardTooltipSuggestion = cardTooltip
+    ? suggestions.find((s) => s.nodeChange.toNodeId === cardTooltip.nodeId) ?? null
+    : null
+  const cardTooltipStatDeltas =
+    statSheet && previewStatSheet ? tooltipStatDeltaEntries(statSheet, previewStatSheet) : []
+
   return (
     <div id="skill-tree-canvas" className="flex flex-col h-full">
       <SkillTreeTabBar
@@ -742,7 +803,7 @@ export function SkillTreeView() {
       )}
 
       {/* No onMouseMove on this div — pointer position comes from native listener inside SkillTreeCanvas */}
-      <div className="flex-1 min-h-0 relative" onMouseLeave={() => handleNodeHover(null)}>
+      <div ref={passiveContainerRef} className="flex-1 min-h-0 relative" onMouseLeave={() => handleNodeHover(null)}>
         {isPassiveTab ? (
           <>
             <SkillTreeCanvas
@@ -790,6 +851,24 @@ export function SkillTreeView() {
                 allocatedPoints={nodeAllocations[keyboardFocusedNodeId!] ?? 0}
                 position={keyboardPosition}
                 prerequisiteNames={getPrerequisiteNames(keyboardGameNode)}
+              />
+            )}
+
+            {/* Story 3.3 (FR-18): compact tooltip driven by a suggestion-card interaction. */}
+            {cardTooltip && cardTooltipNode && (
+              <NodeTooltip
+                compact
+                gameNode={cardTooltipNode}
+                allocatedPoints={baseAllocatedNodes[cardTooltip.nodeId] ?? 0}
+                position={{ x: cardTooltip.x, y: cardTooltip.y }}
+                pointCost={cardTooltipSuggestion ? Math.abs(cardTooltipSuggestion.nodeChange.pointsChange) : 0}
+                pathCost={pathPointCost(allGameNodes, baseAllocatedNodes, cardTooltip.nodeId)}
+                scoreDelta={
+                  cardTooltipSuggestion
+                    ? compositeDelta(cardTooltipSuggestion.baselineScore, cardTooltipSuggestion.previewScore)
+                    : null
+                }
+                statDeltas={cardTooltipStatDeltas}
               />
             )}
           </>

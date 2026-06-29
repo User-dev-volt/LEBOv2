@@ -29,12 +29,17 @@ export interface RendererInstance {
   setReducedMotion(enabled: boolean): void
   triggerFlash(nodeIds: string[]): void
   fitToTree(nodes: TreeNode[]): void
+  focusNode(nodeId: string): void
   zoomIn(): void
   zoomOut(): void
 }
 
 export interface SkillTreeCanvasHandle {
   fitToTree(): void
+  // Smoothly pans/zooms the off-screen node to centre (AC3, shared with Epic 6). Generic by id so
+  // the caller never touches renderer internals; reduced motion jumps instantly (see pixiRenderer).
+  focusNode(nodeId: string): void
+  getViewport(): { x: number; y: number; scale: number }
   zoomIn(): void
   zoomOut(): void
 }

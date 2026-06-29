@@ -1,27 +1,13 @@
-import { forwardRef, useState } from 'react'
+import { forwardRef } from 'react'
 import type { SuggestionResult, NodeChange } from '../../shared/types/optimization'
+import { formatDelta, getDeltaIndicator, getDeltaColor } from '../../shared/utils/formatDelta'
+import { formatCostLine } from '../../shared/utils/formatCost'
 
 interface DeltaPillProps {
   label: string
   value: number | null
   axisColor: string
   testId: string
-}
-
-function formatDelta(v: number | null): string {
-  if (v === null) return '?'
-  if (v === 0) return '±0'
-  return v > 0 ? `+${v}` : String(v)
-}
-
-function getDeltaIndicator(v: number | null): string {
-  if (v === null || v === 0) return '◈'
-  return v > 0 ? '▲' : '▼'
-}
-
-function getDeltaColor(v: number | null): string {
-  if (v === null || v === 0) return 'var(--color-data-neutral)'
-  return v > 0 ? 'var(--color-data-positive)' : 'var(--color-data-negative)'
 }
 
 function DeltaPill({ label, value, axisColor, testId }: DeltaPillProps) {
@@ -54,6 +40,11 @@ function getTypeBadgeColor(changeType: 'ADD' | 'REMOVE' | 'SWAP'): string {
   return 'var(--color-accent-gold)'
 }
 
+// Composite ΔBuildScore (FR-19 score delta), one decimal, signed — e.g. "+4.2" / "-1.5".
+function formatScoreDelta(delta: number): string {
+  return `${delta > 0 ? '+' : ''}${delta.toFixed(1)}`
+}
+
 interface SuggestionCardProps {
   suggestion: SuggestionResult
   toNodeName: string
@@ -68,11 +59,19 @@ interface SuggestionCardProps {
   isPreviewActive?: boolean
   isFocused?: boolean
   isExpanded?: boolean
+  /** Composite ΔBuildScore (FR-19), frontend-derived from baselineScore→previewScore. null hides it. */
+  scoreDelta?: number | null
+  /** Points this suggestion allocates to the node (FR-19 point cost). */
+  pointCost?: number
+  /** Frontend-derived points to allocate the unallocated prerequisite chain (FR-19 path cost). */
+  pathCost?: number
   onApply: () => void
   onSkip: () => void
   onPreview: () => void
   onHoverEnter: () => void
   onHoverLeave: () => void
+  /** Whole-card activation (hover/click cross-highlight). Omitted for informational cards. */
+  onActivate?: () => void
 }
 
 export const SuggestionCard = forwardRef<HTMLDivElement, SuggestionCardProps>(
@@ -86,22 +85,25 @@ export const SuggestionCard = forwardRef<HTMLDivElement, SuggestionCardProps>(
       applyError,
       isPreviewActive = false,
       isFocused = false,
-      isExpanded = false,
+      scoreDelta,
+      pointCost,
+      pathCost,
       onApply,
       onSkip,
       onPreview,
       onHoverEnter,
       onHoverLeave,
+      onActivate,
     },
     ref
   ) {
-    const [isHovered, setIsHovered] = useState(false)
-
     const changeType = getChangeType(suggestion.nodeChange)
     const changeDescription = getChangeDescription(changeType, suggestion.nodeChange.pointsChange)
     const typeBadgeColor = getTypeBadgeColor(changeType)
 
-    const showExplanation = (isExpanded || isHovered) && !!suggestion.explanation
+    // FR-19: the Claude mechanical explanation is always visible on actionable cards (it was gated
+    // behind hover/expand). Informational cards already render it unconditionally below.
+    const showExplanation = !!suggestion.explanation
 
     function formatScore(v: number | null): string {
       return v === null ? '—' : String(v)
@@ -111,6 +113,8 @@ export const SuggestionCard = forwardRef<HTMLDivElement, SuggestionCardProps>(
       isInformational
         ? `Context: ${toNodeName}.`
         : `${changeType} ${toNodeName} — ${changeDescription}.`,
+      !isInformational && scoreDelta != null && `Score ${formatScoreDelta(scoreDelta)}.`,
+      !isInformational && pointCost !== undefined && `${formatCostLine(pointCost, pathCost ?? 0)}.`,
       !isInformational && `Damage: ${formatScore(suggestion.baselineScore.damage)} → ${formatScore(suggestion.previewScore.damage)}.`,
       !isInformational && `Survivability: ${formatScore(suggestion.baselineScore.survivability)} → ${formatScore(suggestion.previewScore.survivability)}.`,
       !isInformational && `Speed: ${formatScore(suggestion.baselineScore.speed)} → ${formatScore(suggestion.previewScore.speed)}.`,
@@ -126,12 +130,10 @@ export const SuggestionCard = forwardRef<HTMLDivElement, SuggestionCardProps>(
           : 'var(--color-text-secondary)'
 
     function handleMouseEnter() {
-      setIsHovered(true)
       onHoverEnter()
     }
 
     function handleMouseLeave() {
-      setIsHovered(false)
       onHoverLeave()
     }
 
@@ -150,11 +152,16 @@ export const SuggestionCard = forwardRef<HTMLDivElement, SuggestionCardProps>(
             : isFocused
               ? '2px solid var(--color-text-secondary)'
               : undefined,
-          outline: isFocused ? '1px solid var(--color-text-secondary)' : undefined,
+          // NFR-14: 2px solid gold focus ring on the focusable card (focused programmatically via
+          // keyboard arrow nav — tabIndex -1).
+          outline: isFocused ? '2px solid var(--color-accent-gold)' : undefined,
+          outlineOffset: isFocused ? '-2px' : undefined,
+          cursor: isInformational ? undefined : 'pointer',
         }}
         data-testid={`suggestion-card-${suggestion.rank}`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onClick={isInformational ? undefined : onActivate}
       >
         {/* ── Informational card layout ── */}
         {isInformational && (
@@ -256,23 +263,47 @@ export const SuggestionCard = forwardRef<HTMLDivElement, SuggestionCardProps>(
                   {changeDescription}
                 </span>
               </div>
-              {isApplied ? (
-                <span
-                  data-testid="suggestion-applied-badge"
-                  className="text-xs shrink-0 font-semibold"
-                  style={{ color: 'var(--color-accent-gold)', fontFamily: 'var(--font-mono)' }}
-                >
-                  ✓ Applied
-                </span>
-              ) : (
-                <span
-                  className="text-xs shrink-0"
-                  style={{ color: 'var(--color-accent-gold)', fontFamily: 'var(--font-mono)' }}
-                >
-                  {suggestion.rank}
-                </span>
-              )}
+              <div className="flex items-center gap-2 shrink-0">
+                {scoreDelta != null && (
+                  <span
+                    data-testid="suggestion-score-delta"
+                    style={{
+                      color: getDeltaColor(scoreDelta),
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.75rem',
+                    }}
+                  >
+                    {getDeltaIndicator(scoreDelta)} {Math.abs(scoreDelta).toFixed(1)}
+                  </span>
+                )}
+                {isApplied ? (
+                  <span
+                    data-testid="suggestion-applied-badge"
+                    className="text-xs font-semibold"
+                    style={{ color: 'var(--color-accent-gold)', fontFamily: 'var(--font-mono)' }}
+                  >
+                    ✓ Applied
+                  </span>
+                ) : (
+                  <span
+                    className="text-xs"
+                    style={{ color: 'var(--color-accent-gold)', fontFamily: 'var(--font-mono)' }}
+                  >
+                    {suggestion.rank}
+                  </span>
+                )}
+              </div>
             </div>
+
+            {pointCost !== undefined && (
+              <p
+                data-testid="suggestion-cost"
+                className="text-xs mt-1"
+                style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}
+              >
+                {formatCostLine(pointCost, pathCost ?? 0)}
+              </p>
+            )}
 
             <div className="flex items-center gap-3 mt-1">
               <DeltaPill
@@ -318,7 +349,7 @@ export const SuggestionCard = forwardRef<HTMLDivElement, SuggestionCardProps>(
             {!isApplied && (
               <div className="flex items-center gap-2 mt-2">
                 <button
-                  onClick={onPreview}
+                  onClick={(e) => { e.stopPropagation(); onPreview() }}
                   data-testid="suggestion-preview-btn"
                   className="text-xs px-2 py-0.5 rounded"
                   style={{
@@ -329,7 +360,7 @@ export const SuggestionCard = forwardRef<HTMLDivElement, SuggestionCardProps>(
                   Preview
                 </button>
                 <button
-                  onClick={onApply}
+                  onClick={(e) => { e.stopPropagation(); onApply() }}
                   data-testid="suggestion-apply-btn"
                   className="text-xs px-2 py-0.5 rounded"
                   style={{
@@ -340,7 +371,7 @@ export const SuggestionCard = forwardRef<HTMLDivElement, SuggestionCardProps>(
                   Apply
                 </button>
                 <button
-                  onClick={onSkip}
+                  onClick={(e) => { e.stopPropagation(); onSkip() }}
                   data-testid="suggestion-skip-btn"
                   className="text-xs px-2 py-0.5 rounded"
                   style={{

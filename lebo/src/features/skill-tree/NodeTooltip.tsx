@@ -1,9 +1,20 @@
 import { createPortal } from 'react-dom'
 import type { GameNode } from '../../shared/types/gameData'
+import type { StatDeltaEntry } from '../../shared/utils/statDeltas'
+import { formatCostLine } from '../../shared/utils/formatCost'
+import { formatDelta, getDeltaColor } from '../../shared/utils/formatDelta'
 
 const TOOLTIP_WIDTH = 240
 const TOOLTIP_HEIGHT_APPROX = 200
 const OFFSET = 20
+
+// % stats read to one decimal. Flat stats split by magnitude: large ones (HP/EHP/Ward/Armor/Avg Hit)
+// read as whole numbers, small ones (speed multipliers like +0.08) keep one decimal so they don't
+// round away to ±0.
+function roundForUnit(delta: number, unit: string): number {
+  if (unit === '%') return Math.round(delta * 10) / 10
+  return Math.abs(delta) >= 10 ? Math.round(delta) : Math.round(delta * 10) / 10
+}
 
 interface NodeTooltipProps {
   gameNode: GameNode
@@ -13,9 +24,17 @@ interface NodeTooltipProps {
   prerequisiteNames?: string[]
   onMouseEnter?: () => void
   onMouseLeave?: () => void
+  // ── Story 3.3 compact card-interaction variant (FR-18) ──
+  /** Renders the lean node-name + cost + per-stat-delta layout instead of the full node tooltip. */
+  compact?: boolean
+  pointCost?: number
+  pathCost?: number
+  scoreDelta?: number | null
+  /** Changed, non-inert per-stat deltas (already filtered by tooltipStatDeltaEntries). */
+  statDeltas?: StatDeltaEntry[]
 }
 
-export function NodeTooltip({ gameNode, allocatedPoints, position, errorMessage, prerequisiteNames, onMouseEnter, onMouseLeave }: NodeTooltipProps) {
+export function NodeTooltip({ gameNode, allocatedPoints, position, errorMessage, prerequisiteNames, onMouseEnter, onMouseLeave, compact, pointCost, pathCost, scoreDelta, statDeltas }: NodeTooltipProps) {
   const viewportWidth = window.innerWidth || 10000
   const viewportHeight = window.innerHeight || 10000
 
@@ -38,6 +57,70 @@ export function NodeTooltip({ gameNode, allocatedPoints, position, errorMessage,
     maxWidth: `${TOOLTIP_WIDTH}px`,
     maxHeight: '60vh',
     overflowY: 'auto',
+  }
+
+  // Compact card-interaction variant (FR-18): node name + point/path cost + per-stat deltas. Reuses
+  // the shared delta formatting for visual consistency with the suggestion card.
+  if (compact) {
+    const hasDeltas = !!statDeltas && statDeltas.length > 0
+    return createPortal(
+      <div
+        style={{
+          ...baseStyle,
+          padding: '10px 12px',
+          minWidth: 160,
+          backgroundColor: 'var(--color-bg-elevated)',
+          border: '1px solid var(--color-accent-gold)',
+        }}
+        onWheel={(e) => e.stopPropagation()}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        data-testid="node-tooltip-compact"
+      >
+        <p style={{ color: 'var(--color-text-primary)', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>
+          {gameNode.name}
+        </p>
+        <p
+          style={{
+            color: 'var(--color-text-muted)',
+            fontSize: '11px',
+            fontFamily: 'var(--font-mono)',
+            marginBottom: '6px',
+          }}
+          data-testid="node-tooltip-cost"
+        >
+          {formatCostLine(pointCost ?? 0, pathCost ?? 0)}
+        </p>
+        {scoreDelta != null && (
+          <p
+            style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: getDeltaColor(scoreDelta), marginBottom: '4px' }}
+            data-testid="node-tooltip-score-delta"
+          >
+            Δ Build Score {scoreDelta > 0 ? '+' : ''}{scoreDelta.toFixed(1)}
+          </p>
+        )}
+        {hasDeltas ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }} data-testid="node-tooltip-deltas">
+            {statDeltas!.map((d) => {
+              const rounded = roundForUnit(d.delta, d.unit)
+              return (
+                <span
+                  key={d.label}
+                  style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: getDeltaColor(rounded) }}
+                >
+                  {formatDelta(rounded)}{d.unit} {d.label}
+                </span>
+              )
+            })}
+          </div>
+        ) : (
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontStyle: 'italic' }} data-testid="node-tooltip-deltas-pending">
+            Stat changes pending…
+          </p>
+        )}
+      </div>,
+      document.body
+    )
   }
 
   if (errorMessage) {

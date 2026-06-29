@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { createRef } from 'react'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { SkillTreeCanvas } from './SkillTreeCanvas'
-import type { RendererInstance, TreeData } from './types'
+import type { RendererInstance, SkillTreeCanvasHandle, TreeData } from './types'
 
 // Mock initRenderer so no real PixiJS/WebGL is needed
 const mockGetViewport = vi.fn(() => ({ x: 100, y: 100, scale: 1 }))
@@ -18,6 +19,7 @@ const mockSetReducedMotion = vi.fn()
 const mockTriggerFlash = vi.fn()
 
 const mockFitToTree = vi.fn()
+const mockFocusNode = vi.fn()
 const mockZoomIn = vi.fn()
 const mockZoomOut = vi.fn()
 
@@ -30,6 +32,7 @@ const mockRenderer: RendererInstance = {
   setReducedMotion: mockSetReducedMotion,
   triggerFlash: mockTriggerFlash,
   fitToTree: mockFitToTree,
+  focusNode: mockFocusNode,
   zoomIn: mockZoomIn,
   zoomOut: mockZoomOut,
 }
@@ -181,5 +184,25 @@ describe('SkillTreeCanvas keyboard overlay', () => {
       await new Promise((r) => setTimeout(r, 0))
     })
     expect(mockTriggerFlash).toHaveBeenCalledTimes(2)
+  })
+
+  // Story 3.3 (AC3): the imperative handle forwards focusNode to the renderer.
+  it('forwards focusNode(nodeId) from the handle to the renderer', async () => {
+    const ref = createRef<SkillTreeCanvasHandle>()
+    await act(async () => {
+      render(<SkillTreeCanvas {...DEFAULT_PROPS} ref={ref} />)
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    ref.current?.focusNode('node-a')
+    expect(mockFocusNode).toHaveBeenCalledWith('node-a')
+  })
+
+  it('exposes getViewport on the handle, forwarded from the renderer', async () => {
+    const ref = createRef<SkillTreeCanvasHandle>()
+    await act(async () => {
+      render(<SkillTreeCanvas {...DEFAULT_PROPS} ref={ref} />)
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(ref.current?.getViewport()).toEqual({ x: 100, y: 100, scale: 1 })
   })
 })

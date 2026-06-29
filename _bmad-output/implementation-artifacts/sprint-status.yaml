@@ -81,7 +81,7 @@ development_status:
   epic-3: in-progress
   3-1-scope-restricted-optimizer-with-empty-budget-fallback: done
   3-2-enhanced-suggested-node-visualization-on-the-canvas: done
-  3-3-suggestion-card-content-and-tree-cross-highlight: ready-for-dev
+  3-3-suggestion-card-content-and-tree-cross-highlight: in-progress
   3-4-shift-click-fill-node-to-max: backlog
   3-5-right-click-remove-all-points-with-orphan-cascade: backlog
   epic-3-retrospective: optional

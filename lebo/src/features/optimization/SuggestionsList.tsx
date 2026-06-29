@@ -1,32 +1,19 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useOptimizationStore } from '../../shared/stores/optimizationStore'
 import { useBuildStore, selectUnspentPassivePoints } from '../../shared/stores/buildStore'
 import { useGameDataStore } from '../../shared/stores/gameDataStore'
 import { useAppStore } from '../../shared/stores/appStore'
 import { isRetryable } from '../../shared/types/errors'
-import type { GameData } from '../../shared/types/gameData'
 import { buildTreeData } from '../skill-tree/treeDataTransformer'
 import type { SuggestionResult } from '../../shared/types/optimization'
 import { SuggestionCard } from './SuggestionCard'
 import { invokeCommand } from '../../shared/utils/invokeCommand'
 import { toBuildSnapshot } from '../../shared/utils/buildSnapshotSerializer'
+import { getNodeName } from '../../shared/utils/getNodeName'
+import { pathPointCost } from '../../shared/utils/pathPointCost'
+import { compositeDelta } from '../../shared/utils/scoreComposite'
 import type { StatSheet } from '../../shared/types/statSheet'
-
-function getNodeName(
-  nodeId: string,
-  gameData: GameData | null,
-  classId: string,
-  masteryId: string
-): string {
-  if (!gameData) return nodeId
-  const classData = gameData.classes[classId]
-  if (!classData) return nodeId
-  return (
-    classData.masteries[masteryId]?.nodes[nodeId]?.name ??
-    classData.baseTree[nodeId]?.name ??
-    nodeId
-  )
-}
+import type { GameNode } from '../../shared/types/gameData'
 
 /** Synthetic node IDs are used for informational suggestions (warnings, unique/synergy context).
  *  They are not real passive tree nodes and cannot be applied to the tree. */
@@ -85,6 +72,7 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
   const setAppliedRank = useOptimizationStore((s) => s.setAppliedRank)
   const setPreviewSuggestionRank = useOptimizationStore((s) => s.setPreviewSuggestionRank)
   const setHighlightedNodeIds = useOptimizationStore((s) => s.setHighlightedNodeIds)
+  const requestNodeFocus = useOptimizationStore((s) => s.requestNodeFocus)
   const clearSuggestions = useOptimizationStore((s) => s.clearSuggestions)
   const setPreviewStatSheet = useOptimizationStore((s) => s.setPreviewStatSheet)
   const isComputingStats = useOptimizationStore((s) => s.isComputingStats)
@@ -104,11 +92,24 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
   const [applyErrors, setApplyErrors] = useState<Record<number, string>>({})
   const [focusedCardIndex, setFocusedCardIndex] = useState<number | null>(null)
   const [expandedRank, setExpandedRank] = useState<number | null>(null)
+  // UX-DR12: polite announcement of the active cross-highlighted suggestion for screen readers.
+  const [activeAnnouncement, setActiveAnnouncement] = useState('')
   const cardRefs = useRef<Map<number, HTMLDivElement>>(new Map())
   const previewAbortRef = useRef<{ cancelled: boolean }>({ cancelled: false })
 
   const classId = activeBuild?.classId ?? ''
   const masteryId = activeBuild?.masteryId ?? ''
+
+  // Passive node map (base tree + selected mastery) — the gameData source for the frontend-derived
+  // path cost (pathPointCost). Memoized so the per-card BFS stays cheap.
+  const allGameNodes = useMemo<Record<string, GameNode>>(() => {
+    const classData = gameData?.classes[classId]
+    if (!classData) return {}
+    const nodes: Record<string, GameNode> = { ...classData.baseTree }
+    const mastery = masteryId ? classData.masteries[masteryId] : undefined
+    if (mastery) Object.assign(nodes, mastery.nodes)
+    return nodes
+  }, [gameData, classId, masteryId])
 
   const count = suggestions.length
   const countLabel = count === 1 ? '1 suggestion found' : `${count} suggestions found`
@@ -123,24 +124,30 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
     }
   }, [suggestions])
 
-  // Focus card element when focusedCardIndex changes
+  // Focus card element when focusedCardIndex changes — and fire the cross-highlight (AC2 keyboard
+  // parity: focusing a card via Arrow keys highlights/focuses its node, mirroring hover).
   useEffect(() => {
     if (focusedCardIndex === null) return
     const suggestion = suggestions[focusedCardIndex]
     if (!suggestion) return
     const el = cardRefs.current.get(suggestion.rank)
     el?.focus()
+    void activate(suggestion)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- activate is stable enough; keyed on focus
   }, [focusedCardIndex, suggestions])
 
-  // Listen for global keyboard:escape event from App.tsx
+  // Listen for global keyboard:escape event from App.tsx — also dismiss the cross-highlight (blur).
   useEffect(() => {
     function handleEscape() {
       setFocusedCardIndex(null)
       setExpandedRank(null)
+      setHighlightedNodeIds(null)
+      setPreviewStatSheet(null)
+      previewAbortRef.current.cancelled = true
     }
     window.addEventListener('keyboard:escape', handleEscape)
     return () => window.removeEventListener('keyboard:escape', handleEscape)
-  }, [])
+  }, [setHighlightedNodeIds, setPreviewStatSheet])
 
   const handleListKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -199,14 +206,21 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
         setFocusedCardIndex(null)
         setExpandedRank(null)
         setPreviewSuggestionRank(null)
+        setHighlightedNodeIds(null)
+        setPreviewStatSheet(null)
+        previewAbortRef.current.cancelled = true
         return
       }
     },
-    [suggestions, focusedCardIndex, expandedRank, previewSuggestionRank, setPreviewSuggestionRank, skipSuggestion]
+    [suggestions, focusedCardIndex, expandedRank, previewSuggestionRank, setPreviewSuggestionRank, skipSuggestion, setHighlightedNodeIds, setPreviewStatSheet]
   )
 
-  async function handleHoverEnter(suggestion: SuggestionResult) {
-    // Synthetic IDs are informational context — no tree node to highlight or preview
+  // Shared cross-highlight activation for hover, whole-card click, AND keyboard focus (AC2). It sets
+  // the glow (+ dimmed source node for a SWAP), fires the right-panel→canvas focus signal (AC3), and
+  // runs the Story 4.5 preview compute_stats. The synthetic-id guard, the !isComputingStats gate, and
+  // the previewAbortRef stale-cancellation are all preserved (3.2/4.5 substrate — extended, not rewritten).
+  async function activate(suggestion: SuggestionResult) {
+    // Synthetic IDs are informational context — no tree node to highlight, focus, or preview.
     if (isSyntheticNodeId(suggestion.nodeChange.toNodeId)) return
 
     setHighlightedNodeIds({
@@ -215,15 +229,22 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
         ? new Set([suggestion.nodeChange.fromNodeId])
         : new Set(),
     })
+    // Right-panel → canvas focus request; the store nonce re-fires it on same-node re-activation (AC3).
+    requestNodeFocus(suggestion.nodeChange.toNodeId)
+    setActiveAnnouncement(
+      `Selected ${getNodeName(suggestion.nodeChange.toNodeId, gameData, classId, masteryId)}, suggestion ${suggestion.rank}`
+    )
 
     if (isComputingStats) return
 
-    const activeBuild = useBuildStore.getState().activeBuild
-    const gameData = useGameDataStore.getState().gameData
-    if (!activeBuild || !gameData) return
+    // Read live store state for the preview snapshot (distinct from the component-level gameData used
+    // above for the announcement — do not shadow it, or the announcement hits a TDZ).
+    const liveBuild = useBuildStore.getState().activeBuild
+    const liveGameData = useGameDataStore.getState().gameData
+    if (!liveBuild || !liveGameData) return
 
     const { toNodeId, fromNodeId, pointsChange } = suggestion.nodeChange
-    const modifiedAllocations = { ...activeBuild.nodeAllocations }
+    const modifiedAllocations = { ...liveBuild.nodeAllocations }
     modifiedAllocations[toNodeId] = Math.max(0, (modifiedAllocations[toNodeId] ?? 0) + pointsChange)
     if (fromNodeId) {
       modifiedAllocations[fromNodeId] = Math.max(
@@ -232,7 +253,10 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
       )
     }
 
-    const snapshot = toBuildSnapshot({ ...activeBuild, nodeAllocations: modifiedAllocations }, gameData)
+    const snapshot = toBuildSnapshot({ ...liveBuild, nodeAllocations: modifiedAllocations }, liveGameData)
+    // Cancel any in-flight preview before starting a new one — keyboard nav fires no hover-leave
+    // between cards, so a stale result must never win.
+    previewAbortRef.current.cancelled = true
     const guard = { cancelled: false }
     previewAbortRef.current = guard
 
@@ -246,10 +270,16 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
     }
   }
 
-  function handleHoverLeave() {
+  // Clear the cross-highlight (hover-leave / Escape dismiss). Leaves the focus nonce untouched — the
+  // pan already happened and the signal is one-shot.
+  function deactivate() {
     setHighlightedNodeIds(null)
     previewAbortRef.current.cancelled = true
     setPreviewStatSheet(null)
+  }
+
+  function handleHoverLeave() {
+    deactivate()
   }
 
   function handlePreview(rank: number) {
@@ -326,6 +356,14 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
     const fromNodeName = suggestion.nodeChange.fromNodeId
       ? getNodeName(suggestion.nodeChange.fromNodeId, gameData, classId, masteryId)
       : undefined
+    // FR-19 derived fields (actionable cards only). All from already-produced data — score delta from
+    // the suggestion's own baseline→preview composite, point cost from pointsChange, path cost from the
+    // gameData prerequisite walk. Never the echo-fragile nodeEfficiencies join (Source Audit).
+    const scoreDelta = syntheticTo ? undefined : compositeDelta(suggestion.baselineScore, suggestion.previewScore)
+    const pointCost = syntheticTo ? undefined : Math.abs(suggestion.nodeChange.pointsChange)
+    const pathCost = syntheticTo
+      ? undefined
+      : pathPointCost(allGameNodes, activeBuild?.nodeAllocations ?? {}, suggestion.nodeChange.toNodeId)
     return (
       <SuggestionCard
         key={`${suggestion.rank}-${suggestion.nodeChange.toNodeId}`}
@@ -343,17 +381,26 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
         isPreviewActive={previewSuggestionRank === suggestion.rank}
         isFocused={isFocused}
         isExpanded={expandedRank === suggestion.rank}
+        scoreDelta={scoreDelta}
+        pointCost={pointCost}
+        pathCost={pathCost}
         onApply={() => handleApply(suggestion)}
         onSkip={() => { if (allowInteraction) skipSuggestion(suggestion.rank) }}
         onPreview={() => { if (allowInteraction) handlePreview(suggestion.rank) }}
-        onHoverEnter={() => handleHoverEnter(suggestion)}
+        onHoverEnter={() => activate(suggestion)}
         onHoverLeave={handleHoverLeave}
+        onActivate={!syntheticTo && allowInteraction ? () => activate(suggestion) : undefined}
       />
     )
   }
 
   return (
     <div className="flex flex-col gap-2" data-testid="suggestions-list">
+      {/* UX-DR12: polite live region announcing the active cross-highlighted suggestion. */}
+      <div className="sr-only" role="status" aria-live="polite" data-testid="suggestions-live-region">
+        {activeAnnouncement}
+      </div>
+
       {previewSuggestionRank !== null && (
         <div
           className="flex items-center justify-between gap-2 px-3 py-2 rounded text-xs"
@@ -463,6 +510,7 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
           className="text-xs font-semibold"
           style={{ color: 'var(--color-text-muted)' }}
           data-testid="suggestions-count"
+          aria-live="polite"
         >
           {countLabel}
         </p>

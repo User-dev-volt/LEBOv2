@@ -132,8 +132,25 @@ const emptyTree: TreeData = { nodes: [], edges: [] }
 const GOLD = 0xc9a84c
 const GOLD_SOFT = 0xd4b96a
 const SILVER = 0xc0c6d2
+const NODE_SUGGESTED = 0x7b68ee
 const AVAILABLE_STROKE = 0x4a7a9e
 const MED_R = NODE_RADIUS.medium
+const GOLD_SCALE = 1.4
+const SILVER_SCALE = 1.2
+
+function glow(...ids: string[]) {
+  return { ...emptyHl(), glowing: new Set(ids) }
+}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function hasStrokeAtRadius(color: number, radius: number, tol = 0.6) {
+  return graphicsInstances.some((g) =>
+    opsOf(g).some((o) => o.op === 'circle' && Math.abs((o.radius ?? NaN) - radius) < tol) &&
+    hasStroke(g, color)
+  )
+}
+function anyStroke(color: number) {
+  return graphicsInstances.some((g) => hasStroke(g, color))
+}
 
 function effOf(node_id: string, tier: 'gold' | 'silver' | 'dim'): NodeEfficiency {
   return { node_id, tier, efficiency: 1, path_delta_score: 1, effective_point_cost: 1 }
@@ -484,5 +501,134 @@ describe('initRenderer', () => {
 
     expect(instancesWithCircle(MED_R * 1.4).length).toBe(0)
     expect(instancesWithCircle(MED_R).some((g) => hasStroke(g, AVAILABLE_STROKE))).toBe(true)
+  })
+
+  // ── Story 3.3 — card cross-highlight COMPOSES with the 3.2 tier treatment (Task 4) ──────────
+
+  it('a glowing GOLD node keeps its 1.4× tier ring AND gets an additive gold-soft emphasis ring (not downgraded to a base purple ring)', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    const tree: TreeData = { nodes: [medNode('n1')], edges: [] }
+    renderer.renderTree(tree, {}, glow('n1'), new Map(), null, [effOf('n1', 'gold')], true)
+
+    // 3.2 tier treatment survives: scaled node + gold ring at 1.4×.
+    expect(instancesWithCircle(MED_R * GOLD_SCALE).some((g) => hasStroke(g, GOLD))).toBe(true)
+    // The precedence bug would have replaced it with a flat base-radius purple ring — assert it did NOT.
+    expect(hasStrokeAtRadius(NODE_SUGGESTED, MED_R)).toBe(false)
+    // Additive emphasis ring at the EFFECTIVE (tier-scaled) radius, in the amplified gold-soft colour.
+    expect(hasStrokeAtRadius(GOLD_SOFT, MED_R * GOLD_SCALE + 3)).toBe(true)
+  })
+
+  it('a glowing SILVER node keeps its 1.2× tier ring AND gets an additive silver emphasis ring at the effective radius', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    const tree: TreeData = { nodes: [medNode('n1')], edges: [] }
+    renderer.renderTree(tree, {}, glow('n1'), new Map(), null, [effOf('n1', 'silver')], true)
+
+    expect(instancesWithCircle(MED_R * SILVER_SCALE).some((g) => hasStroke(g, SILVER))).toBe(true)
+    expect(hasStrokeAtRadius(NODE_SUGGESTED, MED_R)).toBe(false)
+    // emphasis ring hugs the silver node at its effective radius (sr + 3), distinct from the tier ring.
+    expect(hasStrokeAtRadius(SILVER, MED_R * SILVER_SCALE + 3)).toBe(true)
+  })
+
+  it('a glowing UNTREATED node draws available + an additive suggested-purple emphasis ring', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    const tree: TreeData = { nodes: [medNode('n1')], edges: [] }
+    renderer.renderTree(tree, {}, glow('n1'), new Map(), null, null, false)
+
+    // No tier → base draw is the available node…
+    expect(instancesWithCircle(MED_R).some((g) => hasStroke(g, AVAILABLE_STROKE))).toBe(true)
+    // …with a purple emphasis ring layered on top at base radius + 3.
+    expect(hasStrokeAtRadius(NODE_SUGGESTED, MED_R + 3)).toBe(true)
+  })
+
+  it('under reduced motion a glowing gold node keeps its tier scale/ring + static emphasis ring but no animated pulse fill', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    const tree: TreeData = { nodes: [medNode('n1')], edges: [] }
+    renderer.setReducedMotion(true)
+    renderer.renderTree(tree, {}, glow('n1'), new Map(), null, [effOf('n1', 'gold')], true)
+    stepOneFrame()
+
+    // Static survivors: tier scale + gold ring, and the static emphasis ring (a stroke, not a fill).
+    expect(instancesWithCircle(MED_R * GOLD_SCALE).some((g) => hasStroke(g, GOLD))).toBe(true)
+    expect(anyStroke(GOLD_SOFT)).toBe(true)
+    // Both the gold tier pulse AND the emphasis pulse are FILLS gated on reduced motion → none drawn.
+    expect(anyFill(GOLD_SOFT)).toBe(false)
+  })
+
+  it('animates an emphasis pulse fill for a glowing node under normal motion', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    const tree: TreeData = { nodes: [medNode('n1')], edges: [] }
+    // Untreated glowing node → the only GOLD_SOFT/SILVER source would be tier pulses (absent here);
+    // the emphasis pulse for an untreated node fills the suggested-purple colour.
+    renderer.renderTree(tree, {}, glow('n1'), new Map(), null, null, false)
+    stepOneFrame()
+    expect(anyFill(NODE_SUGGESTED)).toBe(true)
+  })
+
+  it('tears down the emphasis pulse ticker on destroy', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    // Persistent tickers are added in order: iconAnimTick, goldPulseTick, emphasisPulseTick.
+    const emphasisTick = tickerCallbacks[2]
+    expect(emphasisTick).toBeTypeOf('function')
+    renderer.destroy()
+    expect(mockApp.ticker.remove).toHaveBeenCalledWith(emphasisTick)
+  })
+
+  // ── Story 3.3 — focusNode (AC3, Task 6) ─────────────────────────────────────────────────────
+
+  it('reduced motion JUMPS the camera to the centred transform (not a no-op)', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    renderer.resize(800, 600)
+    renderer.setReducedMotion(true)
+    const tree: TreeData = { nodes: [medNode('n1', 1000, 2000)], edges: [] }
+    renderer.renderTree(tree, {}, emptyHl(), new Map())
+    renderer.focusNode('n1')
+    const vp = renderer.getViewport()
+    // centred: worldContainer.(x,y) = canvas/2 − node·scale (scale is mock-fixed at 0.6)
+    expect(vp.x).toBeCloseTo(800 / 2 - 1000 * vp.scale)
+    expect(vp.y).toBeCloseTo(600 / 2 - 2000 * vp.scale)
+  })
+
+  it('under normal motion an off-screen node schedules a tween (ticker added) without an instant jump', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    renderer.resize(800, 600)
+    const tree: TreeData = { nodes: [medNode('n1', 5000, 5000)], edges: [] }
+    renderer.renderTree(tree, {}, emptyHl(), new Map())
+    const before = renderer.getViewport().x
+    const tickCountBefore = tickerCallbacks.length
+    renderer.focusNode('n1')
+    expect(tickerCallbacks.length).toBe(tickCountBefore + 1) // a tween was scheduled
+    expect(renderer.getViewport().x).toBe(before) // …but no synchronous jump
+  })
+
+  it('is a no-op for a node already comfortably on-screen', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    renderer.resize(800, 600)
+    const tree: TreeData = { nodes: [medNode('n1', 0, 0)], edges: [] }
+    renderer.renderTree(tree, {}, emptyHl(), new Map())
+    const before = renderer.getViewport()
+    const tickCountBefore = tickerCallbacks.length
+    renderer.focusNode('n1')
+    expect(tickerCallbacks.length).toBe(tickCountBefore) // no tween
+    expect(renderer.getViewport().x).toBe(before.x) // unchanged
+    expect(renderer.getViewport().y).toBe(before.y)
+  })
+
+  it('does nothing for an unknown node id', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    renderer.resize(800, 600)
+    renderer.renderTree({ nodes: [medNode('n1')], edges: [] }, {}, emptyHl(), new Map())
+    const tickCountBefore = tickerCallbacks.length
+    expect(() => renderer.focusNode('ghost')).not.toThrow()
+    expect(tickerCallbacks.length).toBe(tickCountBefore)
+  })
+
+  it('tears down an in-flight focus tween on destroy', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    renderer.resize(800, 600)
+    renderer.renderTree({ nodes: [medNode('n1', 5000, 5000)], edges: [] }, {}, emptyHl(), new Map())
+    renderer.focusNode('n1')
+    const focusTick = tickerCallbacks[tickerCallbacks.length - 1]
+    renderer.destroy()
+    expect(mockApp.ticker.remove).toHaveBeenCalledWith(focusTick)
   })
 })

@@ -7,7 +7,8 @@ import { calculateSkillPoints } from '../../shared/utils/budgetCalculator'
 import { useReducedMotion } from '../../shared/hooks/useReducedMotion'
 import { DAMAGE_TYPE_COLORS } from '../../shared/utils/rarityColors'
 import type { DamageType } from '../../shared/types/itemDatabase'
-import type { DefenseStats, StatSheet, StatWarning } from '../../shared/types/statSheet'
+import type { DefenseStats, StatWarning } from '../../shared/types/statSheet'
+import { computeStatDeltas, type StatDeltas } from '../../shared/utils/statDeltas'
 import { StatSourceTooltip, type CapInfo, type ResolvedSource } from './StatSourceTooltip'
 import { buildSourceResolveContext, resolveSourceName } from './statSourceLabels'
 
@@ -63,72 +64,6 @@ function fmt(value: number | null | undefined, decimals = 1): string {
 function fmtInt(value: number | null | undefined): string {
   if (value == null) return '—'
   return Math.round(value).toLocaleString()
-}
-
-interface StatDeltas {
-  damage_score: number
-  avg_hit_damage: number
-  avg_hit_damage_crit_weighted: number
-  critical_strike_chance: number
-  critical_strike_multiplier: number
-  attack_speed: number | null
-  cast_speed: number | null
-  aoe_modifier: number
-  effective_hp: number
-  raw_hp: number
-  ward: number
-  endurance_percent: number
-  endurance_threshold: number
-  armor: number
-  fire_resistance: number
-  cold_resistance: number
-  lightning_resistance: number
-  void_resistance: number
-  necrotic_resistance: number
-  poison_resistance: number
-  physical_resistance: number
-  crit_avoidance: number
-  dodge_chance: number
-  score_damage: number
-  score_survivability: number
-  score_speed: number
-  score_build: number
-}
-
-function computeStatDeltas(base: StatSheet, preview: StatSheet): StatDeltas {
-  return {
-    damage_score: preview.offense.damage_score - base.offense.damage_score,
-    avg_hit_damage: preview.offense.avg_hit_damage - base.offense.avg_hit_damage,
-    avg_hit_damage_crit_weighted: preview.offense.avg_hit_damage_crit_weighted - base.offense.avg_hit_damage_crit_weighted,
-    critical_strike_chance: preview.offense.critical_strike_chance - base.offense.critical_strike_chance,
-    critical_strike_multiplier: preview.offense.critical_strike_multiplier - base.offense.critical_strike_multiplier,
-    attack_speed: preview.offense.attack_speed != null && base.offense.attack_speed != null
-      ? preview.offense.attack_speed - base.offense.attack_speed
-      : null,
-    cast_speed: preview.offense.cast_speed != null && base.offense.cast_speed != null
-      ? preview.offense.cast_speed - base.offense.cast_speed
-      : null,
-    aoe_modifier: preview.offense.aoe_modifier - base.offense.aoe_modifier,
-    effective_hp: preview.defense.effective_hp - base.defense.effective_hp,
-    raw_hp: preview.defense.raw_hp - base.defense.raw_hp,
-    ward: preview.defense.ward - base.defense.ward,
-    endurance_percent: preview.defense.endurance_percent - base.defense.endurance_percent,
-    endurance_threshold: preview.defense.endurance_threshold - base.defense.endurance_threshold,
-    armor: preview.defense.armor - base.defense.armor,
-    fire_resistance: preview.defense.fire_resistance - base.defense.fire_resistance,
-    cold_resistance: preview.defense.cold_resistance - base.defense.cold_resistance,
-    lightning_resistance: preview.defense.lightning_resistance - base.defense.lightning_resistance,
-    void_resistance: preview.defense.void_resistance - base.defense.void_resistance,
-    necrotic_resistance: preview.defense.necrotic_resistance - base.defense.necrotic_resistance,
-    poison_resistance: preview.defense.poison_resistance - base.defense.poison_resistance,
-    physical_resistance: preview.defense.physical_resistance - base.defense.physical_resistance,
-    crit_avoidance: preview.defense.crit_avoidance - base.defense.crit_avoidance,
-    dodge_chance: preview.defense.dodge_chance - base.defense.dodge_chance,
-    score_damage: preview.scores.damage_score - base.scores.damage_score,
-    score_survivability: preview.scores.survivability_score - base.scores.survivability_score,
-    score_speed: preview.scores.speed_score - base.scores.speed_score,
-    score_build: preview.scores.build_score - base.scores.build_score,
-  }
 }
 
 function DeltaBadge({ delta, unit = '' }: { delta: number; unit?: string }) {
