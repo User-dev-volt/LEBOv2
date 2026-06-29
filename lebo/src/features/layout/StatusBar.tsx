@@ -22,12 +22,12 @@ export function StatusBar() {
       style={{
         backgroundColor: 'var(--color-bg-base)',
         borderColor: 'var(--color-bg-elevated)',
-        color: 'var(--color-text-muted)',
+        color: 'var(--color-text-secondary)',
       }}
     >
       {dataVersion && (
         <span>
-          Data: <span style={{ color: 'var(--color-text-secondary)' }}>{dataVersion}</span>
+          Data: <span style={{ color: 'var(--color-text-primary)' }}>{dataVersion}</span>
           {dateOnly && <> — <span className="font-mono">{dateOnly}</span></>}
         </span>
       )}
@@ -46,12 +46,12 @@ export function StatusBar() {
           LLM:{' '}
           {llmProvider === 'claude' ? (
             <>
-              <span style={{ color: 'var(--color-text-secondary)' }}>Claude</span> ·{' '}
+              <span style={{ color: 'var(--color-text-primary)' }}>Claude</span> ·{' '}
               <span className="font-mono">{CLAUDE_MODEL_LABEL}</span>
             </>
           ) : (
             <>
-              <span style={{ color: 'var(--color-text-secondary)' }}>OpenRouter</span> ·{' '}
+              <span style={{ color: 'var(--color-text-primary)' }}>OpenRouter</span> ·{' '}
               <span className="font-mono">free rotation</span>
             </>
           )}
