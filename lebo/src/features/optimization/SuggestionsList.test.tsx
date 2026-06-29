@@ -18,6 +18,7 @@ vi.mock('../../shared/utils/invokeCommand', () => ({
 import { SuggestionsList } from './SuggestionsList'
 import type { SuggestionResult } from '../../shared/types/optimization'
 import type { GameData } from '../../shared/types/gameData'
+import type { StatSheet } from '../../shared/types/statSheet'
 
 const BASE_SCORE = { damage: 10, survivability: 10, speed: 10 }
 
@@ -738,6 +739,37 @@ describe('SuggestionsList', () => {
     const region = screen.getByTestId('suggestions-live-region')
     expect(region).toHaveAttribute('aria-live', 'polite')
     expect(region).toHaveTextContent(/Selected .*suggestion 1/)
+  })
+
+  it('hovering a SKIPPED suggestion does NOT activate the cross-highlight (no fabricated tooltip cost)', () => {
+    // Skipped cards are dismissed → they must not glow/focus their node. If they did, the compact
+    // canvas tooltip would render a fabricated "0 pts" cost (the suggestion is no longer in the active
+    // list, so its cost lookup misses) — a displayed-but-not-sourced violation (Source Audit guardrail).
+    useOptimizationStore.setState({
+      suggestions: [makeSuggestion(1, 'active-node')],
+      skippedSuggestions: [makeSuggestion(2, 'skipped-node')],
+      isOptimizing: false,
+      streamError: null,
+    })
+    render(<SuggestionsList onRetry={vi.fn()} />)
+    fireEvent.mouseEnter(screen.getByTestId('suggestion-card-2'))
+    expect(useOptimizationStore.getState().highlightedNodeIds).toBeNull()
+    expect(useOptimizationStore.getState().focusNodeId).toBeNull()
+  })
+
+  it('activating a card clears any prior preview sheet up-front (keyboard-nav shows pending, not stale deltas)', () => {
+    // Seed a stale preview sheet (as if a previous card had resolved), then activate another card. No
+    // activeBuild here, so activate() returns before the IPC — isolating the synchronous clear that
+    // makes the compact tooltip fall back to its pending state instead of the previous node's deltas.
+    useOptimizationStore.setState({
+      suggestions: [makeSuggestion(1, 'target-node')],
+      isOptimizing: false,
+      streamError: null,
+      previewStatSheet: { damage: 999 } as unknown as StatSheet,
+    })
+    render(<SuggestionsList onRetry={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('suggestion-card-1'))
+    expect(useOptimizationStore.getState().previewStatSheet).toBeNull()
   })
 
   it('renders the exact score delta and point/path cost for a known fixture (FR-19 value+element)', () => {

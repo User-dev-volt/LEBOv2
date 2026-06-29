@@ -573,6 +573,33 @@ describe('initRenderer', () => {
     expect(mockApp.ticker.remove).toHaveBeenCalledWith(emphasisTick)
   })
 
+  it('layers the emphasis pulse BELOW the icon container so the node icon is never veiled (FR-18)', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    // Untreated glowing node under normal motion → the emphasis pulse fills the suggested-purple disc.
+    renderer.renderTree({ nodes: [medNode('n1')], edges: [] }, {}, glow('n1'), new Map(), null, null, false)
+    stepOneFrame()
+
+    // worldContainer is the object handed to app.stage.addChild; its many-arg addChild call is the
+    // ordered layer list, and addChild order is the z-order (no zIndex/sortableChildren in use).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const worldContainer = (mockApp.stage.addChild as any).mock.calls[0][0]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const layerCall: any[] = worldContainer.addChild.mock.calls.find((c: unknown[]) => c.length > 5)
+    expect(layerCall).toBeDefined()
+    // Emphasis pulse = the layer that filled NODE_SUGGESTED this frame (unique: tier pulses are absent
+    // for an untreated node, and the static ring is a stroke, not a fill).
+    const emphasisIdx = layerCall.findIndex(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (g: any) => (g._ops as GfxOp[] | undefined)?.some((o) => o.op === 'fill' && o.color === NODE_SUGGESTED)
+    )
+    // Icon container = the first child exposing removeChildren (a Container, not a Graphics).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const iconIdx = layerCall.findIndex((c: any) => typeof c.removeChildren === 'function')
+    expect(emphasisIdx).toBeGreaterThan(-1)
+    expect(iconIdx).toBeGreaterThan(-1)
+    expect(emphasisIdx).toBeLessThan(iconIdx)
+  })
+
   // ── Story 3.3 — focusNode (AC3, Task 6) ─────────────────────────────────────────────────────
 
   it('reduced motion JUMPS the camera to the centred transform (not a no-op)', async () => {
@@ -630,5 +657,27 @@ describe('initRenderer', () => {
     const focusTick = tickerCallbacks[tickerCallbacks.length - 1]
     renderer.destroy()
     expect(mockApp.ticker.remove).toHaveBeenCalledWith(focusTick)
+  })
+
+  it('does not cancel an in-flight focus tween when a re-fire finds the node already on-screen', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    renderer.resize(800, 600)
+    // First render: node off-screen → focusNode schedules a centring tween.
+    renderer.renderTree({ nodes: [medNode('n1', 5000, 5000)], edges: [] }, {}, emptyHl(), new Map())
+    renderer.focusNode('n1')
+    const tween = tickerCallbacks[tickerCallbacks.length - 1]
+
+    // Same tree id (no refit, transform unchanged), but move n1 to an on-screen world position —
+    // simulating the node crossing into view as the tween progresses. Re-fire focusNode for it.
+    renderer.renderTree({ nodes: [medNode('n1', 20800, 20800)], edges: [] }, {}, emptyHl(), new Map())
+    const removesBefore = mockApp.ticker.remove.mock.calls.length
+    const ticksBefore = tickerCallbacks.length
+    renderer.focusNode('n1')
+
+    // The on-screen early-return must precede the cancel block: the running tween survives untouched
+    // and no replacement tween is scheduled, so it finishes centring instead of freezing off-centre.
+    expect(mockApp.ticker.remove).not.toHaveBeenCalledWith(tween)
+    expect(mockApp.ticker.remove.mock.calls.length).toBe(removesBefore)
+    expect(tickerCallbacks.length).toBe(ticksBefore)
   })
 })

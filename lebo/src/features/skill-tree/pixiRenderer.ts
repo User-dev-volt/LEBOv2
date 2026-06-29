@@ -218,12 +218,13 @@ export async function initRenderer(
   const availableGraphics = new Graphics()
   // Animated gold pulse glow (AC1 gold) — below the tier node so the node sits atop its glow
   const goldPulseGraphics = new Graphics()
+  // Animated card-interaction emphasis pulse (FR-18) — below the tier node + icon (mirrors goldPulse)
+  // so the node face and icon sit atop the emphasis halo; the static amplified outline (a stroke on
+  // suggestedGraphics) renders the crisp ring on top. A filled disc here would otherwise veil the icon.
+  const emphasisPulseGraphics = new Graphics()
   // Static scaled gold/silver suggested nodes (AC1) — below icons so icon sprites render on top
   const tierGraphics = new Graphics()
   const allocatedGraphics = new Graphics()
-  // Animated card-interaction emphasis pulse (FR-18) — below the static emphasis ring (suggestedGraphics)
-  // so the halo reads behind the node's amplified outline.
-  const emphasisPulseGraphics = new Graphics()
   const suggestedGraphics = new Graphics()
   const dimmedGraphics = new Graphics()
   const previewRemovedGraphics = new Graphics()
@@ -251,11 +252,11 @@ export async function initRenderer(
     lockedGraphics,
     availableGraphics,
     goldPulseGraphics,
+    emphasisPulseGraphics,
     tierGraphics,
     allocatedGraphics,
     iconContainer,
     dimmedGraphics,
-    emphasisPulseGraphics,
     suggestedGraphics,
     previewRemovedGraphics,
     previewAddedGraphics,
@@ -795,20 +796,23 @@ export async function initRenderer(
     const targetX = canvasW / 2 - node.x * scale
     const targetY = canvasH / 2 - node.y * scale
 
-    // Cancel any in-flight focus tween — the latest request supersedes.
-    if (activeFocusTick) {
-      app.ticker.remove(activeFocusTick)
-      activeFocusTick = null
-    }
-
     // Off-screen test against the current transform (AC3: only pan when the node is off-screen; when
-    // already comfortably visible, skip — a visible node should not jump).
+    // already comfortably visible, skip — a visible node should not jump). Evaluated BEFORE cancelling
+    // any in-flight tween: a hover→click re-fire on the same card lands here once the node has eased
+    // into the visible box, and cancelling there would freeze it off-centre. Returning lets the running
+    // centre tween finish.
     const screenX = worldContainer.x + node.x * scale
     const screenY = worldContainer.y + node.y * scale
     const onScreen =
       screenX > canvasW * 0.1 && screenX < canvasW * 0.9 &&
       screenY > canvasH * 0.1 && screenY < canvasH * 0.9
     if (onScreen) return
+
+    // Cancel any in-flight focus tween — the latest (still-off-screen) request supersedes.
+    if (activeFocusTick) {
+      app.ticker.remove(activeFocusTick)
+      activeFocusTick = null
+    }
 
     if (reducedMotionEnabled) {
       // Reduced motion JUMPS to the centred transform. Must NOT copy triggerFlash's reduced-motion

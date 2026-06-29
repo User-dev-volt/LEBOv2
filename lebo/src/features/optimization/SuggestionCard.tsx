@@ -68,7 +68,8 @@ interface SuggestionCardProps {
   onApply: () => void
   onSkip: () => void
   onPreview: () => void
-  onHoverEnter: () => void
+  /** Hover-enter cross-highlight trigger. Omitted for skipped/non-interactive cards (no canvas focus). */
+  onHoverEnter?: () => void
   onHoverLeave: () => void
   /** Whole-card activation (hover/click cross-highlight). Omitted for informational cards. */
   onActivate?: () => void
@@ -130,7 +131,7 @@ export const SuggestionCard = forwardRef<HTMLDivElement, SuggestionCardProps>(
           : 'var(--color-text-secondary)'
 
     function handleMouseEnter() {
-      onHoverEnter()
+      onHoverEnter?.()
     }
 
     function handleMouseLeave() {

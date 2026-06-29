@@ -223,6 +223,11 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
     // Synthetic IDs are informational context — no tree node to highlight, focus, or preview.
     if (isSyntheticNodeId(suggestion.nodeChange.toNodeId)) return
 
+    // Clear any prior preview sheet up-front so the compact tooltip falls back to its pending state
+    // (not the previous node's deltas) until this node's compute_stats resolves. Keyboard nav fires no
+    // hover-leave between cards, so without this a stale sheet would render under the new node's name.
+    setPreviewStatSheet(null)
+
     setHighlightedNodeIds({
       glowing: new Set([suggestion.nodeChange.toNodeId]),
       dimmed: suggestion.nodeChange.fromNodeId
@@ -387,7 +392,7 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
         onApply={() => handleApply(suggestion)}
         onSkip={() => { if (allowInteraction) skipSuggestion(suggestion.rank) }}
         onPreview={() => { if (allowInteraction) handlePreview(suggestion.rank) }}
-        onHoverEnter={() => activate(suggestion)}
+        onHoverEnter={!syntheticTo && allowInteraction ? () => activate(suggestion) : undefined}
         onHoverLeave={handleHoverLeave}
         onActivate={!syntheticTo && allowInteraction ? () => activate(suggestion) : undefined}
       />

@@ -1,6 +1,6 @@
 # Story 3.3: Suggestion card content and tree cross-highlight
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -226,10 +226,38 @@ claude-opus-4-8 (Claude Code `create-story` + ultracode multi-agent analysis: 6 
 
 ### Completion Notes List
 
+- **All 3 ACs satisfied, all 44 subtasks complete.** `pnpm build` exit 0 (only the pre-existing >500 kB chunk advisory). `pnpm vitest` = **1230 passed / 8 failed**, the 8 being exactly the pre-existing baseline (`ProviderSelector` ×5, `Settings` ×1, `SkillTreeCanvas` ×1, `TreeControls` ×1) — **zero new failures**. Story added ~70 tests.
+- **AC1 (FR-19) card content** — rank, node name, composite ΔBuildScore (`compositeDelta(baselineScore, previewScore)`, one decimal, signed), point cost + path cost (`formatCostLine` → e.g. "2 pts / 4 pts to reach"), and an **always-visible** Claude explanation. Per-axis DMG/SUR/SPD pills retained as the breakdown.
+- **AC2 (FR-18) cross-highlight** — hover / whole-card click / keyboard-focus activate an **additive** emphasis (gold-soft over gold, silver over silver, suggested-purple over untreated) that **composes with** the Story 3.2 tier treatment at the node's effective (tier-scaled) radius. The 3.2-deferred precedence bug was resolved by **composing, not clobbering**: `isGlowing` removed from the mutually-exclusive base-draw chain + an additive emphasis pass + a reduced-motion-gated emphasis pulse ticker (torn down in `destroy()`). Compact `NodeTooltip` shows node name + point/path cost + per-stat deltas; synthetic/informational cards get no highlight/tooltip/focus.
+- **AC3 (AR-6) focusNode** — new `SkillTreeCanvasHandle.focusNode(nodeId)` centers an off-screen node via a self-removing tween (reduced motion **jumps** to centered, not a no-op); driven by `optimizationStore.focusNodeId` + nonce read in `SkillTreeView`. Canvas stays props/ref-only — no Zustand access in `SkillTreeCanvas`/`pixiRenderer`.
+- **Source Audit honored** — every new displayed value is frontend-derived from already-produced data: score delta from the ScoreGauge composite (single-node-consistent with the pills), path cost from a frontend BFS over `GameNode.prerequisiteNodeIds`, per-stat deltas from `tooltipStatDeltaEntries` (excludes perpetual ±0 inert stats). Never the echo-fragile `toNodeId→nodeEfficiencies` join.
+- **ultracode adversarial self-review** (5 dimensions — AC fidelity, source-audit, render correctness, scope/regression, test quality — each finding independently verified; **0 false positives**) surfaced and **fixed 4 issues, each with a new regression test**: (1) keyboard arrow-nav left a stale `previewStatSheet` → the compact tooltip briefly showed the previous node's deltas → now cleared up-front in `activate()`; (2) hovering a **skipped** card produced a fabricated "0 pts" tooltip cost (displayed-but-not-sourced) → `onHoverEnter` now gated on `allowInteraction`; (3) the emphasis pulse layer sat above the node face/icon and veiled it → moved below the node layers (mirrors `goldPulse`), static ring still on top; (4) `focusNode` cancelled an in-flight tween *before* the on-screen early-return, so a hover→click re-fire froze the node off-centre → reordered so the centring tween finishes. A 5th finding (pre-existing cross-feature import `SuggestionsList → skill-tree/treeDataTransformer`, used by `handleApply`) was verified **out of scope** for 3.3 — not introduced or worsened here; left for opportunistic cleanup.
+
 ### File List
+
+**New (12):**
+- `lebo/src/shared/utils/scoreComposite.ts`, `scoreComposite.test.ts`
+- `lebo/src/shared/utils/getNodeName.ts`, `getNodeName.test.ts`
+- `lebo/src/shared/utils/pathPointCost.ts`, `pathPointCost.test.ts`
+- `lebo/src/shared/utils/statDeltas.ts`, `statDeltas.test.ts`
+- `lebo/src/shared/utils/formatDelta.ts`, `formatDelta.test.ts`
+- `lebo/src/shared/utils/formatCost.ts`, `formatCost.test.ts`
+
+**Modified (15):**
+- `lebo/src/features/optimization/ScoreGauge.tsx`
+- `lebo/src/features/optimization/SuggestionCard.tsx`, `SuggestionCard.test.tsx`
+- `lebo/src/features/optimization/SuggestionsList.tsx`, `SuggestionsList.test.tsx`
+- `lebo/src/features/skill-tree/pixiRenderer.ts`, `pixiRenderer.test.ts`
+- `lebo/src/features/skill-tree/SkillTreeCanvas.tsx`, `SkillTreeCanvas.test.tsx`
+- `lebo/src/features/skill-tree/SkillTreeView.tsx`
+- `lebo/src/features/skill-tree/NodeTooltip.tsx`, `NodeTooltip.test.tsx`
+- `lebo/src/features/skill-tree/types.ts`
+- `lebo/src/features/stat-sheet/StatSheetPanel.tsx`
+- `lebo/src/shared/stores/optimizationStore.ts`
 
 ## Change Log
 
 | Date | Change |
 |------|--------|
 | 2026-06-29 | Story 3.3 created (create-story + ultracode: 6 parallel deep-read agents + 2 adversarial source-audit skeptics, all Opus). Scope = FR-19 suggestion-card content + FR-18 card↔node cross-highlight/compact tooltip + AR-6 `focusNode(nodeId)`. **Source Audit verdict: N/A — no-new-stat / no-dead-key** (`newStatIntroduced=false`, both skeptics `agree:true` on every field; `SuggestionResult` carries no aggregate delta / point-or-path cost / node name / per-stat deltas). The audit's load-bearing finding: the FR-19 **score delta** + **path cost** and FR-18 **per-stat deltas** are new *displayed values* that MUST be **frontend-derived from already-produced data** — score delta = ScoreGauge composite of `baselineScore→previewScore` (single-node-consistent), path cost = BFS over `GameNode.prerequisiteNodeIds`+`pointCost`, per-stat deltas = `computeStatDeltas(statSheet, previewStatSheet)` filtered to changed non-inert fields — and **NOT** read via the `toNodeId→nodeEfficiencies` join, which is keyed on a Claude-echoed `to_node_id` (can miss → empty) and is full-path vs single-node (would contradict the per-axis pills): exactly the penetration/stun/minion displayed-but-not-sourced defect class. AC2 resolves the 3.2-deferred precedence bug by **composing, not clobbering** (remove `isGlowing` from the mutually-exclusive base-draw chain `pixiRenderer.ts:453`; additive emphasis pass at the node's effective/tier-scaled radius + a reduced-motion-gated emphasis pulse ticker cloning `goldPulseTick`, torn down in `destroy()`). AC3 adds `focusNode` to `RendererInstance`/`SkillTreeCanvasHandle`/`useImperativeHandle`, mirroring `fitToTree` centering with a `triggerFlash`-style self-removing tween — but **reduced motion JUMPS to centered** (must not copy triggerFlash's reduced-motion no-op); right-panel→canvas via a new `optimizationStore.focusNodeId`+nonce read by `SkillTreeView` (forces passive tab, calls `passiveCanvasRef.focusNode`), canvas stays store-free (AR-6). New shared pure helpers (`pathPointCost`, extracted `getNodeName`/`computeStatDeltas`) live in `shared/utils/` (no cross-feature import). Tests = value+element (exact composite delta, exact path-cost integer, glowing+tier composition — currently untested since all tier tests use `emptyHl()`, focusNode handle-forwarding + reduced-motion jump, `SkillTreeCanvas.test.tsx` mock + `NodeTooltip` compact variant). Scope boundary: 3.4 shift-click / 3.5 right-click+`NodeContextMenu` / Epic-6 FR-25 / `useSkillTree` click handling / scoring-core+Rust + `NodeEfficiency` schema + `optimization:*` emit + `run_optimization` payload all untouched; Story-4.5 hover preview IPC + `previewSuggestionRank` preview preserved. Baseline: full `pnpm vitest` must show no new failures vs ProviderSelector/Settings/SkillTreeCanvas/TreeControls (1156 passed / 8 failed). Status → ready-for-dev. |
+| 2026-06-29 | Story 3.3 implemented (bmad-dev-story + ultracode). All 3 ACs + 44 subtasks complete; `pnpm build` exit 0; `pnpm vitest` **1230 passed / 8 failed** (8 = pre-existing baseline, zero new failures; ~70 tests added). FR-19 card content (rank / name / composite score delta / point+path cost / always-visible explanation); FR-18 additive cross-highlight composing with the 3.2 tier treatment + compact tooltip (precedence bug resolved by composing, not clobbering); AR-6 `focusNode(nodeId)` (reduced motion jumps) via `optimizationStore.focusNodeId`+nonce, canvas store-free. All displayed values frontend-derived per Source Audit (composite delta, BFS path cost, inert-filtered stat deltas) — not the `nodeEfficiencies` join. 6 new `shared/utils` pure helpers (`scoreComposite`, `getNodeName`, `pathPointCost`, `statDeltas`, `formatDelta`, `formatCost`). **ultracode adversarial review** (5 dimensions, per-finding verification, 0 false positives) found + fixed 4 issues, each with a regression test: stale `previewStatSheet` on keyboard nav; fabricated "0 pts" on skipped-card hover; emphasis pulse veiling the node icon; `focusNode` tween cancelled before the on-screen check. 1 pre-existing cross-feature import verified out of scope. Status → review. |
