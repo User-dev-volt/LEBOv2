@@ -69,7 +69,7 @@ describe('StatusBar', () => {
   it('shows a gold "Unsaved changes" indicator for a dirty build', () => {
     useBuildStore.setState({ activeBuild: makeBuild(false) })
     render(<StatusBar />)
-    const dirty = screen.getByText('● Unsaved changes')
+    const dirty = screen.getByText('Unsaved changes')
     expect(dirty).toBeInTheDocument()
     expect(dirty.style.color).toBe('var(--color-accent-gold)')
   })
@@ -77,7 +77,7 @@ describe('StatusBar', () => {
   it('shows "All changes saved" for a persisted build', () => {
     useBuildStore.setState({ activeBuild: makeBuild(true) })
     render(<StatusBar />)
-    expect(screen.getByText('● All changes saved')).toBeInTheDocument()
+    expect(screen.getByText('All changes saved')).toBeInTheDocument()
   })
 
   it('shows neither saved nor unsaved when there is no active build', () => {

@@ -1,6 +1,6 @@
 # Story 2.8: Status bar
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -196,6 +196,7 @@ None — implementation was clean; no debugging cycles required. All four verifi
 | 2026-06-10 | Story created (create-story workflow) — ultimate context engine analysis completed; comprehensive developer guide created. Status: ready-for-dev. |
 | 2026-06-28 | Implemented via dev-story — three-segment footer rebuild (data / unsaved / LLM), Online/Offline moved to sr-only aria-live, honest LLM labels, token remap; StatusBar.test.tsx rewritten (11 tests + axe). tsc 0 / StatusBar 11/11 / full suite 1129 pass, 8 standing-baseline fail / build 0. Status: ready-for-dev → review. |
 | 2026-06-28 | Code review (BMAD adversarial: Blind Hunter + Edge Case Hunter + Acceptance Auditor). Auditor PASS (AC1 + AC2 MET). Triage: 1 decision-needed (footer muted-text WCAG-AA contrast 2.54:1), 1 patch (decorative glyphs not aria-hidden), 5 deferred, 9 dismissed. See Review Findings. |
+| 2026-06-29 | Code-review actions applied. Decision resolved (Alec: brighten → lift hierarchy to AA): footer base text muted→secondary (#9E9494, 6.71:1), values secondary→primary (#F0EAE0, 16.54:1), gold dot unchanged (8.66:1) — all footer text now clears WCAG AA. Patch applied: decorative ●/·/— wrapped in aria-hidden (zero visual change); 2 StatusBar.test.tsx queries updated. tsc 0 / StatusBar 11/11 / full suite 1129 pass, 8 standing-baseline fail (no new). Status: review → done. |
 
 ## Review Findings
 
@@ -203,11 +204,11 @@ _Code review — 2026-06-28. Three adversarial layers (Blind Hunter / Edge Case 
 
 ### Decision Needed
 
-- [ ] [Review][Decision] Footer muted-text contrast fails WCAG AA (2.54:1) [StatusBar.tsx:25] — The token remap set the footer base text to `--color-text-muted` (#5A5050) on `--color-bg-base` (#0a0a0b) = **2.54:1**, below AA's 4.5:1 (and below the 3:1 large-text floor). Affects the "Data:"/"LLM:" labels, the mono date, the mono model id, and the muted "● All changes saved" line. The data *values* (`--color-text-secondary` #9E9494 = 6.71:1) and the gold unsaved dot (8.66:1) pass. Regression from the prior footer, which used secondary (6.71:1) throughout. AC2's `vitest-axe` check cannot catch this — axe's color-contrast rule is inert under jsdom — so "zero axe violations" is false assurance on this axis. The remap was spec-mandated (Dev Notes line 107), so the resolution needs a human call: keep spec-faithful muted (accept sub-AA on the labels/date/model) vs. raise those sub-elements to secondary for AA.
+- [x] [Review][Decision] Footer muted-text contrast fails WCAG AA (2.54:1) — ✅ RESOLVED 2026-06-29 (see Resolution) [StatusBar.tsx:25] — The token remap set the footer base text to `--color-text-muted` (#5A5050) on `--color-bg-base` (#0a0a0b) = **2.54:1**, below AA's 4.5:1 (and below the 3:1 large-text floor). Affects the "Data:"/"LLM:" labels, the mono date, the mono model id, and the muted "● All changes saved" line. The data *values* (`--color-text-secondary` #9E9494 = 6.71:1) and the gold unsaved dot (8.66:1) pass. Regression from the prior footer, which used secondary (6.71:1) throughout. AC2's `vitest-axe` check cannot catch this — axe's color-contrast rule is inert under jsdom — so "zero axe violations" is false assurance on this axis. The remap was spec-mandated (Dev Notes line 107), so the resolution needs a human call: keep spec-faithful muted (accept sub-AA on the labels/date/model) vs. raise those sub-elements to secondary for AA.
 
 ### Patches
 
-- [ ] [Review][Patch] Decorative glyphs (●, ·, —) not hidden from assistive tech [StatusBar.tsx:31,38,41,49,54] — wrap purely-decorative glyphs in `aria-hidden="true"` so screen readers don't read "black circle Unsaved changes" / "middle dot" / "em dash" as noise. Zero visual change; axe cannot catch this.
+- [x] [Review][Patch] Decorative glyphs (●, ·, —) not hidden from assistive tech — ✅ APPLIED 2026-06-29 (see Resolution) [StatusBar.tsx:31,38,41,49,54] — wrap purely-decorative glyphs in `aria-hidden="true"` so screen readers don't read "black circle Unsaved changes" / "middle dot" / "em dash" as noise. Zero visual change; axe cannot catch this.
 
 ### Deferred
 
@@ -228,3 +229,11 @@ _Code review — 2026-06-28. Three adversarial layers (Blind Hunter / Edge Case 
 - **`dataUpdatedAt` garbage passthrough / silent date drop** — pre-existing verbatim logic; manifest-controlled data is never malformed.
 - **No overflow guard for a very long `dataVersion`** — won't occur at the app's 1280px min-width with real data.
 - **Empty-string `dataVersion` suppresses the date** — `dataVersion` is null or a real string, never `''`.
+
+### Resolution (2026-06-29)
+
+Both actionable findings resolved this review; story → `done`.
+
+- **Decision resolved → patched.** Alec chose to brighten the footer (lift the hierarchy to AA, not flatten it). Applied to `StatusBar.tsx`: footer base text `--color-text-muted` → `--color-text-secondary` (#9E9494, **6.71:1**); value text (version, provider) `--color-text-secondary` → `--color-text-primary` (#F0EAE0, **16.54:1**); gold unsaved dot unchanged (8.66:1). All footer text now clears WCAG AA while preserving the dim-label / bright-value hierarchy. No test changes needed (no test asserts those colors; the sole sanctioned color assertion is the gold dot).
+- **Patch applied.** Decorative `●` / `·` / `—` wrapped in `aria-hidden="true"` so screen readers skip them — verified the accessible text is now glyph-free (`Data: Season 4 (Shattered Omens) 2026-03-26 Unsaved changes LLM: Claude claude-sonnet-4-6`); zero visual change. Updated 2 `getByText` queries in `StatusBar.test.tsx` to drop the `●`.
+- **Verification:** `tsc --noEmit` 0 · `StatusBar.test.tsx` 11/11 · full `vitest run` **1129 passed, 8 failed across exactly the standing baseline** (ProviderSelector / Settings / SkillTreeCanvas / TreeControls) — no new failures, no baseline file changed.

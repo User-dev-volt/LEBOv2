@@ -28,16 +28,16 @@ export function StatusBar() {
       {dataVersion && (
         <span>
           Data: <span style={{ color: 'var(--color-text-primary)' }}>{dataVersion}</span>
-          {dateOnly && <> — <span className="font-mono">{dateOnly}</span></>}
+          {dateOnly && <> <span aria-hidden="true">—</span> <span className="font-mono">{dateOnly}</span></>}
         </span>
       )}
 
       <span className="flex-1 text-center">
         {activeBuild &&
           (isDirty ? (
-            <span style={{ color: 'var(--color-accent-gold)' }}>● Unsaved changes</span>
+            <span style={{ color: 'var(--color-accent-gold)' }}><span aria-hidden="true">●</span> Unsaved changes</span>
           ) : (
-            <span>● All changes saved</span>
+            <span><span aria-hidden="true">●</span> All changes saved</span>
           ))}
       </span>
 
@@ -46,12 +46,12 @@ export function StatusBar() {
           LLM:{' '}
           {llmProvider === 'claude' ? (
             <>
-              <span style={{ color: 'var(--color-text-primary)' }}>Claude</span> ·{' '}
+              <span style={{ color: 'var(--color-text-primary)' }}>Claude</span> <span aria-hidden="true">·</span>{' '}
               <span className="font-mono">{CLAUDE_MODEL_LABEL}</span>
             </>
           ) : (
             <>
-              <span style={{ color: 'var(--color-text-primary)' }}>OpenRouter</span> ·{' '}
+              <span style={{ color: 'var(--color-text-primary)' }}>OpenRouter</span> <span aria-hidden="true">·</span>{' '}
               <span className="font-mono">free rotation</span>
             </>
           )}
