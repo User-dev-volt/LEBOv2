@@ -195,3 +195,36 @@ None — implementation was clean; no debugging cycles required. All four verifi
 |------|--------|
 | 2026-06-10 | Story created (create-story workflow) — ultimate context engine analysis completed; comprehensive developer guide created. Status: ready-for-dev. |
 | 2026-06-28 | Implemented via dev-story — three-segment footer rebuild (data / unsaved / LLM), Online/Offline moved to sr-only aria-live, honest LLM labels, token remap; StatusBar.test.tsx rewritten (11 tests + axe). tsc 0 / StatusBar 11/11 / full suite 1129 pass, 8 standing-baseline fail / build 0. Status: ready-for-dev → review. |
+| 2026-06-28 | Code review (BMAD adversarial: Blind Hunter + Edge Case Hunter + Acceptance Auditor). Auditor PASS (AC1 + AC2 MET). Triage: 1 decision-needed (footer muted-text WCAG-AA contrast 2.54:1), 1 patch (decorative glyphs not aria-hidden), 5 deferred, 9 dismissed. See Review Findings. |
+
+## Review Findings
+
+_Code review — 2026-06-28. Three adversarial layers (Blind Hunter / Edge Case Hunter / Acceptance Auditor). **Acceptance Auditor verdict: PASS** — AC1 (data version + gold unsaved dot + LLM provider/model) and AC2 (focus ring / reduced-motion / aria-live / zero axe violations) both MET; OpenRouter "free rotation" and the no-focus-ring/no-animation choices confirmed as sanctioned. No crashes, no undefined tokens, `isPersisted` always defined, `contentinfo` role holds in production. Triage below: 1 decision-needed, 1 patch, 5 deferred, 9 dismissed._
+
+### Decision Needed
+
+- [ ] [Review][Decision] Footer muted-text contrast fails WCAG AA (2.54:1) [StatusBar.tsx:25] — The token remap set the footer base text to `--color-text-muted` (#5A5050) on `--color-bg-base` (#0a0a0b) = **2.54:1**, below AA's 4.5:1 (and below the 3:1 large-text floor). Affects the "Data:"/"LLM:" labels, the mono date, the mono model id, and the muted "● All changes saved" line. The data *values* (`--color-text-secondary` #9E9494 = 6.71:1) and the gold unsaved dot (8.66:1) pass. Regression from the prior footer, which used secondary (6.71:1) throughout. AC2's `vitest-axe` check cannot catch this — axe's color-contrast rule is inert under jsdom — so "zero axe violations" is false assurance on this axis. The remap was spec-mandated (Dev Notes line 107), so the resolution needs a human call: keep spec-faithful muted (accept sub-AA on the labels/date/model) vs. raise those sub-elements to secondary for AA.
+
+### Patches
+
+- [ ] [Review][Patch] Decorative glyphs (●, ·, —) not hidden from assistive tech [StatusBar.tsx:31,38,41,49,54] — wrap purely-decorative glyphs in `aria-hidden="true"` so screen readers don't read "black circle Unsaved changes" / "middle dot" / "em dash" as noise. Zero visual change; axe cannot catch this.
+
+### Deferred
+
+- [x] [Review][Defer] Offline-at-startup is never announced [StatusBar.tsx:61-63] — deferred, pre-existing. ARIA live regions don't announce content present at first render; if the app starts offline (`isOnline` defaults false → `setOnline(false)` is a no-op), no connectivity status is spoken. The old footer carried the same polite region + mount behavior — not introduced by this story.
+- [x] [Review][Defer] Unsaved/saved state is silent to assistive tech [StatusBar.tsx:35-42] — deferred, sanctioned. The center segment is intentionally NOT aria-live per Task 2 (flips on every build mutation → SR spam; UX-DR12 reserves polite regions for suggestion/loading/import). Logged as a possible future UX consideration.
+- [x] [Review][Defer] CLAUDE_MODEL_LABEL hand-mirror can drift from the Rust const [StatusBar.tsx:7] — deferred, documented trade-off. No IPC exposes the model name; currently matches `claude_service.rs:8` and is guarded by the drift-tripwire test. A live read would need an out-of-scope Tauri command.
+- [x] [Review][Defer] LLM else-branch assumes any non-'claude' provider is OpenRouter [StatusBar.tsx:44-57] — deferred, latent. Safe today (closed union `'claude' | 'openrouter' | null`, null filtered by `&&`); would mislabel only if a 3rd provider is ever added to the union.
+- [x] [Review][Defer] Center "unsaved" segment isn't truly centered [StatusBar.tsx:35] — deferred, cosmetic. `flex-1 text-center` centers within leftover space, so the text drifts with unequal side widths. Faithful to the prototype's `.statusbar-mid { flex:1; text-align:center }`.
+
+### Dismissed (9)
+
+- **Visible connectivity indicator "lost"** (Blind Hunter) — false positive: it survives visibly in `AppHeader` (Story 2.2); this story deliberately moved it there and kept only the sr-only announcer in the footer.
+- **"free rotation" hides the OpenRouter model** — sanctioned honest-label (Source Audit; Auditor confirmed). There is no single active model to show.
+- **`dirty.style.color` asserts a `var()` inline style** — spec-sanctioned single color assertion (the AC names the color); currently green.
+- **`not.toHaveTextContent('—')` is footer-wide** — works today; the em-dash only appears as the date separator.
+- **Redundant `isDirty` ternary** — harmless; arguably clearer as-is.
+- **Tests depend on footer→`contentinfo` landmark** — verified to hold in production (no `main`/`section`/`article`/`aside` ancestor).
+- **`dataUpdatedAt` garbage passthrough / silent date drop** — pre-existing verbatim logic; manifest-controlled data is never malformed.
+- **No overflow guard for a very long `dataVersion`** — won't occur at the app's 1280px min-width with real data.
+- **Empty-string `dataVersion` suppresses the date** — `dataVersion` is null or a real string, never `''`.
