@@ -677,4 +677,20 @@ describe('SuggestionsList', () => {
     const { container } = render(<SuggestionsList onRetry={vi.fn()} />)
     expect(await axe(container)).toHaveNoViolations()
   })
+
+  // DN-1 (code review): the notice is gated on LIVE unspent points, so once the build regains
+  // unspent points (a same-build edit) the stale notice auto-hides even though it is still in store.
+  it('suppresses the empty-budget notice once the build has unspent points again', () => {
+    useBuildStore.getState().setActiveBuild({ ...MOCK_BUILD, characterLevel: 10, nodeAllocations: {} })
+    useOptimizationStore.setState({
+      suggestions: [],
+      isOptimizing: false,
+      streamError: null,
+      optimizationNotice: EMPTY_BUDGET_NOTICE,
+    })
+    render(<SuggestionsList onRetry={vi.fn()} />)
+    expect(screen.queryByTestId('empty-budget-notice')).toBeNull()
+    // With no notice displayed, the generic empty-state copy returns.
+    expect(screen.getByTestId('suggestions-empty-state')).toBeInTheDocument()
+  })
 })

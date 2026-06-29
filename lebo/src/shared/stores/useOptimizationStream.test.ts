@@ -66,6 +66,9 @@ vi.mock('./buildStore', () => ({
     const allocated = Object.values(b.nodeAllocations ?? {}).reduce((sum, v) => sum + v, 0)
     return available - allocated
   },
+  // Mirrors the real selector: calculatePassivePoints(level) = max(0, level - 2).
+  selectAvailablePassivePoints: (s: { activeBuild?: { characterLevel?: number } | null }) =>
+    Math.max(0, (s?.activeBuild?.characterLevel ?? 1) - 2),
 }))
 
 // Mock gameDataStore
@@ -83,7 +86,12 @@ import { invokeCommand } from '../utils/invokeCommand'
 import { useBuildStore } from './buildStore'
 import { useGameDataStore } from './gameDataStore'
 import { useOptimizationStore } from './optimizationStore'
-import { useOptimizationStream, startOptimization } from './useOptimizationStream'
+import {
+  useOptimizationStream,
+  startOptimization,
+  OVER_BUDGET_MESSAGE,
+  LOW_LEVEL_BUDGET_MESSAGE,
+} from './useOptimizationStream'
 
 const mockListen = listen as Mock
 const mockInvokeCommand = invokeCommand as Mock
@@ -389,6 +397,41 @@ describe('useOptimizationStream', () => {
       snapshot: expect.any(Object),
     }))
     expect(useOptimizationStore.getState().optimizationNotice).toBeNull()
+  })
+
+  // DN-2 (code review): the <= 0 guard differentiates copy for over-allocated and low-level builds.
+  it('startOptimization shows the over-budget notice (no run) when the build is over-allocated', async () => {
+    vi.mocked(useBuildStore.getState).mockReturnValueOnce({
+      activeBuild: {
+        id: 'test',
+        characterLevel: 3, // available 1, allocated 3 → unspent -2
+        nodeAllocations: { node_a: 3 },
+      },
+    } as unknown as ReturnType<typeof useBuildStore.getState>)
+
+    await act(async () => {
+      await startOptimization()
+    })
+
+    expect(mockInvokeCommand).not.toHaveBeenCalledWith('run_optimization', expect.anything())
+    expect(useOptimizationStore.getState().optimizationNotice).toBe(OVER_BUDGET_MESSAGE)
+  })
+
+  it('startOptimization shows the low-level notice (no run) when no points are available yet', async () => {
+    vi.mocked(useBuildStore.getState).mockReturnValueOnce({
+      activeBuild: {
+        id: 'test',
+        characterLevel: 2, // available 0, allocated 0 → unspent 0, budget not yet earned
+        nodeAllocations: {},
+      },
+    } as unknown as ReturnType<typeof useBuildStore.getState>)
+
+    await act(async () => {
+      await startOptimization()
+    })
+
+    expect(mockInvokeCommand).not.toHaveBeenCalledWith('run_optimization', expect.anything())
+    expect(useOptimizationStore.getState().optimizationNotice).toBe(LOW_LEVEL_BUDGET_MESSAGE)
   })
 
 })

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useOptimizationStore } from '../../shared/stores/optimizationStore'
-import { useBuildStore } from '../../shared/stores/buildStore'
+import { useBuildStore, selectUnspentPassivePoints } from '../../shared/stores/buildStore'
 import { useGameDataStore } from '../../shared/stores/gameDataStore'
 import { useAppStore } from '../../shared/stores/appStore'
 import { isRetryable } from '../../shared/types/errors'
@@ -93,6 +93,13 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
   const activeBuild = useBuildStore((s) => s.activeBuild)
   const applyNodeChange = useBuildStore((s) => s.applyNodeChange)
   const gameData = useGameDataStore((s) => s.gameData)
+  const unspentPassivePoints = useBuildStore(selectUnspentPassivePoints)
+
+  // DN-1 (code review): gate the empty-budget notice on LIVE unspent points so a notice set by a
+  // prior run auto-hides the moment the user (re)allocates points on the same build — App.tsx only
+  // clears optimization state on a build *switch*, never on a same-build content edit.
+  const showEmptyBudgetNotice =
+    Boolean(optimizationNotice) && !isOptimizing && unspentPassivePoints <= 0
 
   const [applyErrors, setApplyErrors] = useState<Record<number, string>>({})
   const [focusedCardIndex, setFocusedCardIndex] = useState<number | null>(null)
@@ -483,7 +490,7 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
         </div>
       )}
 
-      {optimizationNotice && !isOptimizing && (
+      {showEmptyBudgetNotice && (
         <div
           role="status"
           className="px-3 py-2 rounded text-xs"
@@ -498,7 +505,7 @@ export function SuggestionsList({ onRetry }: SuggestionsListProps) {
         </div>
       )}
 
-      {suggestions.length === 0 && !isOptimizing && !streamError && !optimizationNotice && (
+      {suggestions.length === 0 && !isOptimizing && !streamError && !showEmptyBudgetNotice && (
         hasOptimizationCompleted ? (
           <p
             className="text-xs"

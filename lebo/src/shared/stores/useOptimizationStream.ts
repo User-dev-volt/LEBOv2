@@ -5,7 +5,7 @@ import { calculateScore } from '../../features/optimization/scoringEngine'
 import { invokeCommand } from '../utils/invokeCommand'
 import { normalizeAppError } from '../utils/errorNormalizer'
 import { toBuildSnapshot } from '../utils/buildSnapshotSerializer'
-import { useBuildStore, selectUnspentPassivePoints } from './buildStore'
+import { useBuildStore, selectUnspentPassivePoints, selectAvailablePassivePoints } from './buildStore'
 import { useGameDataStore } from './gameDataStore'
 import { useOptimizationStore } from './optimizationStore'
 import type { SuggestionResult } from '../types/optimization'
@@ -34,9 +34,23 @@ interface ModelActivePayload {
   model_name: string
 }
 
-// AC3: shown verbatim when the optimizer is run with zero unspent passive points.
+// AC3: shown verbatim when the optimizer is run with zero unspent passive points (all points spent).
 export const EMPTY_BUDGET_MESSAGE =
   'No unspent passive points available. Allocate additional points or use the Complete Build Optimizer for a full reallocation analysis.'
+
+// DN-2 (code review): the <= 0 guard also fires for two states where "allocate additional points"
+// is the wrong advice. Keep the verbatim AC3 string for the genuine all-spent zero case; give the
+// over-allocated (negative budget) and no-budget-yet (level 1-2) cases their own accurate copy.
+export const OVER_BUDGET_MESSAGE =
+  'This build is over its passive point budget. Remove allocated points or use the Complete Build Optimizer for a full reallocation analysis.'
+export const LOW_LEVEL_BUDGET_MESSAGE =
+  'No passive points available at this level. Level up to earn passive points, or use the Complete Build Optimizer for a full reallocation analysis.'
+
+function emptyBudgetMessage(available: number, unspent: number): string {
+  if (unspent < 0) return OVER_BUDGET_MESSAGE
+  if (available <= 0) return LOW_LEVEL_BUDGET_MESSAGE
+  return EMPTY_BUDGET_MESSAGE
+}
 
 export async function startOptimization() {
   const buildState = useBuildStore.getState()
@@ -51,8 +65,10 @@ export async function startOptimization() {
   // AC3: empty-budget pre-flight guard. With no unspent passive points there is nothing the
   // passive optimizer can suggest — surface the reason (client-known) instead of making a paid
   // Claude call and falling through to the generic "well-optimized" copy.
-  if (selectUnspentPassivePoints(buildState) <= 0) {
-    useOptimizationStore.getState().setOptimizationNotice(EMPTY_BUDGET_MESSAGE)
+  const unspent = selectUnspentPassivePoints(buildState)
+  if (unspent <= 0) {
+    const available = selectAvailablePassivePoints(buildState)
+    useOptimizationStore.getState().setOptimizationNotice(emptyBudgetMessage(available, unspent))
     return
   }
 
