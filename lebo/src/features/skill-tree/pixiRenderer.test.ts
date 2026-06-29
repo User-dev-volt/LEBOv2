@@ -1,12 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { initRenderer } from './pixiRenderer'
+import { initRenderer, NODE_RADIUS } from './pixiRenderer'
 import type { TreeData, RendererCallbacks } from './types'
+import type { NodeEfficiency } from '../../shared/types/statSheet'
 import { mockTreeData } from './mockTreeData'
 
 // Use vi.hoisted so these refs are available inside the vi.mock factory
-const { mockApp, mockRendererResize, mockAppDestroy, MockSprite, MockTilingSprite } = vi.hoisted(() => {
+const { mockApp, mockRendererResize, mockAppDestroy, MockSprite, MockTilingSprite, graphicsInstances, tickerCallbacks } = vi.hoisted(() => {
   const mockRendererResize = vi.fn()
   const mockAppDestroy = vi.fn()
+  // Records every Graphics instance created so tier/path draws can be asserted by value (Story 3.2).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const graphicsInstances: any[] = []
+  // Captures persistent ticker callbacks (iconAnimTick, goldPulseTick) so tests can step one frame.
+  const tickerCallbacks: Array<() => void> = []
 
   function makeSprite() {
     return {
@@ -42,9 +48,11 @@ const { mockApp, mockRendererResize, mockAppDestroy, MockSprite, MockTilingSprit
       screen: { width: 800, height: 600 },
       canvas: { addEventListener: vi.fn(), removeEventListener: vi.fn() },
       renderer: { resize: mockRendererResize },
-      ticker: { FPS: 60, add: vi.fn(), remove: vi.fn() },
+      ticker: { FPS: 60, add: vi.fn((cb: () => void) => { tickerCallbacks.push(cb) }), remove: vi.fn() },
       destroy: mockAppDestroy,
     },
+    graphicsInstances,
+    tickerCallbacks,
   }
 })
 
@@ -72,15 +80,20 @@ vi.mock('pixi.js', () => {
 
   function makeGraphics() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const g: Record<string, any> = { eventMode: '', cursor: '' }
-    g.rect = vi.fn().mockReturnValue(g)
-    g.circle = vi.fn().mockReturnValue(g)
-    g.fill = vi.fn().mockReturnValue(g)
-    g.stroke = vi.fn().mockReturnValue(g)
-    g.moveTo = vi.fn().mockReturnValue(g)
-    g.lineTo = vi.fn().mockReturnValue(g)
-    g.clear = vi.fn().mockReturnValue(g)
+    const ops: any[] = []
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const g: Record<string, any> = { eventMode: '', cursor: '', _ops: ops }
+    g.rect = vi.fn((...args: unknown[]) => { ops.push({ op: 'rect', args }); return g })
+    g.circle = vi.fn((x: number, y: number, radius: number) => { ops.push({ op: 'circle', x, y, radius }); return g })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    g.fill = vi.fn((style: any) => { ops.push({ op: 'fill', color: typeof style === 'object' ? style?.color : style, alpha: style?.alpha }); return g })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    g.stroke = vi.fn((style: any) => { ops.push({ op: 'stroke', color: style?.color, width: style?.width, alpha: style?.alpha }); return g })
+    g.moveTo = vi.fn((x: number, y: number) => { ops.push({ op: 'moveTo', x, y }); return g })
+    g.lineTo = vi.fn((x: number, y: number) => { ops.push({ op: 'lineTo', x, y }); return g })
+    g.clear = vi.fn(() => { ops.length = 0; return g })
     g.on = vi.fn()
+    graphicsInstances.push(g)
     return g
   }
 
@@ -91,7 +104,7 @@ vi.mock('pixi.js', () => {
     return makeGraphics()
   }
   function Text() {
-    return { text: '', position: { set: vi.fn() } }
+    return { text: '', anchor: { set: vi.fn() }, position: { set: vi.fn() }, x: 0, y: 0 }
   }
 
   function Circle(this: unknown, x: number, y: number, r: number) {
@@ -115,11 +128,66 @@ function makeCanvas(): HTMLCanvasElement {
 
 const emptyTree: TreeData = { nodes: [], edges: [] }
 
+// ── Story 3.2 tier-overlay test helpers ──────────────────────────────────
+const GOLD = 0xc9a84c
+const GOLD_SOFT = 0xd4b96a
+const SILVER = 0xc0c6d2
+const AVAILABLE_STROKE = 0x4a7a9e
+const MED_R = NODE_RADIUS.medium
+
+function effOf(node_id: string, tier: 'gold' | 'silver' | 'dim'): NodeEfficiency {
+  return { node_id, tier, efficiency: 1, path_delta_score: 1, effective_point_cost: 1 }
+}
+function medNode(
+  id: string,
+  x = 100,
+  y = 100,
+  state: 'available' | 'locked' | 'allocated' = 'available',
+  connections: string[] = []
+): TreeData['nodes'][number] {
+  return { id, x, y, size: 'medium', state, maxPoints: 1, connections }
+}
+function emptyHl() {
+  return {
+    glowing: new Set<string>(),
+    dimmed: new Set<string>(),
+    previewRemoved: new Set<string>(),
+    previewAdded: new Set<string>(),
+    searchHighlighted: new Set<string>(),
+    searchDimmed: new Set<string>(),
+  }
+}
+type GfxOp = { op: string; x?: number; y?: number; radius?: number; color?: number; width?: number; alpha?: number; args?: unknown[] }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function opsOf(g: any): GfxOp[] {
+  return g._ops as GfxOp[]
+}
+function instancesWithCircle(radius: number, tol = 0.5) {
+  return graphicsInstances.filter((g) => opsOf(g).some((o) => o.op === 'circle' && Math.abs((o.radius ?? NaN) - radius) < tol))
+}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function hasStroke(g: any, color: number) {
+  return opsOf(g).some((o) => o.op === 'stroke' && o.color === color)
+}
+function anyFill(color: number) {
+  return graphicsInstances.some((g) => opsOf(g).some((o) => o.op === 'fill' && o.color === color))
+}
+function dashedPathLayer() {
+  // The dashed gold path layer is the one with moveTo segments AND a gold stroke
+  // (solid edges stroke 0x3a3a45, the tier node ring is a circle not a moveTo).
+  return graphicsInstances.find((g) => opsOf(g).some((o) => o.op === 'moveTo') && hasStroke(g, GOLD))
+}
+function stepOneFrame() {
+  for (const cb of tickerCallbacks) cb()
+}
+
 describe('initRenderer', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // Restore the resolved-value implementation that clearAllMocks preserves
     mockApp.init.mockResolvedValue(undefined)
+    graphicsInstances.length = 0
+    tickerCallbacks.length = 0
   })
 
   it('returns an object with renderTree, resize, and destroy methods', async () => {
@@ -298,5 +366,108 @@ describe('initRenderer', () => {
     expect(() =>
       renderer.renderTree(emptyTree, {}, emptyHighlight, new Map())
     ).not.toThrow()
+  })
+
+  // ── Story 3.2 — tiered suggestion overlay (AC1/AC2/AC3) ──────────────────
+
+  it('AC1: a gold-tier node draws at 1.4× radius with a gold ring, in place of the available node', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    const tree: TreeData = { nodes: [medNode('n1')], edges: [] }
+    renderer.renderTree(tree, {}, emptyHl(), new Map(), null, [effOf('n1', 'gold')], true)
+
+    const goldNodes = instancesWithCircle(MED_R * 1.4)
+    expect(goldNodes.length).toBeGreaterThan(0)
+    expect(goldNodes.some((g) => hasStroke(g, GOLD))).toBe(true)
+    // It replaced drawAvailable — there is no base-radius available node left behind.
+    expect(instancesWithCircle(MED_R).some((g) => hasStroke(g, AVAILABLE_STROKE))).toBe(false)
+  })
+
+  it('AC1: a silver-tier node draws at 1.2× radius with a silver ring (no gold-radius node)', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    const tree: TreeData = { nodes: [medNode('n1')], edges: [] }
+    renderer.renderTree(tree, {}, emptyHl(), new Map(), null, [effOf('n1', 'silver')], true)
+
+    const silverNodes = instancesWithCircle(MED_R * 1.2)
+    expect(silverNodes.some((g) => hasStroke(g, SILVER))).toBe(true)
+    expect(instancesWithCircle(MED_R * 1.4).length).toBe(0)
+  })
+
+  it('AC1 scope: a dim-tier node renders identically to a plain available node (no scale, no glow)', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    const tree: TreeData = { nodes: [medNode('n1')], edges: [] }
+    renderer.renderTree(tree, {}, emptyHl(), new Map(), null, [effOf('n1', 'dim')], true)
+    stepOneFrame()
+
+    expect(instancesWithCircle(MED_R).some((g) => hasStroke(g, AVAILABLE_STROKE))).toBe(true)
+    expect(instancesWithCircle(MED_R * 1.4).length).toBe(0)
+    expect(instancesWithCircle(MED_R * 1.2).length).toBe(0)
+    expect(anyFill(GOLD_SOFT)).toBe(false)
+  })
+
+  it('AC3: the gold pulse glow is animated normally but suppressed under reduced motion (scale + ring remain)', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    const tree: TreeData = { nodes: [medNode('n1')], edges: [] }
+
+    renderer.renderTree(tree, {}, emptyHl(), new Map(), null, [effOf('n1', 'gold')], true)
+    stepOneFrame()
+    expect(anyFill(GOLD_SOFT)).toBe(true)
+
+    renderer.setReducedMotion(true)
+    renderer.renderTree(tree, {}, emptyHl(), new Map(), null, [effOf('n1', 'gold')], true)
+    stepOneFrame()
+    expect(anyFill(GOLD_SOFT)).toBe(false)
+    // The static scaled gold node + ring survive the reduced-motion path.
+    expect(instancesWithCircle(MED_R * 1.4).some((g) => hasStroke(g, GOLD))).toBe(true)
+  })
+
+  it('AC2: a gold suggestion whose prerequisites are not yet allocated gets a dashed gold path line from the node', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    // A(allocated) — B — C(gold, locked: prerequisite B not allocated)
+    const tree: TreeData = {
+      nodes: [
+        medNode('A', 0, 0, 'allocated', ['B']),
+        medNode('B', 50, 0, 'available', ['A', 'C']),
+        medNode('C', 100, 0, 'locked', ['B']),
+      ],
+      edges: [
+        { fromId: 'A', toId: 'B' },
+        { fromId: 'B', toId: 'C' },
+      ],
+    }
+    renderer.renderTree(tree, { A: 1 }, emptyHl(), new Map(), null, [effOf('C', 'gold')], true)
+
+    const dashed = dashedPathLayer()
+    expect(dashed).toBeDefined()
+    const firstMove = opsOf(dashed).find((o) => o.op === 'moveTo')
+    expect(firstMove).toBeDefined()
+    // The dashed line starts at the suggested node C and traces back toward the allocated tree.
+    expect(firstMove!.x).toBeCloseTo(100)
+    expect(firstMove!.y).toBeCloseTo(0)
+  })
+
+  it('AC2: no dashed path line is drawn for a dim-tier node', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    const tree: TreeData = {
+      nodes: [
+        medNode('A', 0, 0, 'allocated', ['B']),
+        medNode('B', 50, 0, 'available', ['A', 'C']),
+        medNode('C', 100, 0, 'locked', ['B']),
+      ],
+      edges: [
+        { fromId: 'A', toId: 'B' },
+        { fromId: 'B', toId: 'C' },
+      ],
+    }
+    renderer.renderTree(tree, { A: 1 }, emptyHl(), new Map(), null, [effOf('C', 'dim')], true)
+    expect(dashedPathLayer()).toBeUndefined()
+  })
+
+  it('gate: with showOverlay=false, a gold-tier efficiency is ignored and the node renders as available', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    const tree: TreeData = { nodes: [medNode('n1')], edges: [] }
+    renderer.renderTree(tree, {}, emptyHl(), new Map(), null, [effOf('n1', 'gold')], false)
+
+    expect(instancesWithCircle(MED_R * 1.4).length).toBe(0)
+    expect(instancesWithCircle(MED_R).some((g) => hasStroke(g, AVAILABLE_STROKE))).toBe(true)
   })
 })

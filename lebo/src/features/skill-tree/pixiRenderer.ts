@@ -2,6 +2,7 @@ import { Application, Assets, Circle, Container, Graphics, Sprite, Text, TilingS
 import type { Texture } from 'pixi.js'
 import type { TreeData, TreeNode, HighlightedNodes, RendererCallbacks, RendererInstance } from './types'
 import type { NodeEfficiency } from '../../shared/types/statSheet'
+import { nearestAllocatedPath } from './nearestAllocatedPath'
 
 // PixiJS v8's logPrettyShaderError calls .split() on getShaderSource/getShaderInfoLog results,
 // which throws if WebGL returns null (valid per spec). Patch before any Application init.
@@ -38,6 +39,18 @@ import type { NodeEfficiency } from '../../shared/types/statSheet'
 })()
 
 export const NODE_RADIUS = { small: 12, medium: 18, large: 26 }
+
+// Suggestion-tier overlay colors (FR-17). Canonical values live in global.css design tokens;
+// PixiJS needs numeric hex, so these mirror the tokens — keep them in sync.
+const COLOR_SUGGESTED_GOLD = 0xc9a84c // --color-accent-gold
+const COLOR_SUGGESTED_GOLD_SOFT = 0xd4b96a // --color-accent-gold-soft (gold pulse peak)
+const COLOR_SUGGESTED_SILVER = 0xc0c6d2 // --color-node-suggested-silver
+const GOLD_TIER_SCALE = 1.4
+const SILVER_TIER_SCALE = 1.2
+const GOLD_PULSE_PERIOD_MS = 1800
+// Dashed gold path line (AC2) — PixiJS v8 Graphics has no native dash, so segments are hand-cut.
+const DASH_LENGTH = 9
+const DASH_GAP = 6
 
 // Damage-type tint overlays for skill tree canvases (ARGB color + alpha)
 const DAMAGE_TYPE_TINTS: Record<string, { color: number; alpha: number }> = {
@@ -100,16 +113,51 @@ function drawSearchHighlight(g: Graphics, x: number, y: number, r: number) {
   g.circle(x, y, r + 4).stroke({ color: 0xc9a84c, width: 2 })
 }
 
-function drawOverlayGold(g: Graphics, x: number, y: number, r: number) {
-  g.circle(x, y, r + 4).stroke({ color: 0xFFD700, width: 2.5, alpha: 0.85 })
+// Gold-tier suggested node (FR-17): 1.4× scaled node drawn IN PLACE OF drawAvailable. The pulsing
+// glow is a separate animated layer (goldPulseTick) so reduced-motion can drop it while this static
+// scale + outline remains (AC3).
+function drawSuggestedGold(g: Graphics, x: number, y: number, r: number) {
+  const sr = r * GOLD_TIER_SCALE
+  g.circle(x, y, sr).fill(0x141417)
+  g.circle(x, y, sr).stroke({ color: COLOR_SUGGESTED_GOLD, width: 3 })
 }
 
-function drawOverlaySilver(g: Graphics, x: number, y: number, r: number) {
-  g.circle(x, y, r + 3).stroke({ color: 0xAAAAAA, width: 2, alpha: 0.7 })
+// Silver-tier suggested node (FR-17): 1.2× scaled node with a STEADY (non-animated) glow halo.
+// The halo is gated on reduced-motion to mirror drawSuggested and AC3 ("the tiered draw skips the
+// glow ring; scale + outline are retained").
+function drawSuggestedSilver(g: Graphics, x: number, y: number, r: number, reducedMotion = false) {
+  const sr = r * SILVER_TIER_SCALE
+  if (!reducedMotion) {
+    g.circle(x, y, sr + 5).fill({ color: COLOR_SUGGESTED_SILVER, alpha: 0.18 })
+  }
+  g.circle(x, y, sr).fill(0x141417)
+  g.circle(x, y, sr).stroke({ color: COLOR_SUGGESTED_SILVER, width: 3 })
 }
 
-function drawOverlayDim(g: Graphics, x: number, y: number, r: number) {
-  g.circle(x, y, r + 2).stroke({ color: 0x444455, width: 1.5, alpha: 0.45 })
+// Accumulate hand-cut dashed segments for a node path onto the shared dashed-path Graphics. The
+// caller strokes once after the loop. Returns whether any segment was added.
+function addDashedPathSegments(g: Graphics, nodeMap: Map<string, TreeNode>, path: string[]): boolean {
+  let drew = false
+  for (let i = 0; i < path.length - 1; i++) {
+    const a = nodeMap.get(path[i])
+    const b = nodeMap.get(path[i + 1])
+    if (!a || !b) continue
+    const dx = b.x - a.x
+    const dy = b.y - a.y
+    const dist = Math.hypot(dx, dy)
+    if (dist === 0) continue
+    const ux = dx / dist
+    const uy = dy / dist
+    let pos = 0
+    while (pos < dist) {
+      const end = Math.min(pos + DASH_LENGTH, dist)
+      g.moveTo(a.x + ux * pos, a.y + uy * pos)
+      g.lineTo(a.x + ux * end, a.y + uy * end)
+      drew = true
+      pos += DASH_LENGTH + DASH_GAP
+    }
+  }
+  return drew
 }
 
 export interface RendererConfig {
@@ -152,14 +200,19 @@ export async function initRenderer(
   app.stage.addChild(worldContainer)
 
   const edgeGraphics = new Graphics()
+  // Dashed gold path lines (AC2) — under all node layers, over the solid edges
+  const dashedPathGraphics = new Graphics()
   const lockedGraphics = new Graphics()
   const availableGraphics = new Graphics()
+  // Animated gold pulse glow (AC1 gold) — below the tier node so the node sits atop its glow
+  const goldPulseGraphics = new Graphics()
+  // Static scaled gold/silver suggested nodes (AC1) — below icons so icon sprites render on top
+  const tierGraphics = new Graphics()
   const allocatedGraphics = new Graphics()
   const suggestedGraphics = new Graphics()
   const dimmedGraphics = new Graphics()
   const previewRemovedGraphics = new Graphics()
   const previewAddedGraphics = new Graphics()
-  const overlayGraphics = new Graphics()
   const searchDimOverlayGraphics = new Graphics()
   const searchHighlightGraphics = new Graphics()
   // Text labels for point counts
@@ -179,15 +232,17 @@ export async function initRenderer(
   worldContainer.addChild(bgTintGraphics)   // tint overlay (second, or first if no sprite)
   worldContainer.addChild(
     edgeGraphics,
+    dashedPathGraphics,
     lockedGraphics,
     availableGraphics,
+    goldPulseGraphics,
+    tierGraphics,
     allocatedGraphics,
     iconContainer,
     dimmedGraphics,
     suggestedGraphics,
     previewRemovedGraphics,
     previewAddedGraphics,
-    overlayGraphics,
     searchDimOverlayGraphics,
     searchHighlightGraphics,
     labelContainer,
@@ -281,6 +336,23 @@ export async function initRenderer(
   }
   app.ticker.add(iconAnimTick)
 
+  // Gold-tier pulse (AC1 gold / AC3): renderTree populates these targets; the ticker animates ONLY
+  // this dedicated glow layer (never a full renderTree per frame) and reads reducedMotionEnabled
+  // each frame so the reduced-motion fallback takes effect live.
+  const goldPulseTargets: { x: number; y: number; r: number }[] = []
+  const goldPulseTick = () => {
+    goldPulseGraphics.clear()
+    if (reducedMotionEnabled || goldPulseTargets.length === 0) return
+    const t = performance.now() % GOLD_PULSE_PERIOD_MS
+    const norm = (Math.sin((2 * Math.PI * t) / GOLD_PULSE_PERIOD_MS) + 1) / 2 // 0..1
+    const alpha = 0.15 + 0.35 * norm
+    for (const { x, y, r } of goldPulseTargets) {
+      const glowR = r * GOLD_TIER_SCALE + 4 + 6 * norm
+      goldPulseGraphics.circle(x, y, glowR).fill({ color: COLOR_SUGGESTED_GOLD_SOFT, alpha })
+    }
+  }
+  app.ticker.add(goldPulseTick)
+
   function renderTree(
     data: TreeData,
     nodeAllocations: Record<string, number>,
@@ -316,20 +388,23 @@ export async function initRenderer(
     const newIconIds = new Set<string>()
 
     edgeGraphics.clear()
+    dashedPathGraphics.clear()
     lockedGraphics.clear()
     availableGraphics.clear()
+    goldPulseGraphics.clear()
+    tierGraphics.clear()
     allocatedGraphics.clear()
     suggestedGraphics.clear()
     dimmedGraphics.clear()
     previewRemovedGraphics.clear()
     previewAddedGraphics.clear()
-    overlayGraphics.clear()
     searchDimOverlayGraphics.clear()
     searchHighlightGraphics.clear()
     selectionGraphics.clear()
     iconContainer.removeChildren()
     hitAreaContainer.removeChildren()
     labelContainer.removeChildren()
+    goldPulseTargets.length = 0
 
     const nodeMap = new Map(data.nodes.map((n) => [n.id, n]))
 
@@ -345,6 +420,13 @@ export async function initRenderer(
       edgeGraphics.stroke({ color: 0x3a3a45, width: 1.5 })
     }
 
+    // Suggestion-tier overlay (FR-17) — same gate as the prior second pass: efficiencies present
+    // AND the overlay toggled on. effMap drives the in-loop gold/silver branch. Passive tree only —
+    // skill/weaver canvases never receive nodeEfficiencies, so this stays null there.
+    const overlayActive = !!(nodeEfficiencies && nodeEfficiencies.length > 0 && showOverlay)
+    const effMap = overlayActive ? new Map(nodeEfficiencies!.map((e) => [e.node_id, e])) : null
+    let dashedPathDrawn = false
+
     for (const node of data.nodes) {
       const r = NODE_RADIUS[node.size]
       // Fix: key exists with value 0 means NOT allocated — must check value > 0
@@ -354,6 +436,10 @@ export async function initRenderer(
       const isPreviewRemoved = highlightedNodes.previewRemoved.has(node.id)
       const isPreviewAdded = highlightedNodes.previewAdded.has(node.id)
 
+      // System B tier (data-backed, hover-free). undefined when overlay is off or the node is
+      // dim/untreated — those fall through to the natural available/locked style (AC2 distinctness).
+      const tier = effMap?.get(node.id)?.tier
+
       if (isPreviewRemoved) {
         drawPreviewRemoved(previewRemovedGraphics, node.x, node.y, r)
       } else if (isPreviewAdded) {
@@ -361,9 +447,24 @@ export async function initRenderer(
       } else if (isAllocated || node.state === 'allocated') {
         drawAllocated(allocatedGraphics, node.x, node.y, r)
       } else if (isGlowing || node.state === 'suggested') {
+        // System A hover glow stays orthogonal to the tier overlay (Story 3.3 substrate).
         drawSuggested(suggestedGraphics, node.x, node.y, r, reducedMotionEnabled)
       } else if (isDimmed) {
         drawDimmed(dimmedGraphics, node.x, node.y, r)
+      } else if (tier === 'gold' || tier === 'silver') {
+        // Gold/Silver get the tiered scale + glow IN PLACE OF available/locked (AC1). This branch
+        // sits before `locked` so a gold/silver suggestion whose prerequisites are not yet allocated
+        // (a locked-state node) still receives the treatment — exactly AC2's path-line case.
+        if (tier === 'gold') {
+          drawSuggestedGold(tierGraphics, node.x, node.y, r)
+          goldPulseTargets.push({ x: node.x, y: node.y, r })
+        } else {
+          drawSuggestedSilver(tierGraphics, node.x, node.y, r, reducedMotionEnabled)
+        }
+        // AC2: dashed gold path to the nearest allocated node — drawn only when prerequisites are
+        // not yet allocated (the helper returns null when a direct prerequisite is already allocated).
+        const path = nearestAllocatedPath(data, nodeAllocations, node.id)
+        if (path && addDashedPathSegments(dashedPathGraphics, nodeMap, path)) dashedPathDrawn = true
       } else if (node.state === 'locked') {
         drawLocked(lockedGraphics, node.x, node.y, r)
       } else {
@@ -473,21 +574,10 @@ export async function initRenderer(
 
     lastRenderedIconIds = newIconIds
 
-    // Efficiency overlay — drawn after main node loop so it sits above base node layers.
-    // overlayGraphics is already cleared above; only draw when overlay is active.
-    if (nodeEfficiencies && nodeEfficiencies.length > 0 && showOverlay) {
-      const effMap = new Map(nodeEfficiencies.map((e) => [e.node_id, e]))
-      for (const node of data.nodes) {
-        const isAllocated = (nodeAllocations[node.id] ?? 0) > 0
-        const isPreviewAdded = highlightedNodes.previewAdded.has(node.id)
-        if (isAllocated || isPreviewAdded) continue
-        const eff = effMap.get(node.id)
-        if (!eff) continue
-        const r = NODE_RADIUS[node.size]
-        if (eff.tier === 'gold') drawOverlayGold(overlayGraphics, node.x, node.y, r)
-        else if (eff.tier === 'silver') drawOverlaySilver(overlayGraphics, node.x, node.y, r)
-        else drawOverlayDim(overlayGraphics, node.x, node.y, r)
-      }
+    // Commit the accumulated dashed gold path segments in one stroke (AC2). PixiJS v8 strokes the
+    // sub-paths built since the last fill/stroke; the tier node visuals come from the main loop above.
+    if (dashedPathDrawn) {
+      dashedPathGraphics.stroke({ color: COLOR_SUGGESTED_GOLD, width: 2 })
     }
   }
 
@@ -561,6 +651,7 @@ export async function initRenderer(
   function destroy() {
     app.canvas.removeEventListener('contextmenu', onContextMenu)
     app.ticker.remove(iconAnimTick)
+    app.ticker.remove(goldPulseTick)
     pendingIconAnimations = []
     // false = do not remove canvas from DOM; React owns the canvas element's lifecycle
     app.destroy(false, { children: true })

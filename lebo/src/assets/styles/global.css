@@ -42,6 +42,7 @@
   --color-node-available: #4A7A9E;
   --color-node-locked:    #2A2A35;
   --color-node-suggested: #7B68EE;
+  --color-node-suggested-silver: #C0C6D2; /* PixiJS: 0xC0C6D2 — silver suggestion tier; gold tier reuses --color-accent-gold */
 
   /* Item rarity colors — verified against Last Epoch in-game palette; mirror rarityColors.ts — keep values in sync */
   --color-rarity-common:    #F4F4F4; /* Last Epoch "Normal" tier — white */
