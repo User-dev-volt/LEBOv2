@@ -499,7 +499,7 @@ describe('buildStore — redoNodeChange', () => {
   })
 })
 
-describe('buildStore — applyNodeChangeBulk', () => {
+describe('buildStore — fillNodeToMax', () => {
   beforeEach(() => {
     useBuildStore.setState(initialState, true)
     useBuildStore.getState().setSelectedClass('sentinel')
@@ -508,7 +508,7 @@ describe('buildStore — applyNodeChangeBulk', () => {
 
   it('allocates all node points when budget is unlimited (budgetEnforced: false)', () => {
     // root has maxPoints: 5 and no prerequisites
-    useBuildStore.getState().applyNodeChangeBulk('root', mockTreeData)
+    useBuildStore.getState().fillNodeToMax('root', mockTreeData)
     expect(useBuildStore.getState().activeBuild?.nodeAllocations['root']).toBe(5)
   })
 
@@ -520,24 +520,24 @@ describe('buildStore — applyNodeChangeBulk', () => {
       budgetEnforced: true,
       nodeAllocations: {},
     })
-    useBuildStore.getState().applyNodeChangeBulk('root', mockTreeData)
+    useBuildStore.getState().fillNodeToMax('root', mockTreeData)
     // 4 budget < 5 maxPoints → allocates 4
     expect(useBuildStore.getState().activeBuild?.nodeAllocations['root']).toBe(4)
   })
 
   it('returns success: false when node is already at max', () => {
     // First call: fill root to maxPoints (5)
-    useBuildStore.getState().applyNodeChangeBulk('root', mockTreeData)
+    useBuildStore.getState().fillNodeToMax('root', mockTreeData)
     expect(useBuildStore.getState().activeBuild?.nodeAllocations['root']).toBe(5)
     // Second Shift+click: already at max → no change
-    const result = useBuildStore.getState().applyNodeChangeBulk('root', mockTreeData)
+    const result = useBuildStore.getState().fillNodeToMax('root', mockTreeData)
     expect(result.success).toBe(false)
     expect(useBuildStore.getState().activeBuild?.nodeAllocations['root']).toBe(5)
   })
 
   it('returns Prerequisite not met when prereq is unallocated (AC4)', () => {
     // child requires root; root is not allocated
-    const result = useBuildStore.getState().applyNodeChangeBulk('child', mockTreeData)
+    const result = useBuildStore.getState().fillNodeToMax('child', mockTreeData)
     expect(result.success).toBe(false)
     expect(result.error).toBe('Prerequisite not met')
     expect(useBuildStore.getState().activeBuild).toBeNull()
@@ -545,7 +545,7 @@ describe('buildStore — applyNodeChangeBulk', () => {
 
   it('pushes exactly ONE snapshot to undoStack regardless of points allocated', () => {
     // Allocates 5 points but should produce only 1 undo entry
-    useBuildStore.getState().applyNodeChangeBulk('root', mockTreeData)
+    useBuildStore.getState().fillNodeToMax('root', mockTreeData)
     expect(useBuildStore.getState().undoStack).toHaveLength(1)
   })
 
@@ -555,7 +555,7 @@ describe('buildStore — applyNodeChangeBulk', () => {
     useBuildStore.getState().undoNodeChange()
     expect(useBuildStore.getState().redoStack).toHaveLength(1)
     // Bulk allocation clears redo
-    useBuildStore.getState().applyNodeChangeBulk('root', mockTreeData)
+    useBuildStore.getState().fillNodeToMax('root', mockTreeData)
     expect(useBuildStore.getState().redoStack).toHaveLength(0)
   })
 
@@ -565,8 +565,23 @@ describe('buildStore — applyNodeChangeBulk', () => {
     useBuildStore.getState().applyNodeChange('root', 1, mockTreeData)
     expect(useBuildStore.getState().activeBuild?.nodeAllocations['root']).toBe(2)
     // Shift+click: should fill remaining 3
-    useBuildStore.getState().applyNodeChangeBulk('root', mockTreeData)
+    useBuildStore.getState().fillNodeToMax('root', mockTreeData)
     expect(useBuildStore.getState().activeBuild?.nodeAllocations['root']).toBe(5)
+  })
+
+  it('fills only up to remaining budget from a partial pre-allocation, in a single undo step (AC2)', () => {
+    // AC2 literal scenario: level 6 → calculatePassivePoints(6) = 4 budget; root pre-allocated 2
+    // (maxPoints 5 → 3 remaining) leaves exactly 2 unspent budget points.
+    useBuildStore.getState().setActiveBuild({
+      ...mockBuild,
+      characterLevel: 6,
+      budgetEnforced: true,
+      nodeAllocations: { root: 2 },
+    })
+    useBuildStore.getState().fillNodeToMax('root', mockTreeData)
+    // Budget-limited: exactly 2 added (NOT the 3 of node space) → 4, recorded as ONE undo step.
+    expect(useBuildStore.getState().activeBuild?.nodeAllocations['root']).toBe(4)
+    expect(useBuildStore.getState().undoStack).toHaveLength(1)
   })
 })
 

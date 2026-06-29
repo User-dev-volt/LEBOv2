@@ -29,7 +29,7 @@ export interface SkillTreeInteraction {
 export function useSkillTree(treeData: TreeData | null, slotId?: string): SkillTreeInteraction {
   const applyNodeChange = useBuildStore((s) => s.applyNodeChange)
   const applySkillNodeChange = useBuildStore((s) => s.applySkillNodeChange)
-  const applyNodeChangeBulk = useBuildStore((s) => s.applyNodeChangeBulk)
+  const fillNodeToMax = useBuildStore((s) => s.fillNodeToMax)
   const setSelectedNodeId = useAppStore((s) => s.setSelectedNodeId)
 
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
@@ -62,7 +62,7 @@ export function useSkillTree(treeData: TreeData | null, slotId?: string): SkillT
 
       // Shift+left-click on passive tree: allocate as many points as budget allows
       if (button === 0 && shiftKey && slotId === undefined) {
-        const result = applyNodeChangeBulk(nodeId, treeData)
+        const result = fillNodeToMax(nodeId, treeData)
         if (!result.success && result.error) {
           setNodeError({ nodeId, message: result.error })
           setFlashNodeIds([nodeId])
@@ -84,7 +84,7 @@ export function useSkillTree(treeData: TreeData | null, slotId?: string): SkillT
         }
       }
     },
-    [treeData, slotId, applyNodeChange, applySkillNodeChange, applyNodeChangeBulk]
+    [treeData, slotId, applyNodeChange, applySkillNodeChange, fillNodeToMax]
   )
 
   // Single-click — selects a node (visual ring + store update), does not allocate

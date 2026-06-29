@@ -31,7 +31,7 @@ export interface BuildStore {
     delta: number,
     treeData: TreeData
   ) => ApplyNodeResult
-  applyNodeChangeBulk: (
+  fillNodeToMax: (
     nodeId: string,
     treeData: TreeData
   ) => ApplyNodeResult
@@ -250,7 +250,7 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
     return { success: true }
   },
 
-  applyNodeChangeBulk: (nodeId, treeData) => {
+  fillNodeToMax: (nodeId, treeData) => {
     const state = get()
     let activeBuild = state.activeBuild
 
@@ -305,7 +305,7 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
       const allocated = Object.values(activeBuild.nodeAllocations).reduce((sum, v) => sum + v, 0)
       const budget = available - allocated
       if (budget <= 0) return { success: false }
-      toAllocate = Math.min(nodeSpace, budget)
+      toAllocate = nodeSpace
     }
 
     const newPoints = current + toAllocate

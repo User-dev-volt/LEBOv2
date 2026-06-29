@@ -172,4 +172,41 @@ describe('useSkillTree', () => {
     act(() => result.current.handleNodeClick('root', 0))
     expect(result.current.flashNodeIds).toBeNull()
   })
+
+  // ── Story 3.4: shift+click fill-to-max routing (FR-44) ──────────────────
+
+  it('shift+left-click on the passive tree fills the node to max in one action (AC1)', () => {
+    const { result } = renderHook(() => useSkillTree(mockTreeData))
+    act(() => result.current.handleNodeClick('root', 0, true))
+    // root.maxPoints = 5; unenforced auto-created build → fills to 5 in a single action
+    // (contrast the successive-single-click test above: 3 clicks → 3).
+    expect(useBuildStore.getState().activeBuild!.nodeAllocations['root']).toBe(5)
+    expect(useBuildStore.getState().undoStack).toHaveLength(1)
+  })
+
+  it('shift+left-click on a skill slot does NOT bulk-fill — passive-only guard (AC1)', () => {
+    // applySkillNodeChange does not auto-create a build, so seed one first.
+    useBuildStore.getState().createBuild('Test Build')
+    const { result } = renderHook(() => useSkillTree(mockTreeData, 'slot-0'))
+    act(() => result.current.handleNodeClick('root', 0, true))
+    const build = useBuildStore.getState().activeBuild!
+    // slotId defined → single +1 via applySkillNodeChange, NOT a bulk fill to 5.
+    expect(build.skillNodeAllocations['slot-0']?.['root']).toBe(1)
+    // Passive tree is untouched.
+    expect(build.nodeAllocations['root']).toBeUndefined()
+  })
+
+  it('shift+left-click is budget-limited through the hook on an enforced build (AC2)', () => {
+    // Enforced build, level 6 (budget 4), root pre-filled to 2 → only 2 budget points unspent.
+    useBuildStore.getState().createBuild('Test Build')
+    useBuildStore.getState().setCharacterLevel(6)
+    useBuildStore.getState().setBudgetEnforced(true)
+    const { result } = renderHook(() => useSkillTree(mockTreeData))
+    act(() => result.current.handleNodeClick('root', 0))
+    act(() => result.current.handleNodeClick('root', 0))
+    expect(useBuildStore.getState().activeBuild!.nodeAllocations['root']).toBe(2)
+    // Shift+click fills only the 2 remaining budget points, not all 3 of node space → 4.
+    act(() => result.current.handleNodeClick('root', 0, true))
+    expect(useBuildStore.getState().activeBuild!.nodeAllocations['root']).toBe(4)
+  })
 })
