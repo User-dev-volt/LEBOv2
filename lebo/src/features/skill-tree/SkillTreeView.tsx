@@ -114,6 +114,8 @@ export function SkillTreeView() {
   const focusNonce = useOptimizationStore((s) => s.focusNonce)
   const statSheet = useOptimizationStore((s) => s.statSheet)
   const previewStatSheet = useOptimizationStore((s) => s.previewStatSheet)
+  const setHighlightedNodeIds = useOptimizationStore((s) => s.setHighlightedNodeIds)
+  const setPreviewStatSheet = useOptimizationStore((s) => s.setPreviewStatSheet)
   const selectedNodeId = useAppStore((s) => s.selectedNodeId)
   const setSelectedNodeId = useAppStore((s) => s.setSelectedNodeId)
   const centerTab = useAppStore((s) => s.centerTab)
@@ -288,9 +290,17 @@ export function SkillTreeView() {
     if (!focusNodeId) return
     if (centerTab !== 'tree') setCenterTab('tree')
     setActiveTabIndex(0)
-    // Defer one frame so a tab switch has mounted the passive canvas before we focus/measure it.
-    const raf = requestAnimationFrame(() => {
-      passiveCanvasRef.current?.focusNode(focusNodeId)
+
+    // The passive canvas may be FRESHLY mounting (we just forced the passive tab): its renderer is built
+    // asynchronously (app.init + Assets.load), so a single rAF is not enough — focusNode would no-op
+    // against a null renderer / empty node map and the node would never centre (AC3). Retry across frames
+    // until focusNode reports it resolved the node, then anchor the compact tooltip. The nonce-keyed
+    // effect's cleanup cancels any stale loop when a new activation supersedes this one.
+    let raf = 0
+    let attempts = 0
+    const MAX_FOCUS_ATTEMPTS = 60 // ~1s @60fps — covers async init + first layout; self-heals on re-hover otherwise
+
+    const anchorTooltip = () => {
       const container = passiveContainerRef.current
       const vp = passiveCanvasRef.current?.getViewport()
       const node = treeData?.nodes.find((n) => n.id === focusNodeId)
@@ -308,7 +318,18 @@ export function SkillTreeView() {
       } else {
         setCardTooltip({ nodeId: focusNodeId, x: 0, y: 0 })
       }
-    })
+    }
+
+    const attempt = () => {
+      const applied = passiveCanvasRef.current?.focusNode(focusNodeId) ?? false
+      if (!applied && attempts < MAX_FOCUS_ATTEMPTS) {
+        attempts++
+        raf = requestAnimationFrame(attempt)
+        return
+      }
+      anchorTooltip()
+    }
+    raf = requestAnimationFrame(attempt)
     return () => cancelAnimationFrame(raf)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the focus nonce
   }, [focusNonce])
@@ -319,6 +340,20 @@ export function SkillTreeView() {
       setCardTooltip(null)
     }
   }, [highlightedNodeIds])
+
+  // If the suggestion backing the active card tooltip is removed (skipped / applied / re-optimized),
+  // clear the cross-highlight + preview so the canvas stops glowing an orphaned node and the compact
+  // tooltip can't fabricate a "0 pts" cost for a missing suggestion (displayed-but-not-sourced guard).
+  // React fires no onMouseLeave on the unmounting card, so the hover-leave path never runs here.
+  useEffect(() => {
+    if (!cardTooltip) return
+    const stillLive = suggestions.some((s) => s.nodeChange.toNodeId === cardTooltip.nodeId)
+    if (!stillLive) {
+      setHighlightedNodeIds(null)
+      setPreviewStatSheet(null)
+      setCardTooltip(null)
+    }
+  }, [suggestions, cardTooltip, setHighlightedNodeIds, setPreviewStatSheet])
 
   const safeTabIndex = activeTabIndex > 6 ? 0 : activeTabIndex
   const isPassiveTab = safeTabIndex === 0
@@ -854,20 +889,18 @@ export function SkillTreeView() {
               />
             )}
 
-            {/* Story 3.3 (FR-18): compact tooltip driven by a suggestion-card interaction. */}
-            {cardTooltip && cardTooltipNode && (
+            {/* Story 3.3 (FR-18): compact tooltip driven by a suggestion-card interaction. Gated on a
+                LIVE backing suggestion so a skipped/applied card can never leave a fabricated "0 pts"
+                cost on screen (displayed-but-not-sourced guard). */}
+            {cardTooltip && cardTooltipNode && cardTooltipSuggestion && (
               <NodeTooltip
                 compact
                 gameNode={cardTooltipNode}
                 allocatedPoints={baseAllocatedNodes[cardTooltip.nodeId] ?? 0}
                 position={{ x: cardTooltip.x, y: cardTooltip.y }}
-                pointCost={cardTooltipSuggestion ? Math.abs(cardTooltipSuggestion.nodeChange.pointsChange) : 0}
+                pointCost={Math.abs(cardTooltipSuggestion.nodeChange.pointsChange)}
                 pathCost={pathPointCost(allGameNodes, baseAllocatedNodes, cardTooltip.nodeId)}
-                scoreDelta={
-                  cardTooltipSuggestion
-                    ? compositeDelta(cardTooltipSuggestion.baselineScore, cardTooltipSuggestion.previewScore)
-                    : null
-                }
+                scoreDelta={compositeDelta(cardTooltipSuggestion.baselineScore, cardTooltipSuggestion.previewScore)}
                 statDeltas={cardTooltipStatDeltas}
               />
             )}

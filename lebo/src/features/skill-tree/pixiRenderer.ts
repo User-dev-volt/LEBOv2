@@ -787,10 +787,10 @@ export async function initRenderer(
   // Smoothly pans the camera to centre an off-screen node (AC3 / AR-6). Renderer-owned camera state
   // only — the nodeId is passed in, never a store read (the canvas stays props/ref-only). Mirrors the
   // fitToTree centering math; uses a self-removing app.ticker tween like triggerFlash.
-  function focusNode(nodeId: string) {
+  function focusNode(nodeId: string): boolean {
     const node = lastRenderedNodeMap.get(nodeId)
-    if (!node) return
-    if (canvasW === 0 || canvasH === 0) return // no dimensions yet — cannot compute a centred transform
+    if (!node) return false // not rendered yet (or unknown id) — caller should retry
+    if (canvasW === 0 || canvasH === 0) return false // no dimensions yet — caller should retry
 
     const scale = worldContainer.scale.x
     const targetX = canvasW / 2 - node.x * scale
@@ -806,7 +806,7 @@ export async function initRenderer(
     const onScreen =
       screenX > canvasW * 0.1 && screenX < canvasW * 0.9 &&
       screenY > canvasH * 0.1 && screenY < canvasH * 0.9
-    if (onScreen) return
+    if (onScreen) return true // already comfortably visible — resolved, no pan needed
 
     // Cancel any in-flight focus tween — the latest (still-off-screen) request supersedes.
     if (activeFocusTick) {
@@ -819,7 +819,7 @@ export async function initRenderer(
       // early-return — that would make focusNode a no-op and never centre.
       worldContainer.x = targetX
       worldContainer.y = targetY
-      return
+      return true
     }
 
     const startX = worldContainer.x
@@ -840,6 +840,7 @@ export async function initRenderer(
     }
     activeFocusTick = tick
     app.ticker.add(tick)
+    return true
   }
 
   return {

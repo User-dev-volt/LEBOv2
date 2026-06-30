@@ -680,4 +680,27 @@ describe('initRenderer', () => {
     expect(mockApp.ticker.remove.mock.calls.length).toBe(removesBefore)
     expect(tickerCallbacks.length).toBe(ticksBefore)
   })
+
+  // focusNode reports whether it resolved the node (renderer ready + sized) so SkillTreeView can retry
+  // against a freshly-mounted passive canvas instead of silently failing to centre on first interaction.
+  it('returns false for an unknown node id (not resolvable)', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    renderer.resize(800, 600)
+    renderer.renderTree({ nodes: [medNode('n1')], edges: [] }, {}, emptyHl(), new Map())
+    expect(renderer.focusNode('ghost')).toBe(false)
+  })
+
+  it('returns false before the canvas has dimensions (caller should retry)', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    // No resize() yet → canvasW/H are still 0, so a centred transform cannot be computed.
+    renderer.renderTree({ nodes: [medNode('n1', 5000, 5000)], edges: [] }, {}, emptyHl(), new Map())
+    expect(renderer.focusNode('n1')).toBe(false)
+  })
+
+  it('returns true once the node is resolved and the canvas is sized (focus applied)', async () => {
+    const renderer = await initRenderer(makeCanvas(), makeCallbacksRef())
+    renderer.resize(800, 600)
+    renderer.renderTree({ nodes: [medNode('n1', 5000, 5000)], edges: [] }, {}, emptyHl(), new Map())
+    expect(renderer.focusNode('n1')).toBe(true)
+  })
 })
