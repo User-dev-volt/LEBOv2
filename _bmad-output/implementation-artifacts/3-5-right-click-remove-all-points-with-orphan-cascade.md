@@ -14,7 +14,7 @@ so that I can clear a node and its dependents instantly without losing fine-grai
 ## Acceptance Criteria
 
 1. **(AC1 — simple remove)** Given an allocated passive node with **no dependent allocated children**, When I **shift+right-click** it, Then all its points are removed in one action as a **single undo step** via `buildStore.removeAllPoints` (FR-45 spirit, Pattern P4-7). No confirmation prompt appears.
-2. **(AC2 — orphan cascade)** Given an allocated passive node whose removal would **orphan allocated child nodes**, When I **shift+right-click** it, Then a confirmation prompt **names the orphaned nodes** (`"Removing this node will also deallocate: [Node A], [Node B]. Continue?"`) **And** on confirm, the node and its orphaned children are deallocated **together in one single undo step**; on cancel, nothing changes.
+2. **(AC2 — orphan cascade, with MANDATORY confirmation)** Given an allocated passive node whose removal would **orphan allocated child nodes**, When I **shift+right-click** it, Then a confirmation prompt **names the orphaned nodes** (`"Removing this node will also deallocate: [Node A], [Node B]. Continue?"`) **And** on confirm, the node and its orphaned children are deallocated **together in one single undo step**; on cancel, nothing changes. The confirmation is **mandatory whenever the removal would cascade to ANY other allocated node** (`orphans.length > 0`) — it is the primary misclick safeguard so a user never silently loses downstream nodes; one `undoNodeChange()` is the secondary backstop, restoring the node and every orphan at once.
 3. **(AC3 — single point preserved)** Given an allocated passive node, When I **right-click without shift**, Then exactly **one** point is removed (existing `applyNodeChange(-1)` behavior — including the existing "blocked, flash dependents" guard when removing the last point would orphan a direct child). This story does **not** change plain right-click.
 
 **Derived / non-negotiable criteria (implied by the system; must also hold):**
@@ -62,8 +62,8 @@ The core action is **absent** and must be authored. The good news from the chose
 
 **D2 — Gesture split. ✅ DECIDED (Alec):** **right-click = remove ONE** (preserved, AC3); **shift+right-click = remove ALL** (AC1/AC2). This is the deliberate mirror of 3.4 (shift+**left** = fill-to-max ↔ shift+**right** = remove-all) and keeps granular single-point control. **Note for code review:** this intentionally *refines* FR-45's literal "right-click removes all" wording (Alec-confirmed, like 3.2's dim-tier deviation) — FR-45's substance (one-action remove-all + orphan cascade + naming confirmation + single undo step) is fully delivered; only the trigger gesture moved to shift+right so plain right-click can keep remove-one. Do **not** flag the gesture as an AC miss.
 
-**D3 — Orphan semantics on multi-prerequisite ("diamond") nodes: STRICT `.every()` (recommended) vs OR. ⚠️ OPEN (low-risk).**
-A node with prerequisites `{A, B}` is allocatable in this codebase only when **both** are allocated — `applyNodeChange`/`fillNodeToMax` gate on `.every()` (`buildStore.ts:206-208, 294-296`), and the existing block treats any dependent as essential. **Recommended:** the cascade uses the **same strict `.every()`** rule — after removing `A`, a child needing `{A,B}` **is orphaned** (a surviving-`C` state is one the allocation rules could never have produced; OR would leave allocation-invalid builds). This diverges from OR **only** on genuine diamonds; **most LE passive nodes have ≤1 prerequisite, so chains cascade identically.** Dev task 2.4 checks whether shipped class JSON even has a >1-prereq node; if none, the distinction is academic and strict is trivially correct. If Alec later confirms LE multi-connections are semantically OR, flip the one-line propagation gate (§Algorithm) and swap test b1's expectation.
+**D3 — Orphan semantics on multi-prerequisite ("diamond") nodes: STRICT `.every()`. ✅ RESOLVED (Alec).**
+If `C` requires `{A, B}` and `B` is removed, `C` is no longer validly allocated and **its points refund out (deallocated) as part of the cascade** — strict `.every()`. This matches how the codebase already gates allocation (`applyNodeChange`/`fillNodeToMax` use `.every()` at `buildStore.ts:206-208, 294-296`) and the existing dependent block. **Do NOT implement the looser OR rule** (survive-if-any-prereq-remains) — it would leave allocation-invalid builds. Note: this only diverges from OR on genuine diamonds; most LE passive nodes have ≤1 prerequisite, so chains cascade identically. Dev task 2.4 still records whether shipped class JSON contains any >1-prereq node (fixture realism only). Any such cascade is gated by AC2's mandatory confirmation.
 
 ---
 
@@ -193,8 +193,7 @@ export function computeOrphanedNodes(
       if (!surviving.has(dep) || valid.has(dep)) continue
       const left = (remaining.get(dep) ?? 0) - 1
       remaining.set(dep, left)
-      if (left === 0) { valid.add(dep); queue.push(dep) }   // STRICT .every(): all prereqs valid
-      // OR-variant (D3): replace the counter gate with `valid.add(dep); queue.push(dep)` on first valid prereq
+      if (left === 0) { valid.add(dep); queue.push(dep) }   // STRICT .every(): valid only when ALL prereqs valid (D3, confirmed)
     }
   }
 
@@ -204,7 +203,7 @@ export function computeOrphanedNodes(
 }
 ```
 
-**Why strict (not naive descendant-walk):** naive "delete everything downstream of `nodeId`" over-removes on diamonds (`root→{A,B}→C`: removing `A` would wrongly delete `C` even when treated as OR). Root-reachability is correct under both semantics; the counter gate selects strict `.every()` (recommended, D3). Worked cases: chain `root→A→B` remove `A` → `[B]`; diamond `root→{A,B}→C` remove `A` → `[C]` (strict, C needed A) / `[]` (OR); leaf → `[]`; root → all descendants. Acyclicity assumed (LE trees are DAGs); the visited set makes it cycle-safe regardless. (Assumes no duplicate edges — one edge per prerequisite, which `treeDataTransformer.ts:61-62` guarantees.)
+**Why strict (not naive descendant-walk):** naive "delete everything downstream of `nodeId`" over-removes on diamonds. Root-reachability + the counter gate implement strict `.every()` (confirmed, D3): a dependent is valid only once **all** its prerequisites are valid. Worked cases: chain `root→A→B` remove `A` → `[B]`; diamond `root→{A,B}→C` remove `A` → `[C]` (C required both A and B, so C's points refund out); leaf → `[]`; root → all descendants. Acyclicity assumed (LE trees are DAGs); the visited set makes it cycle-safe regardless. (Assumes no duplicate edges — one edge per prerequisite, which `treeDataTransformer.ts:61-62` guarantees.)
 
 ### `removeAllPoints` store action — invert `fillNodeToMax`, keep the P4-7 tail byte-identical
 
