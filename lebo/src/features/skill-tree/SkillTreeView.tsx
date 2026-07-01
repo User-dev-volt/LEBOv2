@@ -122,6 +122,7 @@ export function SkillTreeView() {
   const setSelectedNodeId = useAppStore((s) => s.setSelectedNodeId)
   const centerTab = useAppStore((s) => s.centerTab)
   const setCenterTab = useAppStore((s) => s.setCenterTab)
+  const setBlockingModalOpen = useAppStore((s) => s.setBlockingModalOpen)
 
   const [activeTabIndex, setActiveTabIndex] = useState(0)
   const [pickerState, setPickerState] = useState<PickerState | null>(null)
@@ -484,6 +485,20 @@ export function SkillTreeView() {
   const passiveInteraction = useSkillTree(treeData)
   const skillInteraction = useSkillTree(skillTreeData, slotId ?? undefined)
   const weaverInteraction = useSkillTree(isWeaverTab ? weaverTreeData : null)
+
+  // Story 3.5 review: while the AC2 remove-all confirmation is open, flag a blocking modal so App.tsx's
+  // window-level shortcuts (undo/redo, 1–6 tab keys) can't mutate allocations or switch tabs underneath it —
+  // that would desync the dialog's named orphans from what confirm actually removes. Cleared on unmount.
+  useEffect(() => {
+    setBlockingModalOpen(passiveInteraction.pendingRemoval !== null)
+    return () => setBlockingModalOpen(false)
+  }, [passiveInteraction.pendingRemoval, setBlockingModalOpen])
+
+  // Defense-in-depth: leaving the passive tab drops any pending removal, so no phantom confirmation
+  // survives a tab switch to act on later state.
+  useEffect(() => {
+    if (!isPassiveTab) passiveInteraction.cancelRemoval()
+  }, [isPassiveTab, passiveInteraction.cancelRemoval])
 
   const {
     hoveredNodeId,

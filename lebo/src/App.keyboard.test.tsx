@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, act } from '@testing-library/react'
 import { App } from './App'
 import { useAppStore } from './shared/stores/appStore'
+import { useBuildStore } from './shared/stores/buildStore'
 
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn().mockResolvedValue(undefined),
@@ -55,6 +56,12 @@ function pressEscape() {
 function pressKey(key: string) {
   act(() => {
     window.dispatchEvent(new KeyboardEvent('keydown', { key }))
+  })
+}
+
+function pressCtrl(key: string) {
+  act(() => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { key, ctrlKey: true }))
   })
 }
 
@@ -130,5 +137,50 @@ describe('App center-tab keyboard shortcuts 1–6 (FR-36)', () => {
     })
     pressKey('2')
     expect(useAppStore.getState().centerTab).toBe('tree')
+  })
+})
+
+describe('App shortcuts suppressed while a blocking modal is open (Story 3.5)', () => {
+  let initialState: ReturnType<typeof useAppStore.getState>
+
+  beforeEach(() => {
+    initialState = useAppStore.getState()
+    useAppStore.setState(initialState, true)
+    useAppStore.setState({ currentView: 'main', centerTab: 'tree', isBlockingModalOpen: false })
+    vi.clearAllMocks()
+  })
+
+  it('does not switch center tabs while a blocking modal is open', async () => {
+    await act(async () => {
+      render(<App />)
+    })
+    useAppStore.setState({ isBlockingModalOpen: true })
+    pressKey('2')
+    expect(useAppStore.getState().centerTab).toBe('tree')
+  })
+
+  it('does not fire undo or redo while a blocking modal is open', async () => {
+    await act(async () => {
+      render(<App />)
+    })
+    const undoSpy = vi.spyOn(useBuildStore.getState(), 'undoNodeChange')
+    const redoSpy = vi.spyOn(useBuildStore.getState(), 'redoNodeChange')
+    useAppStore.setState({ isBlockingModalOpen: true })
+    pressCtrl('z')
+    pressCtrl('y')
+    expect(undoSpy).not.toHaveBeenCalled()
+    expect(redoSpy).not.toHaveBeenCalled()
+  })
+
+  it('resumes shortcuts once the modal closes', async () => {
+    await act(async () => {
+      render(<App />)
+    })
+    useAppStore.setState({ isBlockingModalOpen: true })
+    pressKey('2')
+    expect(useAppStore.getState().centerTab).toBe('tree')
+    useAppStore.setState({ isBlockingModalOpen: false })
+    pressKey('2')
+    expect(useAppStore.getState().centerTab).toBe('weaver')
   })
 })

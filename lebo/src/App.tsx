@@ -117,6 +117,12 @@ export function App() {
         return
       }
 
+      // A blocking confirmation modal (e.g. RemoveNodeConfirmDialog) owns the keyboard while open — don't let
+      // window-level shortcuts (undo/redo, tab keys, panel toggles) fire or mutate state underneath it. Otherwise
+      // a mid-modal Ctrl+Z desyncs the dialog's named orphans from what confirm removes, or 1–6 unmounts it with
+      // the pending removal still armed (Story 3.5 review). Escape/Ctrl+S above are intentionally still allowed.
+      if (useAppStore.getState().isBlockingModalOpen) return
+
       // Undo/Redo — skip if text input focused (preserve native browser text undo/redo)
       if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'y')) {
         const target = e.target as HTMLElement

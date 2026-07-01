@@ -23,6 +23,7 @@ interface AppStore {
   updateDismissed: boolean
   iconSource: 'game-files' | 'community-cdn' | 'placeholder' | null
   selectedNodeId: string | null
+  isBlockingModalOpen: boolean
   setOnline: (online: boolean) => void
   setCurrentView: (view: 'main' | 'settings' | 'gear-optimization') => void
   setCenterTab: (tab: CenterTab) => void
@@ -36,6 +37,7 @@ interface AppStore {
   setUpdateDismissed: (dismissed: boolean) => void
   setIconSource: (v: 'game-files' | 'community-cdn' | 'placeholder') => void
   setSelectedNodeId: (id: string | null) => void
+  setBlockingModalOpen: (open: boolean) => void
 }
 
 export const useAppStore = create<AppStore>()((set) => ({
@@ -53,6 +55,7 @@ export const useAppStore = create<AppStore>()((set) => ({
   updateDismissed: false,
   iconSource: null,
   selectedNodeId: null,
+  isBlockingModalOpen: false,
   setOnline: (online) => set({ isOnline: online, isOnlineChecked: true }),
   setCurrentView: (view) => set({ currentView: view }),
   setCenterTab: (tab) => set({ centerTab: tab }),
@@ -67,4 +70,5 @@ export const useAppStore = create<AppStore>()((set) => ({
   setUpdateDismissed: (dismissed) => set({ updateDismissed: dismissed }),
   setIconSource: (v) => set({ iconSource: v }),
   setSelectedNodeId: (id) => set({ selectedNodeId: id }),
+  setBlockingModalOpen: (open) => set({ isBlockingModalOpen: open }),
 }))
