@@ -726,6 +726,14 @@ So that I can quickly undo an allocation without clicking down each point.
 
 Give players a full in-app gear workflow: an item-database browser, a grouped affix picker with tier pips, per-slot affix pips, and a three-column Gear Optimization screen with drag-drop equip and AI-ranked swaps. The affix `position` discriminator data gate comes first.
 
+> **⚠️ Epic 3 retrospective corrections (2026-07-01) — read before running `create-story` on any 4.x:**
+> A code-grounded readiness pass (8-agent ultracode analysis) found the plan understates existing work. Correct these first:
+> 1. **The `position` SOURCE data already exists and is already loaded.** `src-tauri/resources/items/affixes.json` (4,176 affixes: 3,616 `prefix` / 560 `suffix`) is already read into `ItemDatabase`, and Rust already models it (`GearAffixData.affix_class` is an `AffixPosition` enum — *not* the "unvalidated String" an old deferred-work note claims). **Story 4.1 is a wiring/ingestion job** (populate the empty `GameData.gear_affixes` from the existing source in `game_data_loader.rs`, add a `position` field to `AffixEntryV2`, and route prefix-vs-suffix in `buildSnapshotSerializer.ts` instead of dumping all affixes to prefixes) — **not data authoring.** Re-cut its estimate accordingly.
+> 2. **The gear stack is already wired end-to-end.** The Rust scorer (`gear.rs` / `run_gear_scoring`), the Claude **and** OpenRouter gear-narrative backends (`gear:*` events), and a Phase-3 frontend (`gear-optimization/*`, `item-database/*`, `useGearStream`) all exist. **Epic 4 is mostly reconcile/extend, not greenfield** — the genuine exception is Story 4.5's native HTML5 drag-drop, which has **zero prior art** in `src/` (only PixiJS canvas panning) and must be built under the AR-8 no-new-dependency rule.
+> 3. **`GearAffixV2` does not exist** in the codebase (only `AffixEntryV2` + `GearItemV2`). The reference in Story 4.1 below is corrected.
+> 4. **Displayed-but-not-sourced trap (project memory):** two parallel affix paths exist — real `ItemDatabase.affixes` (populated) vs `GameData.gear_affixes` (empty). Wire the UI to the real path while the scorer stays empty and it will *look* done while scoring silent zeros. **Ingest + verify end-to-end gear scoring against real data BEFORE building any 4.x UI on it.**
+> 5. Housekeeping already assigned to 4.1/AR-16: fix the stale `MODELS.len() == 4` Rust test (actual 7, currently failing) and add the missing `GearSlotRanking`/`WishlistAffix` re-exports to scoring-core `lib.rs` (only `GearAnalysis` is re-exported today).
+
 ### Story 4.1: Affix prefix/suffix discriminator (data gate)
 
 As a developer enabling the gear features,
@@ -736,7 +744,7 @@ So that the Affix Picker can group correctly and gear scoring sees suffixes.
 
 **Given** the affix schema
 **When** the discriminator is added
-**Then** `AffixEntryV2`/`GearAffixV2` (TypeScript) and the Rust affix type gain a `position` field populated by the data-ingestion pipeline, with an absent value treated as `prefix` (back-compatible) (AR-2).
+**Then** `AffixEntryV2` (TypeScript; the earlier-draft `GearAffixV2` type does not exist — use `AffixEntryV2`/`GearItemV2`) and the Rust affix type gain a `position` field populated by the data-ingestion pipeline, with an absent value treated as `prefix` (back-compatible) (AR-2).
 
 **Given** `buildSnapshotSerializer.ts`
 **When** it serializes gear
