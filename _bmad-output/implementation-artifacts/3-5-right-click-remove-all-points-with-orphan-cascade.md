@@ -1,6 +1,6 @@
 # Story 3.5: Right-click remove all points with orphan cascade
 
-Status: in-progress
+Status: review
 
 <!-- Epic 3: Passive Tree Optimizer & Allocation — final story. Partner to Story 3.4 (fillNodeToMax). FR-45, Pattern P4-7, NFR-6. -->
 <!-- GESTURE (Alec-confirmed, supersedes FR-45's literal "right-click"): right-click = remove ONE (unchanged); SHIFT+right-click = remove ALL + orphan cascade. Mirrors 3.4's shift+left = fill-to-max. -->
@@ -296,10 +296,45 @@ All new files are co-located in `features/skill-tree/` (helper + dialog + tests)
 
 ### Agent Model Used
 
-<!-- dev-story fills this -->
+claude-opus-4-8 (Opus 4.8) — dev-story workflow with ultracode multi-agent orchestration: a parallel data-check scout (Task 2.4) + a 4-lens adversarial verification panel (acceptance / scope-fence / algorithm-correctness / test-quality) with per-finding independent refutation.
 
 ### Debug Log References
 
+- `pnpm build` (tsc + vite): clean (pre-existing >500 kB chunk advisory + font runtime-resolution notes only). One tsc error caught & fixed mid-implementation: `computeOrphanedNodes.test.ts` node factory used `as const` → `connections: readonly []` incompatible with `TreeNode.connections: string[]`; fixed with a `: TreeNode` return-type annotation.
+- `pnpm vitest` (full): **1270 passed / 7 failed** — the 7 are exactly the standing baseline (`ProviderSelector` ×5 / `Settings` ×1 / `TreeControls` ×1). **SkillTreeCanvas cleared** the baseline (was 8; the `:120` RED test now passes under the gesture contract). Net **+33 tests** vs the 1237 pre-story baseline.
+- AutoSave-anomaly re-verification ([[autosave-watcher-unvalidated]]): post-edit grep confirms `useSkillTree.ts` passive guard `slotId === undefined` present on BOTH shift+left (:72) and shift+right (:84), and `buildStore.ts` `fillNodeToMax` budget cap `Math.min(nodeSpace, budget)` (:313) intact.
+
 ### Completion Notes List
 
+- **removeAllPoints (Task 1):** new passive-only store action inverting `fillNodeToMax` — one pre-mutation undo snapshot (P4-7 tail, identical to fillNodeToMax :318-319), node + all transitive orphans deleted in ONE `set()`, redoStack cleared, zero-key deletion, NO auto-create (`{success:false}` with no build), no-op on unallocated BEFORE any snapshot (AC6), and deliberately NO `isPersisted:false` flip (passive convention). `ApplyNodeResult` extended additively with `removed?: string[]`.
+- **computeOrphanedNodes (Task 2):** new pure helper (mirrors `nearestAllocatedPath`'s no-store shape). STRICT `.every()` root-reachability flood-fill (D3): a dependent survives only when ALL prerequisites remain valid via a root-reachable allocated path; O(V+E) adjacency built once; cycle-safe via head-cursor + valid-set. Called by both `removeAllPoints` and the hook AC2 pre-check.
+- **Task 2.4 data check (D3 realism):** shipped class JSON encodes prereqs as `edges` (fromId/toId). **32 diamond nodes (>1 prerequisite) exist across all 5 classes** (20 sentinel; 3 each acolyte/mage/primalist/rogue), e.g. `void-knight-passive-void-sword` requires both `rift-strike` AND `consume-void`. AC2's diamond cascade is REAL, not synthetic-only — the strict algorithm is genuinely load-bearing.
+- **Gesture (Task 3):** shift+right rides the existing `onNodeClick(nodeId, button, shiftKey)` plumbing exactly like 3.4's shift+left. Only canvas change = forwarding `e.shiftKey` on the two right-click entry points (`pixiRenderer.ts` WebGL pointerdown, `SkillTreeCanvas.tsx` DOM `onContextMenu` — the a11y/keyboard path, AC8). Plain right-click (shiftKey falsy) UNCHANGED → single decrement + blocked-flash (AC3). Passive-only via `slotId === undefined`; skill slots → single `applySkillNodeChange(-1)`, weaver's own `handleWeaverNodeClick` ignores shiftKey → single `applyWeaverNodeChange(-1)` (AC5). `onNodeContextMenu`/`NodeContextMenu.tsx` left inert & untouched.
+- **Confirmation (Task 4):** `RemoveNodeConfirmDialog` replicates the `DeleteConfirmDialog` PATTERN locally (no cross-feature import). Body is AC2-literal: `Removing this node will also deallocate: <names>. Continue?`. Mounted in SkillTreeView's passive fragment; orphan ids → names via the real `getNodeName(id, gameData, classId, masteryId)` (treeData has no name field). Mandatory whenever `orphans.length > 0`; cancel = no change; one `undoNodeChange()` is the secondary backstop.
+- **Architecture note (code review):** `buildStore.ts` (shared) importing `computeOrphanedNodes` from features/skill-tree mirrors the existing precedent `useOptimizationStream.ts → features/optimization/scoringEngine` — an established shared→feature pattern here, not a novel layering inversion. No import cycle (helper is type-only from treeData).
+- **Source Audit: N/A — no-new-stat / no-dead-key.** `removeAllPoints` deletes keys from the same `nodeAllocations` field `applyNodeChange`/`fillNodeToMax` write and `toBuildSnapshot → compute_stats` consumes (a smaller-but-valid map on the identical path). The dialog re-presents shipped `GameNode.name` via the already-sourced `getNodeName`. Guardrail met by value+element assertions (exact surviving map, `removed[]` set, `undoStack.length === 1`), not count/snapshot.
+- **Ultracode adversarial verification:** 4-lens panel (acceptance / scope-fence / algorithm-correctness / test-quality) with per-finding independent refutation — **1 raw finding, 0 confirmed (1 refuted)**. AC1–AC8 verified met; scope fence held; algorithm correct on chains/diamonds/multi-hop/cycles/partial builds; tests are value+element (strict-diamond proven, orphan-name set-equality proven, weaver row-h proves no `removeAllPoints` ran, canvas `:120` proves `shiftKey` forwarded both true and false).
+- **D2 gesture refinement flagged for code-review as NOT-a-miss:** right-click = remove ONE, shift+right = remove ALL (Alec-confirmed refinement of FR-45's literal "right-click").
+
 ### File List
+
+- `lebo/src/shared/types/build.ts` (M — `ApplyNodeResult` + `removed?: string[]`)
+- `lebo/src/shared/stores/buildStore.ts` (M — new `removeAllPoints` action + interface decl + `computeOrphanedNodes` import)
+- `lebo/src/shared/stores/buildStore.test.ts` (M — new `removeAllPoints` describe block, +10 tests)
+- `lebo/src/features/skill-tree/computeOrphanedNodes.ts` (A — pure orphan-cascade helper)
+- `lebo/src/features/skill-tree/computeOrphanedNodes.test.ts` (A — 11 tests)
+- `lebo/src/features/skill-tree/useSkillTree.ts` (M — shift+right branch + `pendingRemoval`/`confirmRemoval`/`cancelRemoval`)
+- `lebo/src/features/skill-tree/useSkillTree.test.ts` (M — shift+right tests; plain right-click tests kept)
+- `lebo/src/features/skill-tree/pixiRenderer.ts` (M — forward `e.shiftKey` on button===2 `onNodeClick`)
+- `lebo/src/features/skill-tree/SkillTreeCanvas.tsx` (M — forward `e.shiftKey` on `onContextMenu`)
+- `lebo/src/features/skill-tree/SkillTreeCanvas.test.tsx` (M — reworked `:120` to the gesture contract)
+- `lebo/src/features/skill-tree/RemoveNodeConfirmDialog.tsx` (A — AC2 confirm modal)
+- `lebo/src/features/skill-tree/RemoveNodeConfirmDialog.test.tsx` (A — 5 tests)
+- `lebo/src/features/skill-tree/SkillTreeView.tsx` (M — import `getNodeName` + `RemoveNodeConfirmDialog`; mount dialog, resolve orphan names)
+- `lebo/src/features/skill-tree/SkillTreeView.test.tsx` (M — weaver shift+right guard, row h)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (M — status bump)
+- `_bmad-output/implementation-artifacts/3-5-right-click-remove-all-points-with-orphan-cascade.md` (M — this story)
+
+### Change Log
+
+- 2026-06-30 — Story 3.5 implemented (shift+right-click remove-all + orphan cascade; FR-45 / Pattern P4-7 / NFR-6; Epic 3 final story). New `removeAllPoints` store action + `computeOrphanedNodes` strict-`.every()` helper + shift+right gesture + AC2 confirmation dialog. tsc/build clean; full vitest **1270 passed / 7 failed** (exact standing baseline; SkillTreeCanvas cleared; +33 tests). Ultracode verification: 0 confirmed findings. Status → review.
