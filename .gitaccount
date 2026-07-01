@@ -3,7 +3,9 @@
   "auto_commit": true,
   "account": "alec-personal",
   "github_user": "User-dev-volt",
-  "auto_push": false,
+  "auto_push": true,
+  "push_branch": "autosave/main",
+  "autosave_log": true,
   "commit_prefix": "[AutoSave]",
   "pre_commit_check": "\"D:/second-brain-starter/.venv/Scripts/python.exe\" \"D:/second-brain-starter/.claude/scripts/git/pre_commit_gate.py\" --dir \"D:/Projects/LEBOv2/lebo\"",
   "pre_commit_check_timeout": 240
