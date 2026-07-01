@@ -616,7 +616,7 @@ export async function initRenderer(
         dragOrigin = { x: e.global.x, y: e.global.y }
         panOrigin = { x: worldContainer.x, y: worldContainer.y }
         if (e.button === 2) {
-          callbacksRef.current.onNodeClick(node.id, 2)
+          callbacksRef.current.onNodeClick(node.id, 2, e.shiftKey)
           return
         }
       })

@@ -87,7 +87,7 @@ development_status:
   3-2-enhanced-suggested-node-visualization-on-the-canvas: done
   3-3-suggestion-card-content-and-tree-cross-highlight: done
   3-4-shift-click-fill-node-to-max: done
-  3-5-right-click-remove-all-points-with-orphan-cascade: ready-for-dev
+  3-5-right-click-remove-all-points-with-orphan-cascade: in-progress
   epic-3-retrospective: optional
 
   # Epic 4: Gear System & Optimization

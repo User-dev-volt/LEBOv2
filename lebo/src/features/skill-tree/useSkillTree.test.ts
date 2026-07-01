@@ -209,4 +209,68 @@ describe('useSkillTree', () => {
     act(() => result.current.handleNodeClick('root', 0, true))
     expect(useBuildStore.getState().activeBuild!.nodeAllocations['root']).toBe(4)
   })
+
+  // ── Story 3.5: shift+right-click remove-all + orphan cascade (FR-45) ──────
+
+  it('shift+right-click on a passive leaf removes it directly — no orphans, no confirm (AC1)', () => {
+    const { result } = renderHook(() => useSkillTree(mockTreeData))
+    act(() => result.current.handleNodeClick('root', 0))
+    act(() => result.current.handleNodeClick('child', 0))
+    act(() => result.current.handleNodeClick('child', 2, true))
+    const alloc = useBuildStore.getState().activeBuild!.nodeAllocations
+    expect(alloc['child']).toBeUndefined()
+    expect(alloc['root']).toBe(1)
+    expect(result.current.pendingRemoval).toBeNull()
+  })
+
+  it('shift+right-click on a passive node with dependents sets pendingRemoval, removes nothing yet (AC2)', () => {
+    const { result } = renderHook(() => useSkillTree(mockTreeData))
+    act(() => result.current.handleNodeClick('root', 0))
+    act(() => result.current.handleNodeClick('child', 0))
+    act(() => result.current.handleNodeClick('root', 2, true))
+    expect(result.current.pendingRemoval).toEqual({ nodeId: 'root', orphanIds: ['child'] })
+    const alloc = useBuildStore.getState().activeBuild!.nodeAllocations
+    expect(alloc['root']).toBe(1)
+    expect(alloc['child']).toBe(1)
+  })
+
+  it('confirmRemoval executes the cascade then clears pendingRemoval (AC2/AC4)', () => {
+    const { result } = renderHook(() => useSkillTree(mockTreeData))
+    act(() => result.current.handleNodeClick('root', 0))
+    act(() => result.current.handleNodeClick('child', 0))
+    act(() => result.current.handleNodeClick('root', 2, true))
+    act(() => result.current.confirmRemoval())
+    expect(useBuildStore.getState().activeBuild!.nodeAllocations).toEqual({})
+    expect(result.current.pendingRemoval).toBeNull()
+  })
+
+  it('cancelRemoval clears pendingRemoval and removes nothing (AC2)', () => {
+    const { result } = renderHook(() => useSkillTree(mockTreeData))
+    act(() => result.current.handleNodeClick('root', 0))
+    act(() => result.current.handleNodeClick('child', 0))
+    act(() => result.current.handleNodeClick('root', 2, true))
+    act(() => result.current.cancelRemoval())
+    expect(result.current.pendingRemoval).toBeNull()
+    expect(useBuildStore.getState().activeBuild!.nodeAllocations).toEqual({ root: 1, child: 1 })
+  })
+
+  it('shift+right-click on an unallocated passive node is a no-op (AC6)', () => {
+    const { result } = renderHook(() => useSkillTree(mockTreeData))
+    act(() => result.current.handleNodeClick('root', 2, true))
+    expect(result.current.pendingRemoval).toBeNull()
+    expect(useBuildStore.getState().activeBuild).toBeNull()
+  })
+
+  it('shift+right-click on a skill slot falls through to single decrement — passive-only guard (AC5)', () => {
+    useBuildStore.getState().createBuild('Test Build')
+    const { result } = renderHook(() => useSkillTree(mockTreeData, 'slot-0'))
+    act(() => result.current.handleNodeClick('root', 0))
+    act(() => result.current.handleNodeClick('root', 0))
+    expect(useBuildStore.getState().activeBuild!.skillNodeAllocations['slot-0']?.['root']).toBe(2)
+    act(() => result.current.handleNodeClick('root', 2, true))
+    // slotId defined → shift+right is ignored by the passive guard; single applySkillNodeChange(-1) runs.
+    expect(useBuildStore.getState().activeBuild!.skillNodeAllocations['slot-0']?.['root']).toBe(1)
+    expect(result.current.pendingRemoval).toBeNull()
+    expect(useBuildStore.getState().activeBuild!.nodeAllocations['root']).toBeUndefined()
+  })
 })

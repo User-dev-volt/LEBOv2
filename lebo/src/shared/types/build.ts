@@ -78,7 +78,7 @@ export interface PlacedIdol {
 
 export type IdolGridState = PlacedIdol[]
 
-export type ApplyNodeResult = { success: boolean; error?: string; blockedByDependents?: string[] }
+export type ApplyNodeResult = { success: boolean; error?: string; blockedByDependents?: string[]; removed?: string[] }
 
 export interface BuildMeta {
   id: string

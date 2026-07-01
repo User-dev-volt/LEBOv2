@@ -117,16 +117,18 @@ describe('SkillTreeCanvas keyboard overlay', () => {
     expect(onNodeClick).toHaveBeenCalledWith(expect.any(String), 0)
   })
 
-  it('onContextMenu on focused button fires onNodeContextMenu (not onNodeClick)', async () => {
+  it('onContextMenu on a focused button fires onNodeClick(id, 2, shiftKey) — gesture model (3.5, AC8)', async () => {
     const onNodeClick = vi.fn()
-    const onNodeContextMenu = vi.fn()
-    await renderCanvas({ ...DEFAULT_PROPS, onNodeClick, onNodeContextMenu })
+    await renderCanvas({ ...DEFAULT_PROPS, onNodeClick })
     const buttons = screen.getAllByRole('button')
+    // Plain right-click (keyboard context-menu key) → remove one; shiftKey forwarded as false.
     fireEvent.contextMenu(buttons[0])
-    // Right-click opens context menu — onNodeClick must NOT be called
-    expect(onNodeClick).not.toHaveBeenCalled()
-    expect(onNodeContextMenu).toHaveBeenCalledTimes(1)
-    expect(onNodeContextMenu).toHaveBeenCalledWith(expect.any(String), expect.any(Number), expect.any(Number))
+    expect(onNodeClick).toHaveBeenCalledTimes(1)
+    expect(onNodeClick).toHaveBeenLastCalledWith(expect.any(String), 2, false)
+    // Shift + context-menu key → remove all; shiftKey forwarded as true (a11y/keyboard parity).
+    fireEvent.contextMenu(buttons[0], { shiftKey: true })
+    expect(onNodeClick).toHaveBeenCalledTimes(2)
+    expect(onNodeClick).toHaveBeenLastCalledWith(expect.any(String), 2, true)
   })
 
   it('Escape on focused button fires onKeyboardNavigate(null, 0, 0)', async () => {

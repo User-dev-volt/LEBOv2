@@ -13,6 +13,7 @@ import { buildTreeData, buildSkillTreeData } from './treeDataTransformer'
 import { SkillTreeCanvas } from './SkillTreeCanvas'
 import { EmptyTreeState } from './EmptyTreeState'
 import { NodeTooltip } from './NodeTooltip'
+import { RemoveNodeConfirmDialog } from './RemoveNodeConfirmDialog'
 import { SkillTreeTabBar } from './SkillTreeTabBar'
 import { useSkillTree } from './useSkillTree'
 import { SkillPickerGrid } from '../skill-picker/SkillPickerGrid'
@@ -27,6 +28,7 @@ import { getIconCachePath } from '../../shared/commands/iconCommands'
 import { pathPointCost } from '../../shared/utils/pathPointCost'
 import { compositeDelta } from '../../shared/utils/scoreComposite'
 import { tooltipStatDeltaEntries } from '../../shared/utils/statDeltas'
+import { getNodeName } from '../../shared/utils/getNodeName'
 
 const DAMAGE_TYPE_TAGS = ['FIRE', 'COLD', 'LIGHTNING', 'VOID', 'POISON'] as const
 
@@ -902,6 +904,19 @@ export function SkillTreeView() {
                 pathCost={pathPointCost(allGameNodes, baseAllocatedNodes, cardTooltip.nodeId)}
                 scoreDelta={compositeDelta(cardTooltipSuggestion.baselineScore, cardTooltipSuggestion.previewScore)}
                 statDeltas={cardTooltipStatDeltas}
+              />
+            )}
+
+            {/* Story 3.5 (FR-45): AC2 confirm for shift+right-click remove-all when the cascade would
+                orphan other allocated nodes. Orphan ids → display names resolved HERE — treeData carries
+                no name field, so names come only from gameData via getNodeName. */}
+            {passiveInteraction.pendingRemoval && (
+              <RemoveNodeConfirmDialog
+                orphanNames={passiveInteraction.pendingRemoval.orphanIds.map((id) =>
+                  getNodeName(id, gameData, selectedClassId ?? '', selectedMasteryId ?? '')
+                )}
+                onConfirm={passiveInteraction.confirmRemoval}
+                onCancel={passiveInteraction.cancelRemoval}
               />
             )}
           </>

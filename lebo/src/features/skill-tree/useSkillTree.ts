@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import type { TreeData } from '../../shared/types/treeData'
 import { useBuildStore } from '../../shared/stores/buildStore'
 import { useAppStore } from '../../shared/stores/appStore'
+import { computeOrphanedNodes } from './computeOrphanedNodes'
 
 const ERROR_DISPLAY_MS = 2000
 
@@ -14,6 +15,11 @@ export interface SkillTreeInteraction {
   keyboardPosition: { x: number; y: number }
   flashNodeIds: string[] | null
   contextMenu: { nodeId: string; x: number; y: number } | null
+  // Story 3.5: shift+right-click remove-all cascade. When removal would orphan other allocated nodes,
+  // pendingRemoval holds the target + orphan ids so SkillTreeView can name them in a confirm dialog.
+  pendingRemoval: { nodeId: string; orphanIds: string[] } | null
+  confirmRemoval: () => void
+  cancelRemoval: () => void
   handleNodeClick: (nodeId: string, button: 0 | 2, shiftKey?: boolean) => void
   handleNodeSelect: (nodeId: string) => void
   handleNodeHover: (nodeId: string | null) => void
@@ -30,6 +36,7 @@ export function useSkillTree(treeData: TreeData | null, slotId?: string): SkillT
   const applyNodeChange = useBuildStore((s) => s.applyNodeChange)
   const applySkillNodeChange = useBuildStore((s) => s.applySkillNodeChange)
   const fillNodeToMax = useBuildStore((s) => s.fillNodeToMax)
+  const removeAllPoints = useBuildStore((s) => s.removeAllPoints)
   const setSelectedNodeId = useAppStore((s) => s.setSelectedNodeId)
 
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
@@ -39,6 +46,7 @@ export function useSkillTree(treeData: TreeData | null, slotId?: string): SkillT
   const [keyboardPosition, setKeyboardPosition] = useState({ x: 0, y: 0 })
   const [flashNodeIds, setFlashNodeIds] = useState<string[] | null>(null)
   const [contextMenu, setContextMenu] = useState<{ nodeId: string; x: number; y: number } | null>(null)
+  const [pendingRemoval, setPendingRemoval] = useState<{ nodeId: string; orphanIds: string[] } | null>(null)
 
   const clearHoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -70,6 +78,18 @@ export function useSkillTree(treeData: TreeData | null, slotId?: string): SkillT
         return
       }
 
+      // Shift+right-click on passive tree: remove all points + orphan cascade (3.5, mirror shift+left).
+      // Read allocations imperatively — this hook must NOT subscribe to allocations (that would re-render
+      // the tree on every point change). Plain right-click (shiftKey falsy) falls through to the decrement.
+      if (button === 2 && shiftKey && slotId === undefined) {
+        const nodeAllocations = useBuildStore.getState().activeBuild?.nodeAllocations ?? {}
+        if ((nodeAllocations[nodeId] ?? 0) <= 0) return // nothing to remove (AC6)
+        const orphans = computeOrphanedNodes(nodeId, nodeAllocations, treeData)
+        if (orphans.length === 0) removeAllPoints(nodeId, treeData) // AC1: no confirmation
+        else setPendingRemoval({ nodeId, orphanIds: orphans }) // AC2: confirm names orphans
+        return
+      }
+
       const delta: 1 | -1 = button === 2 ? -1 : 1
       const result =
         slotId !== undefined
@@ -84,7 +104,7 @@ export function useSkillTree(treeData: TreeData | null, slotId?: string): SkillT
         }
       }
     },
-    [treeData, slotId, applyNodeChange, applySkillNodeChange, fillNodeToMax]
+    [treeData, slotId, applyNodeChange, applySkillNodeChange, fillNodeToMax, removeAllPoints]
   )
 
   // Single-click — selects a node (visual ring + store update), does not allocate
@@ -136,6 +156,16 @@ export function useSkillTree(treeData: TreeData | null, slotId?: string): SkillT
     setContextMenu(null)
   }, [])
 
+  // Story 3.5: AC2 confirm/cancel for the shift+right-click orphan cascade. removeAllPoints recomputes
+  // the cascade from live store state at confirm time (the modal blocks intervening edits).
+  const confirmRemoval = useCallback(() => {
+    if (!treeData || !pendingRemoval) return
+    removeAllPoints(pendingRemoval.nodeId, treeData)
+    setPendingRemoval(null)
+  }, [treeData, pendingRemoval, removeAllPoints])
+
+  const cancelRemoval = useCallback(() => setPendingRemoval(null), [])
+
   // Legacy: React synthetic event (kept for backward compat with existing tests)
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     setMousePosition({ x: e.clientX, y: e.clientY })
@@ -163,6 +193,9 @@ export function useSkillTree(treeData: TreeData | null, slotId?: string): SkillT
     keyboardPosition,
     flashNodeIds,
     contextMenu,
+    pendingRemoval,
+    confirmRemoval,
+    cancelRemoval,
     handleNodeClick,
     handleNodeSelect,
     handleNodeHover,

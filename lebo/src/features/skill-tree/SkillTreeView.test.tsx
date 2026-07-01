@@ -1,11 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { useGameDataStore } from '../../shared/stores/gameDataStore'
 import { useBuildStore } from '../../shared/stores/buildStore'
 
-// Prevent PixiJS / WebGL init — replaces the entire SkillTreeCanvas module
+// Prevent PixiJS / WebGL init — replaces the entire SkillTreeCanvas module. Captures the last-rendered
+// canvas props so a test can invoke onNodeClick directly (Story 3.5 weaver-guard, row h).
+const canvasSpy = vi.hoisted(() => ({ props: null as any }))
 vi.mock('./SkillTreeCanvas', () => ({
-  SkillTreeCanvas: () => 'SKILL_TREE_CANVAS',
+  SkillTreeCanvas: (props: any) => {
+    canvasSpy.props = props
+    return 'SKILL_TREE_CANVAS'
+  },
 }))
 
 // Prevent Tauri event listener registration
@@ -83,5 +88,23 @@ describe('SkillTreeView — Weaver tab conditional', () => {
         'Weaver Tree planning is in research. Node data is not available from community sources.'
       )
     ).not.toBeInTheDocument()
+  })
+
+  it('weaver shift+right-click does NOT remove-all — single applyWeaverNodeChange(-1), passive untouched (row h)', () => {
+    useBuildStore.getState().setActiveBuild({
+      ...MOCK_BUILD,
+      weaverAllocations: { 'weaver-hub': 1 },
+      nodeAllocations: { 'passive-x': 1 },
+    })
+    useGameDataStore.setState({ weaverTreeData: MOCK_WEAVER_TREE, weaverGameNodes: {} })
+    render(<SkillTreeView />)
+    fireEvent.click(screen.getAllByRole('tab')[WEAVER_TAB_INDEX])
+    // Invoke the weaver canvas onNodeClick with shift+right — the weaver handler ignores shiftKey entirely.
+    act(() => canvasSpy.props.onNodeClick('weaver-hub', 2, true))
+    const build = useBuildStore.getState().activeBuild!
+    // A single decrement cleared the weaver point; NOT a remove-all cascade.
+    expect(build.weaverAllocations['weaver-hub']).toBeUndefined()
+    // Passive tree is completely untouched — removeAllPoints (passive-only) never ran.
+    expect(build.nodeAllocations['passive-x']).toBe(1)
   })
 })

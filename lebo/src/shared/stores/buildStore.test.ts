@@ -585,6 +585,118 @@ describe('buildStore — fillNodeToMax', () => {
   })
 })
 
+// root → A → B (chain); root → {A,B} → C (diamond, C requires BOTH). For removeAllPoints cascade tests.
+const mockChainTree: TreeData = {
+  nodes: [
+    { id: 'root', x: 0, y: 0, size: 'large', maxPoints: 5, connections: ['A'], state: 'available' },
+    { id: 'A', x: 100, y: 0, size: 'medium', maxPoints: 3, connections: ['root', 'B'], state: 'available' },
+    { id: 'B', x: 200, y: 0, size: 'small', maxPoints: 1, connections: ['A'], state: 'available' },
+  ],
+  edges: [
+    { fromId: 'root', toId: 'A' },
+    { fromId: 'A', toId: 'B' },
+  ],
+}
+
+const mockDiamondTree: TreeData = {
+  nodes: [
+    { id: 'root', x: 0, y: 0, size: 'large', maxPoints: 5, connections: ['A', 'B'], state: 'available' },
+    { id: 'A', x: 100, y: -50, size: 'medium', maxPoints: 3, connections: ['root', 'C'], state: 'available' },
+    { id: 'B', x: 100, y: 50, size: 'medium', maxPoints: 3, connections: ['root', 'C'], state: 'available' },
+    { id: 'C', x: 200, y: 0, size: 'small', maxPoints: 1, connections: ['A', 'B'], state: 'available' },
+  ],
+  edges: [
+    { fromId: 'root', toId: 'A' },
+    { fromId: 'root', toId: 'B' },
+    { fromId: 'A', toId: 'C' },
+    { fromId: 'B', toId: 'C' },
+  ],
+}
+
+describe('buildStore — removeAllPoints', () => {
+  beforeEach(() => {
+    useBuildStore.setState(initialState, true)
+    useBuildStore.getState().setSelectedClass('sentinel')
+    useBuildStore.getState().setSelectedMastery('void_knight')
+  })
+
+  const seedBuild = (nodeAllocations: Record<string, number>) =>
+    useBuildStore.getState().setActiveBuild({ ...mockBuild, nodeAllocations })
+
+  it('chain: removeAllPoints(A) cascades to B in one undo step (AC1/AC4/AC7)', () => {
+    seedBuild({ root: 1, A: 1, B: 1 })
+    const result = useBuildStore.getState().removeAllPoints('A', mockChainTree)
+    const alloc = useBuildStore.getState().activeBuild!.nodeAllocations
+    expect(result.removed).toEqual(['A', 'B'])
+    expect(alloc).toEqual({ root: 1 })
+    expect('A' in alloc).toBe(false)
+    expect('B' in alloc).toBe(false)
+    expect(useBuildStore.getState().undoStack).toHaveLength(1)
+    expect(useBuildStore.getState().redoStack).toHaveLength(0)
+  })
+
+  it('diamond (STRICT .every, D3): removeAllPoints(A) refunds C, keeps root+B', () => {
+    seedBuild({ root: 1, A: 1, B: 1, C: 1 })
+    const result = useBuildStore.getState().removeAllPoints('A', mockDiamondTree)
+    expect(result.removed).toEqual(['A', 'C'])
+    expect(useBuildStore.getState().activeBuild!.nodeAllocations).toEqual({ root: 1, B: 1 })
+    expect(useBuildStore.getState().undoStack).toHaveLength(1)
+  })
+
+  it('diamond (STRICT symmetry): removeAllPoints(B) refunds C, keeps root+A — fresh state', () => {
+    seedBuild({ root: 1, A: 1, B: 1, C: 1 })
+    const result = useBuildStore.getState().removeAllPoints('B', mockDiamondTree)
+    expect(result.removed).toEqual(['B', 'C'])
+    expect(useBuildStore.getState().activeBuild!.nodeAllocations).toEqual({ root: 1, A: 1 })
+  })
+
+  it('leaf: removeAllPoints(child) deletes only child, root remains', () => {
+    seedBuild({ root: 1, child: 1 })
+    const result = useBuildStore.getState().removeAllPoints('child', mockTreeData)
+    expect(result.removed).toEqual(['child'])
+    expect(useBuildStore.getState().activeBuild!.nodeAllocations).toEqual({ root: 1 })
+    expect(useBuildStore.getState().undoStack).toHaveLength(1)
+  })
+
+  it('root: removeAllPoints(root) empties the map; one undo restores node AND orphan (AC4)', () => {
+    seedBuild({ root: 1, child: 2 })
+    const result = useBuildStore.getState().removeAllPoints('root', mockTreeData)
+    expect(result.removed).toEqual(['root', 'child'])
+    expect(useBuildStore.getState().activeBuild!.nodeAllocations).toEqual({})
+    useBuildStore.getState().undoNodeChange()
+    expect(useBuildStore.getState().activeBuild!.nodeAllocations).toEqual({ root: 1, child: 2 })
+  })
+
+  it('unallocated node: no-op, success:false, NO undo entry (AC6)', () => {
+    seedBuild({ root: 1 })
+    const result = useBuildStore.getState().removeAllPoints('child', mockTreeData)
+    expect(result.success).toBe(false)
+    expect(useBuildStore.getState().activeBuild!.nodeAllocations).toEqual({ root: 1 })
+    expect(useBuildStore.getState().undoStack).toHaveLength(0)
+  })
+
+  it('no active build: success:false, no auto-create', () => {
+    expect(useBuildStore.getState().activeBuild).toBeNull()
+    expect(useBuildStore.getState().removeAllPoints('root', mockTreeData).success).toBe(false)
+    expect(useBuildStore.getState().activeBuild).toBeNull()
+  })
+
+  it('clears redoStack', () => {
+    seedBuild({ root: 1, child: 1 })
+    useBuildStore.getState().applyNodeChange('child', -1, mockTreeData)
+    useBuildStore.getState().undoNodeChange()
+    expect(useBuildStore.getState().redoStack).toHaveLength(1)
+    useBuildStore.getState().removeAllPoints('root', mockTreeData)
+    expect(useBuildStore.getState().redoStack).toHaveLength(0)
+  })
+
+  it('does NOT flip isPersisted (passive convention — matches applyNodeChange/fillNodeToMax)', () => {
+    useBuildStore.getState().setActiveBuild({ ...mockBuild, nodeAllocations: { root: 1, child: 1 }, isPersisted: true })
+    useBuildStore.getState().removeAllPoints('child', mockTreeData)
+    expect(useBuildStore.getState().activeBuild!.isPersisted).toBe(true)
+  })
+})
+
 describe('buildStore — updateContextGear', () => {
   beforeEach(() => {
     useBuildStore.setState(initialState, true)

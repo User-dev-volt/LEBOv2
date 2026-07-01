@@ -4,6 +4,7 @@ import type { FineTuneWeights } from '../types/optimization'
 import type { SkillEntry } from '../types/gameData'
 import type { TreeData } from '../types/treeData'
 import { calculatePassivePoints, calculateSkillPoints, calculateWeaverPoints } from '../utils/budgetCalculator'
+import { computeOrphanedNodes } from '../../features/skill-tree/computeOrphanedNodes'
 
 const MAX_UNDO_STACK = 10
 
@@ -32,6 +33,10 @@ export interface BuildStore {
     treeData: TreeData
   ) => ApplyNodeResult
   fillNodeToMax: (
+    nodeId: string,
+    treeData: TreeData
+  ) => ApplyNodeResult
+  removeAllPoints: (
     nodeId: string,
     treeData: TreeData
   ) => ApplyNodeResult
@@ -318,6 +323,31 @@ export const useBuildStore = create<BuildStore>()((set, get) => ({
     const newUndoStack = [...state.undoStack, activeBuild].slice(-MAX_UNDO_STACK)
     set({ activeBuild: newActiveBuild, undoStack: newUndoStack, redoStack: [] })
     return { success: true }
+  },
+
+  removeAllPoints: (nodeId, treeData) => {
+    const state = get()
+    const activeBuild = state.activeBuild
+    if (!activeBuild) return { success: false } // no auto-create — cannot remove from nothing
+
+    const current = activeBuild.nodeAllocations[nodeId] ?? 0
+    if (current <= 0) return { success: false } // AC6 no-op, BEFORE any snapshot
+
+    const orphans = computeOrphanedNodes(nodeId, activeBuild.nodeAllocations, treeData)
+
+    const newNodeAllocations = { ...activeBuild.nodeAllocations } // zero-key-deletion idiom, never store 0
+    delete newNodeAllocations[nodeId]
+    for (const id of orphans) delete newNodeAllocations[id]
+
+    const newActiveBuild: BuildState = {
+      ...activeBuild,
+      nodeAllocations: newNodeAllocations,
+      updatedAt: new Date().toISOString(),
+    }
+    // EXACT P4-7 single-undo tail — one pre-mutation snapshot restores node + every orphan in one step
+    const newUndoStack = [...state.undoStack, activeBuild].slice(-MAX_UNDO_STACK)
+    set({ activeBuild: newActiveBuild, undoStack: newUndoStack, redoStack: [] })
+    return { success: true, removed: [nodeId, ...orphans] }
   },
 
   applyWeaverNodeChange: (nodeId, delta, treeData) => {
