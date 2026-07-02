@@ -30,9 +30,11 @@ jobs:
           node-version: lts/*
 
       - name: Install pnpm
+        # version comes from packageManager in lebo/package.json (local pnpm is 11.x;
+        # 9.15.0 fails on lebo/pnpm-workspace.yaml's allowBuilds field)
         uses: pnpm/action-setup@v4
         with:
-          version: 9.15.0
+          package_json_file: lebo/package.json
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable

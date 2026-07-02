@@ -115,6 +115,10 @@ Phase 4 transforms LEBO from a capable companion tool into the definitive Last E
 - **FR-48:** Rust parses the selected save file to extract charClass, level, charTree, skillTrees, equipment; populates a new named build after a replace-confirmation; unresolved item/node IDs reported in a post-import summary; prior build preserved. [ASSUMPTION + spike-gated: OQ-8]
 - **FR-49:** Online tab (gated) — Account Name + Character Name + Import; Tauri command calls EHG character API; same parse-and-populate flow; inline errors for not-found/private. Built as a wired stub returning "API access pending" until EHG partnership (OQ-7).
 
+**§4.11 — Passive-Tree Data Completeness** *(added 2026-07-02, audit correct-course: no prior FR demanded complete passive-tree data, so the coverage map was structurally blind to 4/5 classes shipping as ~32-node stubs with invented values)*
+
+- **FR-50:** All 5 classes ship complete passive-tree data — base tree + all 3 mastery trees per class — with every node carrying its real name, max points, prerequisites, position, and ALL stat effects with live-game values (lastepochtools-sourced, 1-3b extraction conventions). Node counts match the source tree (automated count check); sampled nodes verified value-exact against the source; no placeholder/stub nodes remain in shipped `classes/*.json`. Alec decision 2026-07-02: author all classes (Option A) rather than descope to Sentinel.
+
 ### NonFunctional Requirements
 
 **Primary success metrics (PRD §7):**
@@ -249,12 +253,13 @@ _First-class design-system work items from the Claude Design handoff (`last-epoc
 | FR-47 | Epic 7 | Offline save-file detection |
 | FR-48 | Epic 7 | Offline save-file parsing (spike-gated) |
 | FR-49 | Epic 7 | Online import (stub, partner-gated) |
+| FR-50 | Epic 5 | Passive-tree data completeness — Stories 5.6–5.9 (per class), gated by Story 5.0 loader fix; must complete before Epic 6 planning |
 
-All 49 FRs mapped. NFR-1–14 and Additional Requirements AR-1–16 / UX-DR1–12 are allocated within the epics below (see each epic's implementation notes).
+All 50 FRs mapped. NFR-1–14 and Additional Requirements AR-1–16 / UX-DR1–12 are allocated within the epics below (see each epic's implementation notes).
 
 ## Epic List
 
-**Recommended sequence:** 1 → 2 → 3 → 4 → 5 → 6 → 7. Epics are independently shippable; the only hard cross-epic dependencies are **Epic 6 depends on Epic 1** (full stat engine for full-picture analysis) and **Epic 6's FR-23 depends on Epic 5** (Popular Builds Database). Each epic's first story resolves any data gate it owns, after which the rest of the epic parallelizes behind mocks — exactly as Phase 3 ran behind Epic G.
+**Recommended sequence:** 1 → 2 → 3 → 4 → 5 → 6 → 7. Epics are independently shippable; the hard cross-epic dependencies are **Epic 6 depends on Epic 1** (full stat engine for full-picture analysis), **Epic 6's FR-23 depends on Epic 5** (Popular Builds Database), and **Epic 6 + Epic 7 depend on Epic 5's FR-50 passive-tree completion (Stories 5.6–5.9)** — the CBO and popular-build matching span all 15 masteries, and import of non-Sentinel characters must resolve real node IDs. Each epic's first story resolves any data gate it owns. *(2026-07-01 audit note: the "parallelizes behind mocks" pattern is rescinded for Epic 4 — see the Epic 4 callout; data gates must land before dependent UI.)*
 
 ### Epic 1: Complete Stat Sheet & Source Attribution
 Players see every computed stat in the game across a five-tab stat sheet — all damage types, every defensive layer, EHP ×3, Stable Ward, ailments, attributes, and minions — agreeing within ±2% of tunklab — and can hover any stat to learn exactly which passives, gear, idols, blessings, skills, and conditions contribute to it. This is the core intelligence Phase 4 is built on; it unblocks both optimizers' full-picture analysis.
@@ -280,11 +285,11 @@ Players build and tune gear without leaving the app — a searchable item-databa
 **Owns:** AR-2 (affix `position` discriminator — Gate 1, first story), AR-8 (HTML5 DnD), AR-15 (suffix-side scoring fix), AR-16 (lib.rs re-exports + stale test). Pattern P4-6 (payload-ID-constrained recs). NFR-5.
 **Implementation notes:** First TWO stories are data gates: 4.0 (affix stat semantics — statKey/modifierType/per-tier values/slot validity re-transformed upstream, `gear_affixes` ingested, scoring parity proven) then 4.1 (`position` discriminator wiring). 4.2–4.6 are gated on both being done — the earlier "proceed against mock-annotated affixes" authorization is **rescinded** (2026-07-01 audit: the corpus has no stat semantics, so mock-built UI would ship on data that scores silent zeros). Item Picker uses a prebuilt client search index (<100ms). Affix Picker reuses the Phase 3 TierPips component (UX-DR9). Gear recommendations rejected if their item ID is absent from the payload subset.
 
-### Epic 5: Skills & Popular Builds Data
-The skills database is completed to all 133 Season 4 skills with icons and specialization-tree data, the Skills tab surfaces a full class-appropriate picker, and a bundled Popular Builds Database (≥3 builds × 15 masteries) ships with client-side matching — enabling popular-build awareness and the skill-suggestion flow the Complete Build Optimizer relies on.
-**FRs covered:** FR-40, FR-41, FR-42, FR-43
-**Owns:** AR-7 (popular-builds.json as bundled resource, `conditions.json` pattern), `popularBuildMatch.ts` (client match). NFR-7, NFR-13.
-**Implementation notes:** `popularBuilds` loads once into `gameDataStore`; matching (filter by mastery, sort by skill-overlap, top 3) is fully offline. SkillPickerGrid is extended to draw from the complete DB. This epic supplies the data FR-23 (Epic 6) consumes.
+### Epic 5: Skills, Passive Trees & Popular Builds Data
+The skills database is completed to all 133 Season 4 skills with icons and specialization-tree data, the Skills tab surfaces a full class-appropriate picker, a bundled Popular Builds Database (≥3 builds × 15 masteries) ships with client-side matching — and the four stub class passive trees (mage, primalist, rogue, acolyte) are authored to full live-game data (FR-50), so the optimizer is real for all 15 masteries, not just Sentinel.
+**FRs covered:** FR-40, FR-41, FR-42, FR-43, FR-50
+**Owns:** AR-7 (popular-builds.json as bundled resource, `conditions.json` pattern), `popularBuildMatch.ts` (client match). NFR-7, NFR-13. The loader multi-clause fix (Story 5.0 — deferred from the Epic 1 retro) gates ALL data authoring in this epic.
+**Implementation notes:** Story 5.0 (loader parses every stat clause, not just the first) lands before any authoring — otherwise authored multi-stat nodes silently mis-parse. Stories 5.6–5.9 (per-class passive trees, ~460 nodes total, 1-3b extraction conventions) must complete before Epic 6 planning. `popularBuilds` loads once into `gameDataStore`; matching (filter by mastery, sort by skill-overlap, top 3) is fully offline. SkillPickerGrid is extended to draw from the complete DB. This epic supplies the data FR-23 (Epic 6) consumes.
 
 ### Epic 6: Complete Build Optimizer
 Players run a single holistic optimization across passive tree, skills, gear, idols, and blessings together and receive a unified, domain-grouped, ranked upgrade roadmap. A scope selector with per-section completeness gates guides setup, a skill-suggestion shortcut fills gaps from popular builds, and an animated Optimization Orb covers the wait without ever delaying results.
@@ -878,9 +883,38 @@ So that I know which gear upgrades most improve my build.
 
 ---
 
-## Epic 5: Skills & Popular Builds Data
+## Epic 5: Skills, Passive Trees & Popular Builds Data
 
-Complete the skills database to all 133 Season 4 skills with icons and specialization data, surface a full skill picker, and ship a bundled Popular Builds Database with client-side matching that powers popular-build awareness and the Complete Build Optimizer's skill suggestion.
+Complete the skills database to all 133 Season 4 skills with icons and specialization data, surface a full skill picker, ship a bundled Popular Builds Database with client-side matching that powers popular-build awareness and the Complete Build Optimizer's skill suggestion — and author the four stub class passive trees to full live-game data (FR-50).
+
+> **⚠️ Sequencing (2026-07-02 audit correct-course, Alec decision Option A — author all trees):**
+> 1. **Story 5.0 (loader multi-clause fix) gates ALL data authoring in this epic.** Today `game_data_loader.rs` parses only the first stat clause per effect and a golden test pins that wrong behavior — authoring multi-stat nodes before the fix means silently dropped stats.
+> 2. **Stories 5.6–5.9 (per-class passive trees, ~460 hand-authored nodes) must be DONE before Epic 6 planning.** The CBO and FR-42 popular builds span all 15 masteries, and Epic 7 import of non-Sentinel characters must resolve real node IDs. Until they land, 4 of 5 classes optimize against Phase-1 stubs with invented values.
+> 3. These are data-curation stories — no code velocity applies. Budget them as real calendar time (audit estimate: 1–2 weeks total for 5.6–5.9), and follow the 1-3b extraction conventions plus the `source-audit-at-create-story` discipline.
+
+### Story 5.0: Game-data loader multi-clause stat parsing (data-authoring gate)
+
+As a developer authoring real game data,
+I want the loader to parse every stat clause on a node or affix effect,
+So that authored multi-stat nodes contribute all of their stats instead of only the first.
+
+**Acceptance Criteria:**
+
+**Given** a node effect whose text carries multiple stat clauses
+**When** game data loads
+**Then** every clause becomes a modifier in the registry — not only the first (the single-stat-per-effect limitation deferred from the Epic 1 retro, `game_data_loader.rs` effect parsing).
+
+**Given** the golden test that currently pins single-clause behavior
+**When** this story completes
+**Then** it is corrected to assert multi-clause output, and any frozen parity gate whose value changes from newly-parsed clauses is re-baselined deliberately, each delta explained in the story record (not blanket-accepted).
+
+**Given** a fixture node with three stat clauses
+**When** loaded
+**Then** element+value tests assert exactly the three expected modifiers (stat key, modifier type, value each).
+
+**Given** a clause the parser cannot resolve
+**When** loading completes
+**Then** it fails loudly — logged and counted in the data manifest — never silently dropped.
 
 ### Story 5.1: Complete 133-skill database
 
@@ -974,11 +1008,65 @@ So that the Minion tab reflects my actual minion power, not just minion damage.
 **When** minion-skill presence is evaluated
 **Then** Story 1.5's interim signal (`primary_offense_delivery_type == "minion"` ∨ any minion modifier) is replaced with real per-skill minion metadata, so `StatSheet.minion` is `Some(..)` exactly when ≥1 assigned skill is a minion skill (FR-10).
 
+### Story 5.6: Mage passive-tree data authoring (FR-50)
+
+As a Mage player,
+I want the full Mage base tree and the Sorcerer, Spellblade, and Runemaster mastery trees in the app,
+So that the stat sheet and optimizer work on my real tree instead of a 34-node placeholder stub.
+
+**Acceptance Criteria:**
+
+**Given** the shipped `mage.json`
+**When** authoring completes
+**Then** it contains the complete live-game node set (base + all 3 mastery trees), each node carrying its real name, max points, prerequisites (AND semantics, as in the Story 2.4 diamonds), canvas position, and ALL stat effects with live-game values — sourced from lastepochtools.com using the 1-3b extraction conventions; the node count matches the source tree via an automated count check (source count recorded at create-story time per the source-audit discipline).
+
+**Given** authored multi-stat nodes
+**When** game data loads (Story 5.0 loader)
+**Then** every stat clause parses into the registry — zero silently-dropped clauses — and ≥10 sampled nodes per mastery are element+value-verified exactly against the source (stat key, modifier type, value each).
+
+**Given** the previously shipped stub data
+**When** this story completes
+**Then** no invented nodes or values remain in `mage.json`; the PixiJS canvas renders the authored tree; and passive-optimizer suggestions for a Mage build reference only real node IDs (spot-verified in a real browser via the Story 4.5 Playwright harness).
+
+**Given** any new stat key the authored nodes introduce
+**When** the Source Audit runs
+**Then** it resolves to an engine `StatKey` (or is explicitly registered with a sourced computation), and any frozen parity gate affected by newly-real Mage data is re-baselined deliberately with each delta explained.
+
+### Story 5.7: Primalist passive-tree data authoring (FR-50)
+
+As a Primalist player,
+I want the full Primalist base tree and the Beastmaster, Shaman, and Druid mastery trees in the app,
+So that the stat sheet and optimizer work on my real tree instead of a 32-node placeholder stub.
+
+**Acceptance Criteria:**
+
+Identical structure to Story 5.6 applied to `primalist.json` (base + Beastmaster/Shaman/Druid): complete authored node set with automated count check against the recorded source count; Story 5.0 multi-clause parse with ≥10 sampled nodes per mastery element+value-verified; no stub nodes or invented values remain; canvas render + optimizer real-node-ID spot-check via the Playwright harness; Source Audit on new stat keys with deliberate parity re-baselines.
+
+### Story 5.8: Rogue passive-tree data authoring (FR-50)
+
+As a Rogue player,
+I want the full Rogue base tree and the Bladedancer, Marksman, and Falconer mastery trees in the app,
+So that the stat sheet and optimizer work on my real tree instead of a 32-node placeholder stub — UJ-1's Rogue user journey finally runs on real data.
+
+**Acceptance Criteria:**
+
+Identical structure to Story 5.6 applied to `rogue.json` (base + Bladedancer/Marksman/Falconer), same gates: automated count check, ≥10 sampled nodes per mastery element+value-verified through the 5.0 loader, zero stub remnants, canvas + optimizer real-ID verification via the Playwright harness, Source Audit + deliberate parity re-baselines.
+
+### Story 5.9: Acolyte passive-tree data authoring (FR-50)
+
+As an Acolyte player,
+I want the full Acolyte base tree and the Necromancer, Lich, and Warlock mastery trees in the app,
+So that the stat sheet and optimizer work on my real tree instead of a 32-node placeholder stub.
+
+**Acceptance Criteria:**
+
+Identical structure to Story 5.6 applied to `acolyte.json` (base + Necromancer/Lich/Warlock), same gates: automated count check, ≥10 sampled nodes per mastery element+value-verified through the 5.0 loader, zero stub remnants, canvas + optimizer real-ID verification via the Playwright harness, Source Audit + deliberate parity re-baselines. Minion-heavy Acolyte nodes must land AFTER (or alongside) Story 5.5's minion de-conflation so minion stat keys resolve to minion stats, not player stats.
+
 ---
 
 ## Epic 6: Complete Build Optimizer
 
-A full-screen, scope-driven holistic optimizer that reasons across tree, skills, gear, idols, and blessings together and returns a unified, domain-grouped, ranked roadmap — with completeness gates, a skill-suggestion shortcut, and a non-blocking Optimization Orb. Depends on Epic 1 (stat engine) and Epic 5 (popular builds for FR-23).
+A full-screen, scope-driven holistic optimizer that reasons across tree, skills, gear, idols, and blessings together and returns a unified, domain-grouped, ranked roadmap — with completeness gates, a skill-suggestion shortcut, and a non-blocking Optimization Orb. Depends on Epic 1 (stat engine) and Epic 5 (popular builds for FR-23; FR-50 complete passive trees via Stories 5.6–5.9 — all-mastery analysis is meaningless against stub trees).
 
 ### Story 6.1: Complete Build Optimizer view and routing
 

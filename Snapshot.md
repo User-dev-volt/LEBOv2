@@ -26,8 +26,8 @@ See _bmad-output/implementation-artifacts/correct-course-2026-07-01-audit.md
 ---
 
 ## Next Action
-1. ALEC DECISION: passive-tree data — author all classes vs Sentinel-first + disclosure (`correct-course-passive-trees-2026-07-01.md`)
-2. Then: create-story 4.0 (affix stat-semantics data gate) via source-audit discipline
+1. create-story 4.0 (affix stat-semantics data gate) via source-audit discipline — Epic 4 starts here
+2. (Decided 2026-07-02: passive trees = Option A, author all classes — FR-50 / Stories 5.0 + 5.6–5.9 added to Epic 5; 5.6–5.9 must be done before Epic 6 planning)
 
 ---
 

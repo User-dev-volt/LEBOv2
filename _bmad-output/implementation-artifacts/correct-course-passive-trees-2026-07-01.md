@@ -1,6 +1,6 @@
-# Correct-Course Proposal — Passive-Tree Data Completeness (DECISION REQUIRED)
+# Correct-Course Proposal — Passive-Tree Data Completeness (DECIDED: OPTION A)
 
-**Status:** awaiting Alec's decision · **Raised:** 2026-07-01 full-project audit · **Owner:** unassigned until decided
+**Status:** DECIDED by Alec 2026-07-02 — **Option A: author all trees now** · **Raised:** 2026-07-01 full-project audit · **Applied:** FR-50 added to epics.md; Epic 5 retitled "Skills, Passive Trees & Popular Builds Data"; Story 5.0 (loader multi-clause gate) + Stories 5.6–5.9 (per-class authoring) added to epics.md + sprint-status.yaml; Epic 6 dependency note updated. 5.6–5.9 must complete before Epic 6 planning.
 
 ## The problem
 
@@ -49,8 +49,8 @@ Add a per-class data-gate story set (mirrors the Epic 4 data-gate pattern), sequ
 
 ## Decision
 
-- [ ] Option A — author all trees before Epic 6
+- [x] **Option A — author all trees before Epic 6** *(Alec, 2026-07-02: chosen over the recommended Option B — full 15-mastery product over faster Sentinel-only ship)*
 - [ ] Option B — Sentinel-first + disclosure story, trees as follow-on tranches
 - [ ] Other: ______
 
-*(Record the decision here and in sprint-status.yaml; whichever option is chosen needs its stories created via create-story with the source-audit discipline.)*
+**Implementation:** FR-50 (epics.md §4.11) + Stories 5.0 (loader gate) and 5.6–5.9 (mage/primalist/rogue/acolyte authoring), all in Epic 5 (retitled). Sequencing: 5.0 before any authoring; 5.6–5.9 before Epic 6 planning; 5.9 (Acolyte) after/alongside 5.5 minion de-conflation. Stories to be created via create-story with the source-audit discipline; source node counts recorded at create-story time.

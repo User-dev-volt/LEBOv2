@@ -104,13 +104,20 @@ development_status:
   4-6-ai-gear-analysis: backlog
   epic-4-retrospective: optional
 
-  # Epic 5: Skills & Popular Builds Data
+  # Epic 5: Skills, Passive Trees & Popular Builds Data
+  # (2026-07-02 audit correct-course, Alec decision Option A: 5-0 loader fix gates ALL
+  #  authoring; 5-6..5-9 per-class passive trees (FR-50) must be done before Epic 6 planning)
   epic-5: backlog
+  5-0-game-data-loader-multi-clause-stat-parsing: backlog
   5-1-complete-133-skill-database: backlog
   5-2-complete-skill-icons: backlog
   5-3-skills-tab-full-picker: backlog
   5-4-popular-builds-database-with-client-side-matching: backlog
   5-5-minion-stat-correctness: backlog
+  5-6-mage-passive-tree-data-authoring: backlog
+  5-7-primalist-passive-tree-data-authoring: backlog
+  5-8-rogue-passive-tree-data-authoring: backlog
+  5-9-acolyte-passive-tree-data-authoring: backlog
   epic-5-retrospective: optional
 
   # Epic 6: Complete Build Optimizer
