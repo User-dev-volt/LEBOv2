@@ -8,6 +8,22 @@ pub struct AffixTier {
     pub max_value: f64,
 }
 
+/// One additional stat clause of a hybrid affix (Story 4.0). The primary stat lives on the parent
+/// `RawAffix` (item-search back-compat); hybrids carry their second stat here.
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RawAffixStat {
+    #[serde(default)]
+    pub stat_key: Option<String>,
+    #[serde(default)]
+    pub modifier_type: Option<String>,
+    #[serde(default)]
+    pub scope: Option<String>,
+    #[serde(default)]
+    pub damage_type: Option<String>,
+    pub tiers: Vec<AffixTier>,
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RawAffix {
@@ -23,6 +39,11 @@ pub struct RawAffix {
     pub scope: Option<String>,
     #[serde(default)]
     pub damage_type: Option<String>,
+    // Story 4.0 — enriched corpus. Additive/back-compat: the item-search path ignores these.
+    #[serde(default)]
+    pub stat_key: Option<String>,
+    #[serde(default)]
+    pub extra_stats: Vec<RawAffixStat>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

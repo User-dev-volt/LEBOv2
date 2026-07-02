@@ -1,0 +1,3170 @@
+{
+  "generated_by": "generate_item_db.py (Story 4.0)",
+  "itemSlots_provenance": "AUTHORED (STAT_SLOT_GROUPS) -- no affix->slot source exists in PoB4LE",
+  "inert_stat_keys_excluded": [
+    "added_cold_damage",
+    "added_fire_damage",
+    "added_lightning_damage",
+    "added_physical_damage",
+    "added_void_damage",
+    "cooldown_recovery_speed",
+    "increased_minion_count",
+    "increased_minion_hp",
+    "mana_regen_per_sec",
+    "max_mana",
+    "stun_chance"
+  ],
+  "inert_stat_keys_note": "Defined StatKey variants no compute/* module consumes; emitted as statKey:null so no dead key ships (Source Audit). See INERT_STAT_KEYS.",
+  "counts": {
+    "affixes_total": 1117,
+    "affixes_statkey_resolved": 508,
+    "affixes_statkey_resolved_pct": 45.5,
+    "picker_visible": 508,
+    "picker_visible_missing_slots": 0,
+    "unnamed_in_picker_visible": 0,
+    "hybrid_affixes": 534,
+    "hybrid_second_stat_resolved": 342,
+    "unnamed_affixes": 0,
+    "unique_mods_total": 2338,
+    "unique_mods_statkey_resolved": 1136,
+    "unique_mods_resolved_pct": 48.6,
+    "bases_total": 897,
+    "bases_with_implicits": 821,
+    "implicit_stats_total": 1474,
+    "implicit_stats_resolved": 932
+  },
+  "stat_key_histogram": {
+    "increased_damage": 56,
+    "ward_per_second": 33,
+    "armor": 27,
+    "increased_minion_damage": 23,
+    "increased_spell_damage": 21,
+    "max_hp": 20,
+    "dodge_rating": 19,
+    "attack_speed": 16,
+    "critical_strike_multiplier": 16,
+    "increased_melee_damage": 14,
+    "cast_speed": 13,
+    "hp_regen_per_sec": 13,
+    "increased_fire_damage": 12,
+    "critical_strike_chance": 12,
+    "physical_penetration": 11,
+    "increased_ranged_damage": 11,
+    "fire_penetration": 10,
+    "max_hp_percent": 10,
+    "increased_void_damage": 9,
+    "increased_physical_damage": 9,
+    "freeze_rate_multiplier": 8,
+    "increased_cold_damage": 8,
+    "movement_speed": 8,
+    "cold_penetration": 8,
+    "physical_resistance": 8,
+    "increased_necrotic_damage": 7,
+    "healing_effectiveness": 7,
+    "fire_resistance": 6,
+    "lightning_penetration": 6,
+    "intelligence": 6,
+    "void_resistance": 5,
+    "cold_resistance": 5,
+    "poison_resistance": 5,
+    "lightning_resistance": 5,
+    "bleed_duration": 5,
+    "void_penetration": 4,
+    "necrotic_resistance": 4,
+    "increased_lightning_damage": 4,
+    "increased_poison_damage": 4,
+    "critical_strike_avoidance": 4,
+    "vitality": 4,
+    "strength": 4,
+    "block_chance": 3,
+    "all_resistances": 3,
+    "endurance_percent": 3,
+    "endurance_threshold": 3,
+    "poison_duration": 3,
+    "dexterity": 3,
+    "attunement": 3,
+    "life_leech_percent": 2,
+    "increased_bleed_damage": 2,
+    "area_of_effect": 2,
+    "ignite_duration": 1
+  },
+  "implicit_deferrals_by_item_class": {
+    "Amulet": 7,
+    "Arctus Lens": 4,
+    "Belt": 18,
+    "Blessing": 158,
+    "Body Armor": 25,
+    "Boots": 7,
+    "Bow": 9,
+    "Dagger": 7,
+    "Dysis Lens": 13,
+    "Eos Lens": 15,
+    "Gloves": 7,
+    "Greater Lens": 11,
+    "Helmet": 31,
+    "Idol Altar": 8,
+    "Mesembria Lens": 3,
+    "Off-Hand Catalyst": 13,
+    "One-Handed Axe": 11,
+    "One-Handed Mace": 7,
+    "One-Handed Sword": 5,
+    "Quiver": 10,
+    "Relic": 47,
+    "Ring": 15,
+    "Sceptre": 3,
+    "Shield": 25,
+    "Two-Handed Axe": 13,
+    "Two-Handed Mace": 13,
+    "Two-Handed Spear": 11,
+    "Two-Handed Staff": 15,
+    "Two-Handed Sword": 7,
+    "Wand": 24
+  },
+  "unmapped_affixes": [
+    {
+      "id": "affix-assassin-s-prefix",
+      "name": "Assassin's",
+      "stat_text": "(15-20)% increased Critical Strike Chance"
+    },
+    {
+      "id": "affix-of-lucidity-suffix",
+      "name": "of Lucidity",
+      "stat_text": "(5-6)% Increased Cooldown Recovery Speed"
+    },
+    {
+      "id": "affix-manafused-prefix",
+      "name": "Manafused",
+      "stat_text": "+(6-10) Mana"
+    },
+    {
+      "id": "affix-serpentine-prefix",
+      "name": "Serpentine",
+      "stat_text": "+4% Poison Penetration"
+    },
+    {
+      "id": "affix-voltaic-prefix",
+      "name": "Voltaic",
+      "stat_text": "+(3-4) Spell Lightning Damage"
+    },
+    {
+      "id": "affix-of-the-tundra-suffix",
+      "name": "of the Tundra",
+      "stat_text": "(21-30)% Chance to Chill Attackers"
+    },
+    {
+      "id": "affix-of-the-mire-suffix",
+      "name": "of the Mire",
+      "stat_text": "(21-30)% Chance to Slow Attackers"
+    },
+    {
+      "id": "affix-of-the-polymath-suffix",
+      "name": "of the Polymath",
+      "stat_text": "+1 to All Attributes"
+    },
+    {
+      "id": "affix-of-tenacity-suffix",
+      "name": "of Tenacity",
+      "stat_text": "+(45-75) Stun Avoidance"
+    },
+    {
+      "id": "affix-of-damage-dealt-to-mana-before-health-prefix",
+      "name": "Of Damage Dealt To Mana Before Health",
+      "stat_text": "4% of Damage Dealt to Mana Before Health"
+    },
+    {
+      "id": "affix-of-venom-suffix",
+      "name": "of Venom",
+      "stat_text": "+(10-12)% Chance to Poison on Hit"
+    },
+    {
+      "id": "affix-of-conflagration-suffix",
+      "name": "of Conflagration",
+      "stat_text": "+(10-12)% Chance to Ignite on Hit"
+    },
+    {
+      "id": "affix-of-sleet-suffix",
+      "name": "of Sleet",
+      "stat_text": "+(10-12)% Chance to Chill on Hit"
+    },
+    {
+      "id": "affix-of-lethargy-suffix",
+      "name": "of Lethargy",
+      "stat_text": "+(10-12)% Chance to Slow on Hit"
+    },
+    {
+      "id": "affix-of-stillness-suffix",
+      "name": "of Stillness",
+      "stat_text": "(15-25)% Increased Stun Chance"
+    },
+    {
+      "id": "affix-of-blinding-suffix",
+      "name": "of Blinding",
+      "stat_text": "+(10-12)% Chance to Blind on Hit"
+    },
+    {
+      "id": "affix-marauder-s-prefix",
+      "name": "Marauder's",
+      "stat_text": "+(3-6) Melee Physical Damage"
+    },
+    {
+      "id": "affix-lucky-prefix",
+      "name": "Lucky",
+      "stat_text": "(12-22)% Increased Chance To Find Potions"
+    },
+    {
+      "id": "affix-of-wounds-suffix",
+      "name": "of Wounds",
+      "stat_text": "+(10-12)% Chance to inflict Bleed on Hit"
+    },
+    {
+      "id": "affix-leeching-prefix",
+      "name": "Leeching",
+      "stat_text": "(2.3-2.9)% of Melee Damage Leeched as Health"
+    },
+    {
+      "id": "affix-ursine-prefix",
+      "name": "Ursine",
+      "stat_text": "(15-35)% increased Minion Health"
+    },
+    {
+      "id": "affix-dark-prefix",
+      "name": "Dark",
+      "stat_text": "+(3-6) Melee Void Damage"
+    },
+    {
+      "id": "affix-flaming-prefix",
+      "name": "Flaming",
+      "stat_text": "+(3-6) Melee Fire Damage"
+    },
+    {
+      "id": "affix-shattering-prefix",
+      "name": "Shattering",
+      "stat_text": "+(3-6) Melee Cold Damage"
+    },
+    {
+      "id": "affix-hurricane-prefix",
+      "name": "Hurricane",
+      "stat_text": "+(3-6) Melee Lightning Damage"
+    },
+    {
+      "id": "affix-of-insulation-suffix",
+      "name": "of Insulation",
+      "stat_text": "+(4-5)% Elemental Resistance"
+    },
+    {
+      "id": "affix-protective-prefix",
+      "name": "Protective",
+      "stat_text": "+(40-80) Block Effectiveness"
+    },
+    {
+      "id": "affix-nomad-s-prefix",
+      "name": "Nomad's",
+      "stat_text": "+1 Potion Slots"
+    },
+    {
+      "id": "affix-philosopher-s-prefix",
+      "name": "Philosopher's",
+      "stat_text": "(10-14)% of Potion Health Converted to Ward"
+    },
+    {
+      "id": "affix-witch-s-prefix",
+      "name": "Witch's",
+      "stat_text": "(20-25)% increased Spell Critical Strike Chance"
+    },
+    {
+      "id": "affix-of-static-suffix",
+      "name": "of Static",
+      "stat_text": "+(10-12)% Chance to Shock on Hit"
+    },
+    {
+      "id": "affix-of-acid-suffix",
+      "name": "of Acid",
+      "stat_text": "+(20-30)% Chance to Shred Armor on Hit"
+    },
+    {
+      "id": "affix-of-stone-suffix",
+      "name": "of Stone",
+      "stat_text": "(40-55)% Increased Melee Stun Chance"
+    },
+    {
+      "id": "affix-profane-prefix",
+      "name": "Profane",
+      "stat_text": "+4% Necrotic Penetration"
+    },
+    {
+      "id": "affix-of-static-suffix-94",
+      "name": "of Static",
+      "stat_text": "(21-30)% Chance to Shock Attackers"
+    },
+    {
+      "id": "affix-thorny-prefix",
+      "name": "Thorny",
+      "stat_text": "(10-15) Damage Reflected to Attackers"
+    },
+    {
+      "id": "affix-reflective-prefix",
+      "name": "Reflective",
+      "stat_text": "(5-10)% of Damage Reflected"
+    },
+    {
+      "id": "affix-victorious-prefix",
+      "name": "Victorious",
+      "stat_text": "(3-5) Ward Gain on Kill"
+    },
+    {
+      "id": "affix-conqueror-s-prefix",
+      "name": "Conqueror's",
+      "stat_text": "(6-7)% increased Area for Area Skills"
+    },
+    {
+      "id": "affix-channeller-s-prefix",
+      "name": "Channeller's",
+      "stat_text": "(6-12)% increased Damage While Channelling"
+    },
+    {
+      "id": "affix-of-meditation-suffix",
+      "name": "of Meditation",
+      "stat_text": "+(5-6)% to All Resistances While Channelling"
+    },
+    {
+      "id": "affix-lunar-prefix",
+      "name": "Lunar",
+      "stat_text": "+(15-40) Mana"
+    },
+    {
+      "id": "affix-of-insulation-suffix-117",
+      "name": "of Insulation",
+      "stat_text": "+(8-20)% Elemental Resistance"
+    },
+    {
+      "id": "affix-reactive-prefix",
+      "name": "Reactive",
+      "stat_text": "(15-40)% Chance to Gain 30 Ward when Hit"
+    },
+    {
+      "id": "affix-stunning-prefix",
+      "name": "Stunning",
+      "stat_text": "(44-120)% Increased Stun Chance"
+    },
+    {
+      "id": "affix-philosopher-s-prefix-123",
+      "name": "Philosopher's",
+      "stat_text": "(20-55)% of Potion Health Converted to Ward"
+    },
+    {
+      "id": "affix-of-metamorphosis-suffix",
+      "name": "of Metamorphosis",
+      "stat_text": "+(20-45)% Elemental Resistance While Transformed"
+    },
+    {
+      "id": "affix-jagged-prefix",
+      "name": "Jagged",
+      "stat_text": "+(20-60)% Chance to inflict Bleed on Cold Hit"
+    },
+    {
+      "id": "affix-of-farwood-suffix",
+      "name": "of Farwood",
+      "stat_text": "(61-165)% increased Health for Totems"
+    },
+    {
+      "id": "affix-hardened-prefix",
+      "name": "Hardened",
+      "stat_text": "+(178-480) Armor for Totems"
+    },
+    {
+      "id": "affix-evergreen-prefix",
+      "name": "Evergreen",
+      "stat_text": "+(15-40)% Elemental Resistance for Totems"
+    },
+    {
+      "id": "affix-assassin-s-prefix-134",
+      "name": "Assassin's",
+      "stat_text": "(20-55)% increased Critical Strike Chance"
+    },
+    {
+      "id": "affix-tenacious-prefix",
+      "name": "Tenacious",
+      "stat_text": "+(200-450) Stun Avoidance"
+    },
+    {
+      "id": "affix-serrated-prefix",
+      "name": "Serrated",
+      "stat_text": "+(13-36)% Chance to inflict Bleed on Hit"
+    },
+    {
+      "id": "affix-conflagrating-prefix",
+      "name": "Conflagrating",
+      "stat_text": "+(13-30)% Chance to Ignite on Hit"
+    },
+    {
+      "id": "affix-venomous-prefix",
+      "name": "Venomous",
+      "stat_text": "+(11-30)% Chance to Poison on Hit"
+    },
+    {
+      "id": "affix-electrifying-prefix",
+      "name": "Electrifying",
+      "stat_text": "+(19-50)% Chance to Shock on Hit"
+    },
+    {
+      "id": "affix-shrewd-prefix",
+      "name": "Shrewd",
+      "stat_text": "+(13-30)% Ward Retention"
+    },
+    {
+      "id": "affix-warden-s-prefix",
+      "name": "Warden's",
+      "stat_text": "(15-40)% Increased Stun Duration"
+    },
+    {
+      "id": "affix-ravenous-prefix",
+      "name": "Ravenous",
+      "stat_text": "(1-3)% of Minion Damage Leeched as Health on Melee Hit"
+    },
+    {
+      "id": "affix-lucid-prefix",
+      "name": "Lucid",
+      "stat_text": "(7-20)% increased Minion Cooldown Recovery Speed"
+    },
+    {
+      "id": "affix-thrashing-prefix",
+      "name": "Thrashing",
+      "stat_text": "(46-125)% Increased Minion Melee Stun Chance"
+    },
+    {
+      "id": "affix-of-savagery-suffix",
+      "name": "of Savagery",
+      "stat_text": "(22-60)% increased Minion Critical Strike Chance"
+    },
+    {
+      "id": "affix-of-laceration-suffix",
+      "name": "of Laceration",
+      "stat_text": "+(19-52)% Chance to inflict Bleed on Minion Hit"
+    },
+    {
+      "id": "affix-of-toxicity-suffix",
+      "name": "of Toxicity",
+      "stat_text": "+(11-30)% Chance to Poison on Minion Hit"
+    },
+    {
+      "id": "affix-of-absorption-suffix",
+      "name": "of Absorption",
+      "stat_text": "(1-3)% of Spell Damage Leeched as Health While Channelling"
+    },
+    {
+      "id": "affix-of-sharpness-suffix",
+      "name": "of Sharpness",
+      "stat_text": "+(15-40)% Chance to inflict Bleed on Melee Hit"
+    },
+    {
+      "id": "affix-hypothermic-prefix",
+      "name": "Hypothermic",
+      "stat_text": "+(25-60)% Chance to apply Frostbite on Cold Hit"
+    },
+    {
+      "id": "affix-of-resolve-suffix",
+      "name": "of Resolve",
+      "stat_text": "(6-16)% less Damage Over Time Taken While Channelling"
+    },
+    {
+      "id": "affix-hypothermic-prefix-166",
+      "name": "Hypothermic",
+      "stat_text": "+(25-60)% Chance to apply Frostbite on Cold Hit"
+    },
+    {
+      "id": "affix-of-thunder-suffix",
+      "name": "of Thunder",
+      "stat_text": "(19-50)% increased Lightning Critical Strike Chance"
+    },
+    {
+      "id": "affix-frigid-prefix",
+      "name": "Frigid",
+      "stat_text": "(15-36)% Increased Frostbite Duration"
+    },
+    {
+      "id": "affix-of-warding-suffix",
+      "name": "of Warding",
+      "stat_text": "(10-22)% Chance to Gain 20 Ward on Melee Hit"
+    },
+    {
+      "id": "affix-sweltering-prefix",
+      "name": "Sweltering",
+      "stat_text": "+(16-42)% Chance to Ignite on Fire Hit"
+    },
+    {
+      "id": "affix-jolting-prefix",
+      "name": "Jolting",
+      "stat_text": "+(30-80)% Chance to Shock on Lightning Hit"
+    },
+    {
+      "id": "affix-electrifying-prefix-184",
+      "name": "Electrifying",
+      "stat_text": "(6-15)% Increased Shock Duration"
+    },
+    {
+      "id": "affix-crackling-prefix",
+      "name": "Crackling",
+      "stat_text": "(22-60)% increased Lightning Critical Strike Chance"
+    },
+    {
+      "id": "affix-of-kindling-suffix",
+      "name": "of Kindling",
+      "stat_text": "+(2-4) Melee Fire Damage"
+    },
+    {
+      "id": "affix-of-sparks-suffix-187",
+      "name": "of Sparks",
+      "stat_text": "+(2-4) Melee Lightning Damage"
+    },
+    {
+      "id": "affix-of-biting-suffix",
+      "name": "of Biting",
+      "stat_text": "+(2-4) Melee Cold Damage"
+    },
+    {
+      "id": "affix-of-incineration-suffix",
+      "name": "of Incineration",
+      "stat_text": "+(2-4) Spell Fire Damage"
+    },
+    {
+      "id": "affix-of-impulse-suffix",
+      "name": "of Impulse",
+      "stat_text": "+(2-4) Spell Lightning Damage"
+    },
+    {
+      "id": "affix-of-cooling-suffix",
+      "name": "of Cooling",
+      "stat_text": "+(2-4) Spell Cold Damage"
+    },
+    {
+      "id": "affix-maximum-skeletons-prefix",
+      "name": "Maximum Skeletons",
+      "stat_text": "+1 Maximum Skeletons"
+    },
+    {
+      "id": "affix-dazzling-prefix",
+      "name": "Dazzling",
+      "stat_text": "+(13-35)% Chance to Blind on Spell Hit"
+    },
+    {
+      "id": "affix-introspective-prefix",
+      "name": "Introspective",
+      "stat_text": "+(9-25)% Void Spell Mana Efficiency"
+    },
+    {
+      "id": "affix-of-the-bulwark-suffix",
+      "name": "of the Bulwark",
+      "stat_text": "+(185-400) Block Effectiveness"
+    },
+    {
+      "id": "affix-of-dismantling-suffix",
+      "name": "of Dismantling",
+      "stat_text": "+(22-60)% Chance to Shred Armor on Hit"
+    },
+    {
+      "id": "affix-concussive-prefix",
+      "name": "Concussive",
+      "stat_text": "(56-150)% Increased Throwing Stun Chance"
+    },
+    {
+      "id": "affix-deteriorated-prefix",
+      "name": "Deteriorated",
+      "stat_text": "(15-40)% Increased Time Rot Duration"
+    },
+    {
+      "id": "affix-kilning-prefix",
+      "name": "Kilning",
+      "stat_text": "(8-20)% of Fire Damage Taken as Physical"
+    },
+    {
+      "id": "affix-grounding-prefix",
+      "name": "Grounding",
+      "stat_text": "(8-20)% of Lightning Damage Taken as Physical"
+    },
+    {
+      "id": "affix-inlaid-prefix",
+      "name": "Inlaid",
+      "stat_text": "(8-20)% of Cold Damage Taken as Physical"
+    },
+    {
+      "id": "affix-of-melting-suffix",
+      "name": "of Melting",
+      "stat_text": "+(30-80)% Chance to Shred Armor on Fire Hit"
+    },
+    {
+      "id": "affix-of-withering-suffix",
+      "name": "of Withering",
+      "stat_text": "+(25-60)% Chance to Slow on Void Hit"
+    },
+    {
+      "id": "affix-of-boldness-suffix",
+      "name": "of Boldness",
+      "stat_text": "+(15-40)% Chance to inflict Bleed on Hit while at High Health"
+    },
+    {
+      "id": "affix-of-the-blaze-suffix",
+      "name": "of the Blaze",
+      "stat_text": "+(15-40)% Chance to Ignite on Hit while at High Health"
+    },
+    {
+      "id": "affix-of-riposting-suffix",
+      "name": "of Riposting",
+      "stat_text": "(10-35)% of Damage Reflected"
+    },
+    {
+      "id": "affix-of-dismantling-suffix-211",
+      "name": "of Dismantling",
+      "stat_text": "+(30-80)% Chance to Shred Armor on Melee Hit"
+    },
+    {
+      "id": "affix-of-the-siege-suffix",
+      "name": "of the Siege",
+      "stat_text": "+(30-80)% Chance to Shred Armor on Throwing Hit"
+    },
+    {
+      "id": "affix-divine-prefix",
+      "name": "Divine",
+      "stat_text": "(17-50)% Chance to gain Haste for 3 seconds when you Summon a Totem"
+    },
+    {
+      "id": "affix-static-prefix",
+      "name": "Static",
+      "stat_text": "(18-50)% Chance to Cast Lightning Strike when you use a skill that costs at least 10 Mana"
+    },
+    {
+      "id": "affix-enlightening-prefix",
+      "name": "Enlightening",
+      "stat_text": "+(3-8)% Chance on kill to refresh the cooldown of a random companion activatable ability"
+    },
+    {
+      "id": "affix-keeper-s-prefix",
+      "name": "Keeper's",
+      "stat_text": "+(3-7) Bees Per 10 Seconds"
+    },
+    {
+      "id": "affix-chilling-prefix",
+      "name": "Chilling",
+      "stat_text": "+(10-30)% Chance To Chill Nearby Enemies when you use a skill that costs at least 20 Mana"
+    },
+    {
+      "id": "affix-spined-prefix",
+      "name": "Spined",
+      "stat_text": "(8-20)% Chance on hit to summon a Thorn Totem (1 second cooldown)"
+    },
+    {
+      "id": "affix-energizing-prefix",
+      "name": "Energizing",
+      "stat_text": "+(5-15) Mana gained when auto transforming back to human form"
+    },
+    {
+      "id": "affix-beckoning-prefix",
+      "name": "Beckoning",
+      "stat_text": "(12-32)% Increased Frequency of expending Storm Stacks"
+    },
+    {
+      "id": "affix-tempestuous-prefix",
+      "name": "Tempestuous",
+      "stat_text": "(9-30)% chance to cast Maelstrom every 3 seconds"
+    },
+    {
+      "id": "affix-purifying-prefix",
+      "name": "Purifying",
+      "stat_text": "+(3-8)% Chance to cast Healing Nova when hit"
+    },
+    {
+      "id": "affix-rumbling-prefix",
+      "name": "Rumbling",
+      "stat_text": "+(20-40)% Chance to create an Earthquake Aftershock at a nearby enemy on melee attack (up to 10 times per 2 seconds)"
+    },
+    {
+      "id": "affix-reverberating-prefix",
+      "name": "Reverberating",
+      "stat_text": "+(8-22)% Chance for an Avalanche Boulder to drop at a nearby enemy on spell cast (up to 3 times per second)"
+    },
+    {
+      "id": "affix-resounding-prefix",
+      "name": "Resounding",
+      "stat_text": "+(10-28)% Chance for an Avalanche Boulder to drop at a nearby enemy on melee attack (up to 3 times per second)"
+    },
+    {
+      "id": "affix-of-the-predator-suffix",
+      "name": "of the Predator",
+      "stat_text": "(6-20)% Increased Aspect of the Shark Effect"
+    },
+    {
+      "id": "affix-hunter-s-prefix",
+      "name": "Hunter's",
+      "stat_text": "(7-25)% Increased Aspect of the Shark Duration"
+    },
+    {
+      "id": "affix-of-vigor-suffix",
+      "name": "of Vigor",
+      "stat_text": "(5-12)% Increased Aspect of the Boar Effect"
+    },
+    {
+      "id": "affix-porcine-prefix",
+      "name": "Porcine",
+      "stat_text": "(9-30)% Increased Aspect of the Boar Duration"
+    },
+    {
+      "id": "affix-of-the-viper-suffix",
+      "name": "of the Viper",
+      "stat_text": "(10-25)% Increased Aspect of the Viper Effect"
+    },
+    {
+      "id": "affix-virulent-prefix",
+      "name": "Virulent",
+      "stat_text": "(15-40)% Increased Aspect of the Viper Duration"
+    },
+    {
+      "id": "affix-lynx-s-prefix",
+      "name": "Lynx's",
+      "stat_text": "(10-25)% Increased Aspect of the Lynx Effect"
+    },
+    {
+      "id": "affix-of-ferocity-suffix",
+      "name": "of Ferocity",
+      "stat_text": "(15-40)% Increased Aspect of the Lynx Duration"
+    },
+    {
+      "id": "affix-refreshing-prefix",
+      "name": "Refreshing",
+      "stat_text": "(6-15)% Chance on Melee Kill to heal a Random Minion to Full Health"
+    },
+    {
+      "id": "affix-phasing-prefix",
+      "name": "Phasing",
+      "stat_text": "+(2-3) Seconds of Stun Immunity after using Teleport"
+    },
+    {
+      "id": "affix-cataclysmic-prefix",
+      "name": "Cataclysmic",
+      "stat_text": "+(6-15)% Chance to cast Fire Aura on Crit (up to 3 times per second)"
+    },
+    {
+      "id": "affix-expansive-prefix",
+      "name": "Expansive",
+      "stat_text": "(11-30)% Increased Area with Elemental Nova"
+    },
+    {
+      "id": "affix-conduit-s-prefix-241",
+      "name": "Conduit's",
+      "stat_text": "+(2-5) Static Charges Generated per Second"
+    },
+    {
+      "id": "affix-of-conduction-suffix",
+      "name": "of Conduction",
+      "stat_text": "+(4-10)% Chance to gain Lightning Aegis when hit"
+    },
+    {
+      "id": "affix-elementalist-s-prefix",
+      "name": "Elementalist's",
+      "stat_text": "+(4-10)% Chance to cast Elemental Nova when Hit"
+    },
+    {
+      "id": "affix-of-the-flame-suffix",
+      "name": "of the Flame",
+      "stat_text": "+(2-5)% Chance to cast Fire Aura when Hit (up to 3 times per second)"
+    },
+    {
+      "id": "affix-consuming-prefix",
+      "name": "Consuming",
+      "stat_text": "(15-36)% Increased Fire Aura Area"
+    },
+    {
+      "id": "affix-dynamic-prefix",
+      "name": "Dynamic",
+      "stat_text": "(30-100)% of Damage Reflected while you have Lightning Aegis"
+    },
+    {
+      "id": "affix-charged-prefix",
+      "name": "Charged",
+      "stat_text": "+(9-20)% Chance to cast Lightning Blast When Hit while you have Lightning Aegis"
+    },
+    {
+      "id": "affix-escalating-prefix",
+      "name": "Escalating",
+      "stat_text": "+(7-20)% Chance to cast Fire Aura on Kill with Fire Skills (up to 3 times per second)"
+    },
+    {
+      "id": "affix-of-electromancy-suffix",
+      "name": "of Electromancy",
+      "stat_text": "(16-40)% Increased lightning damage. This effect is doubled if you have 300 or more maximum mana."
+    },
+    {
+      "id": "affix-of-cryomancy-suffix",
+      "name": "of Cryomancy",
+      "stat_text": "(16-40)% Increased cold damage. This effect is doubled if you have 300 or more maximum mana."
+    },
+    {
+      "id": "affix-of-pyromancy-suffix",
+      "name": "of Pyromancy",
+      "stat_text": "(16-40)% Increased fire damage. This effect is doubled if you have 300 or more maximum mana."
+    },
+    {
+      "id": "affix-of-attrition-suffix",
+      "name": "of Attrition",
+      "stat_text": "+(15-40)% Chance to Poison on Hit while at Low Health"
+    },
+    {
+      "id": "affix-baneful-prefix",
+      "name": "Baneful",
+      "stat_text": "+(13-36)% Chance to apply Damned on Hit"
+    },
+    {
+      "id": "affix-siphoning-prefix",
+      "name": "Siphoning",
+      "stat_text": "(1-3)% of Damage Leeched as Health While Transformed"
+    },
+    {
+      "id": "affix-blighted-prefix-265",
+      "name": "Blighted",
+      "stat_text": "+(16-42)% Chance to Chill on Necrotic Hit"
+    },
+    {
+      "id": "affix-contaminated-prefix",
+      "name": "Contaminated",
+      "stat_text": "+(10-30)% Increased Aura of Decay Area"
+    },
+    {
+      "id": "affix-warlord-s-prefix",
+      "name": "Warlord's",
+      "stat_text": "+(10-30)% Increased Warpath Area"
+    },
+    {
+      "id": "affix-of-rot-suffix",
+      "name": "of Rot",
+      "stat_text": "+(11-30)% Chance to inflict Time Rot on Hit"
+    },
+    {
+      "id": "affix-hollow-prefix",
+      "name": "Hollow",
+      "stat_text": "(4-10)% Chance to cast Void Rift on Kill"
+    },
+    {
+      "id": "affix-substantial-prefix",
+      "name": "Substantial",
+      "stat_text": "+(4-10)% Chance to create a Void Essence on Kill"
+    },
+    {
+      "id": "affix-dark-forging-prefix",
+      "name": "Dark Forging",
+      "stat_text": "(18-40)% Increased area with Void Cleave"
+    },
+    {
+      "id": "affix-faithful-prefix",
+      "name": "Faithful",
+      "stat_text": "+(4-13)% Chance to cast Divine Bolt when you use a 0 mana cost skill"
+    },
+    {
+      "id": "affix-keen-prefix",
+      "name": "Keen",
+      "stat_text": "+(10-25)% Chance to cast Smite on hit with throwing attacks (up to 10 times per 2 seconds)"
+    },
+    {
+      "id": "affix-inspiring-prefix",
+      "name": "Inspiring",
+      "stat_text": "+(12-35)% Chance to gain Inspiration when you kill an enemy with a void skill"
+    },
+    {
+      "id": "affix-deep-prefix",
+      "name": "Deep",
+      "stat_text": "(12-24)% increased Increased Abyssal Decay Duration"
+    },
+    {
+      "id": "affix-of-terror-suffix",
+      "name": "of Terror",
+      "stat_text": "+(6-20)% Chance to Fear on Hit"
+    },
+    {
+      "id": "affix-of-preservation-suffix",
+      "name": "of Preservation",
+      "stat_text": "+(13-30)% Ward Retention"
+    },
+    {
+      "id": "affix-of-insight-suffix",
+      "name": "of Insight",
+      "stat_text": "(12-35)% increased Minion Cooldown Recovery Speed"
+    },
+    {
+      "id": "affix-of-condemnation-suffix",
+      "name": "of Condemnation",
+      "stat_text": "+(4-10)% Chance to Marked For Death on Minion Hit"
+    },
+    {
+      "id": "affix-infected-prefix",
+      "name": "Infected",
+      "stat_text": "+(4-10)% Chance to inflict Plague on Minion Hit"
+    },
+    {
+      "id": "affix-of-slicing-suffix",
+      "name": "of Slicing",
+      "stat_text": "+(22-60)% Chance to inflict Bleed on Physical Spell Hit"
+    },
+    {
+      "id": "affix-scourging-prefix",
+      "name": "Scourging",
+      "stat_text": "+(9-25)% Chance to inflict Plague on Hit"
+    },
+    {
+      "id": "affix-of-impact-suffix",
+      "name": "of Impact",
+      "stat_text": "(24-65)% increased Physical Spell Critical Strike Chance"
+    },
+    {
+      "id": "affix-of-putridity-suffix",
+      "name": "of Putridity",
+      "stat_text": "+(15-36)% Chance to Poison on Spell Hit"
+    },
+    {
+      "id": "affix-of-cruelty-suffix",
+      "name": "of Cruelty",
+      "stat_text": "(15-40)% increased Critical Strike Chance"
+    },
+    {
+      "id": "affix-sealed-prefix",
+      "name": "Sealed",
+      "stat_text": "(8-20)% Increased Symbols of Hope Active Duration"
+    },
+    {
+      "id": "affix-burning-prefix",
+      "name": "Burning",
+      "stat_text": "+(15-40)% Chance for +30 Throwing Fire Damage with Shield Throw"
+    },
+    {
+      "id": "affix-blackfire-prefix",
+      "name": "Blackfire",
+      "stat_text": "+(4-8)% chance for Shield Throw to Fork on the first ricochet"
+    },
+    {
+      "id": "affix-enchanted-prefix",
+      "name": "Enchanted",
+      "stat_text": "+(4-12) Lightning Damage with Hammer Throw"
+    },
+    {
+      "id": "affix-pustulent-prefix",
+      "name": "Pustulent",
+      "stat_text": "+(4-10)% Chance to cast Poison Nova when Hit"
+    },
+    {
+      "id": "affix-forbidden-prefix",
+      "name": "Forbidden",
+      "stat_text": "(8-25)% chance for Hungering Souls to fire 6 Additional Projectiles"
+    },
+    {
+      "id": "affix-broad-prefix",
+      "name": "Broad",
+      "stat_text": "(11-30)% increased area with Rive"
+    },
+    {
+      "id": "affix-of-hemomancy-suffix",
+      "name": "of Hemomancy",
+      "stat_text": "(7-15)% Increased Cooldown Recovery Speed for Transplant"
+    },
+    {
+      "id": "affix-of-rapacity-suffix",
+      "name": "of Rapacity",
+      "stat_text": "(5-13) Ward Gain on Kill"
+    },
+    {
+      "id": "affix-binding-prefix",
+      "name": "Binding",
+      "stat_text": "(25-60)% chance to gain 20 Ward on Kill with Hungering Souls"
+    },
+    {
+      "id": "affix-barbed-prefix",
+      "name": "Barbed",
+      "stat_text": "(7-18)% of Damage Reflected for Skeletons"
+    },
+    {
+      "id": "affix-repulsive-prefix",
+      "name": "Repulsive",
+      "stat_text": "+(25-60)% Chance for Summon Wraith to summon a Putrid Wraith instead"
+    },
+    {
+      "id": "affix-ashen-prefix",
+      "name": "Ashen",
+      "stat_text": "+(25-60)% Chance for Summon Wraith to summon a Flame Wraith instead"
+    },
+    {
+      "id": "affix-insatiable-prefix",
+      "name": "Insatiable",
+      "stat_text": "(7-17)% Chance to cast Marrow Shards when you cast Transplant"
+    },
+    {
+      "id": "affix-of-liath-suffix",
+      "name": "of Liath",
+      "stat_text": "+(8-25)% Chance to apply a Spark Charge on Melee Hit"
+    },
+    {
+      "id": "affix-rejuvenating-prefix",
+      "name": "Rejuvenating",
+      "stat_text": "(10-14)% increased Mana Regen"
+    },
+    {
+      "id": "affix-azure-prefix",
+      "name": "Azure",
+      "stat_text": "4% increased Mana"
+    },
+    {
+      "id": "affix-increased-cooldown-recovery-speed-while-transformed-prefix",
+      "name": "Increased Cooldown Recovery Speed While Transformed",
+      "stat_text": "(6-7)% increased Cooldown Recovery Speed While Transformed"
+    },
+    {
+      "id": "affix-increased-minion-spell-critical-strike-chance-prefix",
+      "name": "Increased Minion Spell Critical Strike Chance",
+      "stat_text": "(30-33)% increased Minion Spell Critical Strike Chance"
+    },
+    {
+      "id": "affix-of-minion-damage-leeched-as-health-on-melee-hit-prefix",
+      "name": "Of Minion Damage Leeched As Health On Melee Hit",
+      "stat_text": "(4-4.9)% of Minion Damage Leeched as Health on Melee Hit"
+    },
+    {
+      "id": "affix-chance-to-inflict-bleed-on-minion-hit-prefix",
+      "name": "Chance To Inflict Bleed On Minion Hit",
+      "stat_text": "+(30-34)% Chance to inflict Bleed on Minion Hit"
+    },
+    {
+      "id": "affix-increased-critical-strike-chance-for-totems-prefix",
+      "name": "Increased Critical Strike Chance For Totems",
+      "stat_text": "(45-51)% increased Critical Strike Chance for Totems"
+    },
+    {
+      "id": "affix-increased-aspect-of-the-shark-effect-prefix",
+      "name": "Increased Aspect Of The Shark Effect",
+      "stat_text": "(12-13)% Increased Aspect of the Shark Effect"
+    },
+    {
+      "id": "affix-increased-aspect-of-the-boar-duration-prefix",
+      "name": "Increased Aspect Of The Boar Duration",
+      "stat_text": "(25-27)% Increased Aspect of the Boar Duration"
+    },
+    {
+      "id": "affix-increased-aspect-of-the-viper-effect-prefix",
+      "name": "Increased Aspect Of The Viper Effect",
+      "stat_text": "(20-22)% Increased Aspect of the Viper Effect"
+    },
+    {
+      "id": "affix-increased-aspect-of-the-lynx-effect-prefix",
+      "name": "Increased Aspect Of The Lynx Effect",
+      "stat_text": "(12-13)% Increased Aspect of the Lynx Effect"
+    },
+    {
+      "id": "affix-melee-physical-damage-if-wielding-a-sword-prefix",
+      "name": "Melee Physical Damage If Wielding A Sword",
+      "stat_text": "+6 Melee Physical Damage if wielding a Sword"
+    },
+    {
+      "id": "affix-chance-to-inflict-bleed-on-hit-if-wielding-an-axe-prefix",
+      "name": "Chance To Inflict Bleed On Hit If Wielding An Axe",
+      "stat_text": "+(20-23)% Chance to Inflict Bleed on Hit if wielding an Axe"
+    },
+    {
+      "id": "affix-melee-physical-damage-if-wielding-a-mace-prefix",
+      "name": "Melee Physical Damage If Wielding A Mace",
+      "stat_text": "+10 Melee Physical Damage if wielding a Mace"
+    },
+    {
+      "id": "affix-of-void-damage-taken-as-physical-prefix",
+      "name": "Of Void Damage Taken As Physical",
+      "stat_text": "(18-19)% of Void Damage Taken as Physical"
+    },
+    {
+      "id": "affix-of-necrotic-damage-taken-as-physical-prefix",
+      "name": "Of Necrotic Damage Taken As Physical",
+      "stat_text": "(18-19)% of Necrotic Damage Taken as Physical"
+    },
+    {
+      "id": "affix-of-poison-damage-taken-as-physical-prefix",
+      "name": "Of Poison Damage Taken As Physical",
+      "stat_text": "(18-19)% of Poison Damage Taken as Physical"
+    },
+    {
+      "id": "affix-increased-throwing-critical-strike-chance-prefix",
+      "name": "Increased Throwing Critical Strike Chance",
+      "stat_text": "(45-51)% increased Throwing Critical Strike Chance"
+    },
+    {
+      "id": "affix-reduced-channel-cost-prefix",
+      "name": "Reduced Channel Cost",
+      "stat_text": "(12-15)% reduced Channel Cost"
+    },
+    {
+      "id": "affix-increased-abyssal-decay-duration-prefix",
+      "name": "Increased Abyssal Decay Duration",
+      "stat_text": "(12-17)% Increased Abyssal Decay Duration"
+    },
+    {
+      "id": "affix-mana-gained-when-you-use-vengeance-and-hit-at-least-one-enem-prefix",
+      "name": "Mana Gained When You Use Vengeance And Hit At Least One Enem",
+      "stat_text": "3 Mana Gained when you use Vengeance and hit at least one enemy"
+    },
+    {
+      "id": "affix-mana-gained-when-you-use-rive-and-hit-at-least-one-enemy-prefix",
+      "name": "Mana Gained When You Use Rive And Hit At Least One Enemy",
+      "stat_text": "3 Mana gained when you use Rive and hit at least one enemy"
+    },
+    {
+      "id": "affix-mana-gained-when-you-directly-cast-smite-prefix",
+      "name": "Mana Gained When You Directly Cast Smite",
+      "stat_text": "+4 Mana Gained When you directly cast Smite"
+    },
+    {
+      "id": "affix-increased-critical-strike-chance-with-shield-throw-prefix",
+      "name": "Increased Critical Strike Chance With Shield Throw",
+      "stat_text": "(45-51)% Increased critical strike chance with Shield Throw"
+    },
+    {
+      "id": "affix-increased-spell-critical-strike-chance-this-effect-is-doubl-prefix",
+      "name": "Increased Spell Critical Strike Chance. This Effect Is Doubl",
+      "stat_text": "(30-33)% Increased spell critical strike chance. This effect is doubled if you have 300 or more maximum mana."
+    },
+    {
+      "id": "affix-spell-damage-while-channelling-prefix",
+      "name": "Spell Damage While Channelling",
+      "stat_text": "+6 Spell Damage While Channelling"
+    },
+    {
+      "id": "affix-of-spell-damage-leeched-as-health-while-channelling-prefix",
+      "name": "Of Spell Damage Leeched As Health While Channelling",
+      "stat_text": "(2-2.6)% of Spell Damage Leeched as Health While Channelling"
+    },
+    {
+      "id": "affix-chance-to-apply-frostbite-on-cold-hit-prefix",
+      "name": "Chance To Apply Frostbite On Cold Hit",
+      "stat_text": "+(40-44)% Chance to apply Frostbite on Cold Hit"
+    },
+    {
+      "id": "affix-chance-to-ignite-on-fire-hit-prefix",
+      "name": "Chance To Ignite On Fire Hit",
+      "stat_text": "+(40-44)% Chance to Ignite on Fire Hit"
+    },
+    {
+      "id": "affix-chance-to-shock-on-lightning-hit-prefix",
+      "name": "Chance To Shock On Lightning Hit",
+      "stat_text": "+(40-44)% Chance to Shock on Lightning Hit"
+    },
+    {
+      "id": "affix-chance-to-cast-fire-aura-on-crit-up-to-times-per-second-prefix",
+      "name": "Chance To Cast Fire Aura On Crit (up To Times Per Second)",
+      "stat_text": "+6% Chance to cast Fire Aura on Crit (up to 3 times per second)"
+    },
+    {
+      "id": "affix-chance-to-gain-lightning-aegis-when-hit-prefix",
+      "name": "Chance To Gain Lightning Aegis When Hit",
+      "stat_text": "+6% Chance to gain Lightning Aegis when hit"
+    },
+    {
+      "id": "affix-chance-to-cast-fire-aura-when-hit-up-to-times-per-second-prefix",
+      "name": "Chance To Cast Fire Aura When Hit (up To Times Per Second)",
+      "stat_text": "+6% Chance to cast Fire Aura when Hit (up to 3 times per second)"
+    },
+    {
+      "id": "affix-chance-to-cast-fire-aura-on-kill-with-fire-skills-up-to-tim-prefix",
+      "name": "Chance To Cast Fire Aura On Kill With Fire Skills (up To Tim",
+      "stat_text": "+(4-5)% Chance to cast Fire Aura on Kill with Fire Skills (up to 3 times per second)"
+    },
+    {
+      "id": "affix-chance-to-apply-a-spark-charge-on-melee-hit-prefix",
+      "name": "Chance To Apply A Spark Charge On Melee Hit",
+      "stat_text": "+(8-10)% Chance to apply a Spark Charge on Melee Hit"
+    },
+    {
+      "id": "affix-chance-to-inflict-bleed-on-hit-prefix",
+      "name": "Chance To Inflict Bleed On Hit",
+      "stat_text": "+(20-23)% Chance to inflict Bleed on Hit"
+    },
+    {
+      "id": "affix-of-physical-damage-leeched-as-health-prefix",
+      "name": "Of Physical Damage Leeched As Health",
+      "stat_text": "(0.6-0.7)% of Physical Damage Leeched as Health"
+    },
+    {
+      "id": "affix-mana-gained-when-you-use-harvest-prefix",
+      "name": "Mana Gained When You Use Harvest",
+      "stat_text": "(5-6) Mana Gained when you use Harvest"
+    },
+    {
+      "id": "affix-of-damage-dealt-by-harvest-leeched-as-health-prefix",
+      "name": "Of Damage Dealt By Harvest Leeched As Health",
+      "stat_text": "(1.2-1.6)% of damage dealt by Harvest Leeched as Health"
+    },
+    {
+      "id": "affix-of-minion-damage-reflected-prefix",
+      "name": "Of Minion Damage Reflected",
+      "stat_text": "5% of Minion Damage Reflected"
+    },
+    {
+      "id": "affix-chance-to-gain-ward-on-kill-with-hungering-souls-prefix",
+      "name": "Chance To Gain Ward On Kill With Hungering Souls",
+      "stat_text": "(40-44)% chance to gain 20 Ward on Kill with Hungering Souls"
+    },
+    {
+      "id": "affix-increased-critical-strike-chance-prefix",
+      "name": "Increased Critical Strike Chance",
+      "stat_text": "(40-45)% increased Critical Strike Chance"
+    },
+    {
+      "id": "affix-chance-to-apply-damned-on-hit-prefix",
+      "name": "Chance To Apply Damned On Hit",
+      "stat_text": "+(40-44)% Chance to apply Damned on Hit"
+    },
+    {
+      "id": "affix-of-damage-leeched-as-health-while-transformed-prefix",
+      "name": "Of Damage Leeched As Health While Transformed",
+      "stat_text": "(1.2-1.6)% of Damage Leeched as Health While Transformed"
+    },
+    {
+      "id": "affix-increased-physical-spell-critical-strike-chance-prefix",
+      "name": "Increased Physical Spell Critical Strike Chance",
+      "stat_text": "(45-51)% increased Physical Spell Critical Strike Chance"
+    },
+    {
+      "id": "affix-of-impunity-suffix",
+      "name": "of Impunity",
+      "stat_text": "(35-43)% reduced Bonus Damage Taken from Critical Strikes"
+    },
+    {
+      "id": "affix-of-suppression-suffix",
+      "name": "of Suppression",
+      "stat_text": "+(35-40)% Chance to apply Frailty on Melee Hit"
+    },
+    {
+      "id": "affix-of-frailty-suffix",
+      "name": "of Frailty",
+      "stat_text": "+(12-15)% Chance to apply Frailty on Hit"
+    },
+    {
+      "id": "affix-honed-prefix",
+      "name": "Honed",
+      "stat_text": "+(2-3) Bow Physical Damage"
+    },
+    {
+      "id": "affix-pillager-s-prefix",
+      "name": "Pillager's",
+      "stat_text": "+(2-3) Bow Fire Damage"
+    },
+    {
+      "id": "affix-chance-to-cast-marrow-shards-when-you-cast-transplant-prefix",
+      "name": "Chance To Cast Marrow Shards When You Cast Transplant",
+      "stat_text": "(5-7)% Chance to cast Marrow Shards when you cast Transplant"
+    },
+    {
+      "id": "affix-chance-to-gain-crimson-shroud-when-you-use-a-melee-attack-th-prefix",
+      "name": "Chance To Gain Crimson Shroud When You Use A Melee Attack Th",
+      "stat_text": "(12-15)% Chance to gain Crimson Shroud when you use a Melee Attack that hits"
+    },
+    {
+      "id": "affix-duellist-s-prefix",
+      "name": "Duellist's",
+      "stat_text": "(20-55)% Increased Crit Chance per Equipped Sword"
+    },
+    {
+      "id": "affix-increased-crit-chance-per-equipped-sword-prefix",
+      "name": "Increased Crit Chance Per Equipped Sword",
+      "stat_text": "(31-35)% Increased Crit Chance per Equipped Sword"
+    },
+    {
+      "id": "affix-ferret-s-prefix",
+      "name": "Ferret's",
+      "stat_text": "(20-55)% Increased Crit Chance per Equipped Dagger"
+    },
+    {
+      "id": "affix-increased-crit-chance-per-equipped-dagger-prefix",
+      "name": "Increased Crit Chance Per Equipped Dagger",
+      "stat_text": "(31-35)% Increased Crit Chance per Equipped Dagger"
+    },
+    {
+      "id": "affix-chance-to-gain-dusk-shroud-when-hit-prefix",
+      "name": "Chance To Gain Dusk Shroud When Hit",
+      "stat_text": "(12-16)% Chance to gain Dusk Shroud when Hit"
+    },
+    {
+      "id": "affix-gutting-prefix",
+      "name": "Gutting",
+      "stat_text": "+(13-35)% Chance to Inflict Bleed on Hit per equipped Sword"
+    },
+    {
+      "id": "affix-chance-to-inflict-bleed-on-hit-per-equipped-sword-prefix",
+      "name": "Chance To Inflict Bleed On Hit Per Equipped Sword",
+      "stat_text": "+(31-35)% Chance to Inflict Bleed on Hit per equipped Sword"
+    },
+    {
+      "id": "affix-cobra-s-prefix",
+      "name": "Cobra's",
+      "stat_text": "+(13-35)% Chance to Poison on Hit per equipped Dagger"
+    },
+    {
+      "id": "affix-chance-to-poison-on-hit-per-equipped-dagger-prefix",
+      "name": "Chance To Poison On Hit Per Equipped Dagger",
+      "stat_text": "+(18-20)% Chance to Poison on Hit per equipped Dagger"
+    },
+    {
+      "id": "affix-chance-to-gain-dusk-shroud-when-you-use-a-melee-attack-that-prefix",
+      "name": "Chance To Gain Dusk Shroud When You Use A Melee Attack That ",
+      "stat_text": "+(17-21)% Chance to gain Dusk Shroud when you use a Melee Attack that hits"
+    },
+    {
+      "id": "affix-physical-throwing-damage-while-dual-wielding-prefix",
+      "name": "Physical Throwing Damage While Dual Wielding",
+      "stat_text": "+(5-6) Physical Throwing Damage while Dual Wielding"
+    },
+    {
+      "id": "affix-skirmisher-s-prefix",
+      "name": "Skirmisher's",
+      "stat_text": "+(30-80)% Chance to Shred Armor on Throwing Hit"
+    },
+    {
+      "id": "affix-chance-to-shred-armor-on-throwing-hit-prefix",
+      "name": "Chance To Shred Armor On Throwing Hit",
+      "stat_text": "+(31-40)% Chance to Shred Armor on Throwing Hit"
+    },
+    {
+      "id": "affix-dismantling-prefix",
+      "name": "Dismantling",
+      "stat_text": "+(30-80)% Chance to Shred Armor on Melee Hit"
+    },
+    {
+      "id": "affix-chance-to-shred-armor-on-melee-hit-prefix",
+      "name": "Chance To Shred Armor On Melee Hit",
+      "stat_text": "+(31-40)% Chance to Shred Armor on Melee Hit"
+    },
+    {
+      "id": "affix-hawk-s-prefix",
+      "name": "Hawk's",
+      "stat_text": "+(30-80)% Chance to Shred Armor on Bow Hit"
+    },
+    {
+      "id": "affix-chance-to-shred-armor-on-bow-hit-prefix",
+      "name": "Chance To Shred Armor On Bow Hit",
+      "stat_text": "+(31-40)% Chance to Shred Armor on Bow Hit"
+    },
+    {
+      "id": "affix-raider-s-prefix",
+      "name": "Raider's",
+      "stat_text": "+(15-35)% Chance to Ignite on Bow Hit"
+    },
+    {
+      "id": "affix-chance-to-ignite-on-bow-hit-prefix",
+      "name": "Chance To Ignite On Bow Hit",
+      "stat_text": "+(15-17)% Chance to Ignite on Bow Hit"
+    },
+    {
+      "id": "affix-of-tar-suffix",
+      "name": "of Tar",
+      "stat_text": "+(10-21)% Chance to Slow on Bow Hit"
+    },
+    {
+      "id": "affix-chance-to-slow-on-bow-hit-prefix",
+      "name": "Chance To Slow On Bow Hit",
+      "stat_text": "+(15-17)% Chance to Slow on Bow Hit"
+    },
+    {
+      "id": "affix-of-the-eagle-suffix",
+      "name": "of the Eagle",
+      "stat_text": "(24-65)% increased Bow Critical Strike Chance"
+    },
+    {
+      "id": "affix-of-barbs-suffix",
+      "name": "of Barbs",
+      "stat_text": "+(15-35)% Chance to inflict Bleed on Bow Hit"
+    },
+    {
+      "id": "affix-chance-to-inflict-bleed-on-bow-hit-prefix",
+      "name": "Chance To Inflict Bleed On Bow Hit",
+      "stat_text": "+(15-17)% Chance to inflict Bleed on Bow Hit"
+    },
+    {
+      "id": "affix-firekeeper-s-prefix",
+      "name": "Firekeeper's",
+      "stat_text": "(11-30)% Increased area with the first attack of Cinder Strike"
+    },
+    {
+      "id": "affix-increased-area-with-the-first-attack-of-cinder-strike-prefix",
+      "name": "Increased Area With The First Attack Of Cinder Strike",
+      "stat_text": "(15-17)% Increased area with the first attack of Cinder Strike"
+    },
+    {
+      "id": "affix-hummingbird-s-prefix",
+      "name": "Hummingbird's",
+      "stat_text": "(30-80)% Increased Critical Strike chance with Flurry"
+    },
+    {
+      "id": "affix-increased-critical-strike-chance-with-flurry-prefix",
+      "name": "Increased Critical Strike Chance With Flurry",
+      "stat_text": "(36-40)% Increased Critical Strike chance with Flurry"
+    },
+    {
+      "id": "affix-detonating-prefix",
+      "name": "Detonating",
+      "stat_text": "(11-30)% increased area with Detonating Arrow"
+    },
+    {
+      "id": "affix-increased-area-with-detonating-arrow-prefix",
+      "name": "Increased Area With Detonating Arrow",
+      "stat_text": "(15-17)% increased area with Detonating Arrow"
+    },
+    {
+      "id": "affix-eclipsing-prefix",
+      "name": "Eclipsing",
+      "stat_text": "(10-22)% increased Hail of Arrows Duration"
+    },
+    {
+      "id": "affix-increased-hail-of-arrows-duration-prefix",
+      "name": "Increased Hail Of Arrows Duration",
+      "stat_text": "(11-13)% increased Hail of Arrows Duration"
+    },
+    {
+      "id": "affix-razor-prefix",
+      "name": "Razor",
+      "stat_text": "+(15-40)% Bleed Chance on hit with Shurikens"
+    },
+    {
+      "id": "affix-bleed-chance-on-hit-with-shurikens-prefix",
+      "name": "Bleed Chance On Hit With Shurikens",
+      "stat_text": "+(15-17)% Bleed Chance on hit with Shurikens"
+    },
+    {
+      "id": "affix-storm-thrower-s-prefix",
+      "name": "Storm Thrower's",
+      "stat_text": "+(4-8) Lightning Damage with Shurikens"
+    },
+    {
+      "id": "affix-lightning-damage-with-shurikens-prefix",
+      "name": "Lightning Damage With Shurikens",
+      "stat_text": "+(6-8) Lightning Damage with Shurikens"
+    },
+    {
+      "id": "affix-stinging-prefix",
+      "name": "Stinging",
+      "stat_text": "(10-28)% Chance to Summon a Bee with Acid Flask (up to 3 times per second)"
+    },
+    {
+      "id": "affix-flanking-prefix",
+      "name": "Flanking",
+      "stat_text": "(14-35)% Increased Area with Dancing Strikes"
+    },
+    {
+      "id": "affix-increased-area-with-dancing-strikes-prefix",
+      "name": "Increased Area With Dancing Strikes",
+      "stat_text": "(12-15)% Increased Area with Dancing Strikes"
+    },
+    {
+      "id": "affix-synchronized-prefix",
+      "name": "Synchronized",
+      "stat_text": "+(8-16)% Mana efficiency for Synchronized Strike"
+    },
+    {
+      "id": "affix-mana-efficiency-for-synchronized-strike-prefix",
+      "name": "Mana Efficiency For Synchronized Strike",
+      "stat_text": "+(7-8)% Mana efficiency for Synchronized Strike"
+    },
+    {
+      "id": "affix-distracting-suffix",
+      "name": "Distracting",
+      "stat_text": "+(8-16)% Mana efficiency for Decoy"
+    },
+    {
+      "id": "affix-mana-efficiency-for-decoy-prefix",
+      "name": "Mana Efficiency For Decoy",
+      "stat_text": "+(7-8)% Mana efficiency for Decoy"
+    },
+    {
+      "id": "affix-dragon-slayer-s-prefix",
+      "name": "Dragon Slayer's",
+      "stat_text": "+2 Black Arrows Dropped by Dark Quiver"
+    },
+    {
+      "id": "affix-black-arrows-dropped-by-dark-quiver-prefix",
+      "name": "Black Arrows Dropped By Dark Quiver",
+      "stat_text": "+2 Black Arrows Dropped by Dark Quiver"
+    },
+    {
+      "id": "affix-carpenter-s-prefix",
+      "name": "Carpenter's",
+      "stat_text": "+(4-10) Bow Physical Damage for Ballistae"
+    },
+    {
+      "id": "affix-maximum-ballistae-prefix",
+      "name": "Maximum Ballistae",
+      "stat_text": "+1 Maximum Ballistae"
+    },
+    {
+      "id": "affix-mirages-created-by-lethal-mirage-prefix",
+      "name": "Mirages Created By Lethal Mirage",
+      "stat_text": "Mirages created by Lethal Mirage"
+    },
+    {
+      "id": "affix-deceiving-prefix",
+      "name": "Deceiving",
+      "stat_text": "(14-35)% increased area of Mirage attacks with Lethal Mirage"
+    },
+    {
+      "id": "affix-to-swipe-prefix",
+      "name": "To Swipe",
+      "stat_text": "+1 to Swipe"
+    },
+    {
+      "id": "affix-to-summon-wolf-prefix",
+      "name": "To Summon Wolf",
+      "stat_text": "+1 to Summon Wolf"
+    },
+    {
+      "id": "affix-to-tornado-prefix",
+      "name": "To Tornado",
+      "stat_text": "+1 to Tornado"
+    },
+    {
+      "id": "affix-to-fury-leap-prefix",
+      "name": "To Fury Leap",
+      "stat_text": "+1 to Fury Leap"
+    },
+    {
+      "id": "affix-to-summon-thorn-totem-prefix",
+      "name": "To Summon Thorn Totem",
+      "stat_text": "+1 to Summon Thorn Totem"
+    },
+    {
+      "id": "affix-to-summon-spriggan-prefix",
+      "name": "To Summon Spriggan",
+      "stat_text": "+1 to Summon Spriggan"
+    },
+    {
+      "id": "affix-to-summon-frenzy-totem-prefix",
+      "name": "To Summon Frenzy Totem",
+      "stat_text": "+1 to Summon Frenzy Totem"
+    },
+    {
+      "id": "affix-to-elemental-nova-prefix",
+      "name": "To Elemental Nova",
+      "stat_text": "+1 to Elemental Nova"
+    },
+    {
+      "id": "affix-to-mana-strike-prefix",
+      "name": "To Mana Strike",
+      "stat_text": "+1 to Mana Strike"
+    },
+    {
+      "id": "affix-pierce-chance-with-fireball-prefix",
+      "name": "Pierce Chance With Fireball",
+      "stat_text": "+(12-19)% Pierce Chance with Fireball"
+    },
+    {
+      "id": "affix-to-fireball-prefix",
+      "name": "To Fireball",
+      "stat_text": "+1 to Fireball"
+    },
+    {
+      "id": "affix-to-glacier-prefix",
+      "name": "To Glacier",
+      "stat_text": "+1 to Glacier"
+    },
+    {
+      "id": "affix-to-meteor-prefix",
+      "name": "To Meteor",
+      "stat_text": "+1 to Meteor"
+    },
+    {
+      "id": "affix-to-teleport-prefix",
+      "name": "To Teleport",
+      "stat_text": "+1 to Teleport"
+    },
+    {
+      "id": "affix-to-volcanic-orb-prefix",
+      "name": "To Volcanic Orb",
+      "stat_text": "+1 to Volcanic Orb"
+    },
+    {
+      "id": "affix-to-black-hole-prefix",
+      "name": "To Black Hole",
+      "stat_text": "+1 to Black Hole"
+    },
+    {
+      "id": "affix-to-summon-bear-prefix",
+      "name": "To Summon Bear",
+      "stat_text": "+1 to Summon Bear"
+    },
+    {
+      "id": "affix-to-static-orb-prefix",
+      "name": "To Static Orb",
+      "stat_text": "+1 to Static Orb"
+    },
+    {
+      "id": "affix-to-lightning-blast-prefix",
+      "name": "To Lightning Blast",
+      "stat_text": "+1 to Lightning Blast"
+    },
+    {
+      "id": "affix-to-serpent-strike-prefix",
+      "name": "To Serpent Strike",
+      "stat_text": "+1 to Serpent Strike"
+    },
+    {
+      "id": "affix-to-entangling-roots-prefix",
+      "name": "To Entangling Roots",
+      "stat_text": "+1 to Entangling Roots"
+    },
+    {
+      "id": "affix-to-anomaly-prefix",
+      "name": "To Anomaly",
+      "stat_text": "+1 to Anomaly"
+    },
+    {
+      "id": "affix-to-warpath-prefix",
+      "name": "To Warpath",
+      "stat_text": "+1 to Warpath"
+    },
+    {
+      "id": "affix-to-devouring-orb-prefix",
+      "name": "To Devouring Orb",
+      "stat_text": "+1 to Devouring Orb"
+    },
+    {
+      "id": "affix-to-rive-prefix",
+      "name": "To Rive",
+      "stat_text": "+1 to Rive"
+    },
+    {
+      "id": "affix-to-hammer-throw-prefix",
+      "name": "To Hammer Throw",
+      "stat_text": "+1 to Hammer Throw"
+    },
+    {
+      "id": "affix-to-shield-rush-prefix",
+      "name": "To Shield Rush",
+      "stat_text": "+1 to Shield Rush"
+    },
+    {
+      "id": "affix-to-volatile-reversal-prefix",
+      "name": "To Volatile Reversal",
+      "stat_text": "+1 to Volatile Reversal"
+    },
+    {
+      "id": "affix-to-abyssal-echoes-prefix",
+      "name": "To Abyssal Echoes",
+      "stat_text": "+1 to Abyssal Echoes"
+    },
+    {
+      "id": "affix-to-erasing-strike-prefix",
+      "name": "To Erasing Strike",
+      "stat_text": "+1 to Erasing Strike"
+    },
+    {
+      "id": "affix-to-vengeance-prefix",
+      "name": "To Vengeance",
+      "stat_text": "+1 to Vengeance"
+    },
+    {
+      "id": "affix-to-shield-throw-prefix",
+      "name": "To Shield Throw",
+      "stat_text": "+1 to Shield Throw"
+    },
+    {
+      "id": "affix-to-dread-shade-prefix",
+      "name": "To Dread Shade",
+      "stat_text": "+1 to Dread Shade"
+    },
+    {
+      "id": "affix-to-summon-skeleton-prefix",
+      "name": "To Summon Skeleton",
+      "stat_text": "+1 to Summon Skeleton"
+    },
+    {
+      "id": "affix-to-infernal-shade-prefix",
+      "name": "To Infernal Shade",
+      "stat_text": "+1 to Infernal Shade"
+    },
+    {
+      "id": "affix-to-sacrifice-prefix",
+      "name": "To Sacrifice",
+      "stat_text": "+1 to Sacrifice"
+    },
+    {
+      "id": "affix-to-focus-prefix",
+      "name": "To Focus",
+      "stat_text": "+1 to Focus"
+    },
+    {
+      "id": "affix-to-aura-of-decay-prefix",
+      "name": "To Aura Of Decay",
+      "stat_text": "+1 to Aura Of Decay"
+    },
+    {
+      "id": "affix-to-hungering-souls-prefix",
+      "name": "To Hungering Souls",
+      "stat_text": "+1 to Hungering Souls"
+    },
+    {
+      "id": "affix-to-rip-blood-prefix",
+      "name": "To Rip Blood",
+      "stat_text": "+1 to Rip Blood"
+    },
+    {
+      "id": "affix-to-summon-wraith-prefix",
+      "name": "To Summon Wraith",
+      "stat_text": "+1 to Summon Wraith"
+    },
+    {
+      "id": "affix-to-summon-bone-golem-prefix",
+      "name": "To Summon Bone Golem",
+      "stat_text": "+1 to Summon Bone Golem"
+    },
+    {
+      "id": "affix-to-wandering-spirits-prefix",
+      "name": "To Wandering Spirits",
+      "stat_text": "+1 to Wandering Spirits"
+    },
+    {
+      "id": "affix-to-marrow-shards-prefix",
+      "name": "To Marrow Shards",
+      "stat_text": "+1 to Marrow Shards"
+    },
+    {
+      "id": "affix-to-transplant-prefix",
+      "name": "To Transplant",
+      "stat_text": "+1 to Transplant"
+    },
+    {
+      "id": "affix-to-flame-reave-prefix",
+      "name": "To Flame Reave",
+      "stat_text": "+1 to Flame Reave"
+    },
+    {
+      "id": "affix-to-summon-storm-totem-prefix",
+      "name": "To Summon Storm Totem",
+      "stat_text": "+1 to Summon Storm Totem"
+    },
+    {
+      "id": "affix-to-soul-feast-prefix",
+      "name": "To Soul Feast",
+      "stat_text": "+1 to Soul Feast"
+    },
+    {
+      "id": "affix-to-snap-freeze-prefix",
+      "name": "To Snap Freeze",
+      "stat_text": "+1 to Snap Freeze"
+    },
+    {
+      "id": "affix-to-lunge-prefix",
+      "name": "To Lunge",
+      "stat_text": "+1 to Lunge"
+    },
+    {
+      "id": "affix-to-rebuke-prefix",
+      "name": "To Rebuke",
+      "stat_text": "+1 to Rebuke"
+    },
+    {
+      "id": "affix-to-summon-sabertooth-prefix",
+      "name": "To Summon Sabertooth",
+      "stat_text": "+1 to Summon Sabertooth"
+    },
+    {
+      "id": "affix-to-summon-scorpion-prefix",
+      "name": "To Summon Scorpion",
+      "stat_text": "+1 to Summon Scorpion"
+    },
+    {
+      "id": "affix-to-ring-of-shields-prefix",
+      "name": "To Ring Of Shields",
+      "stat_text": "+1 to Ring Of Shields"
+    },
+    {
+      "id": "affix-to-firebrand-prefix",
+      "name": "To Firebrand",
+      "stat_text": "+1 to Firebrand"
+    },
+    {
+      "id": "affix-to-harvest-prefix",
+      "name": "To Harvest",
+      "stat_text": "+1 to Harvest"
+    },
+    {
+      "id": "affix-to-eterra-s-blessing-prefix",
+      "name": "To Eterra's Blessing",
+      "stat_text": "+1 to Eterra's Blessing"
+    },
+    {
+      "id": "affix-to-judgement-prefix",
+      "name": "To Judgement",
+      "stat_text": "+1 to Judgement"
+    },
+    {
+      "id": "affix-to-shatter-strike-prefix",
+      "name": "To Shatter Strike",
+      "stat_text": "+1 to Shatter Strike"
+    },
+    {
+      "id": "affix-to-enchant-weapon-prefix",
+      "name": "To Enchant Weapon",
+      "stat_text": "+1 to Enchant Weapon"
+    },
+    {
+      "id": "affix-to-avalanche-prefix",
+      "name": "To Avalanche",
+      "stat_text": "+1 to Avalanche"
+    },
+    {
+      "id": "affix-to-symbols-of-hope-prefix",
+      "name": "To Symbols Of Hope",
+      "stat_text": "+1 to Symbols of Hope"
+    },
+    {
+      "id": "affix-to-holy-aura-prefix",
+      "name": "To Holy Aura",
+      "stat_text": "+1 to Holy Aura"
+    },
+    {
+      "id": "affix-to-werebear-form-prefix",
+      "name": "To Werebear Form",
+      "stat_text": "+1 to Werebear Form"
+    },
+    {
+      "id": "affix-to-smite-prefix",
+      "name": "To Smite",
+      "stat_text": "+1 to Smite"
+    },
+    {
+      "id": "affix-to-forge-strike-prefix",
+      "name": "To Forge Strike",
+      "stat_text": "+1 to Forge Strike"
+    },
+    {
+      "id": "affix-to-spriggan-form-prefix",
+      "name": "To Spriggan Form",
+      "stat_text": "+1 to Spriggan Form"
+    },
+    {
+      "id": "affix-to-reaper-form-prefix",
+      "name": "To Reaper Form",
+      "stat_text": "+1 to Reaper Form"
+    },
+    {
+      "id": "affix-to-acid-flask-prefix",
+      "name": "To Acid Flask",
+      "stat_text": "+1 to Acid Flask"
+    },
+    {
+      "id": "affix-to-shadow-cascade-prefix",
+      "name": "To Shadow Cascade",
+      "stat_text": "+1 to Shadow Cascade"
+    },
+    {
+      "id": "affix-to-flurry-prefix",
+      "name": "To Flurry",
+      "stat_text": "+1 to Flurry"
+    },
+    {
+      "id": "affix-to-shurikens-prefix",
+      "name": "To Shurikens",
+      "stat_text": "+1 to Shurikens"
+    },
+    {
+      "id": "affix-to-dancing-strikes-prefix",
+      "name": "To Dancing Strikes",
+      "stat_text": "+1 to Dancing Strikes"
+    },
+    {
+      "id": "affix-to-multishot-prefix",
+      "name": "To Multishot",
+      "stat_text": "+1 to Multishot"
+    },
+    {
+      "id": "affix-to-puncture-prefix",
+      "name": "To Puncture",
+      "stat_text": "+1 to Puncture"
+    },
+    {
+      "id": "affix-to-decoy-prefix",
+      "name": "To Decoy",
+      "stat_text": "+1 to Decoy"
+    },
+    {
+      "id": "affix-to-cinder-strike-prefix",
+      "name": "To Cinder Strike",
+      "stat_text": "+1 to Cinder Strike"
+    },
+    {
+      "id": "affix-to-detonating-arrow-prefix",
+      "name": "To Detonating Arrow",
+      "stat_text": "+1 to Detonating Arrow"
+    },
+    {
+      "id": "affix-to-hail-of-arrows-prefix",
+      "name": "To Hail Of Arrows",
+      "stat_text": "+1 to Hail of Arrows"
+    },
+    {
+      "id": "affix-to-shift-prefix",
+      "name": "To Shift",
+      "stat_text": "+1 to Shift"
+    },
+    {
+      "id": "affix-to-synchronized-strike-prefix",
+      "name": "To Synchronized Strike",
+      "stat_text": "+1 to Synchronized Strike"
+    },
+    {
+      "id": "affix-to-tempest-strike-prefix",
+      "name": "To Tempest Strike",
+      "stat_text": "+1 to Tempest Strike"
+    },
+    {
+      "id": "affix-to-gathering-storm-prefix",
+      "name": "To Gathering Storm",
+      "stat_text": "+1 to Gathering Storm"
+    },
+    {
+      "id": "affix-to-summon-skeletal-mage-prefix",
+      "name": "To Summon Skeletal Mage",
+      "stat_text": "+1 to Summon Skeletal Mage"
+    },
+    {
+      "id": "affix-to-static-prefix",
+      "name": "To Static",
+      "stat_text": "+1 to Static"
+    },
+    {
+      "id": "affix-to-disintegrate-prefix",
+      "name": "To Disintegrate",
+      "stat_text": "+1 to Disintegrate"
+    },
+    {
+      "id": "affix-to-maelstrom-prefix",
+      "name": "To Maelstrom",
+      "stat_text": "+1 to Maelstrom"
+    },
+    {
+      "id": "affix-to-summon-raptor-prefix",
+      "name": "To Summon Raptor",
+      "stat_text": "+1 to Summon Raptor"
+    },
+    {
+      "id": "affix-to-flame-ward-prefix",
+      "name": "To Flame Ward",
+      "stat_text": "+1 to Flame Ward"
+    },
+    {
+      "id": "affix-to-earthquake-prefix",
+      "name": "To Earthquake",
+      "stat_text": "+1 to Earthquake"
+    },
+    {
+      "id": "affix-to-arcane-ascendance-prefix",
+      "name": "To Arcane Ascendance",
+      "stat_text": "+1 to Arcane Ascendance"
+    },
+    {
+      "id": "affix-to-smelter-s-wrath-prefix",
+      "name": "To Smelter's Wrath",
+      "stat_text": "+1 to Smelter's Wrath"
+    },
+    {
+      "id": "affix-to-drain-life-prefix",
+      "name": "To Drain Life",
+      "stat_text": "+1 to Drain Life"
+    },
+    {
+      "id": "affix-to-assemble-abomination-prefix",
+      "name": "To Assemble Abomination",
+      "stat_text": "+1 to Assemble Abomination"
+    },
+    {
+      "id": "affix-to-spirit-plague-prefix",
+      "name": "To Spirit Plague",
+      "stat_text": "+1 to Spirit Plague"
+    },
+    {
+      "id": "affix-to-bone-curse-prefix",
+      "name": "To Bone Curse",
+      "stat_text": "+1 to Bone Curse"
+    },
+    {
+      "id": "affix-to-death-seal-prefix",
+      "name": "To Death Seal",
+      "stat_text": "+1 to Death Seal"
+    },
+    {
+      "id": "affix-to-ice-barrage-prefix",
+      "name": "To Ice Barrage",
+      "stat_text": "+1 to Ice Barrage"
+    },
+    {
+      "id": "affix-to-dark-quiver-prefix",
+      "name": "To Dark Quiver",
+      "stat_text": "+1 to Dark Quiver"
+    },
+    {
+      "id": "affix-to-shield-bash-prefix",
+      "name": "To Shield Bash",
+      "stat_text": "+1 to Shield Bash"
+    },
+    {
+      "id": "affix-to-ballista-prefix",
+      "name": "To Ballista",
+      "stat_text": "+1 to Ballista"
+    },
+    {
+      "id": "affix-to-lethal-mirage-prefix",
+      "name": "To Lethal Mirage",
+      "stat_text": "+1 to Lethal Mirage"
+    },
+    {
+      "id": "affix-to-smoke-bomb-prefix",
+      "name": "To Smoke Bomb",
+      "stat_text": "+1 to Smoke Bomb"
+    },
+    {
+      "id": "affix-to-warcry-prefix",
+      "name": "To Warcry",
+      "stat_text": "+1 to Warcry"
+    },
+    {
+      "id": "affix-to-surge-prefix",
+      "name": "To Surge",
+      "stat_text": "+1 to Surge"
+    },
+    {
+      "id": "affix-to-summon-storm-crows-prefix",
+      "name": "To Summon Storm Crows",
+      "stat_text": "+1 to Summon Storm Crows"
+    },
+    {
+      "id": "affix-to-summon-volatile-zombie-prefix",
+      "name": "To Summon Volatile Zombie",
+      "stat_text": "+1 to Summon Volatile Zombie"
+    },
+    {
+      "id": "affix-tumultuous-prefix",
+      "name": "Tumultuous",
+      "stat_text": "(6-18)% Increased Cooldown Recovery Speed for Surge"
+    },
+    {
+      "id": "affix-to-multistrike-prefix",
+      "name": "To Multistrike",
+      "stat_text": "+1 to Multistrike"
+    },
+    {
+      "id": "affix-to-void-cleave-prefix",
+      "name": "To Void Cleave",
+      "stat_text": "+1 to Void Cleave"
+    },
+    {
+      "id": "affix-to-javelin-prefix",
+      "name": "To Javelin",
+      "stat_text": "+1 to Javelin"
+    },
+    {
+      "id": "affix-lightning-throwing-damage-with-javelin-prefix",
+      "name": "Lightning Throwing Damage With Javelin",
+      "stat_text": "+(6-7) Lightning Throwing Damage with Javelin"
+    },
+    {
+      "id": "affix-endurance-while-channelling-warpath-prefix",
+      "name": "Endurance While Channelling Warpath",
+      "stat_text": "(7-10)% Endurance while channelling Warpath"
+    },
+    {
+      "id": "affix-discharging-prefix",
+      "name": "Discharging",
+      "stat_text": "+(2-4) Tendrils with Static Orb"
+    },
+    {
+      "id": "affix-of-defiance-suffix-658",
+      "name": "of Defiance",
+      "stat_text": "(5-12)% of missing health restored on Lunge"
+    },
+    {
+      "id": "affix-arming-prefix",
+      "name": "Arming",
+      "stat_text": "(15-50)% chance for an additional sword with Multistrike while at maximum Armament Stacks"
+    },
+    {
+      "id": "affix-to-swarmblade-form-prefix",
+      "name": "To Swarmblade Form",
+      "stat_text": "+1 to Swarmblade Form"
+    },
+    {
+      "id": "affix-to-upheaval-prefix",
+      "name": "To Upheaval",
+      "stat_text": "+1 to Upheaval"
+    },
+    {
+      "id": "affix-to-umbral-blades-prefix",
+      "name": "To Umbral Blades",
+      "stat_text": "+1 to Umbral Blades"
+    },
+    {
+      "id": "affix-swarm-king-s-prefix",
+      "name": "Swarm King's",
+      "stat_text": "+(3-8) Melee Physical Damage with Swarm Strike"
+    },
+    {
+      "id": "affix-chance-to-create-a-shockwave-on-hit-with-upheaval-prefix",
+      "name": "Chance To Create A Shockwave On Hit With Upheaval",
+      "stat_text": "(14-19)% chance to create a Shockwave on hit with Upheaval"
+    },
+    {
+      "id": "affix-saboteur-s-prefix",
+      "name": "Saboteur's",
+      "stat_text": "+(2-3) Bow Lightning Damage"
+    },
+    {
+      "id": "affix-hunter-s-prefix-670",
+      "name": "Hunter's",
+      "stat_text": "+(2-3) Bow Cold Damage"
+    },
+    {
+      "id": "affix-of-conquest-suffix",
+      "name": "of Conquest",
+      "stat_text": "(8-10)% increased area for Melee Area Skills"
+    },
+    {
+      "id": "affix-ward-gain-on-kill-prefix",
+      "name": "Ward Gain On Kill",
+      "stat_text": "(4-5) Ward Gain on Kill"
+    },
+    {
+      "id": "affix-of-current-health-lost-per-second-prefix",
+      "name": "Of Current Health Lost Per Second",
+      "stat_text": "4% of Current Health Lost per second"
+    },
+    {
+      "id": "affix-seconds-of-haste-after-you-use-a-traversal-skill-prefix",
+      "name": "Seconds Of Haste After You Use A Traversal Skill",
+      "stat_text": "(1.2-1.3) Seconds of Haste after you use a Traversal Skill"
+    },
+    {
+      "id": "affix-seconds-of-frenzy-after-you-use-a-traversal-skill-prefix",
+      "name": "Seconds Of Frenzy After You Use A Traversal Skill",
+      "stat_text": "(1.2-1.3) Seconds of Frenzy after you use a Traversal Skill"
+    },
+    {
+      "id": "affix-to-flame-rush-prefix",
+      "name": "To Flame Rush",
+      "stat_text": "+1 to Flame Rush"
+    },
+    {
+      "id": "affix-to-runebolt-prefix",
+      "name": "To Runebolt",
+      "stat_text": "+1 to Runebolt"
+    },
+    {
+      "id": "affix-to-runic-invocation-prefix",
+      "name": "To Runic Invocation",
+      "stat_text": "+1 to Runic Invocation"
+    },
+    {
+      "id": "affix-to-frost-wall-prefix",
+      "name": "To Frost Wall",
+      "stat_text": "+1 to Frost Wall"
+    },
+    {
+      "id": "affix-to-glyph-of-dominion-prefix",
+      "name": "To Glyph Of Dominion",
+      "stat_text": "+1 to Glyph of Dominion"
+    },
+    {
+      "id": "affix-apiarian-prefix",
+      "name": "Apiarian",
+      "stat_text": "+(3-7) Elemental Bees Per 10 Seconds"
+    },
+    {
+      "id": "affix-increased-speed-and-distance-with-flame-rush-prefix",
+      "name": "Increased Speed And Distance With Flame Rush",
+      "stat_text": "(5-6)% increased Speed and Distance with Flame Rush"
+    },
+    {
+      "id": "affix-proliferating-prefix",
+      "name": "Proliferating",
+      "stat_text": "(10-26)% increased area for Elemental Area Skills"
+    },
+    {
+      "id": "affix-chance-to-gain-mana-when-you-directly-cast-runebolt-or-fireb-prefix",
+      "name": "Chance To Gain Mana When You Directly Cast Runebolt Or Fireb",
+      "stat_text": "(5-6)% chance to gain 20 Mana when you directly cast Runebolt or Fireball"
+    },
+    {
+      "id": "affix-increased-frost-wall-duration-prefix",
+      "name": "Increased Frost Wall Duration",
+      "stat_text": "(8-10)% increased Frost Wall Duration"
+    },
+    {
+      "id": "affix-igneous-prefix",
+      "name": "Igneous",
+      "stat_text": "100% of Frost Wall converted to Fire"
+    },
+    {
+      "id": "affix-julra-s-prefix",
+      "name": "Julra's",
+      "stat_text": "+2 Spell Void Damage"
+    },
+    {
+      "id": "affix-cave-druid-s-prefix",
+      "name": "Cave Druid's",
+      "stat_text": "+1 to Physical Skills"
+    },
+    {
+      "id": "affix-orian-s-prefix",
+      "name": "Orian's",
+      "stat_text": "+(6-7) Spell Fire Damage"
+    },
+    {
+      "id": "affix-hirish-s-prefix",
+      "name": "Hirish's",
+      "stat_text": "12% increased Mana Regen"
+    },
+    {
+      "id": "affix-to-frost-claw-prefix",
+      "name": "To Frost Claw",
+      "stat_text": "+1 to Frost Claw"
+    },
+    {
+      "id": "affix-ward-decay-threshold-prefix",
+      "name": "Ward Decay Threshold",
+      "stat_text": "+(40-50) Ward Decay Threshold"
+    },
+    {
+      "id": "affix-mana-gained-on-potion-use-prefix",
+      "name": "Mana Gained On Potion Use",
+      "stat_text": "(8-9) Mana Gained on Potion Use"
+    },
+    {
+      "id": "affix-seconds-of-traversal-skill-cooldowns-recovered-on-potion-use-prefix",
+      "name": "Seconds Of Traversal Skill Cooldowns Recovered On Potion Use",
+      "stat_text": "0.5 Seconds of Traversal Skill Cooldowns Recovered on Potion Use"
+    },
+    {
+      "id": "affix-bees-summoned-on-potion-use-prefix",
+      "name": "Bees Summoned On Potion Use",
+      "stat_text": "2 Bees Summoned on Potion Use"
+    },
+    {
+      "id": "affix-ice-drake-s-prefix",
+      "name": "Ice Drake's",
+      "stat_text": "(6-14)% Mana Efficiency with Frost Claw"
+    },
+    {
+      "id": "affix-parrying-prefix",
+      "name": "Parrying",
+      "stat_text": "+1% Parry Chance"
+    },
+    {
+      "id": "affix-manaforged-prefix",
+      "name": "Manaforged",
+      "stat_text": "+(10-17) Mana"
+    },
+    {
+      "id": "affix-of-the-revenant-suffix",
+      "name": "of the Revenant",
+      "stat_text": "+3% Necrotic Penetration"
+    },
+    {
+      "id": "affix-of-the-scorpio-suffix",
+      "name": "of the Scorpio",
+      "stat_text": "+3% Poison Penetration"
+    },
+    {
+      "id": "affix-to-healing-hands-prefix",
+      "name": "To Healing Hands",
+      "stat_text": "+1 to Healing Hands"
+    },
+    {
+      "id": "affix-to-falconry-prefix",
+      "name": "To Falconry",
+      "stat_text": "+1 to Falconry"
+    },
+    {
+      "id": "affix-to-dive-bomb-prefix",
+      "name": "To Dive Bomb",
+      "stat_text": "+1 to Dive Bomb"
+    },
+    {
+      "id": "affix-to-explosive-trap-prefix",
+      "name": "To Explosive Trap",
+      "stat_text": "+1 to Explosive Trap"
+    },
+    {
+      "id": "affix-to-aerial-assault-prefix",
+      "name": "To Aerial Assault",
+      "stat_text": "+1 to Aerial Assault"
+    },
+    {
+      "id": "affix-to-net-prefix",
+      "name": "To Net",
+      "stat_text": "+1 to Net"
+    },
+    {
+      "id": "affix-to-profane-veil-prefix",
+      "name": "To Profane Veil",
+      "stat_text": "+1 to Profane Veil"
+    },
+    {
+      "id": "affix-to-chthonic-fissure-prefix",
+      "name": "To Chthonic Fissure",
+      "stat_text": "+1 to Chthonic Fissure"
+    },
+    {
+      "id": "affix-to-chaos-bolts-prefix",
+      "name": "To Chaos Bolts",
+      "stat_text": "+1 to Chaos Bolts"
+    },
+    {
+      "id": "affix-to-ghostflame-prefix",
+      "name": "To Ghostflame",
+      "stat_text": "+1 to Ghostflame"
+    },
+    {
+      "id": "affix-isolated-prefix",
+      "name": "Isolated",
+      "stat_text": "(12-30)% Less Frequency of expending Storm Stacks"
+    },
+    {
+      "id": "affix-chance-to-gain-a-storm-stack-when-you-use-gathering-storm-an-prefix",
+      "name": "Chance To Gain A Storm Stack When You Use Gathering Storm An",
+      "stat_text": "(7-12)% Chance to gain a Storm Stack when you use Gathering Storm and hit an enemy"
+    },
+    {
+      "id": "affix-razorclawed-prefix",
+      "name": "Razorclawed",
+      "stat_text": "(15-25)% of your Bleed Chance granted to your Falcon"
+    },
+    {
+      "id": "affix-of-scattering-suffix",
+      "name": "of Scattering",
+      "stat_text": "(9-25)% Increased Area with Caltrops"
+    },
+    {
+      "id": "affix-perforating-prefix",
+      "name": "Perforating",
+      "stat_text": "+(32-75)% Chance to apply Critical Vulnerability on hit with Caltrops"
+    },
+    {
+      "id": "affix-winged-prefix",
+      "name": "Winged",
+      "stat_text": "+(5-12)% chance to deal Double Damage with Falcon Strikes"
+    },
+    {
+      "id": "affix-demolitionist-s-prefix",
+      "name": "Demolitionist's",
+      "stat_text": "+1 Max Traps with Explosive Trap"
+    },
+    {
+      "id": "affix-destructive-prefix",
+      "name": "Destructive",
+      "stat_text": "(9-28)% increased area for Throwing Area Skills"
+    },
+    {
+      "id": "affix-chance-for-additional-projectiles-when-you-directly-cast-cha-prefix",
+      "name": "Chance For Additional Projectiles When You Directly Cast Cha",
+      "stat_text": "(7-12)% Chance for 3 additional projectiles when you directly cast Chaos Bolts"
+    },
+    {
+      "id": "affix-increased-spirit-frequency-with-chthonic-fissure-prefix",
+      "name": "Increased Spirit Frequency With Chthonic Fissure",
+      "stat_text": "+(6-11)% Increased Spirit Frequency with Chthonic Fissure"
+    },
+    {
+      "id": "affix-ritualist-s-prefix",
+      "name": "Ritualist's",
+      "stat_text": "+(33-113) Ward per Second while channeling Ghostflame"
+    },
+    {
+      "id": "affix-excoriating-prefix",
+      "name": "Excoriating",
+      "stat_text": "+(9-21)% Mana Efficiency for Ghostflame"
+    },
+    {
+      "id": "affix-ravenous-prefix-753",
+      "name": "Ravenous",
+      "stat_text": "+(7-19)% Mana Efficiency with Soul Feast"
+    },
+    {
+      "id": "affix-concealed-prefix",
+      "name": "Concealed",
+      "stat_text": "(12-31)% increased Duration for Profane Veil"
+    },
+    {
+      "id": "affix-transfusing-prefix",
+      "name": "Transfusing",
+      "stat_text": "+(10-17) Mana"
+    },
+    {
+      "id": "affix-to-heartseeker-prefix",
+      "name": "To Heartseeker",
+      "stat_text": "+1 to Heartseeker"
+    },
+    {
+      "id": "affix-recurve-chance-for-heartseeker-prefix",
+      "name": "Recurve Chance For Heartseeker",
+      "stat_text": "+(5-6)% Recurve Chance for Heartseeker"
+    },
+    {
+      "id": "affix-seeking-prefix",
+      "name": "Seeking",
+      "stat_text": "+(10-20)% Recurve Chance for Heartseeker"
+    },
+    {
+      "id": "affix-chance-to-electrify-on-lightning-hit-prefix",
+      "name": "Chance To Electrify On Lightning Hit",
+      "stat_text": "+(30-33)% Chance to Electrify on Lightning Hit"
+    },
+    {
+      "id": "affix-chance-to-inflict-time-rot-on-void-hit-prefix",
+      "name": "Chance To Inflict Time Rot On Void Hit",
+      "stat_text": "+13% Chance to inflict Time Rot on Void Hit"
+    },
+    {
+      "id": "affix-whirlpool-champion-s-prefix",
+      "name": "Whirlpool Champion's",
+      "stat_text": "+(35-43) Ward Decay Threshold"
+    },
+    {
+      "id": "affix-volcano-champion-s-prefix",
+      "name": "Volcano Champion's",
+      "stat_text": "(14-18)% increased Elemental Critical Strike Chance"
+    },
+    {
+      "id": "affix-profane-champion-s-prefix",
+      "name": "Profane Champion's",
+      "stat_text": "(24-29)% increased Minion Critical Strike Chance"
+    },
+    {
+      "id": "affix-venomous-champion-s-prefix",
+      "name": "Venomous Champion's",
+      "stat_text": "+(10-11)% Chance to Poison on Hit"
+    },
+    {
+      "id": "affix-storm-champion-s-prefix",
+      "name": "Storm Champion's",
+      "stat_text": "+(15-19)% Chance to Electrify on Hit"
+    },
+    {
+      "id": "affix-portal-champion-s-prefix",
+      "name": "Portal Champion's",
+      "stat_text": "1.1 Seconds of Haste after you use Evade"
+    },
+    {
+      "id": "affix-boardman-s-plank-reforged-prefix",
+      "name": "Boardman's Plank Reforged",
+      "stat_text": "(1-2) seconds of Enrage granted to companions hit by your Storm Totem"
+    },
+    {
+      "id": "affix-corsair-s-boarding-shield-reforged-prefix",
+      "name": "Corsair's Boarding Shield Reforged",
+      "stat_text": "+(100-109) Block Effectiveness"
+    },
+    {
+      "id": "affix-locket-of-the-forgotten-knight-reforged-prefix",
+      "name": "Locket of the Forgotten Knight Reforged",
+      "stat_text": "+(5-6)% Chance to inflict Time Rot on Hit"
+    },
+    {
+      "id": "affix-halvar-s-pledge-reforged-prefix",
+      "name": "Halvar's Pledge Reforged",
+      "stat_text": "+(8-10) Spell Physical Damage"
+    },
+    {
+      "id": "affix-the-invoker-s-static-touch-reforged-prefix",
+      "name": "The Invoker's Static Touch Reforged",
+      "stat_text": "+3 Spell Lightning Damage"
+    },
+    {
+      "id": "affix-isadora-s-revenge-reforged-suffix",
+      "name": "Isadora's Revenge Reforged",
+      "stat_text": "+2% Necrotic Penetration"
+    },
+    {
+      "id": "affix-lich-s-envy-reforged-prefix",
+      "name": "Lich's Envy Reforged",
+      "stat_text": "+(2-3) Spell Fire Damage for Infernal Shade per Active Dread Shade"
+    },
+    {
+      "id": "affix-lich-s-scorn-reforged-prefix",
+      "name": "Lich's Scorn Reforged",
+      "stat_text": "100% of Dread Shade Damage and Effects Converted to Cold"
+    },
+    {
+      "id": "affix-ruby-fang-aegis-reforged-prefix",
+      "name": "Ruby Fang Aegis Reforged",
+      "stat_text": "+(25-34)% Chance to Poison on Fire Hit"
+    },
+    {
+      "id": "affix-sinathia-s-resurrection-reforged-prefix",
+      "name": "Sinathia's Resurrection Reforged",
+      "stat_text": "(25-44)% increased Minion Health"
+    },
+    {
+      "id": "affix-sunforged-cuirass-reforged-prefix",
+      "name": "Sunforged Cuirass Reforged",
+      "stat_text": "+(1-2)% Chance to forge a weapon when hit"
+    },
+    {
+      "id": "affix-sunforged-hammer-reforged-prefix",
+      "name": "Sunforged Hammer Reforged",
+      "stat_text": "+(10-13)% Ignite Chance per Forged Weapon"
+    },
+    {
+      "id": "affix-vilatria-s-downfall-reforged-prefix",
+      "name": "Vilatria's Downfall Reforged",
+      "stat_text": "100% of Meteor Base Damage Converted to Lightning"
+    },
+    {
+      "id": "affix-loom-walker-s-prefix",
+      "name": "Loom Walker's",
+      "stat_text": "(21-30)% Increased Stun Chance"
+    },
+    {
+      "id": "affix-widow-s-prefix",
+      "name": "Widow's",
+      "stat_text": "+(1-2)% Poison Penetration"
+    },
+    {
+      "id": "affix-fateweaver-s-prefix",
+      "name": "Fateweaver's",
+      "stat_text": "+(1-2)% Necrotic Penetration"
+    },
+    {
+      "id": "affix-of-the-briar-suffix",
+      "name": "of the Briar",
+      "stat_text": "(5-15)% of Damage Reflected"
+    },
+    {
+      "id": "affix-of-needles-suffix",
+      "name": "of Needles",
+      "stat_text": "(2-4)% reduced Bonus Damage Taken from Critical Strikes"
+    },
+    {
+      "id": "affix-inspired-prefix",
+      "name": "Inspired",
+      "stat_text": "+(8-12) Mana"
+    },
+    {
+      "id": "affix-jumping-spider-s-prefix",
+      "name": "Jumping Spider's",
+      "stat_text": "+(78-100) Stun Avoidance"
+    },
+    {
+      "id": "affix-preserving-prefix",
+      "name": "Preserving",
+      "stat_text": "+(5-7)% Ward Retention"
+    },
+    {
+      "id": "affix-of-many-threads-suffix",
+      "name": "of Many Threads",
+      "stat_text": "+(4-6)% Elemental Resistance"
+    },
+    {
+      "id": "affix-of-revelry-suffix",
+      "name": "of Revelry",
+      "stat_text": "(5-10)% Increased Chance To Find Potions"
+    },
+    {
+      "id": "affix-wolf-spider-s-prefix",
+      "name": "Wolf Spider's",
+      "stat_text": "+(15-20)% Chance to inflict Bleed on Hit"
+    },
+    {
+      "id": "affix-recluse-s-prefix",
+      "name": "Recluse's",
+      "stat_text": "+(15-20)% Chance to Poison on Hit"
+    },
+    {
+      "id": "affix-paralysing-prefix",
+      "name": "Paralysing",
+      "stat_text": "(16-20)% Increased Stun Duration"
+    },
+    {
+      "id": "affix-fateweaver-s-prefix-863",
+      "name": "Fateweaver's",
+      "stat_text": "+(3-4)% Necrotic Penetration"
+    },
+    {
+      "id": "affix-widow-s-prefix-865",
+      "name": "Widow's",
+      "stat_text": "+(3-4)% Poison Penetration"
+    },
+    {
+      "id": "affix-gilded-prefix",
+      "name": "Gilded",
+      "stat_text": "(16-30)% Chance to Gain 30 Ward when Hit"
+    },
+    {
+      "id": "affix-lava-gatherer-s-prefix",
+      "name": "Lava Gatherer's",
+      "stat_text": "+(15-20)% Chance to Ignite on Hit"
+    },
+    {
+      "id": "affix-apostle-s-prefix",
+      "name": "Apostle's",
+      "stat_text": "+(20-30)% Chance to Shock on Hit"
+    },
+    {
+      "id": "affix-severing-prefix",
+      "name": "Severing",
+      "stat_text": "(22-30)% increased Critical Strike Chance"
+    },
+    {
+      "id": "affix-venom-drinker-s-prefix",
+      "name": "Venom Drinker's",
+      "stat_text": "(22-25)% of Potion Health Converted to Ward"
+    },
+    {
+      "id": "affix-of-many-threads-suffix-886",
+      "name": "of Many Threads",
+      "stat_text": "+(8-12)% Elemental Resistance"
+    },
+    {
+      "id": "affix-of-the-firstborn-suffix",
+      "name": "of the Firstborn",
+      "stat_text": "+(40-80) Block Effectiveness"
+    },
+    {
+      "id": "affix-increased-critical-strike-chance-suffix",
+      "name": "Increased Critical Strike Chance",
+      "stat_text": "(1-2)% increased Critical Strike Chance"
+    },
+    {
+      "id": "affix-increased-cooldown-recovery-speed-suffix",
+      "name": "Increased Cooldown Recovery Speed",
+      "stat_text": "1% Increased Cooldown Recovery Speed"
+    },
+    {
+      "id": "affix-ward-decay-threshold-suffix",
+      "name": "Ward Decay Threshold",
+      "stat_text": "+(1-2) Ward Decay Threshold"
+    },
+    {
+      "id": "affix-chance-to-not-consume-a-potion-on-potion-use-suffix",
+      "name": "Chance To Not Consume A Potion On Potion Use",
+      "stat_text": "+1% Chance to not consume a Potion on Potion use"
+    },
+    {
+      "id": "affix-increased-frostbite-duration-suffix",
+      "name": "Increased Frostbite Duration",
+      "stat_text": "1% Increased Frostbite Duration"
+    },
+    {
+      "id": "affix-chance-to-apply-a-spark-charge-on-lightning-melee-hit-suffix",
+      "name": "Chance To Apply A Spark Charge On Lightning Melee Hit",
+      "stat_text": "+1% Chance to apply a Spark Charge on Lightning Melee Hit"
+    },
+    {
+      "id": "affix-increased-mana-regen-suffix",
+      "name": "Increased Mana Regen",
+      "stat_text": "(1-2)% increased Mana Regen"
+    },
+    {
+      "id": "affix-ward-decay-threshold-suffix-906",
+      "name": "Ward Decay Threshold",
+      "stat_text": "+(1-2) Ward Decay Threshold"
+    },
+    {
+      "id": "affix-increased-critical-strike-chance-while-using-a-catalyst-suffix",
+      "name": "Increased Critical Strike Chance While Using A Catalyst",
+      "stat_text": "(1-2)% Increased Critical Strike Chance while using a Catalyst"
+    },
+    {
+      "id": "affix-increased-frenzy-effect-suffix",
+      "name": "Increased Frenzy Effect",
+      "stat_text": "1% Increased Frenzy Effect"
+    },
+    {
+      "id": "affix-increased-companion-revive-speed-suffix",
+      "name": "Increased Companion Revive Speed",
+      "stat_text": "(1-2)% Increased Companion Revive Speed"
+    },
+    {
+      "id": "affix-increased-shock-duration-suffix",
+      "name": "Increased Shock Duration",
+      "stat_text": "(1-2)% Increased Shock Duration"
+    },
+    {
+      "id": "affix-mana-suffix",
+      "name": "Mana",
+      "stat_text": "+(1-2) Mana"
+    },
+    {
+      "id": "affix-chance-to-inflict-time-rot-on-void-hit-suffix",
+      "name": "Chance To Inflict Time Rot On Void Hit",
+      "stat_text": "+1% Chance to inflict Time Rot on Void Hit"
+    },
+    {
+      "id": "affix-chance-to-electrify-on-lightning-hit-suffix",
+      "name": "Chance To Electrify On Lightning Hit",
+      "stat_text": "+(1-2)% Chance to Electrify on Lightning Hit"
+    },
+    {
+      "id": "affix-increased-electrify-duration-suffix",
+      "name": "Increased Electrify Duration",
+      "stat_text": "(1-2)% Increased Electrify Duration"
+    },
+    {
+      "id": "affix-of-minion-damage-leeched-as-health-suffix",
+      "name": "Of Minion Damage Leeched As Health",
+      "stat_text": "0.1% of Minion Damage Leeched as Health"
+    },
+    {
+      "id": "affix-increased-cooldown-recovery-speed-of-reap-suffix",
+      "name": "Increased Cooldown Recovery Speed Of Reap",
+      "stat_text": "+1% Increased Cooldown Recovery Speed of Reap"
+    },
+    {
+      "id": "affix-increased-crimson-shroud-duration-suffix",
+      "name": "Increased Crimson Shroud Duration",
+      "stat_text": "1% Increased Crimson Shroud Duration"
+    },
+    {
+      "id": "affix-increased-silver-shroud-duration-suffix",
+      "name": "Increased Silver Shroud Duration",
+      "stat_text": "(1-2)% Increased Silver Shroud Duration"
+    },
+    {
+      "id": "affix-chance-to-receive-a-glancing-blow-when-hit-suffix",
+      "name": "Chance To Receive A Glancing Blow When Hit",
+      "stat_text": "1% Chance to receive a Glancing Blow when hit"
+    },
+    {
+      "id": "affix-increased-effect-of-haste-on-you-suffix",
+      "name": "Increased Effect Of Haste On You",
+      "stat_text": "1% increased Effect of Haste on You"
+    },
+    {
+      "id": "affix-chance-to-not-consume-silver-shrouds-when-hit-suffix",
+      "name": "Chance To Not Consume Silver Shrouds When Hit",
+      "stat_text": "1% Chance to not consume Silver Shrouds when hit"
+    },
+    {
+      "id": "affix-to-flay-prefix",
+      "name": "To Flay",
+      "stat_text": "+1 to Flay"
+    },
+    {
+      "id": "affix-centurion-s-prefix",
+      "name": "Centurion's",
+      "stat_text": "(6-7)% increased area for Minion Area Skills"
+    },
+    {
+      "id": "affix-doppelganger-s-mimicry-reforged-prefix",
+      "name": "Doppelganger's Mimicry Reforged",
+      "stat_text": "(5-6)% Chance for consumed Shadows to create a new Shadow"
+    },
+    {
+      "id": "affix-doppelganger-s-facade-reforged-prefix",
+      "name": "Doppelganger's Facade Reforged",
+      "stat_text": "(5-13)% Chance to gain a stack of Dusk Shroud when you consume a Shadow"
+    },
+    {
+      "id": "affix-you-have-frenzy-prefix",
+      "name": "You Have Frenzy",
+      "stat_text": "You have Frenzy"
+    },
+    {
+      "id": "affix-apiarist-s-comb-reforged-prefix",
+      "name": "Apiarist's Comb Reforged",
+      "stat_text": "+1 Bees Per 10 Seconds"
+    },
+    {
+      "id": "affix-jormun-s-hunger-reforged-prefix",
+      "name": "Jormun's Hunger Reforged",
+      "stat_text": "+(4-6)% Chance to apply Critical Vulnerability on Melee Hit"
+    },
+    {
+      "id": "affix-jormun-s-thirst-reforged-prefix",
+      "name": "Jormun's Thirst Reforged",
+      "stat_text": "(2-4)% Chance to not consume a Potion when you use a Potion and restore at least 20% of Maximum Health"
+    },
+    {
+      "id": "affix-keplahan-s-cryolith-reforged-prefix",
+      "name": "Keplahan's Cryolith Reforged",
+      "stat_text": "(1-9)% Chance to cast cold Volcanic Orb when you directly use a cold melee attack or cold traversal skill (3 second cooldown)"
+    },
+    {
+      "id": "affix-keplahan-s-pyrolith-reforged-prefix",
+      "name": "Keplahan's Pyrolith Reforged",
+      "stat_text": "(1-9)% Chance to cast fire Volcanic Orb when you directly use a fire melee attack or fire traversal skill (3 second cooldown)"
+    },
+    {
+      "id": "affix-kuzon-s-fury-reforged-prefix",
+      "name": "Kuzon's Fury Reforged",
+      "stat_text": "+(5-11)% chance to throw a Burning Dagger when you use a melee fire attack and hit at least one enemy, doubled for Dancing Strikes (up to 4 times per second)"
+    },
+    {
+      "id": "affix-kuzon-s-guise-reforged-prefix",
+      "name": "Kuzon's Guise Reforged",
+      "stat_text": "+(5-13)% Chance to Blind on Fire Hit"
+    },
+    {
+      "id": "affix-chance-on-block-to-apply-marked-for-death-to-the-attacker-prefix",
+      "name": "Chance On Block To Apply Marked For Death To The Attacker",
+      "stat_text": "+(60-65)% Chance on Block to apply Marked For Death to the Attacker"
+    },
+    {
+      "id": "affix-chance-to-slow-on-bow-hit-prefix-968",
+      "name": "Chance To Slow On Bow Hit",
+      "stat_text": "+(20-23)% Chance to Slow on Bow Hit"
+    },
+    {
+      "id": "affix-increased-stun-chance-prefix",
+      "name": "Increased Stun Chance",
+      "stat_text": "(150-158)% Increased Stun Chance"
+    },
+    {
+      "id": "affix-increased-area-for-melee-area-skills-prefix",
+      "name": "Increased Area For Melee Area Skills",
+      "stat_text": "(20-21)% increased area for Melee Area Skills"
+    },
+    {
+      "id": "affix-increased-area-for-area-spells-prefix",
+      "name": "Increased Area For Area Spells",
+      "stat_text": "(25-28)% increased area for Area Spells"
+    },
+    {
+      "id": "affix-increased-mana-prefix",
+      "name": "Increased Mana",
+      "stat_text": "4% increased Mana"
+    },
+    {
+      "id": "affix-chance-to-poison-on-hit-prefix",
+      "name": "Chance To Poison On Hit",
+      "stat_text": "+(30-35)% Chance to Poison on Hit"
+    },
+    {
+      "id": "affix-chance-to-apply-frailty-on-hit-prefix",
+      "name": "Chance To Apply Frailty On Hit",
+      "stat_text": "+(15-17)% Chance to apply Frailty on Hit"
+    },
+    {
+      "id": "affix-chance-to-slow-on-hit-prefix",
+      "name": "Chance To Slow On Hit",
+      "stat_text": "+(15-17)% Chance to Slow on Hit"
+    },
+    {
+      "id": "affix-chance-to-inflict-bleed-on-hit-prefix-983",
+      "name": "Chance To Inflict Bleed On Hit",
+      "stat_text": "+(30-35)% Chance to inflict Bleed on Hit"
+    },
+    {
+      "id": "affix-parry-chance-while-dual-wielding-prefix",
+      "name": "Parry Chance While Dual Wielding",
+      "stat_text": "+4% Parry Chance while Dual Wielding"
+    },
+    {
+      "id": "affix-chance-to-cleanse-all-ailments-when-you-evade-prefix",
+      "name": "Chance To Cleanse All Ailments When You Evade",
+      "stat_text": "+100% Chance to cleanse all ailments when you Evade"
+    },
+    {
+      "id": "affix-increased-effect-of-haste-on-you-prefix",
+      "name": "Increased Effect Of Haste On You",
+      "stat_text": "(5-7)% increased Effect of Haste on You"
+    },
+    {
+      "id": "affix-evade-charge-prefix",
+      "name": "Evade Charge",
+      "stat_text": "+1 Evade Charge"
+    },
+    {
+      "id": "affix-mana-gained-on-potion-use-prefix-997",
+      "name": "Mana Gained On Potion Use",
+      "stat_text": "5 Mana Gained on Potion Use"
+    },
+    {
+      "id": "affix-mana-prefix",
+      "name": "Mana",
+      "stat_text": "+(30-32) Mana"
+    },
+    {
+      "id": "affix-potion-slots-prefix",
+      "name": "Potion Slots",
+      "stat_text": "+1 Potion Slots"
+    },
+    {
+      "id": "affix-slow-immunity-prefix",
+      "name": "Slow Immunity",
+      "stat_text": "100% Slow Immunity"
+    },
+    {
+      "id": "affix-of-missing-health-gained-as-ward-per-second-prefix",
+      "name": "Of Missing Health Gained As Ward Per Second",
+      "stat_text": "4% of Missing Health gained as Ward per second"
+    },
+    {
+      "id": "affix-of-damage-leeched-as-health-prefix",
+      "name": "Of Damage Leeched As Health",
+      "stat_text": "0.1% of Damage Leeched as Health"
+    },
+    {
+      "id": "affix-chill-immunity-prefix",
+      "name": "Chill Immunity",
+      "stat_text": "100% Chill Immunity"
+    },
+    {
+      "id": "affix-increased-mana-prefix-1009",
+      "name": "Increased Mana",
+      "stat_text": "(8-9)% increased Mana"
+    },
+    {
+      "id": "affix-to-all-attributes-with-at-least-corrupted-non-idol-items-equ-prefix",
+      "name": "To All Attributes With At Least Corrupted Non-idol Items Equ",
+      "stat_text": "+8 to All Attributes with at least 7 Corrupted non-Idol Items equipped"
+    },
+    {
+      "id": "affix-stun-immunity-prefix",
+      "name": "Stun Immunity",
+      "stat_text": "+100% Stun Immunity"
+    },
+    {
+      "id": "affix-of-missing-health-gained-as-ward-per-second-prefix-1013",
+      "name": "Of Missing Health Gained As Ward Per Second",
+      "stat_text": "4% of Missing Health gained as Ward per second"
+    },
+    {
+      "id": "affix-to-all-skills-prefix",
+      "name": "To All Skills",
+      "stat_text": "+1 to All Skills"
+    },
+    {
+      "id": "affix-increased-mana-prefix-1021",
+      "name": "Increased Mana",
+      "stat_text": "8% increased Mana"
+    },
+    {
+      "id": "affix-of-damage-dealt-to-mana-before-health-prefix-1022",
+      "name": "Of Damage Dealt To Mana Before Health",
+      "stat_text": "14% of Damage Dealt to Mana Before Health"
+    },
+    {
+      "id": "affix-elemental-resistance-prefix",
+      "name": "Elemental Resistance",
+      "stat_text": "+4% Elemental Resistance"
+    },
+    {
+      "id": "affix-increased-effect-of-frenzy-on-you-prefix",
+      "name": "Increased Effect Of Frenzy On You",
+      "stat_text": "(10-20)% increased Effect of Frenzy on You"
+    },
+    {
+      "id": "affix-increased-effect-of-haste-on-you-prefix-1030",
+      "name": "Increased Effect Of Haste On You",
+      "stat_text": "(10-20)% increased Effect of Haste on You"
+    },
+    {
+      "id": "affix-chill-immunity-prefix-1031",
+      "name": "Chill Immunity",
+      "stat_text": "100% Chill Immunity"
+    },
+    {
+      "id": "affix-block-effectiveness-prefix",
+      "name": "Block Effectiveness",
+      "stat_text": "+(20-40) Block Effectiveness"
+    },
+    {
+      "id": "affix-minion-elemental-resistance-prefix",
+      "name": "Minion Elemental Resistance",
+      "stat_text": "+(5-10)% Minion Elemental Resistance"
+    },
+    {
+      "id": "affix-poison-immunity-for-minions-prefix",
+      "name": "Poison Immunity For Minions",
+      "stat_text": "100% Poison Immunity for Minions"
+    },
+    {
+      "id": "affix-bleed-immunity-for-minions-prefix",
+      "name": "Bleed Immunity For Minions",
+      "stat_text": "100% Bleed Immunity for Minions"
+    },
+    {
+      "id": "affix-increased-mana-regen-per-maximum-mana-prefix",
+      "name": "Increased Mana Regen Per Maximum Mana",
+      "stat_text": "1% increased Mana Regen per 100 Maximum Mana"
+    },
+    {
+      "id": "affix-slow-immunity-prefix-1043",
+      "name": "Slow Immunity",
+      "stat_text": "100% Slow Immunity"
+    },
+    {
+      "id": "affix-chill-immunity-for-minions-prefix",
+      "name": "Chill Immunity For Minions",
+      "stat_text": "100% Chill Immunity for Minions"
+    },
+    {
+      "id": "affix-increased-mana-regen-prefix",
+      "name": "Increased Mana Regen",
+      "stat_text": "(3-5)% increased Mana Regen"
+    },
+    {
+      "id": "affix-increased-cooldown-recovery-speed-for-evade-prefix",
+      "name": "Increased Cooldown Recovery Speed For Evade",
+      "stat_text": "(2-5)% increased Cooldown Recovery Speed for Evade"
+    },
+    {
+      "id": "affix-stun-avoidance-prefix",
+      "name": "Stun Avoidance",
+      "stat_text": "+(25-40) Stun Avoidance"
+    },
+    {
+      "id": "affix-chance-to-chill-on-hit-prefix",
+      "name": "Chance To Chill On Hit",
+      "stat_text": "+(5-10)% Chance to Chill on Hit"
+    },
+    {
+      "id": "affix-chance-to-chill-on-minion-hit-prefix",
+      "name": "Chance To Chill On Minion Hit",
+      "stat_text": "+(5-10)% Chance to Chill on Minion Hit"
+    },
+    {
+      "id": "affix-increased-critical-strike-chance-prefix-1057",
+      "name": "Increased Critical Strike Chance",
+      "stat_text": "(4-8)% increased Critical Strike Chance"
+    },
+    {
+      "id": "affix-of-lightning-damage-taken-as-physical-prefix",
+      "name": "Of Lightning Damage Taken As Physical",
+      "stat_text": "(2-3)% of Lightning Damage Taken as Physical"
+    },
+    {
+      "id": "affix-of-necrotic-damage-taken-as-physical-prefix-1062",
+      "name": "Of Necrotic Damage Taken As Physical",
+      "stat_text": "(2-3)% of Necrotic Damage Taken as Physical"
+    },
+    {
+      "id": "affix-of-slow-chance-converted-to-shred-armor-chance-prefix",
+      "name": "Of Slow Chance Converted To Shred Armor Chance",
+      "stat_text": "100% of Slow Chance Converted to Shred Armor Chance"
+    },
+    {
+      "id": "affix-chance-to-slow-on-hit-prefix-1065",
+      "name": "Chance To Slow On Hit",
+      "stat_text": "+(3-5)% Chance to Slow on Hit"
+    },
+    {
+      "id": "affix-reduced-bonus-damage-taken-from-critical-strikes-prefix",
+      "name": "Reduced Bonus Damage Taken From Critical Strikes",
+      "stat_text": "(1-2)% reduced Bonus Damage Taken from Critical Strikes"
+    },
+    {
+      "id": "affix-chance-to-apply-frailty-on-minion-hit-prefix",
+      "name": "Chance To Apply Frailty On Minion Hit",
+      "stat_text": "+(2-4)% Chance to apply Frailty on Minion Hit"
+    },
+    {
+      "id": "affix-chance-to-apply-frailty-on-hit-prefix-1069",
+      "name": "Chance To Apply Frailty On Hit",
+      "stat_text": "+(3-5)% Chance to apply Frailty on Hit"
+    },
+    {
+      "id": "affix-bees-per-10-seconds-prefix",
+      "name": "Bees per 10 Seconds",
+      "stat_text": "+1 Bees Per 10 Seconds"
+    },
+    {
+      "id": "affix-elemental-bees-per-seconds-prefix",
+      "name": "Elemental Bees Per Seconds",
+      "stat_text": "+1 Elemental Bees Per 10 Seconds"
+    },
+    {
+      "id": "affix-cannot-be-stunned-by-blocked-hits-prefix",
+      "name": "Cannot Be Stunned By Blocked Hits",
+      "stat_text": "Cannot be Stunned by Blocked Hits"
+    },
+    {
+      "id": "affix-chance-to-gain-haste-for-seconds-after-you-block-prefix",
+      "name": "Chance To Gain Haste For Seconds After You Block",
+      "stat_text": "(30-35)% chance to gain Haste for 5 seconds after you Block"
+    },
+    {
+      "id": "affix-block-effectiveness-prefix-1082",
+      "name": "Block Effectiveness",
+      "stat_text": "+(400-428) Block Effectiveness"
+    },
+    {
+      "id": "affix-amplifying-prefix",
+      "name": "Amplifying",
+      "stat_text": "(7-8)% increased Effect of Prefixes and Suffixes for Idols in Refracted Slots"
+    },
+    {
+      "id": "affix-to-bladestorm-prefix",
+      "name": "To Bladestorm",
+      "stat_text": "+1 to Bladestorm"
+    },
+    {
+      "id": "affix-to-shadow-rend-prefix",
+      "name": "To Shadow Rend",
+      "stat_text": "+1 to Shadow Rend"
+    },
+    {
+      "id": "affix-entwined-prefix",
+      "name": "Entwined",
+      "stat_text": "(10-12)% increased Effect of Weaver Enchantment Affixes for Idols in Refracted Slots"
+    },
+    {
+      "id": "affix-sunrise-prefix",
+      "name": "Sunrise",
+      "stat_text": "(10-12)% increased Effect of Prefixes for Idols in Refracted Slots"
+    },
+    {
+      "id": "affix-sunset-prefix",
+      "name": "Sunset",
+      "stat_text": "(10-12)% increased Effect of Suffixes for Idols in Refracted Slots"
+    },
+    {
+      "id": "affix-prodigious-prefix",
+      "name": "Prodigious",
+      "stat_text": "+1 Maximum Omen Idols"
+    },
+    {
+      "id": "affix-of-the-woven-sun-suffix",
+      "name": "of the Woven Sun",
+      "stat_text": "2% Reduced Bonus Damage Taken from Critical Strikes per Equipped Heretical Idol"
+    },
+    {
+      "id": "affix-of-azure-fountains-suffix",
+      "name": "of Azure Fountains",
+      "stat_text": "2% increased Mana Regen per Equipped Ornate Idol"
+    },
+    {
+      "id": "affix-of-dysis-suffix",
+      "name": "of Dysis",
+      "stat_text": "+2 Mana per Idol in a Refracted Slot"
+    },
+    {
+      "id": "affix-of-arctus-suffix",
+      "name": "of Arctus",
+      "stat_text": "+(6-7) Ward Decay Threshold per Idol in a Refracted Slot"
+    },
+    {
+      "id": "affix-mana-per-equipped-corrupted-idol-prefix",
+      "name": "Mana Per Equipped Corrupted Idol",
+      "stat_text": "+1 Mana per Equipped Corrupted Idol"
+    },
+    {
+      "id": "affix-ward-decay-threshold-per-equipped-corrupted-idol-prefix",
+      "name": "Ward Decay Threshold Per Equipped Corrupted Idol",
+      "stat_text": "+2 Ward Decay Threshold per Equipped Corrupted Idol"
+    },
+    {
+      "id": "affix-corrupted-idols-equipped-at-maximum-prefix",
+      "name": "Corrupted Idols Equipped At Maximum",
+      "stat_text": "5 Corrupted Idols equipped at Maximum"
+    },
+    {
+      "id": "affix-heretical-idols-equipped-at-maximum-prefix",
+      "name": "Heretical Idols Equipped At Maximum",
+      "stat_text": "3 Heretical Idols equipped at Maximum"
+    },
+    {
+      "id": "affix-of-shield-throw-base-damage-converted-to-void-prefix",
+      "name": "Of Shield Throw Base Damage Converted To Void",
+      "stat_text": "100% of Shield Throw Base Damage Converted to Void"
+    },
+    {
+      "id": "affix-seconds-of-frenzy-after-you-use-evade-prefix",
+      "name": "Seconds Of Frenzy After You Use Evade",
+      "stat_text": "(1-4) Seconds of Frenzy after you use Evade"
+    }
+  ]
+}

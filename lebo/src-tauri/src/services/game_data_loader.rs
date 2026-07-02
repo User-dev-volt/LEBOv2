@@ -1,8 +1,12 @@
 use std::collections::HashMap;
 use scoring_core::{
-    game_data::{ArchetypeWeights, ArchetypeWeightsEntry, BaseClassStats, GameData, IdolAffixEffect, NodeEffect},
-    modifier::{Condition, ModifierType, Scope, StatKey},
+    game_data::{
+        ArchetypeWeights, ArchetypeWeightsEntry, BaseClassStats, GameData, GearAffixData,
+        GearAffixStat, IdolAffixEffect, NodeEffect,
+    },
+    modifier::{AffixPosition, Condition, ModifierType, Scope, StatKey},
 };
+use crate::models::item_data::{AffixTier, RawAffix};
 use crate::services::game_data_service;
 
 /// Constructs `scoring_core::GameData` from the bundled disk JSON files.
@@ -181,8 +185,84 @@ pub fn build_scoring_game_data(app_handle: &tauri::AppHandle) -> Result<GameData
         node_mastery_depth,
         affix_scope,
         unique_items,
-        gear_affixes: std::collections::HashMap::new(),
+        gear_affixes: load_gear_affixes(app_handle),
     })
+}
+
+/// Loads `affixes.json` into `GameData.gear_affixes` (Story 4.0, AC3). Mirrors the idol path:
+/// resolve each affix's snake_case `statKey` via `stat_key_from_str`, average per-tier ranges into
+/// `values_by_tier`. Degrades gracefully to an empty map on any I/O/parse error (run_gear_scoring
+/// already handles empty → zero scores, so a bad dataset never panics startup).
+fn load_gear_affixes(app_handle: &tauri::AppHandle) -> HashMap<String, GearAffixData> {
+    match load_raw_affixes(app_handle) {
+        Ok(raw) => parse_gear_affixes(&raw),
+        Err(e) => {
+            eprintln!("gear_affixes load failed (degrading to empty map): {e}");
+            HashMap::new()
+        }
+    }
+}
+
+fn load_raw_affixes(app_handle: &tauri::AppHandle) -> Result<Vec<RawAffix>, String> {
+    let data_dir = crate::services::item_data_service::copy_bundled_item_resources(app_handle)?;
+    let raw = std::fs::read_to_string(data_dir.join("affixes.json"))
+        .map_err(|e| format!("read affixes.json: {e}"))?;
+    serde_json::from_str(&raw).map_err(|e| format!("parse affixes.json: {e}"))
+}
+
+fn tiers_to_values(tiers: &[AffixTier]) -> HashMap<u32, f64> {
+    // Average each tier's min/max range — the idol averaging idiom (game_data_loader.rs idol path).
+    tiers.iter().map(|t| (t.tier, (t.min_value + t.max_value) / 2.0)).collect()
+}
+
+/// Pure `RawAffix` → `GearAffixData` transform (testable without a Tauri handle). Only
+/// prefix/suffix craftable affixes with a resolvable PRIMARY statKey are inserted — an affix whose
+/// primary key is null/unresolvable is skipped entirely (never inserted as a dead key; the coverage
+/// gate + manifest own the unmapped tail). Hybrid `extraStats` clauses are added when resolvable.
+pub(crate) fn parse_gear_affixes(affixes: &[RawAffix]) -> HashMap<String, GearAffixData> {
+    let mut map: HashMap<String, GearAffixData> = HashMap::new();
+    for a in affixes {
+        let affix_class = match a.affix_type.as_str() {
+            "prefix" => AffixPosition::Prefix,
+            "suffix" => AffixPosition::Suffix,
+            _ => continue, // implicits/other are not craftable slot affixes
+        };
+        let Some(primary_key) = a.stat_key.as_deref().and_then(stat_key_from_str) else {
+            continue; // no resolvable primary stat → skip (no dead-key affix)
+        };
+        let mut stats = vec![GearAffixStat {
+            stat_key: primary_key,
+            modifier_type: ModifierType::from_data_str(a.modifier_type.as_deref()),
+            values_by_tier: tiers_to_values(&a.tiers),
+        }];
+        for ex in &a.extra_stats {
+            if let Some(k) = ex.stat_key.as_deref().and_then(stat_key_from_str) {
+                stats.push(GearAffixStat {
+                    stat_key: k,
+                    modifier_type: ModifierType::from_data_str(ex.modifier_type.as_deref()),
+                    values_by_tier: tiers_to_values(&ex.tiers),
+                });
+            }
+        }
+        let damage_elements = a
+            .damage_type
+            .as_deref()
+            .filter(|d| !d.is_empty())
+            .map(|d| vec![d.to_string()])
+            .unwrap_or_default();
+        map.insert(
+            a.id.clone(),
+            GearAffixData {
+                display_name: a.name.clone(),
+                affix_class,
+                scope: Scope::from_data_str(a.scope.as_deref()),
+                damage_elements,
+                item_slots: a.item_slots.clone(),
+                stats,
+            },
+        );
+    }
+    map
 }
 
 /// Converts `RawGameNode.effects` + the node's `modifier_type` string into scoring-core `NodeEffect`s.
@@ -514,46 +594,98 @@ fn build_seeded_unique_items() -> Vec<scoring_core::game_data::UniqueItem> {
     ]
 }
 
-/// Maps idol affix JSON stat key strings to `StatKey` enum variants.
-/// Returns `None` for unknown keys — the affix is silently dropped (FR-A6 pattern).
+/// Maps snake_case affix stat-key strings (from idol-data.json AND affixes.json) to `StatKey`
+/// variants. Single canonical resolver for idols + gear (Story 4.0, Decision D1). Returns `None`
+/// for unknown/inert keys — the affix (or that stat clause) is silently dropped (FR-A6 pattern).
+///
+/// `stun_chance` is deliberately ABSENT: `StunChance` is inert (no compute/* module surfaces it),
+/// so mapping it would ship a dead key (Source Audit; memory stun-chance-inert-unowned). The
+/// transform emits `statKey: null` for stun, and this resolver would drop it anyway.
 fn stat_key_from_str(s: &str) -> Option<StatKey> {
-    match s {
-        "added_fire_damage"          => Some(StatKey::FlatAddedFireDamage),
-        "increased_physical_damage"  => Some(StatKey::IncreasedPhysicalDamage),
-        "fire_resistance"            => Some(StatKey::FireResistance),
-        "cold_resistance"            => Some(StatKey::ColdResistance),
-        "lightning_resistance"       => Some(StatKey::LightningResistance),
-        "increased_fire_damage"      => Some(StatKey::IncreasedFireDamage),
-        "increased_cold_damage"      => Some(StatKey::IncreasedColdDamage),
-        "increased_void_damage"      => Some(StatKey::IncreasedVoidDamage),
-        "max_hp"                     => Some(StatKey::MaxHp),
-        "critical_strike_chance"     => Some(StatKey::CriticalStrikeChance),
-        "attack_speed"               => Some(StatKey::AttackSpeed),
-        "cast_speed"                 => Some(StatKey::CastSpeed),
-        "all_resistances"            => Some(StatKey::AllResistances),
-        "increased_spell_damage"     => Some(StatKey::IncreasedSpellDamage),
-        "increased_minion_damage"    => Some(StatKey::IncreasedMinionDamage),
-        "armor"                      => Some(StatKey::Armor),
-        "max_hp_percent"             => Some(StatKey::MaxHpPercent),
-        "critical_strike_multiplier" => Some(StatKey::CriticalStrikeMultiplier),
-        "void_resistance"            => Some(StatKey::VoidResistance),
-        "poison_resistance"          => Some(StatKey::PoisonResistance),
-        "endurance_threshold"        => Some(StatKey::EnduranceThreshold),
-        "increased_damage"           => Some(StatKey::IncreasedDamage),
-        "ward_per_second"            => Some(StatKey::WardPerSecond),
-        "increased_area_damage"      => Some(StatKey::IncreasedAreaDamage),
-        "critical_strike_avoidance"  => Some(StatKey::CriticalStrikeAvoidance),
-        "movement_speed"             => Some(StatKey::MovementSpeed),
-        "dodge_rating"               => Some(StatKey::DodgeRating),
-        "life_leech_percent"         => Some(StatKey::LifeLeechPercent),
-        "increased_lightning_damage" => Some(StatKey::IncreasedLightningDamage),
-        "necrotic_resistance"        => Some(StatKey::NecroticResistance),
-        "hp_regen_per_sec"           => Some(StatKey::HpRegenPerSec),
-        "freeze_rate_multiplier"     => Some(StatKey::FreezeRateMultiplier),
-        "ward_on_hit"                => Some(StatKey::WardOnHit),
-        "ignite_duration"            => Some(StatKey::IgniteDuration),
-        _                            => None,
-    }
+    Some(match s {
+        // Damage — generic
+        "increased_damage" => StatKey::IncreasedDamage,
+        "more_damage" => StatKey::MoreDamage,
+        // Damage — element
+        "increased_fire_damage" => StatKey::IncreasedFireDamage,
+        "increased_cold_damage" => StatKey::IncreasedColdDamage,
+        "increased_lightning_damage" => StatKey::IncreasedLightningDamage,
+        "increased_void_damage" => StatKey::IncreasedVoidDamage,
+        "increased_poison_damage" => StatKey::IncreasedPoisonDamage,
+        "increased_physical_damage" => StatKey::IncreasedPhysicalDamage,
+        "increased_necrotic_damage" => StatKey::IncreasedNecroticDamage,
+        "increased_bleed_damage" => StatKey::IncreasedBleedDamage,
+        "increased_ignite_damage" => StatKey::IncreasedIgniteDamage,
+        // Damage — delivery
+        "increased_spell_damage" => StatKey::IncreasedSpellDamage,
+        "increased_melee_damage" => StatKey::IncreasedMeleeDamage,
+        "increased_ranged_damage" => StatKey::IncreasedRangedDamage,
+        "increased_minion_damage" => StatKey::IncreasedMinionDamage,
+        "increased_area_damage" => StatKey::IncreasedAreaDamage,
+        // Flat added damage
+        "added_fire_damage" => StatKey::FlatAddedFireDamage,
+        "added_cold_damage" => StatKey::FlatAddedColdDamage,
+        "added_lightning_damage" => StatKey::FlatAddedLightningDamage,
+        "added_void_damage" => StatKey::FlatAddedVoidDamage,
+        "added_physical_damage" => StatKey::FlatAddedPhysicalDamage,
+        // Crit
+        "critical_strike_chance" => StatKey::CriticalStrikeChance,
+        "critical_strike_multiplier" => StatKey::CriticalStrikeMultiplier,
+        "critical_strike_avoidance" => StatKey::CriticalStrikeAvoidance,
+        // Defense
+        "max_hp" => StatKey::MaxHp,
+        "max_hp_percent" => StatKey::MaxHpPercent,
+        "hp_regen_per_sec" => StatKey::HpRegenPerSec,
+        "ward_per_second" => StatKey::WardPerSecond,
+        "ward_on_hit" => StatKey::WardOnHit,
+        "armor" => StatKey::Armor,
+        "endurance_threshold" => StatKey::EnduranceThreshold,
+        "endurance_percent" => StatKey::EndurancePercent,
+        "fire_resistance" => StatKey::FireResistance,
+        "cold_resistance" => StatKey::ColdResistance,
+        "lightning_resistance" => StatKey::LightningResistance,
+        "void_resistance" => StatKey::VoidResistance,
+        "poison_resistance" => StatKey::PoisonResistance,
+        "physical_resistance" => StatKey::PhysicalResistance,
+        "necrotic_resistance" => StatKey::NecroticResistance,
+        "all_resistances" => StatKey::AllResistances,
+        "dodge_rating" => StatKey::DodgeRating,
+        "life_leech_percent" => StatKey::LifeLeechPercent,
+        "healing_effectiveness" => StatKey::HealingEffectiveness,
+        "block_chance" => StatKey::BlockChance,
+        // Speed
+        "attack_speed" => StatKey::AttackSpeed,
+        "cast_speed" => StatKey::CastSpeed,
+        "movement_speed" => StatKey::MovementSpeed,
+        "area_of_effect" => StatKey::AreaOfEffect,
+        "cooldown_recovery_speed" => StatKey::CooldownRecoverySpeed,
+        // Mana
+        "max_mana" => StatKey::MaxMana,
+        "mana_regen_per_sec" => StatKey::ManaRegenPerSec,
+        // Penetration
+        "fire_penetration" => StatKey::FirePenetration,
+        "cold_penetration" => StatKey::ColdPenetration,
+        "lightning_penetration" => StatKey::LightningPenetration,
+        "void_penetration" => StatKey::VoidPenetration,
+        "elemental_penetration" => StatKey::ElementalPenetration,
+        "physical_penetration" => StatKey::PhysicalPenetration,
+        // Ailments
+        "ignite_duration" => StatKey::IgniteDuration,
+        "poison_duration" => StatKey::PoisonDuration,
+        "bleed_duration" => StatKey::BleedDuration,
+        "freeze_rate_multiplier" => StatKey::FreezeRateMultiplier,
+        "max_poison_stacks" => StatKey::MaxPoisonStacks,
+        // Minion
+        "increased_minion_count" => StatKey::IncreasedMinionCount,
+        "increased_minion_hp" => StatKey::IncreasedMinionHp,
+        // Attributes
+        "strength" => StatKey::Strength,
+        "dexterity" => StatKey::Dexterity,
+        "intelligence" => StatKey::Intelligence,
+        "attunement" => StatKey::Attunement,
+        "vitality" => StatKey::Vitality,
+        _ => return None,
+    })
 }
 
 #[cfg(test)]
@@ -566,6 +698,182 @@ mod tests {
             .join("resources")
             .join("game-data")
             .join("classes")
+    }
+
+    // ── Story 4.0 — gear affix ingestion tests (AC4) ────────────────────────────
+
+    /// Loads the committed `affixes.json` (the transform's output) and parses it exactly as the
+    /// loader does at startup — no Tauri handle required.
+    fn committed_gear_affixes() -> HashMap<String, GearAffixData> {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("resources")
+            .join("items")
+            .join("affixes.json");
+        let raw = std::fs::read_to_string(&path).expect("read affixes.json");
+        let affixes: Vec<RawAffix> = serde_json::from_str(&raw).expect("parse affixes.json");
+        parse_gear_affixes(&affixes)
+    }
+
+    /// AC4 — end-to-end value+element parity for a REAL corpus affix. `affix-inevitable-prefix`
+    /// (tier 1 = +4% Void Penetration) equipped → compute_stats attributes exactly 4.0
+    /// VoidPenetration to `weapon:affix-inevitable-prefix`. Value + element + source, not a count.
+    #[test]
+    fn gear_affix_parity_inevitable_void_penetration() {
+        use scoring_core::build_snapshot::{AffixEntry, BuildSnapshot, GearSlotSnapshot};
+        use scoring_core::compute::compute_stats;
+        use scoring_core::compute_options::ComputeOptions;
+
+        let map = committed_gear_affixes();
+        let inev = map.get("affix-inevitable-prefix").expect("Inevitable affix present");
+        assert_eq!(inev.stats.len(), 1, "Inevitable is single-stat");
+        assert_eq!(inev.stats[0].stat_key, StatKey::VoidPenetration);
+        assert_eq!(inev.stats[0].modifier_type, ModifierType::Flat);
+        assert_eq!(inev.stats[0].values_by_tier.get(&1).copied(), Some(4.0));
+
+        let mut gd = GameData::default();
+        gd.gear_affixes = map.clone();
+        let mut snapshot = BuildSnapshot { character_level: 80, ..Default::default() };
+        let mut slot = GearSlotSnapshot::default();
+        slot.prefixes.push(AffixEntry { affix_id: "affix-inevitable-prefix".to_string(), tier: 1 });
+        snapshot.gear_slots.insert("weapon".to_string(), slot);
+
+        let sheet = compute_stats(&snapshot, &gd, ComputeOptions { track_sources: true });
+        let sources = sheet.stat_sources.expect("track_sources → Some");
+        let vp = sources.get("VoidPenetration").expect("VoidPenetration sourced");
+        let entry = vp
+            .iter()
+            .find(|s| s.source_label == "weapon:affix-inevitable-prefix")
+            .expect("attributed to weapon:affix-inevitable-prefix");
+        assert_eq!(entry.value, 4.0, "exact tier-1 void penetration value");
+        assert_eq!(entry.modifier_type, ModifierType::Flat);
+    }
+
+    /// AC4/hybrid — a real hybrid corpus affix contributes BOTH stat clauses. `affix-glacial-prefix`
+    /// tier 1 = +30% Freeze Rate Multiplier (avg 20–40) AND +5% Cold Resistance.
+    #[test]
+    fn gear_affix_parity_hybrid_glacial() {
+        use scoring_core::build_snapshot::{AffixEntry, BuildSnapshot, GearSlotSnapshot};
+        use scoring_core::compute::compute_stats;
+        use scoring_core::compute_options::ComputeOptions;
+
+        let map = committed_gear_affixes();
+        let glacial = map.get("affix-glacial-prefix").expect("Glacial affix present");
+        assert_eq!(glacial.stats.len(), 2, "Glacial is a hybrid (2 stats)");
+
+        let mut gd = GameData::default();
+        gd.gear_affixes = map.clone();
+        let mut snapshot = BuildSnapshot { character_level: 80, ..Default::default() };
+        let mut slot = GearSlotSnapshot::default();
+        slot.prefixes.push(AffixEntry { affix_id: "affix-glacial-prefix".to_string(), tier: 1 });
+        snapshot.gear_slots.insert("chest".to_string(), slot);
+
+        let sheet = compute_stats(&snapshot, &gd, ComputeOptions { track_sources: true });
+        let sources = sheet.stat_sources.expect("track_sources → Some");
+        let src_val = |k: &str| {
+            sources
+                .get(k)
+                .and_then(|v| v.iter().find(|s| s.source_label == "chest:affix-glacial-prefix"))
+                .map(|s| s.value)
+        };
+        assert_eq!(src_val("FreezeRateMultiplier"), Some(30.0), "primary freeze rate (avg 20-40)");
+        assert_eq!(src_val("ColdResistance"), Some(5.0), "hybrid second stat cold res");
+    }
+
+    /// AC4 / Source-Audit — NO dead `StatKey`. Every distinct StatKey the loader emits from the
+    /// shipped dataset, when equipped alone, must MOVE some `StatSheet` field. A key that surfaces
+    /// nothing is a dead key and must be excluded from emission (see INERT_STAT_KEYS in the
+    /// transform + stat_key_from_str). Prefers single-stat affixes so each key is isolated.
+    #[test]
+    fn no_dead_gear_stat_keys() {
+        use scoring_core::build_snapshot::{AffixEntry, BuildSnapshot, GearSlotSnapshot};
+        use scoring_core::compute::compute_stats;
+        use scoring_core::compute_options::ComputeOptions;
+        use std::collections::BTreeMap;
+
+        let map = committed_gear_affixes();
+        // Representative (affix_id, tier) per distinct emitted StatKey; prefer single-stat affixes.
+        let mut rep: BTreeMap<String, (String, u32, bool)> = BTreeMap::new();
+        for (id, d) in &map {
+            let single = d.stats.len() == 1;
+            for s in &d.stats {
+                let Some((&tier, _)) = s.values_by_tier.iter().find(|(_, &v)| v != 0.0) else {
+                    continue;
+                };
+                let k = format!("{:?}", s.stat_key);
+                let better = match rep.get(&k) {
+                    Some((_, _, existing_single)) => single && !existing_single,
+                    None => true,
+                };
+                if better {
+                    rep.insert(k, (id.clone(), tier, single));
+                }
+            }
+        }
+        assert!(!rep.is_empty(), "no gear affixes parsed from committed dataset");
+
+        let base_snap = BuildSnapshot { character_level: 100, ..Default::default() };
+        let baseline = serde_json::to_value(compute_stats(
+            &base_snap,
+            &GameData::default(),
+            ComputeOptions::default(),
+        ))
+        .unwrap();
+
+        let mut gd = GameData::default();
+        gd.gear_affixes = map.clone();
+        let mut dead = Vec::new();
+        for (key, (affix_id, tier, _)) in &rep {
+            let mut snap = BuildSnapshot { character_level: 100, ..Default::default() };
+            let mut slot = GearSlotSnapshot::default();
+            slot.prefixes.push(AffixEntry { affix_id: affix_id.clone(), tier: *tier });
+            snap.gear_slots.insert("weapon".to_string(), slot);
+            let with =
+                serde_json::to_value(compute_stats(&snap, &gd, ComputeOptions::default())).unwrap();
+            if with == baseline {
+                dead.push(key.clone());
+            }
+        }
+        assert!(
+            dead.is_empty(),
+            "dead StatKeys emitted by loader (surface no StatSheet field): {:?}",
+            dead
+        );
+    }
+
+    /// The loader never inserts an affix whose primary statKey is inert/unresolvable (no dead key).
+    #[test]
+    fn parse_gear_affixes_skips_unresolvable_primary() {
+        let raw = vec![
+            RawAffix {
+                id: "good".to_string(),
+                name: "Good".to_string(),
+                affix_type: "prefix".to_string(),
+                item_slots: vec!["weapon".to_string()],
+                tiers: vec![AffixTier { tier: 1, min_value: 10.0, max_value: 10.0 }],
+                modifier_type: Some("flat".to_string()),
+                scope: Some("generic".to_string()),
+                damage_type: None,
+                stat_key: Some("armor".to_string()),
+                extra_stats: vec![],
+            },
+            RawAffix {
+                id: "inert".to_string(),
+                name: "Inert".to_string(),
+                affix_type: "prefix".to_string(),
+                item_slots: vec![],
+                tiers: vec![AffixTier { tier: 1, min_value: 10.0, max_value: 10.0 }],
+                modifier_type: Some("flat".to_string()),
+                scope: None,
+                damage_type: None,
+                stat_key: None, // null → skipped entirely
+                extra_stats: vec![],
+            },
+        ];
+        let map = parse_gear_affixes(&raw);
+        assert!(map.contains_key("good"));
+        assert!(!map.contains_key("inert"), "null-statKey affix must not be inserted");
+        assert_eq!(map["good"].stats[0].stat_key, StatKey::Armor);
+        assert_eq!(map["good"].item_slots, vec!["weapon".to_string()]);
     }
 
     /// Counts every NodeEffect the loader's parser produces across all shipped class JSONs

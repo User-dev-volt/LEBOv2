@@ -76,7 +76,8 @@ fn compute_weight(
         return 0.0;
     }
 
-    let (best_tier, best_val) = best_tier_value(&data.values_by_tier);
+    let Some(primary) = data.primary() else { return 0.0 };
+    let (best_tier, best_val) = best_tier_value(&primary.values_by_tier);
     if best_val == 0.0 {
         return 0.0;
     }
@@ -115,6 +116,12 @@ fn passes_element_filter(affix_elements: &[String], primary_elements: &[String])
     affix_elements.iter().any(|e| primary_elements.contains(e))
 }
 
+/// True when this affix can roll on the given slot (Story 4.0, AC3). Empty `item_slots` means
+/// "valid on all slots" — the graceful fallback for any affix lacking authored slot data.
+fn affix_valid_for_slot(data: &GearAffixData, slot_id: &str) -> bool {
+    data.item_slots.is_empty() || data.item_slots.iter().any(|s| s == slot_id)
+}
+
 fn best_tier_value(values_by_tier: &HashMap<u32, f64>) -> (u32, f64) {
     // T5 preferred; fall back to highest available tier.
     if let Some(&v) = values_by_tier.get(&5) {
@@ -137,11 +144,14 @@ fn score_slot(
 ) -> GearSlotRanking {
     let current_slot = snapshot.gear_slots.get(slot_id);
 
-    // Separate affixes by class, filter to positive-weight entries, sort descending.
+    // Separate affixes by class, filter to slot-valid positive-weight entries, sort descending.
+    // The slot-validity filter (Story 4.0, AC3) makes per-slot wishlists DIFFER by slot — a
+    // weapon no longer suggests "+Armor" and boots no longer suggest "+Melee Damage".
     let mut prefix_candidates: Vec<(&str, &GearAffixData, f64)> = game_data
         .gear_affixes
         .iter()
         .filter(|(_, d)| d.affix_class == AffixPosition::Prefix)
+        .filter(|(_, d)| affix_valid_for_slot(d, slot_id))
         .filter_map(|(id, d)| {
             let w = *affix_weights.get(id)?;
             if w > 0.0 { Some((id.as_str(), d, w)) } else { None }
@@ -154,6 +164,7 @@ fn score_slot(
         .gear_affixes
         .iter()
         .filter(|(_, d)| d.affix_class == AffixPosition::Suffix)
+        .filter(|(_, d)| affix_valid_for_slot(d, slot_id))
         .filter_map(|(id, d)| {
             let w = *affix_weights.get(id)?;
             if w > 0.0 { Some((id.as_str(), d, w)) } else { None }
@@ -195,8 +206,12 @@ fn build_wishlist(
     candidates
         .iter()
         .map(|(id, data, weight)| {
-            let target_tier = data.values_by_tier.keys().copied().max().unwrap_or(5);
+            let primary = data.primary();
+            let target_tier = primary
+                .and_then(|s| s.values_by_tier.keys().copied().max())
+                .unwrap_or(5);
             let satisfied = is_satisfied(id, target_tier, current_slot);
+            let stat_label = primary.map(|s| stat_display_name(&s.stat_key)).unwrap_or("Stat Bonus");
             WishlistAffix {
                 affix_id: id.to_string(),
                 display_name: data.display_name.clone(),
@@ -204,9 +219,7 @@ fn build_wishlist(
                 weight: *weight,
                 mechanical_reason: format!(
                     "{} — contributes +{:.2} to BuildScore at T{}",
-                    stat_display_name(&data.stat_key),
-                    weight,
-                    target_tier
+                    stat_label, weight, target_tier
                 ),
                 satisfied,
             }
@@ -285,8 +298,33 @@ fn stat_display_name(key: &StatKey) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::game_data::GearAffixData;
+    use crate::game_data::{GearAffixData, GearAffixStat};
     use crate::modifier::{AffixPosition, ModifierType, Scope, StatKey};
+
+    /// Test helper: a single-stat GearAffixData in the new multi-stat shape.
+    fn affix(
+        display_name: &str,
+        stat_key: StatKey,
+        modifier_type: ModifierType,
+        tier5_value: f64,
+        affix_class: AffixPosition,
+        scope: Scope,
+        damage_elements: Vec<String>,
+        item_slots: Vec<String>,
+    ) -> GearAffixData {
+        GearAffixData {
+            display_name: display_name.to_string(),
+            affix_class,
+            scope,
+            damage_elements,
+            item_slots,
+            stats: vec![GearAffixStat {
+                stat_key,
+                modifier_type,
+                values_by_tier: [(5u32, tier5_value)].into_iter().collect(),
+            }],
+        }
+    }
 
     /// Minimal GameData with affixes covering all filter test cases.
     /// Uses stats that directly affect build_score:
@@ -294,70 +332,37 @@ mod tests {
     /// - MaxHp (Flat) → effective_hp → SurvivabilityScore
     fn make_game_data_with_affixes() -> GameData {
         let mut gear_affixes: HashMap<String, GearAffixData> = HashMap::new();
+        // item_slots empty = valid on all slots, so these delivery/element-filter tests are
+        // unaffected by the Story-4.0 slot filter (that filter is exercised separately below).
         // scope "melee" — must score 0 on a spell build (delivery-type filter)
         gear_affixes.insert(
             "melee_increased_damage".to_string(),
-            GearAffixData {
-                display_name: "% Increased Melee Damage".to_string(),
-                stat_key: StatKey::IncreasedMeleeDamage,
-                modifier_type: ModifierType::Increased,
-                values_by_tier: [(5u32, 60.0)].into_iter().collect(),
-                affix_class: AffixPosition::Prefix,
-                scope: Scope::Melee,
-                damage_elements: vec![],
-            },
+            affix("% Increased Melee Damage", StatKey::IncreasedMeleeDamage, ModifierType::Increased,
+                  60.0, AffixPosition::Prefix, Scope::Melee, vec![], vec![]),
         );
         // scope "spell" — non-zero weight on spell build (IncreasedSpellDamage ∈ DAMAGE_STAT_KEYS)
         gear_affixes.insert(
             "spell_increased_damage".to_string(),
-            GearAffixData {
-                display_name: "% Increased Spell Damage".to_string(),
-                stat_key: StatKey::IncreasedSpellDamage,
-                modifier_type: ModifierType::Increased,
-                values_by_tier: [(5u32, 60.0)].into_iter().collect(),
-                affix_class: AffixPosition::Prefix,
-                scope: Scope::Spell,
-                damage_elements: vec![],
-            },
+            affix("% Increased Spell Damage", StatKey::IncreasedSpellDamage, ModifierType::Increased,
+                  60.0, AffixPosition::Prefix, Scope::Spell, vec![], vec![]),
         );
         // scope "generic", damage_elements ["fire"] — must score 0 on poison/physical build
         gear_affixes.insert(
             "fire_damage".to_string(),
-            GearAffixData {
-                display_name: "% Increased Fire Damage".to_string(),
-                stat_key: StatKey::IncreasedFireDamage,
-                modifier_type: ModifierType::Increased,
-                values_by_tier: [(5u32, 60.0)].into_iter().collect(),
-                affix_class: AffixPosition::Prefix,
-                scope: Scope::Generic,
-                damage_elements: vec!["fire".to_string()],
-            },
+            affix("% Increased Fire Damage", StatKey::IncreasedFireDamage, ModifierType::Increased,
+                  60.0, AffixPosition::Prefix, Scope::Generic, vec!["fire".to_string()], vec![]),
         );
         // scope "generic", damage_elements ["poison"] — non-zero weight (IncreasedPoisonDamage ∈ DAMAGE_STAT_KEYS)
         gear_affixes.insert(
             "poison_damage".to_string(),
-            GearAffixData {
-                display_name: "% Increased Poison Damage".to_string(),
-                stat_key: StatKey::IncreasedPoisonDamage,
-                modifier_type: ModifierType::Increased,
-                values_by_tier: [(5u32, 60.0)].into_iter().collect(),
-                affix_class: AffixPosition::Prefix,
-                scope: Scope::Generic,
-                damage_elements: vec!["poison".to_string()],
-            },
+            affix("% Increased Poison Damage", StatKey::IncreasedPoisonDamage, ModifierType::Increased,
+                  60.0, AffixPosition::Prefix, Scope::Generic, vec!["poison".to_string()], vec![]),
         );
         // scope "generic", no element restriction — must always pass element filter (MaxHp → effective_hp)
         gear_affixes.insert(
             "flat_hp_suffix".to_string(),
-            GearAffixData {
-                display_name: "Maximum HP".to_string(),
-                stat_key: StatKey::MaxHp,
-                modifier_type: ModifierType::Flat,
-                values_by_tier: [(5u32, 200.0)].into_iter().collect(),
-                affix_class: AffixPosition::Suffix,
-                scope: Scope::Generic,
-                damage_elements: vec![],
-            },
+            affix("Maximum HP", StatKey::MaxHp, ModifierType::Flat,
+                  200.0, AffixPosition::Suffix, Scope::Generic, vec![], vec![]),
         );
         let mut game_data = GameData::default();
         game_data.gear_affixes = gear_affixes;
@@ -510,5 +515,87 @@ mod tests {
             helm.upgrade_score > 0.0,
             "upgrade_score must be > 0 when slot has improvement potential"
         );
+    }
+
+    #[test]
+    fn test_slot_validity_filter_differs_by_slot() {
+        // Story 4.0 / AC3: an affix valid only on "weapon" appears in the weapon wishlist but
+        // NOT on helm — proving per-slot wishlists now differ by slot.
+        let mut game_data = GameData::default();
+        let mut gear_affixes: HashMap<String, GearAffixData> = HashMap::new();
+        gear_affixes.insert(
+            "weapon_only_spell".to_string(),
+            affix("% Increased Spell Damage", StatKey::IncreasedSpellDamage, ModifierType::Increased,
+                  60.0, AffixPosition::Prefix, Scope::Spell, vec![], vec!["weapon".to_string()]),
+        );
+        game_data.gear_affixes = gear_affixes;
+
+        let snapshot = make_spell_poison_snapshot();
+        let analysis = run_gear_scoring(&snapshot, &game_data);
+
+        let in_slot = |slot: &str| {
+            analysis
+                .slot_rankings
+                .iter()
+                .find(|r| r.slot == slot)
+                .map(|r| r.ideal_prefix.iter().any(|a| a.affix_id == "weapon_only_spell"))
+                .unwrap_or(false)
+        };
+        assert!(in_slot("weapon"), "weapon-only affix must appear in the weapon wishlist");
+        assert!(!in_slot("helm"), "weapon-only affix must NOT appear in the helm wishlist");
+    }
+
+    #[test]
+    fn test_hybrid_affix_contributes_both_stats() {
+        // Story 4.0: a hybrid affix (2 stat clauses) must contribute BOTH to compute_stats.
+        use crate::build_snapshot::{AffixEntry, BuildSnapshot, GearSlotSnapshot};
+        use crate::compute::compute_stats;
+        use crate::compute_options::ComputeOptions;
+
+        let mut game_data = GameData::default();
+        let mut gear_affixes: HashMap<String, GearAffixData> = HashMap::new();
+        // "Glacial"-style hybrid: Freeze Rate Multiplier + Cold Resistance.
+        gear_affixes.insert(
+            "hybrid_glacial".to_string(),
+            GearAffixData {
+                display_name: "Glacial".to_string(),
+                affix_class: AffixPosition::Prefix,
+                scope: Scope::Generic,
+                damage_elements: vec![],
+                item_slots: vec![],
+                stats: vec![
+                    GearAffixStat {
+                        stat_key: StatKey::FreezeRateMultiplier,
+                        modifier_type: ModifierType::Flat,
+                        values_by_tier: [(5u32, 100.0)].into_iter().collect(),
+                    },
+                    GearAffixStat {
+                        stat_key: StatKey::ColdResistance,
+                        modifier_type: ModifierType::Flat,
+                        values_by_tier: [(5u32, 12.0)].into_iter().collect(),
+                    },
+                ],
+            },
+        );
+        game_data.gear_affixes = gear_affixes;
+
+        let mut snapshot = BuildSnapshot {
+            class_id: "mage".to_string(),
+            character_level: 75,
+            ..Default::default()
+        };
+        let mut slot = GearSlotSnapshot::default();
+        slot.prefixes.push(AffixEntry { affix_id: "hybrid_glacial".to_string(), tier: 5 });
+        snapshot.gear_slots.insert("chest".to_string(), slot);
+
+        let sheet = compute_stats(&snapshot, &game_data, ComputeOptions { track_sources: true });
+        // Both stat clauses must be attributed to the same slot:affix source.
+        let sources = sheet.stat_sources.expect("track_sources yields a source map");
+        let cold_res = sources.get("ColdResistance").expect("cold resistance sourced");
+        let freeze = sources.get("FreezeRateMultiplier").expect("freeze rate sourced");
+        assert!(cold_res.iter().any(|s| s.source_label == "chest:hybrid_glacial"));
+        assert!(freeze.iter().any(|s| s.source_label == "chest:hybrid_glacial"));
+        assert_eq!(cold_res.iter().find(|s| s.source_label == "chest:hybrid_glacial").unwrap().value, 12.0);
+        assert_eq!(freeze.iter().find(|s| s.source_label == "chest:hybrid_glacial").unwrap().value, 100.0);
     }
 }

@@ -197,25 +197,29 @@ pub(crate) fn build_registry(
     for (slot_id, slot) in &snapshot.gear_slots {
         for entry in slot.prefixes.iter().chain(slot.suffixes.iter()) {
             let Some(effect) = game_data.gear_affixes.get(&entry.affix_id) else { continue };
-            let Some(&value) = effect.values_by_tier.get(&entry.tier) else { continue };
-            registry.add(Modifier {
-                stat_key: effect.stat_key.clone(),
-                modifier_type: effect.modifier_type.clone(),
-                value,
-                condition: Condition::Always,
-                source: format!("{}:{}", slot_id, entry.affix_id),
-            });
-            if track_sources {
-                registry.add_source(
-                    effect.stat_key.clone(),
-                    Condition::Always,
-                    ModifierSource {
-                        source_type: SourceType::GearSlot,
-                        source_label: format!("{}:{}", slot_id, entry.affix_id),
-                        value,
-                        modifier_type: effect.modifier_type.clone(),
-                    },
-                );
+            // Each affix contributes one Modifier per stat clause. Hybrid affixes (58% of the
+            // LE corpus) carry >1 clause — Story 4.0 populates them from `extraStats`.
+            for stat in &effect.stats {
+                let Some(&value) = stat.values_by_tier.get(&entry.tier) else { continue };
+                registry.add(Modifier {
+                    stat_key: stat.stat_key.clone(),
+                    modifier_type: stat.modifier_type.clone(),
+                    value,
+                    condition: Condition::Always,
+                    source: format!("{}:{}", slot_id, entry.affix_id),
+                });
+                if track_sources {
+                    registry.add_source(
+                        stat.stat_key.clone(),
+                        Condition::Always,
+                        ModifierSource {
+                            source_type: SourceType::GearSlot,
+                            source_label: format!("{}:{}", slot_id, entry.affix_id),
+                            value,
+                            modifier_type: stat.modifier_type.clone(),
+                        },
+                    );
+                }
             }
         }
     }
@@ -1583,12 +1587,15 @@ mod tests {
             "ga".to_string(),
             crate::game_data::GearAffixData {
                 display_name: "% Cold Resistance".to_string(),
-                stat_key: StatKey::ColdResistance,
-                modifier_type: ModifierType::Flat,
-                values_by_tier: [(3, 16.0)].into_iter().collect(),
                 affix_class: crate::modifier::AffixPosition::Prefix,
                 scope: crate::modifier::Scope::Generic,
                 damage_elements: vec![],
+                item_slots: vec![],
+                stats: vec![crate::game_data::GearAffixStat {
+                    stat_key: StatKey::ColdResistance,
+                    modifier_type: ModifierType::Flat,
+                    values_by_tier: [(3, 16.0)].into_iter().collect(),
+                }],
             },
         );
         let game_data = GameData {
@@ -1817,12 +1824,15 @@ mod tests {
             "ga".to_string(),
             crate::game_data::GearAffixData {
                 display_name: "% Cold Resistance".to_string(),
-                stat_key: StatKey::ColdResistance,
-                modifier_type: ModifierType::Flat,
-                values_by_tier: [(3, 16.0)].into_iter().collect(),
                 affix_class: crate::modifier::AffixPosition::Prefix,
                 scope: crate::modifier::Scope::Generic,
                 damage_elements: vec![],
+                item_slots: vec![],
+                stats: vec![crate::game_data::GearAffixStat {
+                    stat_key: StatKey::ColdResistance,
+                    modifier_type: ModifierType::Flat,
+                    values_by_tier: [(3, 16.0)].into_iter().collect(),
+                }],
             },
         );
         let game_data = GameData {

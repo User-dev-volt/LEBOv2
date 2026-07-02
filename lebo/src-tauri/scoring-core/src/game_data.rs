@@ -2,17 +2,23 @@ use std::collections::HashMap;
 
 use crate::modifier::{AffixPosition, Condition, ModifierType, Scope, StatKey};
 
-/// Gear affix scoring data — one entry per affix ID in the affix database.
-/// Populated by game_data_loader.rs from the affix DB (initially empty; loaded in a future story).
+/// One stat clause contributed by a gear affix. Hybrid affixes (58% of the LE corpus, e.g.
+/// "Glacial" = Freeze Rate Multiplier + Cold Resistance) carry more than one (Story 4.0).
 #[derive(Debug, Clone)]
-pub struct GearAffixData {
-    /// Human-readable affix name for WishlistAffix.display_name.
-    pub display_name: String,
-    /// Stat contributed by this affix.
+pub struct GearAffixStat {
+    /// Stat contributed by this clause.
     pub stat_key: StatKey,
     pub modifier_type: ModifierType,
     /// Average stat value at each tier. Key = 1-indexed tier number.
     pub values_by_tier: HashMap<u32, f64>,
+}
+
+/// Gear affix scoring data — one entry per affix ID in the affix database.
+/// Populated by game_data_loader.rs from affixes.json (Story 4.0).
+#[derive(Debug, Clone)]
+pub struct GearAffixData {
+    /// Human-readable affix name for WishlistAffix.display_name.
+    pub display_name: String,
     /// Prefix or suffix — determines which wishlist bucket this affix goes into.
     pub affix_class: AffixPosition,
     /// Delivery-type scope. `Generic` affixes apply to all delivery types (e.g., % Fire Resistance).
@@ -20,6 +26,20 @@ pub struct GearAffixData {
     /// Damage elements this affix applies to: e.g. ["fire", "cold"].
     /// Empty = applies to all damage elements (no element filtering).
     pub damage_elements: Vec<String>,
+    /// Gear slots this affix can roll on, in gear.rs's canonical SLOT_IDS vocabulary (Story 4.0).
+    /// Empty = valid on all slots (graceful back-compat fallback).
+    pub item_slots: Vec<String>,
+    /// Stat clauses this affix contributes. Always ≥1; hybrids carry 2.
+    pub stats: Vec<GearAffixStat>,
+}
+
+impl GearAffixData {
+    /// The primary (first) stat clause — used for tier selection, display, and best-value checks.
+    /// The loader never inserts a `GearAffixData` with an empty `stats`, so this is `Some` in
+    /// practice; callers still handle `None` defensively.
+    pub fn primary(&self) -> Option<&GearAffixStat> {
+        self.stats.first()
+    }
 }
 
 /// A single stat effect contributed by one point allocated to a passive node.
