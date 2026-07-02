@@ -278,7 +278,7 @@ Players get surgical, point-budget-aware passive-tree suggestions with unmistaka
 Players build and tune gear without leaving the app — a searchable item-database browser (Item Picker Modal), an affix selector grouped Offense/Defense/Utility with tier pips (Affix Picker Modal), affix pips on every slot, and a full three-column Gear Optimization screen with drag-and-drop equip and AI-ranked gear-swap recommendations.
 **FRs covered:** FR-27, FR-28, FR-29, FR-30, FR-31, FR-32
 **Owns:** AR-2 (affix `position` discriminator — Gate 1, first story), AR-8 (HTML5 DnD), AR-15 (suffix-side scoring fix), AR-16 (lib.rs re-exports + stale test). Pattern P4-6 (payload-ID-constrained recs). NFR-5.
-**Implementation notes:** First story is the affix `position` data gate; engine + UI proceed against mock-annotated affixes until ingestion lands. Item Picker uses a prebuilt client search index (<100ms). Affix Picker reuses the Phase 3 TierPips component (UX-DR9). Gear recommendations rejected if their item ID is absent from the payload subset.
+**Implementation notes:** First TWO stories are data gates: 4.0 (affix stat semantics — statKey/modifierType/per-tier values/slot validity re-transformed upstream, `gear_affixes` ingested, scoring parity proven) then 4.1 (`position` discriminator wiring). 4.2–4.6 are gated on both being done — the earlier "proceed against mock-annotated affixes" authorization is **rescinded** (2026-07-01 audit: the corpus has no stat semantics, so mock-built UI would ship on data that scores silent zeros). Item Picker uses a prebuilt client search index (<100ms). Affix Picker reuses the Phase 3 TierPips component (UX-DR9). Gear recommendations rejected if their item ID is absent from the payload subset.
 
 ### Epic 5: Skills & Popular Builds Data
 The skills database is completed to all 133 Season 4 skills with icons and specialization-tree data, the Skills tab surfaces a full class-appropriate picker, and a bundled Popular Builds Database (≥3 builds × 15 masteries) ships with client-side matching — enabling popular-build awareness and the skill-suggestion flow the Complete Build Optimizer relies on.
@@ -724,7 +724,7 @@ So that I can quickly undo an allocation without clicking down each point.
 
 ## Epic 4: Gear System & Optimization
 
-Give players a full in-app gear workflow: an item-database browser, a grouped affix picker with tier pips, per-slot affix pips, and a three-column Gear Optimization screen with drag-drop equip and AI-ranked swaps. The affix `position` discriminator data gate comes first.
+Give players a full in-app gear workflow: an item-database browser, a grouped affix picker with tier pips, per-slot affix pips, and a three-column Gear Optimization screen with drag-drop equip and AI-ranked swaps. Two data gates come first: Story 4.0 (affix stat semantics) then Story 4.1 (`position` discriminator wiring).
 
 > **⚠️ Epic 3 retrospective corrections (2026-07-01) — read before running `create-story` on any 4.x:**
 > A code-grounded readiness pass (8-agent ultracode analysis) found the plan understates existing work. Correct these first:
@@ -733,6 +733,33 @@ Give players a full in-app gear workflow: an item-database browser, a grouped af
 > 3. **`GearAffixV2` does not exist** in the codebase (only `AffixEntryV2` + `GearItemV2`). The reference in Story 4.1 below is corrected.
 > 4. **Displayed-but-not-sourced trap (project memory):** two parallel affix paths exist — real `ItemDatabase.affixes` (populated) vs `GameData.gear_affixes` (empty). Wire the UI to the real path while the scorer stays empty and it will *look* done while scoring silent zeros. **Ingest + verify end-to-end gear scoring against real data BEFORE building any 4.x UI on it.**
 > 5. Housekeeping already assigned to 4.1/AR-16: fix the stale `MODELS.len() == 4` Rust test (actual 7, currently failing) and add the missing `GearSlotRanking`/`WishlistAffix` re-exports to scoring-core `lib.rs` (only `GearAnalysis` is re-exported today).
+
+> **⚠️ 2026-07-01 full-project audit — partial correction to point 1 above (read before `create-story` on 4.0/4.1):**
+> The "wiring job" re-cut is right about `position` (the prefix/suffix source data exists and loads) but wrong by omission about everything else the scorer needs: **the affix corpus has no stat semantics.** Verified at HEAD: 0 of 4,176 affixes carry a `statKey`, all 4,176 are blanket `modifierType:"increased"`, ~86% are machine-named `unnamed-*`, `itemSlots` is empty on 4,171, all 2,338 unique-item affix references resolve to nothing, and 897/897 base-item implicits are empty — because `docs/data-transform/generate_item_db.py` discards the source stat text (~lines 213–215). Wiring `position` alone makes the Affix Picker group correctly while every equipped affix still contributes **zero** to `compute_stats` — point 4's displayed-but-not-sourced trap at corpus scale. **Story 4.0 below is the real data gate.** 4.2–4.6 are gated on 4.0 + 4.1 done; the "mock-annotated affixes" clause formerly in 4.1's ACs is rescinded.
+
+### Story 4.0: Affix stat-semantics data gate (upstream re-transform)
+
+As a developer enabling trustworthy gear scoring,
+I want every shipped affix and item to carry real stat semantics — stat key, modifier type, per-tier values, human name, and slot validity,
+So that equipped gear contributes true values to `compute_stats` and every 4.x feature is built on data that scores correctly.
+
+**Acceptance Criteria:**
+
+**Given** the item-data pipeline (`docs/data-transform/generate_item_db.py`)
+**When** it is extended and re-run against its PoB4LE source
+**Then** it retains the per-affix stat text it currently discards and emits, for every affix: a `statKey` resolvable to an engine `StatKey`, a correct `modifierType` (not blanket `"increased"`), per-tier value ranges, a human-readable name, and an `itemSlots` validity list — and the transform is a committed, re-runnable script (the per-patch refresh path), not a one-off edit.
+
+**Given** the regenerated dataset
+**When** an automated coverage check runs (a committed script or test, not eyeballing)
+**Then** it enforces these exit gates, each reported with actual counts: ≥95% of affixes have a resolved `statKey` (the unmapped remainder explicitly listed in the data manifest); no `unnamed-*` machine names remain in picker-visible data; 100% of affix references from shipped uniques resolve; base-item implicits are populated or their deferral recorded per item class; `itemSlots` is non-empty for every picker-visible affix.
+
+**Given** the corrected dataset
+**When** `game_data_loader.rs` ingests it
+**Then** `GameData.gear_affixes` is populated from it (today an empty `HashMap`, so gear contributes nothing to any score) and `gear.rs` gains a slot-validity model so per-slot wishlists differ by slot (today all 12 slots produce identical wishlists).
+
+**Given** a build with a known item and known affix tiers equipped
+**When** `compute_stats` runs
+**Then** element+value tests assert the exact expected stat contributions end-to-end (Source Audit discipline: this story exists to make the gear stat source REAL — the parity test is the proof, per project memory `source-audit-at-create-story`).
 
 ### Story 4.1: Affix prefix/suffix discriminator (data gate)
 
@@ -753,7 +780,7 @@ So that the Affix Picker can group correctly and gear scoring sees suffixes.
 **Given** the Rust lib surface
 **When** this story completes
 **Then** `GearSlotRanking` and `WishlistAffix` are re-exported from `lib.rs` and the stale `MODELS.len() == 4` test is corrected (AR-16)
-**And** downstream gear engine and UI work can proceed against mock-annotated affixes until ingestion fully lands.
+**And** downstream gear engine and UI work (4.2–4.6) does NOT begin until Stories 4.0 and 4.1 are both done — the former "proceed against mock-annotated affixes" clause is rescinded (2026-07-01 audit: the corpus has no stat semantics, so mock-built features would look done while scoring silent zeros).
 
 ### Story 4.2: Item Picker Modal
 
@@ -828,6 +855,10 @@ So that I can manage my full loadout in one workspace.
 **When** I drag it over a slot
 **Then** a valid (correct-type) slot highlights gold and an invalid slot highlights red; dropping on a valid slot equips the item; double-clicking a card equips it to its default slot type (FR-31)
 **And** drag-and-drop uses native HTML5 DnD with no new frontend dependency (AR-8).
+
+**Given** the drag-drop workspace is implemented
+**When** the story is verified
+**Then** a committed, repeatable Playwright (or equivalent real-browser) harness exercises drag-to-equip end-to-end — jsdom cannot simulate native HTML5 DnD, and this is the standing retro action (Epic 1 + Epic 3, third ask) for a visual-verification harness; the harness lands with this story at the latest.
 
 ### Story 4.6: AI gear analysis
 

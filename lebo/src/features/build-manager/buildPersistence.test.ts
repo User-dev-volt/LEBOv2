@@ -114,6 +114,94 @@ describe('migrateBuildState', () => {
     const result = migrateBuildState(raw)
     expect(result.activeSkillLevels).toEqual({ 'slot-0': 10 })
   })
+
+  it('preserves idolGrid, blessings, activeConditions, conditionValues, and skillRoles on a v2 load', () => {
+    const raw = {
+      ...mockBuild,
+      schemaVersion: 2,
+      idolGrid: [
+        { id: 'idol-1', row: 0, col: 1, idolTypeId: 'grand-2x2', prefixId: 'px-1', prefixTier: 5 },
+      ],
+      blessings: { 'timeline-black-sun': 'blessing-fire-res', 'timeline-age-of-winter': null },
+      activeConditions: ['full-health', 'recently-hit'],
+      conditionValues: { 'stacks-of-rage': 4, 'channelling': true },
+      skillRoles: { 'slot-0': 'primary_offense', 'slot-1': 'defensive' },
+    }
+    const result = migrateBuildState(raw)
+    expect(result.idolGrid).toEqual([
+      { id: 'idol-1', row: 0, col: 1, idolTypeId: 'grand-2x2', prefixId: 'px-1', prefixTier: 5 },
+    ])
+    expect(result.blessings).toEqual({
+      'timeline-black-sun': 'blessing-fire-res',
+      'timeline-age-of-winter': null,
+    })
+    expect(result.activeConditions).toEqual(['full-health', 'recently-hit'])
+    expect(result.conditionValues).toEqual({ 'stacks-of-rage': 4, 'channelling': true })
+    expect(result.skillRoles).toEqual({ 'slot-0': 'primary_offense', 'slot-1': 'defensive' })
+  })
+
+  it('preserves idolGrid, blessings, activeConditions, conditionValues, and skillRoles through the v1 → v2 branch', () => {
+    const raw = {
+      ...mockBuild,
+      idolGrid: [{ id: 'idol-2', row: 2, col: 0, idolTypeId: 'humble-1x1' }],
+      blessings: { 'timeline-black-sun': 'blessing-void-res' },
+      activeConditions: ['leeching'],
+      conditionValues: { 'ward-threshold': 300 },
+      skillRoles: { 'slot-2': 'utility' },
+    }
+    const result = migrateBuildState(raw)
+    expect(result.schemaVersion).toBe(2)
+    expect(result.idolGrid).toEqual([{ id: 'idol-2', row: 2, col: 0, idolTypeId: 'humble-1x1' }])
+    expect(result.blessings).toEqual({ 'timeline-black-sun': 'blessing-void-res' })
+    expect(result.activeConditions).toEqual(['leeching'])
+    expect(result.conditionValues).toEqual({ 'ward-threshold': 300 })
+    expect(result.skillRoles).toEqual({ 'slot-2': 'utility' })
+  })
+
+  it('defaults idolGrid, blessings, activeConditions, conditionValues, and skillRoles when absent', () => {
+    const result = migrateBuildState({ ...mockBuild })
+    expect(result.idolGrid).toEqual([])
+    expect(result.blessings).toEqual({})
+    expect(result.activeConditions).toEqual([])
+    expect(result.conditionValues).toEqual({})
+    expect(result.skillRoles).toEqual({})
+  })
+
+  it('replaces malformed idolGrid/blessings/skillRoles with safe defaults', () => {
+    const raw = {
+      ...mockBuild,
+      idolGrid: 'corrupt',
+      blessings: ['not', 'a', 'record'],
+      activeConditions: { not: 'an array' },
+      conditionValues: 42,
+      skillRoles: null,
+    }
+    const result = migrateBuildState(raw)
+    expect(result.idolGrid).toEqual([])
+    expect(result.blessings).toEqual({})
+    expect(result.activeConditions).toEqual([])
+    expect(result.conditionValues).toEqual({})
+    expect(result.skillRoles).toEqual({})
+  })
+
+  it('round-trips the five context fields through save serialization and load migration', () => {
+    const full: BuildState = {
+      ...mockBuild,
+      schemaVersion: 2,
+      contextData: { gear: [], skills: [], idols: [] },
+      idolGrid: [{ id: 'idol-3', row: 1, col: 1, idolTypeId: 'stout-2x1', suffixId: 'sx-9', suffixTier: 3 }],
+      blessings: { 'timeline-spirits-of-fire': 'blessing-crit-avoid' },
+      activeConditions: ['on-shrine'],
+      conditionValues: { 'enemy-count': 3 },
+      skillRoles: { 'slot-0': 'secondary_offense' },
+    }
+    const result = migrateBuildState(JSON.parse(JSON.stringify(full)))
+    expect(result.idolGrid).toEqual(full.idolGrid)
+    expect(result.blessings).toEqual(full.blessings)
+    expect(result.activeConditions).toEqual(full.activeConditions)
+    expect(result.conditionValues).toEqual(full.conditionValues)
+    expect(result.skillRoles).toEqual(full.skillRoles)
+  })
 })
 
 describe('migrateBuildState — v2 migration', () => {

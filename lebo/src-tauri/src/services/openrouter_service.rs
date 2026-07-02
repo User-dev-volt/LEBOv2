@@ -480,8 +480,8 @@ mod tests {
     }
 
     #[test]
-    fn models_list_has_four_entries() {
-        assert_eq!(MODELS.len(), 4);
+    fn models_list_has_seven_entries() {
+        assert_eq!(MODELS.len(), 7);
     }
 
     #[test]

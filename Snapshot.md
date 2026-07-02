@@ -7,8 +7,8 @@
 
 ## Status
 
-**Phase:** `Planning`
-**Health:** `On Track`
+**Phase:** `Implementation — Epics 1-3 done, Epic 4 next`
+**Health:** `At Risk → corrective actions applied 2026-07-01 (see audit)`
 **Last Touched:** `2026-07-01`
 
 ---
@@ -16,13 +16,18 @@
 ## Current Focus
 
 ```
-Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
+2026-07-01 full-project audit: verdict OFF TRACK as planned — four unowned data gaps
+(passive trees 4/5 stub, affix stat semantics, skills/popular-builds, Blessings/Weaver
+CBO stages) + live loadBuild data-loss bug. Corrective actions applied same day:
+hotfix landed, Story 4.0 data gate added, mock-affix authorization rescinded, CI stood up.
+See _bmad-output/implementation-artifacts/correct-course-2026-07-01-audit.md
 ```
 
 ---
 
 ## Next Action
-- Await multi-agent audit synthesis; when complete, prioritize
+1. ALEC DECISION: passive-tree data — author all classes vs Sentinel-first + disclosure (`correct-course-passive-trees-2026-07-01.md`)
+2. Then: create-story 4.0 (affix stat-semantics data gate) via source-audit discipline
 
 ---
 
@@ -68,14 +73,16 @@ Phase 3 PRD is finalized. Moving into Architecture → Epics & Stories.
 |------|------------|------------------|
 | 2026-05-19 | Full Phase 3 PRD via /bmad-prd — research, discovery, all 5 OQs resolved, rubric review, finalized | PRD final; architecture next |
 | 2026-05-26 | UI/UX redesign from Claude Design handoff — 5-tab center canvas (tree/gear/skill/idol/blessing), left panel as navigator, right panel reorganized (score gauge at top, 340px), keyboard shortcuts 1-5 and [/] | Story 5-4 next |
+| 2026-07-01 | Full-project audit (43 agents, 30 findings confirmed, 0 refuted) → correct-course: loadBuild data-loss hotfix (+5 tests, baseline exact), Story 4.0 affix stat-semantics data gate added + mock-affix clause rescinded, Playwright AC folded into 4.5, MODELS test fixed (cargo workspace green), CI workflow + vitest-baseline ratchet added, AutoSave push path diagnosed (redirect works; manual pushes were the leak) | Alec: passive-tree decision (A: author ~460 nodes / B: Sentinel-first + disclosure) |
 
 ---
 
 ## Project Links
 
-- **PRD:** `_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/prd.md`
-- **Addendum (algorithm blueprint):** `_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/addendum.md`
-- **Decision Log:** `_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-19/.decision-log.md`
+- **PRD:** `_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-29/prd.md`
+- **Addendum (algorithm blueprint):** `_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-29/addendum.md`
+- **Decision Log:** `_bmad-output/planning-artifacts/prds/prd-LEBOv2-2026-05-29/.decision-log.md`
+- **Audit + correct-course (2026-07-01):** `_bmad-output/implementation-artifacts/correct-course-2026-07-01-audit.md`
 - **Codebase:** `lebo/` (Vite project root — pnpm)
 
 ---

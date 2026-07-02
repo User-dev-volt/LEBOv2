@@ -95,6 +95,7 @@ development_status:
 
   # Epic 4: Gear System & Optimization
   epic-4: backlog
+  4-0-affix-stat-semantics-data-gate: backlog  # added 2026-07-01 (audit correct-course): upstream re-transform giving affixes real statKey/modifierType/tiers/slots + gear_affixes ingestion + scoring parity; 4.2-4.6 gated on 4.0+4.1, mock-annotated-affixes authorization rescinded
   4-1-affix-prefix-suffix-discriminator-data-gate: backlog
   4-2-item-picker-modal: backlog
   4-3-affix-picker-modal: backlog

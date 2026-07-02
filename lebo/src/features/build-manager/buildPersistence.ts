@@ -61,6 +61,24 @@ export function migrateBuildState(raw: unknown): BuildState {
       typeof obj.weaverAllocations === 'object' && obj.weaverAllocations !== null
         ? (obj.weaverAllocations as Record<string, number>)
         : {},
+    idolGrid: Array.isArray(obj.idolGrid)
+      ? (obj.idolGrid as BuildState['idolGrid'])
+      : [],
+    blessings:
+      typeof obj.blessings === 'object' && obj.blessings !== null && !Array.isArray(obj.blessings)
+        ? (obj.blessings as BuildState['blessings'])
+        : {},
+    activeConditions: Array.isArray(obj.activeConditions)
+      ? (obj.activeConditions as BuildState['activeConditions'])
+      : [],
+    conditionValues:
+      typeof obj.conditionValues === 'object' && obj.conditionValues !== null && !Array.isArray(obj.conditionValues)
+        ? (obj.conditionValues as BuildState['conditionValues'])
+        : {},
+    skillRoles:
+      typeof obj.skillRoles === 'object' && obj.skillRoles !== null && !Array.isArray(obj.skillRoles)
+        ? (obj.skillRoles as BuildState['skillRoles'])
+        : {},
     isPersisted: true as const,
     createdAt: String(obj.createdAt ?? new Date().toISOString()),
     updatedAt: String(obj.updatedAt ?? new Date().toISOString()),
