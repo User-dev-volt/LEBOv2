@@ -598,9 +598,10 @@ fn build_seeded_unique_items() -> Vec<scoring_core::game_data::UniqueItem> {
 /// variants. Single canonical resolver for idols + gear (Story 4.0, Decision D1). Returns `None`
 /// for unknown/inert keys — the affix (or that stat clause) is silently dropped (FR-A6 pattern).
 ///
-/// `stun_chance` is deliberately ABSENT: `StunChance` is inert (no compute/* module surfaces it),
-/// so mapping it would ship a dead key (Source Audit; memory stun-chance-inert-unowned). The
-/// transform emits `statKey: null` for stun, and this resolver would drop it anyway.
+/// `stun_chance` is deliberately ABSENT because no shipped source feeds a CONSUMED `StunChance`
+/// value: `offense.rs` does sum Flat `StunChance`, but every stun affix in the corpus is
+/// "% increased" (which the Flat-only sum ignores), so mapping it would ship a dead key (Source
+/// Audit; memory stun-chance-inert-unowned). The transform emits `statKey: null` for stun regardless.
 fn stat_key_from_str(s: &str) -> Option<StatKey> {
     Some(match s {
         // Damage — generic

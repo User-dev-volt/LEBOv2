@@ -126,11 +126,14 @@ STAT_SLOT_GROUPS = {
     "attunement": ALL_SLOTS, "vitality": ALL_SLOTS,
 }
 
-# StatKeys that are defined but INERT in the current engine — no compute/* module consumes them
-# (verified via `query(&StatKey::…)` usage across scoring-core). Emitting them would ship a dead
-# key that renders a wrong/empty number (Source Audit; memory stun-chance-inert-unowned). The
-# transform emits `statKey: null` for these and records them in the manifest.
-#   - stun_chance:            StunChance surfaces a field but no source is meant to feed it (memory).
+# StatKeys defined in the engine whose VALUE no shipped gear/idol source feeds (Source Audit;
+# memory stun-chance-inert-unowned). Emitting one would ship a dead key that renders a wrong/empty
+# number, so the transform emits `statKey: null` for these and records them in the manifest.
+# NOTE (review #21): some of these ARE referenced by a compute module (offense.rs sums Flat
+# StunChance; minion.rs reads IncreasedMinionCount/Hp as a presence signal) — they are inert because
+# no shipped source feeds a *consumed value* (every stun affix is "% increased", offense sums Flat
+# only; minion count/hp resolve to hardcoded 0.0), NOT because "no module consumes them."
+#   - stun_chance:            StunChance surfaces a field but no source feeds a consumed value.
 #   - max_mana / mana_regen:  the engine has no mana computation (MaxMana/ManaRegenPerSec unqueried).
 #   - cooldown_recovery_speed: CooldownRecoverySpeed is unqueried.
 #   - added_*_damage:         FlatAdded*Damage is unqueried — the damage model tracks % increased,
@@ -139,6 +142,7 @@ INERT_STAT_KEYS = {
     "stun_chance", "max_mana", "mana_regen_per_sec", "cooldown_recovery_speed",
     "added_fire_damage", "added_cold_damage", "added_lightning_damage",
     "added_void_damage", "added_physical_damage",
+    "added_poison_damage", "added_necrotic_damage",  # flat added poison/necrotic — same engine gap
     # compute_minion hardcodes minion_count / minion_hp_multi = 0.0 (no shipped source; de-conflating
     # would perturb the frozen EHP parity gate). Only increased_minion_damage is consumed.
     "increased_minion_count", "increased_minion_hp",
@@ -162,11 +166,39 @@ MINION_WORDS = ("minion", "skeleton", "wraith", "zombie", "golem", "companion", 
                 "sacrifice", "abomination", "spriggan", "scorpion", "wolf", "beastmaster")
 
 # Known non-stat mechanic phrases that would otherwise false-match a real stat -> force null.
+# " taken" is incoming-mitigation/conversion (defensive) the engine has no gear stat for — nulling
+# it stops "less/reduced Damage [Over Time] Taken" from mis-deriving to offensive increased_*_damage
+# (review #3/#5). The leading space keeps it word-bounded ("damage over time taken", "taken as"),
+# and no modeled bonus stat contains the token "taken".
 NULL_PHRASES = (
-    "before health", "dealt to mana", "taken as", "converted to", "no ward", "chance to",
+    "before health", "dealt to mana", " taken", "converted to", "no ward", "chance to",
     "of damage dealt", "damage leeched", "reflect", "per second while", "while channelling",
     "second delay", "increased effect of", "of missing", "of current",
 )
+
+# Descriptor fragments that mean a "…health…" phrase is NOT the Maximum-Health pool: recovery
+# (heal on kill/hit/block/potion/glancing), cost reduction, conditional ("while at low health"),
+# per-scaling, or a conversion to another stat. When any appears, the health branch falls through
+# so the real stat (e.g. conditional "increased Spell Damage while at Low Health") is derived, and
+# pure recovery/cost text resolves to null instead of phantom +Max HP (review #1/#2/#4/#8).
+HEALTH_NOT_POOL = (
+    "gain", "gained", "leech", "cost", "while ", "when ", "as endurance",
+    "on kill", "on block", "on hit", "on potion", "on glancing", "on melee",
+    "per ", "missing", "current", "regen",
+)
+
+# Keys that legitimately carry a damageType element (offense/penetration). damageType on anything
+# else (resistances, crit, cast-speed) is a spurious offense element-filter tag (review #24), so
+# stat_from_text only emits damageType for these.
+DAMAGE_ELEMENT_KEYS = {
+    "increased_fire_damage", "increased_cold_damage", "increased_lightning_damage",
+    "increased_void_damage", "increased_poison_damage", "increased_physical_damage",
+    "increased_necrotic_damage", "increased_bleed_damage", "increased_ignite_damage",
+    "added_fire_damage", "added_cold_damage", "added_lightning_damage", "added_void_damage",
+    "added_physical_damage", "added_poison_damage", "added_necrotic_damage",
+    "fire_penetration", "cold_penetration", "lightning_penetration", "void_penetration",
+    "elemental_penetration", "physical_penetration",
+}
 
 
 # ── Source I/O (cache-first; committed script fetches live for per-patch refresh) ──
@@ -213,13 +245,33 @@ def parse_range(text: str) -> tuple[float, float]:
     return 0.0, 0.0
 
 
+def value_sign(text: str) -> float:
+    """-1 for a "reduced"/"less" penalty (parse_range only ever yields a positive magnitude), else +1.
+    A downside must be stored as a negative value so the engine scores it as a penalty, not a bonus
+    (review #3/#23). "damage taken" mitigation is nulled upstream, so it never reaches here."""
+    t = f" {clean_text(text).lower()} "
+    return -1.0 if ("reduced" in t or " less " in t) else 1.0
+
+
+def signed_range(text: str) -> tuple[float, float]:
+    """parse_range with the reduced/less sign applied, returned low<=high."""
+    mn, mx = parse_range(text)
+    a, b = mn * value_sign(text), mx * value_sign(text)
+    return (a, b) if a <= b else (b, a)
+
+
 def derive_modifier_type(text: str) -> str:
     t = clean_text(text).lower()
-    if " more " in f" {t} ":
+    # "% more X" is a real multiplier, but "300 or more mana" / "more than" are conditional clauses,
+    # not a more-modifier — don't let them mis-type a % increased affix as a ×multiplier (review #30).
+    if " more " in f" {t} " and "or more" not in t and "more than" not in t:
         return "more"
     if "converted" in t or "->" in t:
         return "conversion"
-    if "increased" in t or "reduced" in t:
+    # "reduced"/"less" are additive-inverse penalties: same modifierType as the buff, negative value
+    # (value_sign). Treating them as their own signed "increased"/"flat" keeps sign correct for the
+    # engine's additive stacking (a single "% less" == 1 - x/100, exact for one modifier).
+    if "increased" in t or "reduced" in t or " less " in f" {t} ":
         return "increased"
     return "flat"
 
@@ -268,6 +320,13 @@ def derive_stat_key(text: str, modifier_type: str):
 
     is_minion = ("minion" in t) or any(w in t for w in MINION_WORDS)
 
+    # Minion FIRST — scope isolation (review #9). build_registry applies gear modifiers with
+    # Condition::Always and never consults scope, so a minion-scoped stat that falls through to a
+    # player branch (resistance/crit/armor) is credited to the PLAYER. Only increased_minion_damage
+    # is engine-consumed; minion hp/count are inert and minion resist/crit/speed are unmodeled → null.
+    if is_minion:
+        return "increased_minion_damage" if "damage" in t else None
+
     # Penetration
     if "penetration" in t:
         for el in ("void", "fire", "cold", "lightning", "physical", "elemental"):
@@ -282,10 +341,12 @@ def derive_stat_key(text: str, modifier_type: str):
             if el in t:
                 return f"{el}_resistance"
         return None
-    # Attributes
-    for attr in ("strength", "dexterity", "intelligence", "attunement", "vitality"):
-        if attr in t:
-            return attr
+    # Attributes. "per point of Strength" / "per Intelligence" are SCALING clauses, not attribute
+    # bonuses — skip when "per " is present so they don't ship a phantom flat attribute (review #10/#13).
+    if "per " not in t:
+        for attr in ("strength", "dexterity", "intelligence", "attunement", "vitality"):
+            if attr in t:
+                return attr
     # Crit. The engine consumes FLAT crit chance/multiplier ONLY (offense.rs filters
     # modifier_type == Flat), so "increased"/"more" crit chance/multiplier is inert → null (an
     # engine-model limitation, recorded via the unmapped manifest, not a wrong 0 shipped as a stat).
@@ -314,22 +375,30 @@ def derive_stat_key(text: str, modifier_type: str):
         return "block_chance"
     if "dodge" in t:
         return "dodge_rating"
-    # Ward
+    # Ward. Only sustained/generation ward is modeled as ward_per_second; conditional trigger ward
+    # ("Ward gained when you cast/use X", panic ward at low health) is NOT continuous — null it rather
+    # than over-value it as permanent per-second ward (review #31).
     if "ward" in t:
         if "on hit" in t:
             return "ward_on_hit"
-        if "per second" in t or "regen" in t or "gained" in t:
+        if "per second" in t or "regen" in t or "generation" in t:
             return "ward_per_second"
-        return None  # ward retention/decay not modeled
+        return None  # conditional/trigger ward + retention/decay not modeled
     # Health / regen
     if "health regen" in t or "health regeneration" in t or "life regen" in t:
         return "hp_regen_per_sec"
-    if ("health" in t or t.strip() in ("life", "hp")) and "minion" not in t and not is_minion:
+    # Maximum-Health pool ONLY — recovery ("Health Gain on Kill"), cost ("Reduced Health Cost"),
+    # conditional ("… while at Low Health"), per-scaling, and conversions are NOT the HP pool; the
+    # HEALTH_NOT_POOL guard lets those fall through (conditional-damage → its real damage key below;
+    # recovery/cost → null) instead of shipping phantom +Max HP (review #1/#2/#4/#8).
+    if ("health" in t or t.strip() in ("life", "hp")) and not is_minion \
+            and not any(x in t for x in HEALTH_NOT_POOL):
         return "max_hp_percent" if modifier_type == "increased" else "max_hp"
-    # Mana
+    # Mana. "increased Fire Damage … doubled if 300+ Mana" is a damage affix, not a mana affix — only
+    # treat mana as the subject when there is no damage clause (review #27). (max_mana is inert anyway.)
     if "mana regen" in t or "mana regeneration" in t:
         return "mana_regen_per_sec"
-    if "mana" in t:
+    if "mana" in t and "damage" not in t:
         return "max_mana"
     # Endurance
     if "endurance threshold" in t:
@@ -352,22 +421,14 @@ def derive_stat_key(text: str, modifier_type: str):
         return "bleed_duration"
     if "poison" in t and "stack" in t:
         return "max_poison_stacks"
-    # Armor (after minion-armor exclusion)
-    if ("armor" in t or "armour" in t) and not is_minion:
+    # Armor. "Armor Shred" reduces the ENEMY's armor (offensive ailment), not the wearer's — exclude
+    # it (review #12/#26). Minion armor already excluded by the minion-first return above.
+    if ("armor" in t or "armour" in t) and "shred" not in t:
         return "armor"
-    # Minion count / hp / damage
-    if is_minion:
-        if "damage" in t:
-            return "increased_minion_damage"
-        if ("health" in t or "life" in t):
-            return "increased_minion_hp"
-        if any(w in t for w in ("maximum", "additional", "skeleton", "wraith", "companion")) and "damage" not in t:
-            return "increased_minion_count"
-        return None
     # Damage (element / delivery / generic) — last, most general
     if "damage" in t:
         flat = modifier_type == "flat"
-        for el in ("fire", "cold", "lightning", "void", "physical"):
+        for el in ("fire", "cold", "lightning", "void", "physical", "poison", "necrotic"):
             if el in t and flat:
                 return f"added_{el}_damage"
         for el in ("fire", "cold", "lightning", "void", "poison", "necrotic", "physical"):
@@ -408,7 +469,9 @@ def stat_from_text(text: str):
         "statKey": key,
         "modifierType": mt,
         "scope": derive_scope(text),
-        "damageType": derive_damage_type(text),
+        # damageType only on real damage/penetration keys — a resistance/crit/speed affix must not
+        # carry an element tag (it becomes a spurious offense element-filter in gear.rs) (review #24).
+        "damageType": derive_damage_type(text) if key in DAMAGE_ELEMENT_KEYS else None,
     }
 
 
@@ -428,6 +491,15 @@ def derive_name(affix_name: str, stat_text: str) -> str:
 
 
 # ── Transforms ─────────────────────────────────────────────────────────────────
+
+def tiers_from_field(rows: list, field: str) -> list:
+    """Per-tier [{tier,minValue,maxValue}] for a ModItem stat field, sign applied (reduced/less)."""
+    out = []
+    for e in rows:
+        mn, mx = signed_range(e.get(field, ""))
+        out.append({"tier": e.get("tier", 0) + 1, "minValue": mn, "maxValue": mx})
+    return out
+
 
 def transform_affixes(moditem: dict) -> tuple[list, dict]:
     """Group ModItem rows by affix index -> one AffixEntry each (primary + hybrid extraStats)."""
@@ -455,28 +527,33 @@ def transform_affixes(moditem: dict) -> tuple[list, dict]:
         primary = stat_from_text(first.get("1", "")) or {
             "statKey": None, "modifierType": "increased", "scope": "generic", "damageType": None,
         }
-        # Primary tiers from stat "1".
-        tiers = []
-        for e in rows:
-            mn, mx = parse_range(e.get("1", ""))
-            tiers.append({"tier": e.get("tier", 0) + 1, "minValue": mn, "maxValue": mx})
+        primary_tiers = tiers_from_field(rows, "1")
 
-        # Hybrid second stat from field "2" (if any row carries it).
+        # Hybrid second stat — derive from the FIRST row that actually carries field "2" (a ragged
+        # hybrid must not lose its second stat just because the lowest tier lacks it) (review #33).
+        sec = None
+        sec_row = next((e for e in rows if clean_text(e.get("2", ""))), None)
+        if sec_row is not None:
+            sec = stat_from_text(sec_row.get("2", ""))
+
+        # DN-3 promotion (review #25): when the PRIMARY stat is unmodeled ("+1 to [Skill]",
+        # "+1 Potion Slots") but the hybrid SECOND stat IS engine-consumed ("+40% Spell Damage"),
+        # promote the second stat to primary — the affix then contributes its real stat and gets
+        # authored itemSlots, instead of the whole affix being skipped and its modeled stat dropped.
+        if primary["statKey"] is None and sec is not None and sec["statKey"] is not None:
+            primary, primary_tiers, sec = sec, tiers_from_field(rows, "2"), None
+
+        # Emit the second stat as extraStats ONLY when it resolves (a null clause is not a dead extra;
+        # this also keeps the manifest's hybrid_second_stat count loader-accurate) (review #20).
         extra_stats = []
-        if any(clean_text(e.get("2", "")) for e in rows):
-            sec = stat_from_text(rows[0].get("2", ""))
-            if sec:
-                sec_tiers = []
-                for e in rows:
-                    mn, mx = parse_range(e.get("2", ""))
-                    sec_tiers.append({"tier": e.get("tier", 0) + 1, "minValue": mn, "maxValue": mx})
-                extra_stats.append({
-                    "statKey": sec["statKey"],
-                    "modifierType": sec["modifierType"],
-                    "scope": sec["scope"],
-                    "damageType": sec["damageType"],
-                    "tiers": sec_tiers,
-                })
+        if sec is not None and sec["statKey"] is not None:
+            extra_stats.append({
+                "statKey": sec["statKey"],
+                "modifierType": sec["modifierType"],
+                "scope": sec["scope"],
+                "damageType": sec["damageType"],
+                "tiers": tiers_from_field(rows, "2"),
+            })
 
         item_slots = slots_for(primary["statKey"])
         affix = {
@@ -488,7 +565,7 @@ def transform_affixes(moditem: dict) -> tuple[list, dict]:
             "modifierType": primary["modifierType"],
             "scope": primary["scope"],
             "damageType": primary["damageType"],
-            "tiers": tiers,
+            "tiers": primary_tiers,
             "extraStats": extra_stats,
         }
         affixes.append(affix)
@@ -511,7 +588,7 @@ def transform_bases(bases: dict) -> list:
             stat = stat_from_text(text)
             if stat is None:
                 continue
-            mn, mx = parse_range(text)
+            mn, mx = signed_range(text)
             implicits.append({
                 "statKey": stat["statKey"],
                 "modifierType": stat["modifierType"],
@@ -553,7 +630,7 @@ def transform_uniques(uniques: dict, basetype_map: dict) -> list:
         slot = TYPE_TO_SLOT.get(item_type, "weapon")
         affixes = []
         for i, mod_text in enumerate(entry.get("mods", [])):
-            mn, mx = parse_range(mod_text)
+            mn, mx = signed_range(mod_text)
             stat = stat_from_text(mod_text) or {"statKey": None, "modifierType": "flat",
                                                 "scope": "generic", "damageType": None}
             affixes.append({
@@ -658,8 +735,17 @@ def build_manifest(affixes, base_items, uniques, unmapped) -> dict:
         "generated_by": "generate_item_db.py (Story 4.0)",
         "itemSlots_provenance": "AUTHORED (STAT_SLOT_GROUPS) -- no affix->slot source exists in PoB4LE",
         "inert_stat_keys_excluded": sorted(INERT_STAT_KEYS),
-        "inert_stat_keys_note": "Defined StatKey variants no compute/* module consumes; emitted as "
-                                "statKey:null so no dead key ships (Source Audit). See INERT_STAT_KEYS.",
+        "inert_stat_keys_note": "StatKey variants no shipped source feeds a CONSUMED value. Some ARE "
+                                "referenced by a compute module (offense.rs sums Flat StunChance; "
+                                "minion.rs reads minion count/hp as a presence signal) but no gear/idol "
+                                "source produces a value they consume (every stun affix is % increased, "
+                                "offense sums Flat only; minion count/hp resolve to hardcoded 0.0). "
+                                "Emitted as statKey:null so no dead key ships (Source Audit).",
+        "unique_implicit_coverage_note": "unique_mods_* and implicit_stats_* counts describe PRODUCED "
+                                "statKeys only. The scoring engine consumes gear_affixes (from affixes.json) "
+                                "exclusively; uniques are seeded via build_seeded_unique_items and base "
+                                "implicits are unconsumed. These are re-derived and gated when a future "
+                                "story wires them into scoring (review deferred item #32).",
         "counts": {
             "affixes_total": total,
             "affixes_statkey_resolved": resolved,

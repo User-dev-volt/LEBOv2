@@ -65,6 +65,26 @@ EMITTABLE_STAT_KEYS = {
     "strength", "dexterity", "intelligence", "attunement", "vitality",
 }
 
+# Minimum picker-visible affix count. The OLD gates 1-3 filtered the already-clean `picker` list and
+# could never fail (review #6/#28); this floor is the real guard against a slot-authoring or naming
+# regression silently gutting the surfaced set. Sits well below the current count.
+PICKER_FLOOR = 450
+
+# Semantic regression pins (review #1-#13): concrete affixes whose mis-derivation the fix corrected.
+# statKey None = must resolve to null. A pin whose id is absent (corpus/name drift on a fresh PoB4LE
+# pull) is SKIPPED, not failed — so the gate never false-fails on upstream churn.
+REGRESSION_PINS = {
+    "affix-banshee-s-prefix": "increased_damage",         # "increased DoT while at Low Health" (not +HP)
+    "affix-penitent-prefix": None,                        # "+X Health gained when stunned" (recovery)
+    "affix-of-the-defender-suffix": None,                 # "reduced Damage Taken on Block" (mitigation)
+    "affix-of-the-timelost-outcast-suffix": None,         # "less Necrotic Damage Taken" (mitigation)
+    "affix-apiarist-s-smoker-reforged-prefix": "movement_speed",  # mitigation nulled → 2nd stat promoted
+    "affix-increased-armor-shred-effect-prefix": None,    # "Armor Shred" = enemy debuff, not +armor
+    "affix-minion-physical-resistance-prefix": None,      # minion-scoped, must not credit player res
+    "affix-reduced-health-cost-of-spells-prefix": None,   # spell cost reduction, not +Max HP
+    "affix-of-electromancy-suffix": "increased_lightning_damage",  # mana-conditional damage (not max_mana)
+}
+
 
 def load(name):
     return json.loads((OUT_DIR / name).read_text(encoding="utf-8"))
@@ -87,36 +107,52 @@ def main():
     print("=" * 64)
 
     total = len(affixes)
+    by_id = {a["id"]: a for a in affixes}
     resolved = [a for a in affixes if a.get("statKey")]
     picker = [a for a in affixes if is_picker_visible(a)]
     pct = 100.0 * len(resolved) / total if total else 0.0
     print(f"\naffixes total ............... {total}")
     print(f"statKey resolved ........... {len(resolved)} ({pct:.1f}%)   [floor {STATKEY_FLOOR_PCT}%]")
-    print(f"picker-visible ............. {len(picker)}")
+    print(f"picker-visible ............. {len(picker)}   [floor {PICKER_FLOOR}]")
 
-    # Gate 4: regression floor
+    # Gate 4: statKey regression floor (the ratified AC2 reframe — Decision D4; see docstring).
     if pct < STATKEY_FLOOR_PCT:
         failures.append(f"statKey resolution {pct:.1f}% < floor {STATKEY_FLOOR_PCT}%")
 
-    # Gate 1 + 3: every picker-visible affix has statKey + non-empty slots
-    bad_slots = [a["id"] for a in picker if not a.get("itemSlots")]
-    bad_key = [a["id"] for a in picker if not a.get("statKey")]
-    print(f"picker-visible missing slots {len(bad_slots)}")
-    print(f"picker-visible missing key . {len(bad_key)}")
-    if bad_slots:
-        failures.append(f"{len(bad_slots)} picker-visible affixes have empty itemSlots (e.g. {bad_slots[:3]})")
-    if bad_key:
-        failures.append(f"{len(bad_key)} picker-visible affixes have no statKey")
+    # Gate 5: picker-count floor — a slot-authoring or naming regression must not silently shrink the
+    # surfaced set. (Replaces the old gates 1-3 which filtered the already-clean picker list.)
+    if len(picker) < PICKER_FLOOR:
+        failures.append(f"picker-visible {len(picker)} < floor {PICKER_FLOOR} (slot/name regression?)")
 
-    # Gate 2: no unnamed-* in picker-visible
-    unnamed = [a["id"] for a in picker if str(a.get("name", "")).lower().startswith("unnamed")]
-    print(f"unnamed-* in picker-visible  {len(unnamed)}")
+    # Gate 1: every RESOLVED affix has authored itemSlots (tested over the resolved set — an empty
+    # slot list on a resolved affix means the loader would treat it as valid-on-all-slots).
+    resolved_no_slots = [a["id"] for a in resolved if not a.get("itemSlots")]
+    print(f"resolved w/o itemSlots ..... {len(resolved_no_slots)}")
+    if resolved_no_slots:
+        failures.append(f"{len(resolved_no_slots)} resolved affixes have empty itemSlots (e.g. {resolved_no_slots[:3]})")
+
+    # Gate 2: no unnamed-* anywhere — the item-search picker surfaces ALL affixes, not just resolved.
+    unnamed = [a["id"] for a in affixes if str(a.get("name", "")).lower().startswith("unnamed")]
+    print(f"unnamed-* in corpus ........ {len(unnamed)}")
     if unnamed:
-        failures.append(f"{len(unnamed)} unnamed-* names in picker-visible data")
+        failures.append(f"{len(unnamed)} unnamed-* names in corpus (e.g. {unnamed[:3]})")
 
-    # Gate 7: every emitted statKey is loader-resolvable (no would-be-dropped key)
-    emitted = {a["statKey"] for a in affixes if a.get("statKey")}
-    emitted |= {s["statKey"] for a in affixes for s in a.get("extraStats", []) if s.get("statKey")}
+    # Gate 3: semantic regression pins — concrete mis-derivations the review fixed must stay fixed.
+    pins_active = 0
+    for aid, expected in REGRESSION_PINS.items():
+        a = by_id.get(aid)
+        if a is None:
+            continue  # corpus/name drift — skip, don't false-fail
+        pins_active += 1
+        if a.get("statKey") != expected:
+            failures.append(f"regression pin {aid}: statKey={a.get('statKey')!r}, expected {expected!r}")
+    print(f"semantic regression pins ... {pins_active}/{len(REGRESSION_PINS)} active")
+
+    # Gate 7: every LOADER-EMITTED statKey (resolved primary + its resolvable extras) is in the
+    # engine's resolvable vocabulary. Iterates the RESOLVED set so it does not count extras riding a
+    # skipped null-primary affix (review #20).
+    emitted = {a["statKey"] for a in resolved}
+    emitted |= {s["statKey"] for a in resolved for s in a.get("extraStats", []) if s.get("statKey")}
     unknown = emitted - EMITTABLE_STAT_KEYS
     print(f"emitted distinct statKeys .. {len(emitted)}  (non-emittable/dead: {len(unknown)})")
     if unknown:
