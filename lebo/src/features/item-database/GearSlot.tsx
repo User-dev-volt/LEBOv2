@@ -55,7 +55,9 @@ function buildAffixEntries(
   // value intentionally omitted — story 7-5 will resolve min/max from the item DB at prompt-build time.
   return resolved.map((r) => {
     const tier = tiers[r.affixId] ?? medianTier(r.affixEntry)
-    return { affixId: r.affixId, name: r.name, tier }
+    // Story 4.1: source position from the item-DB affix type. 'implicit' → prefix (D3).
+    const position: 'prefix' | 'suffix' = r.affixEntry.type === 'suffix' ? 'suffix' : 'prefix'
+    return { affixId: r.affixId, name: r.name, tier, position }
   })
 }
 

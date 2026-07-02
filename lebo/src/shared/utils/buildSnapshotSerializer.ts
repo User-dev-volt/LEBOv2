@@ -156,15 +156,19 @@ function toGearSlots(gear: GearItemV2[]): Record<string, GearSlotSnapshotTS> {
   const slots: Record<string, GearSlotSnapshotTS> = {}
   for (const item of gear) {
     if (!item.slotId) continue
-    const validAffixes = item.affixes
-      .filter((a): a is AffixEntryV2 & { affixId: string; tier: number } =>
+    const validAffixes = item.affixes.filter(
+      (a): a is AffixEntryV2 & { affixId: string; tier: number } =>
         a.affixId !== undefined && a.tier !== undefined,
-      )
-      .map((a): AffixEntryTS => ({ affixId: a.affixId, tier: a.tier }))
+    )
+    const toTS = (a: AffixEntryV2 & { affixId: string; tier: number }): AffixEntryTS => ({
+      affixId: a.affixId,
+      tier: a.tier,
+    })
+    // Story 4.1: route by position. 'suffix' → suffixes; 'prefix' / undefined / migrated → prefixes (AR-2).
     slots[item.slotId] = {
       itemId: item.itemId,
-      prefixes: validAffixes,  // no prefix/suffix distinction yet — all to prefixes
-      suffixes: [],
+      prefixes: validAffixes.filter((a) => a.position !== 'suffix').map(toTS),
+      suffixes: validAffixes.filter((a) => a.position === 'suffix').map(toTS),
     }
   }
   return slots

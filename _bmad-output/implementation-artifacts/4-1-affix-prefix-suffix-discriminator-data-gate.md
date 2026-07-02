@@ -1,6 +1,6 @@
 # Story 4.1: Affix prefix/suffix discriminator (data gate)
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -42,30 +42,30 @@ Verbatim from epics.md (Story 4.1, :775-788), each annotated with **HEAD reality
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Add the `position` field to `AffixEntryV2` (AC1, TS side)**
-  - [ ] In `lebo/src/shared/types/build.ts` (AffixEntryV2, :9-16) add `position?: 'prefix' | 'suffix'`. **Optional** — an absent value means "unknown → treat as prefix" (AR-2 back-compat) and keeps every existing construction site compiling with no change.
-  - [ ] Do **not** touch `GearItemV2` (:18-23) — affixes stay a single flat `AffixEntryV2[]`; the discriminator is per-affix, matching AR-2/ADR-P4-D-P4-2.
-- [ ] **Task 2 — Source `position` from real item data at the DB-backed construction site (AC1, TS side)**
-  - [ ] In `lebo/src/features/item-database/GearSlot.tsx`, `buildAffixEntries` (:51-60) currently returns `{ affixId, name, tier }` and **drops** the in-scope `r.affixEntry.type`. Populate `position` from it: `r.affixEntry.type === 'suffix' ? 'suffix' : 'prefix'` (map the third value `'implicit'` → `'prefix'` — Decision **D3**). `r` is a `ResolvedAffix` holding `affixEntry: AffixEntry`, whose `type: 'prefix' | 'suffix' | 'implicit'` (itemDatabase.ts:16-19) already crosses from Rust via `load_item_database`. **This is the only place real prefix/suffix data enters `AffixEntryV2` today** — pickers 4.2–4.6 are NOT a prerequisite.
-  - [ ] Leave the two typeless construction sites unchanged: free-text `GearInput.tsx:32` (`{ name: affix }`, no affixId/type) and the v1→v2 migration `buildPersistence.ts:116-121` — both correctly leave `position` undefined → prefix. Verify only that they still type-check with the new optional field.
-- [ ] **Task 3 — Route prefix vs suffix in the serializer (AC2 — the real AR-15 fix)**
-  - [ ] In `lebo/src/shared/utils/buildSnapshotSerializer.ts`, `toGearSlots` (:155-171): partition the already-filtered `validAffixes` by position — `a.position === 'suffix'` → `suffixes[]`, everything else (`'prefix'`, `undefined`, migrated strings) → `prefixes[]`. Remove the hard-coded `suffixes: []` and the stale "all to prefixes" comment (:166-167).
-  - [ ] The wire contract already supports this: `GearSlotSnapshotTS` (:31-35) already declares `prefixes: AffixEntryTS[]` and `suffixes: AffixEntryTS[]`. `AffixEntryTS` (:26-29) stays `{ affixId, tier }` — the array an affix lands in **is** its position (matches the Rust `GearSlotSnapshot` vec split); you do **not** need to add a `position` field to the wire type.
-- [ ] **Task 4 — Re-export `GearSlotRanking` + `WishlistAffix` (AC3)**
-  - [ ] In `lebo/src-tauri/scoring-core/src/lib.rs`, add `GearSlotRanking, WishlistAffix` to the `pub use stat_sheet::{ … };` block (:26-29). Both are already `pub` (stat_sheet.rs:161/170) so this compiles cleanly. `AffixPosition` is already re-exported (:21) — do not duplicate.
-- [ ] **Task 5 — Verify the "already done" AC items; do NOT re-implement (AC1 Rust, AC3 stale test)**
-  - [ ] Confirm (read, don't change) `GearAffixData.affix_class` is the `AffixPosition` enum (game_data.rs:22-23) and the loader populates it from the corpus `type` field (game_data_loader.rs:225-229,257). **deferred-work.md:127 ("affix_class is an unvalidated String") is STALE** — do not act on it.
-  - [ ] Confirm the stale-test half of AC3 is already green: `openrouter_service.rs:484` reads `assert_eq!(MODELS.len(), 7)`. No change. (If you were about to edit `game_data_loader.rs` for a `MODELS` test, stop — it is not there.)
-  - [ ] Confirm the corpus already ships `type: 'prefix'|'suffix'` on all affixes (no data/`generate_item_db.py` change) — see Source Audit. Do **not** rename the corpus field to `position` (Decision **D2**).
-  - [ ] (Optional, closes deferred #203's live remnant) Confirm the loader boundary actually converts the corpus `type` to `AffixPosition` — it does, via the inline match at game_data_loader.rs:225-229. No `AffixPosition::from_data_str` refactor is required.
-- [ ] **Task 6 — Tests: routing over REAL corpus affixes + back-compat (verification guardrail)**
-  - [ ] Extend `lebo/src/shared/utils/buildSnapshotSerializer.test.ts` (the gear-affix test at :62-83 currently asserts `suffixes === []` — this encodes the bug and must change). Feed a build whose gear carries a **real suffix affix** and a **real prefix affix** and assert routing: a `position: 'suffix'` affix lands in `snapshot.gearSlots[slot].suffixes`; a `position: 'prefix'` (and a `position`-absent) affix stays in `prefixes`. This is the discriminator analog of the value+element rule — assert **where the affix routes**, not a count.
-  - [ ] Use real corpus ids so the test is source-grounded, e.g. suffix `affix-of-defense-suffix` (`type: "suffix"`, statKey `armor`) / `affix-of-hope-suffix`; prefix `affix-inevitable-prefix` (`type: "prefix"`). (These are the exact ids in `affixes.json`.)
-  - [ ] Add/confirm a GearSlot test (or extend the item-database tests) that `buildAffixEntries` copies `r.affixEntry.type` into `position` and maps `'implicit'` → `'prefix'`.
-  - [ ] Back-compat assertion: an `AffixEntryV2` with no `position` serializes into `prefixes` (never `suffixes`).
-- [ ] **Task 7 — Regression + build/test green**
-  - [ ] `pnpm build` (tsc + vite) clean; full `pnpm vitest` shows **no new failures** vs the standing baseline (ProviderSelector ×5 / Settings ×1 / TreeControls ×1 — `SkillTreeCanvas` was cleared in Story 3.5). The only pre-existing serializer test that must change is the AR-15 `suffixes === []` assertion (Task 6) — update it to the routing assertions, do not just re-pin it.
-  - [ ] `cargo test -p scoring-core` and `cargo test -p lebo` green (the `lib.rs` re-export is additive; the frozen 4.0 tests — `gear_affix_parity_*`, `no_dead_gear_stat_keys`, effect-count pins in game_data_loader.rs — must stay green and untouched).
+- [x] **Task 1 — Add the `position` field to `AffixEntryV2` (AC1, TS side)**
+  - [x] In `lebo/src/shared/types/build.ts` (AffixEntryV2, :9-16) add `position?: 'prefix' | 'suffix'`. **Optional** — an absent value means "unknown → treat as prefix" (AR-2 back-compat) and keeps every existing construction site compiling with no change.
+  - [x] Do **not** touch `GearItemV2` (:18-23) — affixes stay a single flat `AffixEntryV2[]`; the discriminator is per-affix, matching AR-2/ADR-P4-D-P4-2.
+- [x] **Task 2 — Source `position` from real item data at the DB-backed construction site (AC1, TS side)**
+  - [x] In `lebo/src/features/item-database/GearSlot.tsx`, `buildAffixEntries` (:51-60) currently returns `{ affixId, name, tier }` and **drops** the in-scope `r.affixEntry.type`. Populate `position` from it: `r.affixEntry.type === 'suffix' ? 'suffix' : 'prefix'` (map the third value `'implicit'` → `'prefix'` — Decision **D3**). `r` is a `ResolvedAffix` holding `affixEntry: AffixEntry`, whose `type: 'prefix' | 'suffix' | 'implicit'` (itemDatabase.ts:16-19) already crosses from Rust via `load_item_database`. **This is the only place real prefix/suffix data enters `AffixEntryV2` today** — pickers 4.2–4.6 are NOT a prerequisite.
+  - [x] Leave the two typeless construction sites unchanged: free-text `GearInput.tsx:32` (`{ name: affix }`, no affixId/type) and the v1→v2 migration `buildPersistence.ts:116-121` — both correctly leave `position` undefined → prefix. Verify only that they still type-check with the new optional field.
+- [x] **Task 3 — Route prefix vs suffix in the serializer (AC2 — the real AR-15 fix)**
+  - [x] In `lebo/src/shared/utils/buildSnapshotSerializer.ts`, `toGearSlots` (:155-171): partition the already-filtered `validAffixes` by position — `a.position === 'suffix'` → `suffixes[]`, everything else (`'prefix'`, `undefined`, migrated strings) → `prefixes[]`. Remove the hard-coded `suffixes: []` and the stale "all to prefixes" comment (:166-167).
+  - [x] The wire contract already supports this: `GearSlotSnapshotTS` (:31-35) already declares `prefixes: AffixEntryTS[]` and `suffixes: AffixEntryTS[]`. `AffixEntryTS` (:26-29) stays `{ affixId, tier }` — the array an affix lands in **is** its position (matches the Rust `GearSlotSnapshot` vec split); you do **not** need to add a `position` field to the wire type.
+- [x] **Task 4 — Re-export `GearSlotRanking` + `WishlistAffix` (AC3)**
+  - [x] In `lebo/src-tauri/scoring-core/src/lib.rs`, add `GearSlotRanking, WishlistAffix` to the `pub use stat_sheet::{ … };` block (:26-29). Both are already `pub` (stat_sheet.rs:161/170) so this compiles cleanly. `AffixPosition` is already re-exported (:21) — do not duplicate.
+- [x] **Task 5 — Verify the "already done" AC items; do NOT re-implement (AC1 Rust, AC3 stale test)**
+  - [x] Confirm (read, don't change) `GearAffixData.affix_class` is the `AffixPosition` enum (game_data.rs:22-23) and the loader populates it from the corpus `type` field (game_data_loader.rs:225-229,257). **deferred-work.md:127 ("affix_class is an unvalidated String") is STALE** — do not act on it.
+  - [x] Confirm the stale-test half of AC3 is already green: `openrouter_service.rs:484` reads `assert_eq!(MODELS.len(), 7)`. No change. (If you were about to edit `game_data_loader.rs` for a `MODELS` test, stop — it is not there.)
+  - [x] Confirm the corpus already ships `type: 'prefix'|'suffix'` on all affixes (no data/`generate_item_db.py` change) — see Source Audit. Do **not** rename the corpus field to `position` (Decision **D2**).
+  - [x] (Optional, closes deferred #203's live remnant) Confirm the loader boundary actually converts the corpus `type` to `AffixPosition` — it does, via the inline match at game_data_loader.rs:225-229. No `AffixPosition::from_data_str` refactor is required.
+- [x] **Task 6 — Tests: routing over REAL corpus affixes + back-compat (verification guardrail)**
+  - [x] Extend `lebo/src/shared/utils/buildSnapshotSerializer.test.ts` (the gear-affix test at :62-83 currently asserts `suffixes === []` — this encodes the bug and must change). Feed a build whose gear carries a **real suffix affix** and a **real prefix affix** and assert routing: a `position: 'suffix'` affix lands in `snapshot.gearSlots[slot].suffixes`; a `position: 'prefix'` (and a `position`-absent) affix stays in `prefixes`. This is the discriminator analog of the value+element rule — assert **where the affix routes**, not a count.
+  - [x] Use real corpus ids so the test is source-grounded, e.g. suffix `affix-of-defense-suffix` (`type: "suffix"`, statKey `armor`) / `affix-of-hope-suffix`; prefix `affix-inevitable-prefix` (`type: "prefix"`). (These are the exact ids in `affixes.json`.)
+  - [x] Add/confirm a GearSlot test (or extend the item-database tests) that `buildAffixEntries` copies `r.affixEntry.type` into `position` and maps `'implicit'` → `'prefix'`.
+  - [x] Back-compat assertion: an `AffixEntryV2` with no `position` serializes into `prefixes` (never `suffixes`).
+- [x] **Task 7 — Regression + build/test green**
+  - [x] `pnpm build` (tsc + vite) clean; full `pnpm vitest` shows **no new failures** vs the standing baseline (ProviderSelector ×5 / Settings ×1 / TreeControls ×1 — `SkillTreeCanvas` was cleared in Story 3.5). The only pre-existing serializer test that must change is the AR-15 `suffixes === []` assertion (Task 6) — update it to the routing assertions, do not just re-pin it.
+  - [x] `cargo test -p scoring-core` and `cargo test -p lebo` green (the `lib.rs` re-export is additive; the frozen 4.0 tests — `gear_affix_parity_*`, `no_dead_gear_stat_keys`, effect-count pins in game_data_loader.rs — must stay green and untouched).
 
 ---
 
@@ -217,13 +217,41 @@ All four decisions are **RESOLVED** (Alec, 2026-07-02) — recommended defaults 
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.8 (1M context) — `claude-opus-4-8[1m]` (dev-story workflow, xhigh effort)
 
 ### Debug Log References
 
+- `pnpm build` (tsc + vite) — clean (only the pre-existing >500 kB chunk advisory + font runtime-resolve notes).
+- `pnpm vitest run` (full) — **1281 passed / 7 failed = exact standing baseline** (ProviderSelector ×5 / Settings ×1 / TreeControls ×1); net **+3 tests**, no new failures, no baseline file cleared or added. Affected-file focused run: `buildSnapshotSerializer.test.ts` + `GearSlot.test.tsx` = 70/70 pass.
+- `cargo test -p scoring-core -p lebo` — scoring-core **136 pass**, lebo **43 pass** (incl. frozen `gear_affix_parity_*`, `no_dead_gear_stat_keys`), `ehp_reference.rs` **4/4** (EHP ±2 % parity unperturbed); clean compile with the additive re-export.
+
 ### Completion Notes List
 
+Thin TS-wiring story executed exactly to scope; Story 4.0's corpus + Rust discriminator verified present at HEAD and **not** re-implemented.
+
+- **AC1 (schema):** added optional `position?: 'prefix' | 'suffix'` to `AffixEntryV2` (`build.ts`); absent → prefix (AR-2). Rust `AffixEntry` left untouched — position is structural via the `GearSlotSnapshot` prefix/suffix vec split (**D1**), and `GearAffixData.affix_class: AffixPosition` was already the enum (Task 5 verified; deferred #127 "String" is stale).
+- **AC1 (source):** `GearSlot.buildAffixEntries` now copies `r.affixEntry.type` → `position`, mapping `'implicit'` → `'prefix'` (**D3**). The two typeless sites (`GearInput.tsx` free-text, `buildPersistence.ts` v1→v2 migration) were left unchanged and correctly default to prefix.
+- **AC2 (the real AR-15 fix):** `toGearSlots` now partitions the already-filtered valid affixes — `position === 'suffix'` → `suffixes[]`, everything else → `prefixes[]`. Removed the hard-coded `suffixes: []` + "all to prefixes" comment. Rust consumers already chain both vecs, so no engine change was needed.
+- **AC3 (lib surface):** re-exported `GearSlotRanking` + `WishlistAffix` from `scoring-core/src/lib.rs` (both already `pub`). The stale `MODELS.len()` test half was already `== 7` at `openrouter_service.rs:484` (Task 5 verified — no change).
+- **Traps avoided:** no Rust `AffixEntry.position` field (D1); corpus field kept as `type`, mapped to `position` at the FE boundary (D2); no `affixes.json`/`generate_item_db.py` change; no `detect_mismatched_affixes`/`affix_scope` work (4.2).
+- **Tests (verification guardrail):** replaced the bug-encoding `suffixes === []` serializer assertion with **routing** assertions over real corpus ids (`affix-inevitable-prefix` → prefixes, `affix-of-defense-suffix` → suffixes), plus a dedicated back-compat test (absent → prefixes, never suffixes). Added two `GearSlot` component tests proving `type` → `position` sourcing (`implicit` → prefix; picker-added `affix-speed` suffix → suffix). Assertions check *where* each affix routes, not counts.
+- **Corpus sanity:** confirmed the three real ids in `affixes.json` (1,117 total): `affix-of-defense-suffix`/`affix-of-hope-suffix` = suffix, `affix-inevitable-prefix` = prefix.
+
 ### File List
+
+Modified (source):
+- `lebo/src/shared/types/build.ts` — `position?` on `AffixEntryV2` (AC1)
+- `lebo/src/features/item-database/GearSlot.tsx` — `buildAffixEntries` sources `position` from `r.affixEntry.type` (AC1)
+- `lebo/src/shared/utils/buildSnapshotSerializer.ts` — `toGearSlots` routes prefix/suffix (AC2, the AR-15 fix)
+- `lebo/src-tauri/scoring-core/src/lib.rs` — re-export `GearSlotRanking`, `WishlistAffix` (AC3)
+
+Modified (tests):
+- `lebo/src/shared/utils/buildSnapshotSerializer.test.ts` — routing + back-compat assertions (replaces `suffixes === []`)
+- `lebo/src/features/item-database/GearSlot.test.tsx` — two `type` → `position` sourcing tests
+
+Process artifacts:
+- `_bmad-output/implementation-artifacts/4-1-affix-prefix-suffix-discriminator-data-gate.md` — status, tasks, Dev Agent Record
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — story status ready-for-dev → in-progress → review
 
 ## Change Log
 
@@ -231,3 +259,4 @@ All four decisions are **RESOLVED** (Alec, 2026-07-02) — recommended defaults 
 |------|--------|
 | 2026-07-02 | Story 4.1 created (create-story, ultracode). Second Epic 4 data gate: `position` discriminator. Ground-truth verification (6 parallel agents at HEAD 9137ad6) established that Story 4.0 already built the corpus + Rust discriminator (`GearAffixData.affix_class: AffixPosition`, loader ingestion, `GearSlotSnapshot` prefix/suffix vec split, all consumers chain both, MODELS test already 7), so the story narrowed to: add `position?` to `AffixEntryV2` (build.ts), source it from `r.affixEntry.type` in `GearSlot.buildAffixEntries`, route prefix/suffix into the existing `suffixes[]` in `buildSnapshotSerializer.ts` (the real AR-15 fix), re-export `GearSlotRanking`/`WishlistAffix` from `lib.rs`, and routing tests over real corpus ids. Four traps flagged (no Rust `AffixEntry.position` field — D1; no corpus `type`→`position` rename — D2; MODELS test already fixed; `affix_class`-String deferred #127 stale). Source Audit (data-sourced discriminator, real source chain, produced-and-consumed, honest prefix default). Status → ready-for-dev. |
 | 2026-07-02 | Decisions ratified with Alec: D1 (no Rust `AffixEntry` position field — vec split is authoritative), D2 (keep corpus `type`, map to build-side `position`), D3 (`'implicit'`→`'prefix'`) all confirmed as recommended; D4 accepted ("it's fine") — proceed from current HEAD, no reviewed 4.0-baseline commit required. Decisions section marked RESOLVED; no scope change. |
+| 2026-07-02 | Story 4.1 implemented (dev-story). AC1: `position?` on `AffixEntryV2` (build.ts) + sourced from `r.affixEntry.type` in `GearSlot.buildAffixEntries` (`'implicit'`→prefix, D3). AC2 (real AR-15 fix): `toGearSlots` partitions valid affixes → `suffix` to `suffixes[]`, else `prefixes[]`; removed hard-coded `suffixes: []`. AC3: re-exported `GearSlotRanking`/`WishlistAffix` from scoring-core `lib.rs`. Task 5 verify-only confirmed: `affix_class` is the `AffixPosition` enum (#127 stale), `MODELS.len()==7` already green, corpus ships `type` on all 1,117 affixes — no Rust engine/loader/data or MODELS-test change. Tests: replaced the bug-encoding `suffixes===[]` serializer assertion with prefix/suffix **routing** assertions over real corpus ids + a back-compat (absent→prefix) test; +2 GearSlot `type`→`position` sourcing tests. Validation: `pnpm build` clean; full `pnpm vitest` 1281 passed / 7 failed = exact standing baseline (ProviderSelector×5/Settings×1/TreeControls×1), +3 tests, no new failures; `cargo test -p scoring-core` 136 + `-p lebo` 43 + ehp_reference 4/4 all green. Status → review. |

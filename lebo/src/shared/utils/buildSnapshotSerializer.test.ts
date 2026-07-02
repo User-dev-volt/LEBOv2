@@ -59,7 +59,9 @@ describe('toBuildSnapshot', () => {
     expect(snapshot['id']).toBeUndefined()
   })
 
-  it('includes gear affixes with both affixId and tier; excludes incomplete entries', () => {
+  it('routes gear affixes by position: suffix→suffixes, prefix/absent→prefixes; excludes incomplete (AR-15)', () => {
+    // Real corpus ids: affix-inevitable-prefix (type prefix, void_penetration),
+    // affix-of-defense-suffix (type suffix, armor). Assert WHERE each routes, not a count.
     const build = makeBuild({
       contextData: {
         gear: [
@@ -67,9 +69,11 @@ describe('toBuildSnapshot', () => {
             slotId: 'helm',
             itemName: 'Test Helm',
             affixes: [
-              { name: 'Fire Res', affixId: 'fire-res', tier: 3 },
-              { name: 'No ID affix', tier: 2 },         // missing affixId — excluded
-              { name: 'No tier affix', affixId: 'x' },  // missing tier — excluded
+              { name: 'Inevitable', affixId: 'affix-inevitable-prefix', tier: 3, position: 'prefix' },
+              { name: 'of Defense', affixId: 'affix-of-defense-suffix', tier: 4, position: 'suffix' },
+              { name: 'Legacy (no position)', affixId: 'legacy-affix', tier: 2 }, // absent → prefix (AR-2)
+              { name: 'No ID affix', tier: 2, position: 'suffix' },        // missing affixId — excluded
+              { name: 'No tier affix', affixId: 'x', position: 'prefix' }, // missing tier — excluded
             ],
           },
         ],
@@ -78,8 +82,32 @@ describe('toBuildSnapshot', () => {
       },
     })
     const snapshot = toBuildSnapshot(build, minimalGameData)
-    expect(snapshot.gearSlots['helm']?.prefixes).toEqual([{ affixId: 'fire-res', tier: 3 }])
-    expect(snapshot.gearSlots['helm']?.suffixes).toEqual([])
+    // suffix lands in suffixes[] — the exact behavior AR-15 broke
+    expect(snapshot.gearSlots['helm']?.suffixes).toEqual([{ affixId: 'affix-of-defense-suffix', tier: 4 }])
+    // prefix + position-absent both land in prefixes[] (order preserved); incomplete entries excluded
+    expect(snapshot.gearSlots['helm']?.prefixes).toEqual([
+      { affixId: 'affix-inevitable-prefix', tier: 3 },
+      { affixId: 'legacy-affix', tier: 2 },
+    ])
+  })
+
+  it('back-compat: an affix with no position never routes to suffixes (AR-2 absent→prefix)', () => {
+    const build = makeBuild({
+      contextData: {
+        gear: [
+          {
+            slotId: 'gloves',
+            itemName: 'Migrated Gloves',
+            affixes: [{ name: 'Migrated', affixId: 'migrated-affix', tier: 1 }],
+          },
+        ],
+        skills: [],
+        idols: [],
+      },
+    })
+    const snapshot = toBuildSnapshot(build, minimalGameData)
+    expect(snapshot.gearSlots['gloves']?.prefixes).toEqual([{ affixId: 'migrated-affix', tier: 1 }])
+    expect(snapshot.gearSlots['gloves']?.suffixes).toEqual([])
   })
 
   it('returns empty collections when Epic 3 fields absent from BuildState', () => {

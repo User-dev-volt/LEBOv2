@@ -10,6 +10,9 @@ export interface AffixEntryV2 {
   affixId?: string
   name: string
   tier?: number
+  // Prefix/suffix discriminator (Story 4.1). Absent → treated as prefix (AR-2 back-compat).
+  // Sourced from the item-DB AffixEntry.type at the DB-backed construction site.
+  position?: 'prefix' | 'suffix'
   // Reserved for story 7-5 (structured gear context in optimization payload).
   // Not populated here — affixId+tier is enough to reconstruct min/max from the item DB.
   value?: number

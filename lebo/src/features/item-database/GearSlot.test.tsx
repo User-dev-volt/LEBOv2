@@ -546,4 +546,46 @@ describe('GearSlot', () => {
       expect(slot?.affixes.some((a) => a.name === 'Movement Speed')).toBe(true)
     })
   })
+
+  // Story 4.1 — position sourced from item-DB AffixEntry.type
+
+  it('sources position from affix type — implicit affix maps to prefix (D3)', async () => {
+    render(
+      <GearSlot slotId="helmet" slotName="Helmet" itemDatabase={mockItemDatabase} />
+    )
+    const input = screen.getByPlaceholderText('Search items…')
+    await userEvent.type(input, 'Iron Helm')
+    await waitFor(() => expect(screen.getByText('Iron Helm')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('Iron Helm'))
+
+    await waitFor(() => {
+      const gear = useBuildStore.getState().activeBuild!.contextData.gear
+      const slot = gear.find((g) => g.slotId === 'helmet')
+      // affix-armor.type === 'implicit' → position 'prefix' (D3)
+      const armor = slot?.affixes.find((a) => a.affixId === 'affix-armor')
+      expect(armor?.position).toBe('prefix')
+    })
+  })
+
+  it('sources position from affix type — suffix affix maps to suffix', async () => {
+    render(
+      <GearSlot slotId="helmet" slotName="Helmet" itemDatabase={mockItemDatabase} />
+    )
+    const input = screen.getByPlaceholderText('Search items…')
+    await userEvent.type(input, 'Iron Helm')
+    await waitFor(() => expect(screen.getByText('Iron Helm')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('Iron Helm'))
+
+    const addBtn = await screen.findByRole('button', { name: 'Add custom affix to Helmet' })
+    await userEvent.click(addBtn)
+    await userEvent.click(screen.getByTestId('mock-affix-picker'))
+
+    await waitFor(() => {
+      const gear = useBuildStore.getState().activeBuild!.contextData.gear
+      const slot = gear.find((g) => g.slotId === 'helmet')
+      // mock picker adds affix-speed (type 'suffix') → position 'suffix'
+      const speed = slot?.affixes.find((a) => a.affixId === 'affix-speed')
+      expect(speed?.position).toBe('suffix')
+    })
+  })
 })
