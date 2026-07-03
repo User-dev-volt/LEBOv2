@@ -89,7 +89,17 @@ const mockItemDatabase: ItemDatabase = {
       tiers: [{ tier: 1, minValue: 5, maxValue: 10 }],
     },
   ],
-  setItems: [],
+  setItems: [
+    {
+      id: 'forgotten-vestments',
+      name: 'Forgotten Vestments',
+      baseType: 'Helmet',
+      slot: 'helmet',
+      setName: 'Forgotten',
+      affixes: [],
+      setBonuses: [{ piecesRequired: 2, description: '20% increased Attack Speed' }],
+    },
+  ],
 }
 
 const mockBuild: BuildState = {
@@ -634,5 +644,15 @@ describe('GearSlot', () => {
       const helmetSlots = useBuildStore.getState().activeBuild!.contextData.gear.filter((g) => g.slotId === 'helmet')
       expect(helmetSlots).toHaveLength(1)
     })
+  })
+
+  it('equipping a set item renders it read-only — no "+ Add affix" (sets are fixed, like uniques)', async () => {
+    render(<GearSlot slotId="helmet" slotName="Helmet" itemDatabase={mockItemDatabase} />)
+    await userEvent.click(screen.getByText('Browse all items…'))
+    await userEvent.click(screen.getByRole('button', { name: 'Set' }))
+    await userEvent.dblClick(await screen.findByRole('gridcell', { name: 'Forgotten Vestments, Helmet' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Swap Helmet' })).toBeInTheDocument())
+    // fixed set item — no craft affordance leaks in
+    expect(screen.queryByRole('button', { name: 'Add custom affix to Helmet' })).toBeNull()
   })
 })

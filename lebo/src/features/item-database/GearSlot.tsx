@@ -40,14 +40,18 @@ function resolveAffixes(item: SearchResult, itemDatabase: ItemDatabase): Resolve
       const entry = itemDatabase.affixes.find((a) => a.id === affixId)
       return entry ? [{ affixId, name: entry.name, affixEntry: entry }] : []
     })
-  } else {
-    const uniqueItem = itemDatabase.uniqueItems.find((u) => u.id === item.id)
-    if (!uniqueItem) return []
-    return uniqueItem.affixes.flatMap(({ affixId }) => {
-      const entry = itemDatabase.affixes.find((a) => a.id === affixId)
-      return entry ? [{ affixId, name: entry.name, affixEntry: entry }] : []
-    })
   }
+  // Sets and uniques are both fixed-affix collections. Route sets to setItems — several set ids
+  // collide with unique ids, so the uniqueItems lookup would resolve the WRONG item for those.
+  const source =
+    item.type === 'set'
+      ? itemDatabase.setItems.find((s) => s.id === item.id)
+      : itemDatabase.uniqueItems.find((u) => u.id === item.id)
+  if (!source) return []
+  return source.affixes.flatMap(({ affixId }) => {
+    const entry = itemDatabase.affixes.find((a) => a.id === affixId)
+    return entry ? [{ affixId, name: entry.name, affixEntry: entry }] : []
+  })
 }
 
 function buildAffixEntries(
@@ -161,13 +165,15 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
   }
 
   function handleTierChange(affixId: string, tier: number) {
-    if (selectedItem?.type === 'unique') return
+    if (selectedItem?.type !== 'base') return
     const nextTiers = { ...affixTiersRef.current, [affixId]: tier }
     setAffixTiers(nextTiers)
     writeToStore(selectedItem, [...resolvedAffixes, ...customResolvedAffixes], nextTiers)
   }
 
   function handleAddCustomAffix(affix: AffixEntry) {
+    // Fixed-affix items (unique/set) are read-only — never craft affixes onto them.
+    if (selectedItem?.type !== 'base') return
     const initialTier = medianTier(affix)
     const newCustomIds = [...customAffixIds, affix.id]
     const newTiers = { ...affixTiersRef.current, [affix.id]: initialTier }
@@ -355,8 +361,8 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
           >
             Swap item
           </button>
-          {selectedItem.type === 'unique' ? (
-            /* Unique item: affixes are fixed — display read-only, no tier controls */
+          {selectedItem.type !== 'base' ? (
+            /* Unique/Set item: affixes are fixed — display read-only, no tier controls */
             resolvedAffixes.map((r) => (
               <div key={r.affixId} className="flex items-center px-1 py-0.5">
                 <span

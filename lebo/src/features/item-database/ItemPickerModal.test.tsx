@@ -89,6 +89,16 @@ describe('ItemPickerModal', () => {
     expect(screen.getByText('(20-80)% increased Fire Damage')).toBeInTheDocument()
   })
 
+  it('set cards show real set data, never a fabricated "N affix slots" count', async () => {
+    renderModal()
+    await userEvent.click(screen.getByRole('button', { name: 'Set' }))
+    expect(screen.getByText('Vestments of the Forgotten')).toBeInTheDocument()
+    // a fixed set item must NOT advertise craftable affix slots (the #1 failure mode)
+    expect(screen.queryByText(/affix slots/)).toBeNull()
+    // its real data surfaces instead (affix text / set bonus)
+    expect(screen.getByText('+1 to All Attributes')).toBeInTheDocument()
+  })
+
   it('Rarity=Unique hides bases and sets (collection filter)', async () => {
     renderModal()
     await userEvent.click(screen.getByRole('button', { name: 'Unique' }))

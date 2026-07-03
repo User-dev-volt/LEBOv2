@@ -67,12 +67,13 @@ describe('buildItemSearchIndex', () => {
     expect(index.maxLevel).toBe(44)
   })
 
-  it('affix count: unique = affixes.length; base + set = the rule constant', () => {
+  it('affix count: unique + set = affixes.length; base = the craftable rule constant', () => {
     const index = buildItemSearchIndex(richDb)
     expect(index.items.find((i) => i.id === 'calamity')!.affixCount).toBe(2)
     expect(index.items.find((i) => i.id === 'snowblind')!.affixCount).toBe(1)
     expect(index.items.find((i) => i.id === 'jewelled-circlet')!.affixCount).toBe(CRAFTABLE_AFFIX_SLOTS)
-    expect(index.items.find((i) => i.id === 'forgotten-helm')!.affixCount).toBe(CRAFTABLE_AFFIX_SLOTS)
+    // sets are FIXED, not craftable — real affix count, never the base constant (no fabricated "4 slots")
+    expect(index.items.find((i) => i.id === 'forgotten-helm')!.affixCount).toBe(1)
   })
 
   it('precomputes real tooltip lines from base implicits and unique affix text (4.1.5 fields)', () => {
@@ -84,6 +85,14 @@ describe('buildItemSearchIndex', () => {
     expect(index.items.find((i) => i.id === 'calamity')!.tooltipLines).toContain('(20-80)% increased Fire Damage')
     // No implicit → empty (never a fabricated line)
     expect(index.items.find((i) => i.id === 'refuge-helmet')!.tooltipLines).toEqual([])
+  })
+
+  it('surfaces real set data in tooltip lines — affix text + setBonuses description (shipped sets carry power in setBonuses)', () => {
+    const index = buildItemSearchIndex(richDb)
+    expect(index.items.find((i) => i.id === 'forgotten-helm')!.tooltipLines).toEqual([
+      '+1 to All Attributes',
+      '20% increased Attack Speed',
+    ])
   })
 })
 

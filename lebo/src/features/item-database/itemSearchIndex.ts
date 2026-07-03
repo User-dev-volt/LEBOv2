@@ -76,8 +76,15 @@ export function buildItemSearchIndex(db: ItemDatabase): ItemSearchIndex {
       nameLower: s.name.toLowerCase(),
       // SetItem carries no levelRequirement in the shipped data — honest 0 (never level-gated out).
       levelRequirement: 0,
-      affixCount: CRAFTABLE_AFFIX_SLOTS,
-      tooltipLines: nonEmptyTexts(s.affixes.map((a) => a.text)),
+      // Sets are FIXED items, not craftable — their real affix count, never the base craft constant
+      // (all shipped sets have affixes:[]; advertising "4 affix slots" would fabricate a value).
+      affixCount: s.affixes.length,
+      // Real set data lives in setBonuses[].description (shipped affixes[] is empty) — surface those
+      // (plus any affix text) so the tooltip shows real bonuses, not a dead/empty hover surface.
+      tooltipLines: nonEmptyTexts([
+        ...s.affixes.map((a) => a.text),
+        ...s.setBonuses.map((b) => b.description),
+      ]),
     })
   }
 

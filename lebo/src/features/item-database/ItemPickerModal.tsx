@@ -273,10 +273,12 @@ export function ItemPickerModal({ slotId, slotName, itemDatabase, onEquip, onClo
                         const isHovered = it.id === hoveredId
                         const showTip = isHovered && it.tooltipLines.length > 0
                         const ttId = `item-tt-${it.id}`
+                        // Base items advertise craftable affix slots; uniques and sets are fixed —
+                        // show their first real stat line (or a rarity label), never a slot count.
                         const footer =
-                          it.type === 'unique'
-                            ? it.tooltipLines[0] ?? 'Unique'
-                            : `${it.affixCount} affix slots`
+                          it.type === 'base'
+                            ? `${it.affixCount} affix slots`
+                            : it.tooltipLines[0] ?? (it.type === 'set' ? 'Set' : 'Unique')
                         return (
                           <button
                             key={it.id}
