@@ -50,6 +50,54 @@ describe('loadItemDatabase', () => {
     expect(useGameDataStore.getState().itemDatabase).toEqual(mockDb)
   })
 
+  // Story 4.1.5 (AC1, AC2) — the loader is a passthrough, so the new levelRequirement + base-implicit
+  // / unique-affix display text must round-trip into the store intact. Value+element assertions (a
+  // real level and a real text token), not a count — the defect this gate closes is blank/dropped data.
+  it('round-trips levelRequirement and implicit/affix display text into the store', async () => {
+    const richDb: ItemDatabase = {
+      baseItems: [
+        {
+          id: 'jewelled-circlet',
+          name: 'Jewelled Circlet',
+          baseType: 'Helmet',
+          slot: 'helmet',
+          implicitAffixIds: [],
+          levelRequirement: 7,
+          implicits: [{ text: '(5-25)% increased Spell Damage', statKey: 'increased_spell_damage' }],
+        },
+      ],
+      uniqueItems: [
+        {
+          id: 'calamity',
+          name: 'Calamity',
+          baseType: 'Helmet',
+          slot: 'helmet',
+          levelRequirement: 0,
+          affixes: [
+            {
+              affixId: 'unique-calamity-1',
+              fixedMinValue: 20,
+              fixedMaxValue: 80,
+              statKey: 'increased_fire_damage',
+              text: '(20-80)% increased Fire Damage',
+            },
+          ],
+        },
+      ],
+      affixes: [],
+      setItems: [],
+    }
+    mockInvoke.mockResolvedValueOnce(richDb)
+
+    await loadItemDatabase()
+
+    const stored = useGameDataStore.getState().itemDatabase
+    expect(stored?.baseItems[0].levelRequirement).toBe(7)
+    expect(stored?.baseItems[0].implicits?.[0].text).toContain('Spell Damage')
+    expect(stored?.uniqueItems[0].affixes[0].text).toContain('increased Fire Damage')
+    expect(stored?.uniqueItems[0].levelRequirement).toBe(0)
+  })
+
   it('leaves itemDatabase null when invokeCommand throws', async () => {
     mockInvoke.mockRejectedValueOnce(new Error('ITEM_DATA_ERROR: file not found'))
 

@@ -70,6 +70,12 @@ EMITTABLE_STAT_KEYS = {
 # regression silently gutting the surfaced set. Sits well below the current count.
 PICKER_FLOOR = 450
 
+# Story 4.1.5 — levelRequirement regression floor. `req.level` is present on 100% of PoB4LE bases +
+# uniques (spike-verified), so the transform emits levelRequirement on every item. Floor at 95%
+# guards against a transform regression that silently stops sourcing it (Story 4.2's Item Level slider
+# reads this — a 0%-populated field would ship a dead control, the project's #1 defect class).
+LEVEL_FLOOR_PCT = 95.0
+
 # Semantic regression pins (review #1-#13): concrete affixes whose mis-derivation the fix corrected.
 # statKey None = must resolve to null. A pin whose id is absent (corpus/name drift on a fresh PoB4LE
 # pull) is SKIPPED, not failed — so the gate never false-fails on upstream churn.
@@ -177,6 +183,17 @@ def main():
     print(f"implicit deferrals (classes) {len(deferrals)} recorded in manifest")
     if impl_total == 0:
         failures.append("no base-item implicits populated")
+
+    # Gate 8 (Story 4.1.5): levelRequirement present (int, non-null) on ~100% of bases + uniques.
+    # `.get(...) is present` counts the key existing as an int (0 is a valid requirement); a regression
+    # that dropped the field or emitted null would fail this floor.
+    level_items = base_items + uniques
+    with_level = sum(1 for it in level_items
+                     if isinstance(it.get("levelRequirement"), int) and not isinstance(it.get("levelRequirement"), bool))
+    level_pct = 100.0 * with_level / len(level_items) if level_items else 0.0
+    print(f"\nlevelRequirement present ... {with_level}/{len(level_items)} ({level_pct:.1f}%)  [floor {LEVEL_FLOOR_PCT}%]")
+    if level_pct < LEVEL_FLOOR_PCT:
+        failures.append(f"levelRequirement populated {level_pct:.1f}% < floor {LEVEL_FLOOR_PCT}% (transform regression?)")
 
     # Manifest presence
     if not manifest.get("unmapped_affixes") and pct < 100.0:

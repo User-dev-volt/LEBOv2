@@ -603,6 +603,7 @@ def transform_bases(bases: dict) -> list:
             "name": name,
             "baseType": item_type,
             "slot": slot,
+            "levelRequirement": (entry.get("req") or {}).get("level") or 0,
             "implicitAffixIds": [],
             "implicits": implicits,
         })
@@ -648,6 +649,7 @@ def transform_uniques(uniques: dict, basetype_map: dict) -> list:
             "name": name,
             "baseType": item_type or "Unknown",
             "slot": slot,
+            "levelRequirement": (entry.get("req") or {}).get("level") or 0,
             "affixes": affixes,
         })
     return items

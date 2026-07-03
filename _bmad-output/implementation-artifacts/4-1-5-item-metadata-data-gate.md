@@ -1,6 +1,6 @@
 # Story 4.1.5: Item metadata + display-text data gate
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -38,30 +38,30 @@ so that Story 4.2's Item Picker Modal can filter by Item Level and show real per
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Source `levelRequirement` in the transform (AC1)**
-  - [ ] In `docs/data-transform/generate_item_db.py`, `transform_bases` (:578-609) and `transform_uniques` (:622-653): add `"levelRequirement": entry.get("req", {}).get("level", 0)` to each emitted item dict. `req.level` is present on 100% of source items (897 base + 471 unique — spike-verified).
-  - [ ] Re-run **offline** against the committed cache: `python generate_item_db.py --source .source-cache` (from `docs/data-transform/`). This regenerates `base-items.json` + `uniques.json` with the new field; **`affixes.json` must be byte-identical** (the affix transform is untouched — confirm via git diff that only base-items/uniques/affix-manifest changed).
-  - [ ] Confirm the transform still emits `implicits[].text` on bases (:592-600) and `affixes[].text`/`statKey` on uniques (:636-645) — it already does; **no re-authoring**. This gate is a passthrough, not a re-transform.
-- [ ] **Task 2 — Widen the Rust structs to stop dropping fields (AC1, AC2)** — `lebo/src-tauri/src/models/item_data.rs`
-  - [ ] Add `#[serde(default)] level_requirement: u32` to `RawBaseItem` (:51-57) and `RawUniqueItem` (:69-77). (`#[serde(rename_all = "camelCase")]` is already on the structs → maps `levelRequirement`.)
-  - [ ] Add a `RawImplicit` struct mirroring the emitted implicit shape — minimally `text: String` + `#[serde(default)] stat_key: Option<String>` (optionally `modifier_type`/`scope`/`damage_type`/`min_value`/`max_value` for completeness) — and add `#[serde(default)] implicits: Vec<RawImplicit>` to `RawBaseItem`.
-  - [ ] Add `#[serde(default)] stat_key: Option<String>` + `#[serde(default)] text: Option<String>` to `RawUniqueItemAffix` (:61-65). (`text` is 100%-populated in the JSON; `statKey` is nullable ~41% — carry both, but 4.2 displays `text`.)
-  - [ ] All additions are `#[serde(default)]` (additive/back-compat) so pre-regen data and every existing consumer keep deserializing.
-- [ ] **Task 3 — Mirror the TS types (AC1, AC2)** — `lebo/src/shared/types/itemDatabase.ts`
-  - [ ] Add `levelRequirement?: number` to `BaseItem` (:27-33) and `UniqueItem` (:41-48) (optional → default `?? 0` at read, per project-context optional-field rule).
-  - [ ] Add a `BaseImplicit` interface (`{ text: string; statKey?: string; ... }`) and `implicits?: BaseImplicit[]` to `BaseItem`.
-  - [ ] Add `text?: string` + `statKey?: string` to `UniqueItemAffix` (:35-39).
-- [ ] **Task 4 — Verify the loader is a passthrough (AC1, AC2)**
-  - [ ] Confirm `load_item_database` (item_commands.rs:7-10) returns `ItemDatabase` directly (it does) and `item_data_service::load_item_database_from_dir` deserializes JSON straight into the structs with no intermediate hand-mapped DTO that would need the new fields added. If a DTO exists, extend it; if it's a plain `serde_json::from_str::<ItemDatabase>`, no change. **Do not** add a Tauri command or change the command signature.
-- [ ] **Task 5 — Extend the coverage gate (AC3)** — `docs/data-transform/check_coverage.py`
-  - [ ] Add a gate: `levelRequirement` present (non-null) on ≥95% of base + unique items (expected ~100%, since `req.level` is universal) — a regression floor mirroring the 4.0 gate style. Keep all existing gates.
-  - [ ] Run `python check_coverage.py` → GATE PASSED (all 4.0 gates + the new levelRequirement gate).
-- [ ] **Task 6 — Tests: value+element assertions (mandatory, VERIFICATION GUARDRAIL) (AC1, AC2, AC3)**
-  - [ ] **Rust** (loader/deserialization test, crate `lebo`): deserialize the shipped `base-items.json`/`uniques.json` (or a representative fixture) and assert **values**: `jewelled-circlet` has `level_requirement == 7` and a non-empty `implicits[].text` containing a known token (`"Mana"`/`"Spell Damage"`); a known unique (e.g. `calamity`) has an affix whose `text` contains `"increased Fire Damage"`. Assert the VALUE, not a count.
-  - [ ] **TS**: extend `itemDatabaseLoader.test.ts` (mock via `vi.mock('../../shared/utils/invokeCommand')`) with a mock DB carrying `levelRequirement` + implicit/affix `text`, asserting the store round-trips them; and/or a small type-level test that the fields are readable.
-  - [ ] A golden count of items is explicitly insufficient (it would not catch a mis-parsed level or an empty text) — assert real values over real sampled items. [SOURCE-AUDIT + VERIFICATION GUARDRAIL]
-- [ ] **Task 7 — Regression green**
-  - [ ] `git diff` shows only `base-items.json`, `uniques.json`, `affix-manifest.json` changed under `resources/items/` (NOT `affixes.json`) + the Rust/TS/py source. `pnpm build` clean; full `pnpm vitest` **no new failures vs the standing 7-failure baseline** (ProviderSelector ×5 / Settings ×1 / TreeControls ×1). `cargo test -p scoring-core` + `-p lebo` green — the **frozen** `gear_affix_parity_*`, `no_dead_gear_stat_keys`, `ehp_reference.rs` (4/4), and `buildSnapshotSerializer` routing tests **untouched and passing** (this gate touches item-DB display data, not the scoring engine or the affix corpus).
+- [x] **Task 1 — Source `levelRequirement` in the transform (AC1)**
+  - [x] In `docs/data-transform/generate_item_db.py`, `transform_bases` (:578-609) and `transform_uniques` (:622-653): add `"levelRequirement": entry.get("req", {}).get("level", 0)` to each emitted item dict. `req.level` is present on 100% of source items (897 base + 471 unique — spike-verified). **Impl:** used defensive `(entry.get("req") or {}).get("level") or 0` (`0` is a valid level so `or 0` is correct); verified 0 null / 0 non-int / 0 negative across all 1368 source items.
+  - [x] Re-run **offline** against the committed cache: `python generate_item_db.py --source .source-cache` (from `docs/data-transform/`). This regenerates `base-items.json` + `uniques.json` with the new field; **`affixes.json` must be byte-identical** (the affix transform is untouched — confirm via git diff that only base-items/uniques/affix-manifest changed). **Verified:** a determinism probe (as-is re-run) reproduced ALL 5 outputs byte-identically first; after the change, `affixes.json`/`affix-manifest.json`/`set-items.json` are byte-identical (sha256 unchanged), only `base-items.json` + `uniques.json` changed.
+  - [x] Confirm the transform still emits `implicits[].text` on bases (:592-600) and `affixes[].text`/`statKey` on uniques (:636-645) — it already does; **no re-authoring**. This gate is a passthrough, not a re-transform.
+- [x] **Task 2 — Widen the Rust structs to stop dropping fields (AC1, AC2)** — `lebo/src-tauri/src/models/item_data.rs`
+  - [x] Add `#[serde(default)] level_requirement: u32` to `RawBaseItem` (:51-57) and `RawUniqueItem` (:69-77). (`#[serde(rename_all = "camelCase")]` is already on the structs → maps `levelRequirement`.)
+  - [x] Add a `RawImplicit` struct mirroring the emitted implicit shape — `text: String` + `#[serde(default)]` `stat_key`/`modifier_type`/`scope`/`damage_type` `Option<String>` + `min_value`/`max_value` `f64` — and add `#[serde(default)] implicits: Vec<RawImplicit>` to `RawBaseItem`.
+  - [x] Add `#[serde(default)] stat_key: Option<String>` + `#[serde(default)] text: Option<String>` to `RawUniqueItemAffix` (:61-65). (`text` is 100%-populated in the JSON; `statKey` is nullable ~41% — carry both, but 4.2 displays `text`.) (Also flows to `RawSetItem`, which reuses `RawUniqueItemAffix` — additive, harmless.)
+  - [x] All additions are `#[serde(default)]` (additive/back-compat) so pre-regen data and every existing consumer keep deserializing.
+- [x] **Task 3 — Mirror the TS types (AC1, AC2)** — `lebo/src/shared/types/itemDatabase.ts`
+  - [x] Add `levelRequirement?: number` to `BaseItem` (:27-33) and `UniqueItem` (:41-48) (optional → default `?? 0` at read, per project-context optional-field rule).
+  - [x] Add a `BaseImplicit` interface (`{ text: string; statKey?: string; ... }`) and `implicits?: BaseImplicit[]` to `BaseItem`.
+  - [x] Add `text?: string` + `statKey?: string` to `UniqueItemAffix` (:35-39).
+- [x] **Task 4 — Verify the loader is a passthrough (AC1, AC2)**
+  - [x] Confirm `load_item_database` (item_commands.rs:7-10) returns `ItemDatabase` directly (it does) and `item_data_service::load_item_database_from_dir` deserializes JSON straight into the structs with no intermediate hand-mapped DTO that would need the new fields added. **Verified:** `load_item_database_from_dir` is a plain `serde_json::from_str` into the struct family → new fields auto-flow. No DTO, no Tauri command added, no signature change.
+- [x] **Task 5 — Extend the coverage gate (AC3)** — `docs/data-transform/check_coverage.py`
+  - [x] Add a gate: `levelRequirement` present (non-null) on ≥95% of base + unique items (expected ~100%, since `req.level` is universal) — a regression floor mirroring the 4.0 gate style. Keep all existing gates. **Impl:** `LEVEL_FLOOR_PCT = 95.0`; Gate 8 counts int (non-bool) presence.
+  - [x] Run `python check_coverage.py` → GATE PASSED (all 4.0 gates + the new levelRequirement gate: **1368/1368 = 100.0%**).
+- [x] **Task 6 — Tests: value+element assertions (mandatory, VERIFICATION GUARDRAIL) (AC1, AC2, AC3)**
+  - [x] **Rust** (loader test, crate `lebo`, in `item_data_service.rs`): loads the shipped DB through the REAL `load_item_database_from_dir` and asserts **values**: `jewelled-circlet` `level_requirement == 7` + `implicits[].text` contains `"Mana"`/`"Spell Damage"`; `refuge-helmet == 0`; `iron-casque == 10`; `calamity` has an affix whose `text` contains `"increased Fire Damage"`. A second test asserts levelRequirement is the real sourced value (many non-zero), not a blanket default.
+  - [x] **TS**: extended `itemDatabaseLoader.test.ts` with a rich mock DB carrying `levelRequirement` + implicit/affix `text`, asserting the store round-trips them (level==7, implicit text contains "Spell Damage", unique affix text contains "increased Fire Damage", unique level==0).
+  - [x] A golden count of items is explicitly insufficient (it would not catch a mis-parsed level or an empty text) — assert real values over real sampled items. [SOURCE-AUDIT + VERIFICATION GUARDRAIL]
+- [x] **Task 7 — Regression green**
+  - [x] `git diff` shows only `base-items.json`, `uniques.json` changed under `resources/items/` (NOT `affixes.json`; manifest also byte-stable) + the Rust/TS/py source. `pnpm build` clean; full `pnpm vitest` **7 failed / 1282 passed — no new failures vs the standing 7-failure baseline** (ProviderSelector ×5 / Settings ×1 / TreeControls ×1). `cargo test -p scoring-core` (136) + `-p lebo` (45, incl. 2 new) green — the **frozen** `gear_affix_parity_*`, `no_dead_gear_stat_keys`, `ehp_reference.rs` (4/4) **untouched and passing** (this gate touches item-DB display data, not the scoring engine or the affix corpus).
 
 ## Dev Notes
 
@@ -135,16 +135,42 @@ Per SOURCE-AUDIT + VERIFICATION guardrails: assert **real values** over real sam
 
 ### Agent Model Used
 
-_(dev-story fills this in)_
+claude-opus-4-8 (dev-story workflow)
 
 ### Debug Log References
 
+- **Determinism probe (de-risk before any edit):** ran `generate_item_db.py --source .source-cache` AS-IS and sha256-compared all 5 outputs vs committed → byte-identical. Proves the cache deterministically reproduces the committed corpus, so the affix transform stays frozen through this change. Restored (no-op — identical) before editing.
+- **Source ground-truth:** `bases.json` 897/897 + `uniques.json` 471/471 carry `req.level`; 0 null / 0 non-int / 0 negative → `u32` safe. Jewelled Circlet→7, Refuge Helmet→0, Iron Casque→10 confirmed in both source and regenerated output.
+- **Emitted-text check:** the Mana implicit is emitted with `text='+(10-35) Mana'` even though its `statKey` is null (`stat_from_text` returns a null-statKey dict, not `None`, so the row is not skipped). Test tokens ("Mana"/"Spell Damage"/"increased Fire Damage") verified present in the regenerated JSON before asserting.
+- **Post-change diff scope (sha256):** `affixes.json` / `affix-manifest.json` / `set-items.json` byte-identical; only `base-items.json` + `uniques.json` changed.
+
 ### Completion Notes List
 
+- **AC1 (item level end-to-end):** `levelRequirement` sourced from `req.level` in `transform_bases`/`transform_uniques` → widened `RawBaseItem`/`RawUniqueItem` (`#[serde(default)] level_requirement: u32`) → mirrored `BaseItem`/`UniqueItem` TS (`levelRequirement?: number`) → flows through the unchanged `load_item_database` passthrough. Rust value test asserts 7/0/10 for the three named items.
+- **AC2 (display text passthrough):** added `RawImplicit` (+ `implicits: Vec<RawImplicit>` on `RawBaseItem`) and `text`/`stat_key` on `RawUniqueItemAffix` — the transform already emitted this text (821/897 base implicits, 2338/2338 unique affixes) but the structs dropped it serde-side. TS mirrored with `BaseImplicit` + optional `text`/`statKey`. Value tests assert real tokens, not counts.
+- **AC3 (gate + frozen tests):** `check_coverage.py` Gate 8 (`LEVEL_FLOOR_PCT=95.0`) reports 1368/1368 = 100.0% and GATE PASSED with all Story-4.0 gates intact. `affixes.json` byte-identical → frozen `gear_affix_parity_*` / `no_dead_gear_stat_keys` / `ehp_reference` (4/4) all pass unchanged.
+- **Passthrough (Task 4):** confirmed `load_item_database_from_dir` is a plain `serde_json::from_str` into the struct family — no hand-mapped DTO, no new Tauri command, no signature change. Added fields flow with zero loader-logic change.
+- **Scope discipline:** no affix-corpus change, no scoring-engine change, no store/view/router change, no new dependency, no invented `tags`/`rarity`/`flavor` (declared unsourceable — Story 4.2 reframes those honestly).
+- **Housekeeping (per story Git-intelligence note):** untracked the AutoSaved `docs/data-transform/__pycache__/*.pyc` and added `__pycache__/` + `*.pyc` to that folder's `.gitignore`.
+- **Full regression:** `pnpm build` clean · `pnpm vitest` 1282 passed / 7 failed (exactly the standing ProviderSelector×5 / Settings×1 / TreeControls×1 baseline — 0 new) · `cargo test -p lebo` 45/45 · `-p scoring-core` 136/136 · `ehp_reference` 4/4.
+- **⚠️ Provenance flag for the reviewer (NOT actioned — Alec's call):** HEAD is a raw `[AutoSave]`; per the story's Git-intelligence note and memory `[[autosave-watcher-unvalidated]]`, consider landing a reviewed "4.0/4.1 complete" baseline commit before committing this gate so the regenerated `base-items.json`/`uniques.json` diff is reviewable against a stable parent.
+
 ### File List
+
+- `docs/data-transform/generate_item_db.py` (M) — `levelRequirement` in both transform dicts (Task 1)
+- `docs/data-transform/check_coverage.py` (M) — Gate 8 levelRequirement floor + `LEVEL_FLOOR_PCT` (Task 5)
+- `docs/data-transform/.gitignore` (M) — ignore `__pycache__/` + `*.pyc` (housekeeping)
+- `lebo/src-tauri/resources/items/base-items.json` (M, regenerated) — gains `levelRequirement`
+- `lebo/src-tauri/resources/items/uniques.json` (M, regenerated) — gains `levelRequirement`
+- `lebo/src-tauri/src/models/item_data.rs` (M) — `RawImplicit`; `level_requirement`/`implicits` on `RawBaseItem`; `stat_key`/`text` on `RawUniqueItemAffix`; `level_requirement` on `RawUniqueItem` (Task 2)
+- `lebo/src-tauri/src/services/item_data_service.rs` (M) — 2 value+element loader tests (Task 6)
+- `lebo/src/shared/types/itemDatabase.ts` (M) — `BaseImplicit`; new optional fields on `BaseItem`/`UniqueItemAffix`/`UniqueItem` (Task 3)
+- `lebo/src/features/item-database/itemDatabaseLoader.test.ts` (M) — round-trip value test (Task 6)
+- `docs/data-transform/__pycache__/*.pyc` (D) — untracked AutoSave artifacts (housekeeping)
 
 ## Change Log
 
 | Date | Change |
 |------|--------|
+| 2026-07-03 | Story 4.1.5 implemented (dev-story). Sourced `levelRequirement` (`req.level`, 100% of 897 base + 471 unique) through transform → widened Rust structs (`RawBaseItem`/`RawUniqueItem` + new `RawImplicit`; `text`/`statKey` on `RawUniqueItemAffix`) → mirrored TS types → passthrough loader. Carried the base-implicit (821/897) + unique-affix (2338/2338) display text the transform already emitted but the structs dropped serde-side. Extended `check_coverage.py` (Gate 8, levelRequirement 100.0% ≥ 95% floor). Value+element tests: Rust loader (Jewelled Circlet lvl 7 + implicit text, Refuge 0, Iron Casque 10, Calamity "increased Fire Damage") + TS store round-trip. Determinism-verified `affixes.json` byte-identical (frozen 4.0/4.1 tests unperturbed); only `base-items.json`/`uniques.json` regenerated. Full regression green (lebo 45, scoring-core 136, ehp 4/4, vitest 1282/7 standing baseline, build clean). Untracked AutoSaved `__pycache__`. Status → review. Unblocks Story 4.2. |
 | 2026-07-03 | Story 4.1.5 created (create-story + ultracode). Inserted data gate per Alec's ratified Option B ("source what's real"), after a source-audit spike found FR-27 over-specifies vs the shipped data: PoB4LE sources item level (`req.level`, 100% of 897 base + 471 unique) but has NO tags/rarity/flavor. Gate sources `levelRequirement` + carries the base-implicit / unique-affix display text that the transform already emits but the Rust structs (`RawBaseItem`/`RawUniqueItemAffix`) drop serde-side. Additive `#[serde(default)]` struct fields + TS mirror + extended `check_coverage.py` + value-assertion tests (level==7 Jewelled Circlet; real implicit/affix text). Affix corpus untouched (affixes.json byte-stable). Source Audit: every field mapped to a real source; tags/rarity/flavor explicitly NOT fabricated. Status → ready-for-dev. Unblocks Story 4.2. |

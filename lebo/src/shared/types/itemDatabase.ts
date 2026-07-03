@@ -24,18 +24,32 @@ export interface AffixEntry {
   damageType?: DamageType | null
 }
 
+export interface BaseImplicit {
+  text: string
+  statKey?: string
+  modifierType?: string
+  scope?: string
+  damageType?: DamageType | null
+  minValue?: number
+  maxValue?: number
+}
+
 export interface BaseItem {
   id: string
   name: string
   baseType: string
   slot: string
   implicitAffixIds: string[]
+  levelRequirement?: number
+  implicits?: BaseImplicit[]
 }
 
 export interface UniqueItemAffix {
   affixId: string
   fixedMinValue: number
   fixedMaxValue: number
+  statKey?: string
+  text?: string
 }
 
 export interface UniqueItem {
@@ -45,6 +59,7 @@ export interface UniqueItem {
   slot: string
   affixes: UniqueItemAffix[]
   description?: string
+  levelRequirement?: number
 }
 
 export interface SetBonus {
