@@ -13,6 +13,8 @@ import type { AffixEntryV2 } from '../../shared/types/build'
 import { useBuildStore } from '../../shared/stores/buildStore'
 import { searchItems } from './itemSearch'
 import { getRarityColorForItemType } from '../../shared/utils/rarityColors'
+import { ItemPickerModal } from './ItemPickerModal'
+import { showSuccessToast } from '../../shared/components/Toast'
 
 interface ResolvedAffix {
   affixId: string
@@ -38,14 +40,18 @@ function resolveAffixes(item: SearchResult, itemDatabase: ItemDatabase): Resolve
       const entry = itemDatabase.affixes.find((a) => a.id === affixId)
       return entry ? [{ affixId, name: entry.name, affixEntry: entry }] : []
     })
-  } else {
-    const uniqueItem = itemDatabase.uniqueItems.find((u) => u.id === item.id)
-    if (!uniqueItem) return []
-    return uniqueItem.affixes.flatMap(({ affixId }) => {
-      const entry = itemDatabase.affixes.find((a) => a.id === affixId)
-      return entry ? [{ affixId, name: entry.name, affixEntry: entry }] : []
-    })
   }
+  // Sets and uniques are both fixed-affix collections. Route sets to setItems — several set ids
+  // collide with unique ids, so the uniqueItems lookup would resolve the WRONG item for those.
+  const source =
+    item.type === 'set'
+      ? itemDatabase.setItems.find((s) => s.id === item.id)
+      : itemDatabase.uniqueItems.find((u) => u.id === item.id)
+  if (!source) return []
+  return source.affixes.flatMap(({ affixId }) => {
+    const entry = itemDatabase.affixes.find((a) => a.id === affixId)
+    return entry ? [{ affixId, name: entry.name, affixEntry: entry }] : []
+  })
 }
 
 function buildAffixEntries(
@@ -72,6 +78,7 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
   const [freeText, setFreeText] = useState<string>('')
   const [affixPickerOpen, setAffixPickerOpen] = useState<boolean>(false)
   const [customAffixIds, setCustomAffixIds] = useState<string[]>([])
+  const [pickerOpen, setPickerOpen] = useState<boolean>(false)
 
   const activeBuildId = useBuildStore((s) => s.activeBuild?.id ?? null)
 
@@ -83,6 +90,7 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
     setFreeText('')
     setAffixPickerOpen(false)
     setCustomAffixIds([])
+    setPickerOpen(false)
   }, [activeBuildId])
 
   const searchResults = useMemo(() => {
@@ -122,7 +130,8 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
     const affixEntries = buildAffixEntries(resolved, tiers)
     useBuildStore.getState().updateContextGear([
       ...otherSlots,
-      { slotId, itemName: item.name, affixes: affixEntries },
+      // Story 4.2: populate itemId (SearchResult.id) so the serializer's toGearSlots forwards it end-to-end.
+      { slotId, itemId: item.id, itemName: item.name, affixes: affixEntries },
     ])
   }
 
@@ -156,13 +165,15 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
   }
 
   function handleTierChange(affixId: string, tier: number) {
-    if (selectedItem?.type === 'unique') return
+    if (selectedItem?.type !== 'base') return
     const nextTiers = { ...affixTiersRef.current, [affixId]: tier }
     setAffixTiers(nextTiers)
     writeToStore(selectedItem, [...resolvedAffixes, ...customResolvedAffixes], nextTiers)
   }
 
   function handleAddCustomAffix(affix: AffixEntry) {
+    // Fixed-affix items (unique/set) are read-only — never craft affixes onto them.
+    if (selectedItem?.type !== 'base') return
     const initialTier = medianTier(affix)
     const newCustomIds = [...customAffixIds, affix.id]
     const newTiers = { ...affixTiersRef.current, [affix.id]: initialTier }
@@ -177,6 +188,7 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
   }
 
   return (
+    <>
     <div
       role="group"
       aria-label={`${slotName} slot`}
@@ -300,6 +312,13 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
               </Combobox>
             </div>
             <button
+              onClick={() => setPickerOpen(true)}
+              className="text-[11px] self-start mt-0.5"
+              style={{ color: 'var(--color-accent-gold)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            >
+              Browse all items…
+            </button>
+            <button
               onClick={() => setIsFreeText(true)}
               className="text-[11px] self-start mt-0.5"
               style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
@@ -334,8 +353,16 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
               ×
             </button>
           </div>
-          {selectedItem.type === 'unique' ? (
-            /* Unique item: affixes are fixed — display read-only, no tier controls */
+          <button
+            onClick={() => setPickerOpen(true)}
+            aria-label={`Swap ${slotName}`}
+            className="text-[11px] self-start"
+            style={{ color: 'var(--color-accent-gold)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          >
+            Swap item
+          </button>
+          {selectedItem.type !== 'base' ? (
+            /* Unique/Set item: affixes are fixed — display read-only, no tier controls */
             resolvedAffixes.map((r) => (
               <div key={r.affixId} className="flex items-center px-1 py-0.5">
                 <span
@@ -405,5 +432,19 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
         </>
       )}
     </div>
+      {pickerOpen && itemDatabase && (
+        <ItemPickerModal
+          slotId={slotId}
+          slotName={slotName}
+          itemDatabase={itemDatabase}
+          onEquip={(item) => {
+            handleSelect(item)
+            showSuccessToast(`Equipped ${item.name}`)
+            setPickerOpen(false)
+          }}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
+    </>
   )
 }

@@ -1,6 +1,6 @@
 # Story 4.2: Item Picker Modal
 
-Status: ready-for-dev
+Status: done
 
 **Depends on: Story 4.1.5 (Item metadata + display-text data gate) — MUST be `done` before this story starts.** 4.2 consumes the `levelRequirement`, base `implicits[].text`, and unique `affixes[].text` that 4.1.5 sources; without it the Item Level filter and hover tooltip render blank (the displayed-but-not-sourced trap this pair was split to prevent).
 
@@ -62,38 +62,38 @@ Verbatim from epics.md (Story 4.2, :796-809 / FR-27 :79 / NFR-5 :133), annotated
 
 ## Tasks / Subtasks
 
-- [ ] **Task 0 — Confirm the 4.1.5 gate landed (dependency guard)**
-  - [ ] Verify the item DB reaching the frontend carries `levelRequirement` on bases + uniques, `implicits[].text` on bases, and `affixes[].text` on uniques (the fields 4.1.5 sources). If they are absent, STOP — 4.1.5 is not done; this story renders blank filters/tooltips without it.
-- [ ] **Task 1 — Prebuilt search index + set-item inclusion (AC2, NFR-5)**
-  - [ ] Add a prebuilt index (built once from the loaded `ItemDatabase`; lowercased name/baseType token maps) that `searchItems` (or a thin wrapper) consumes — no scan-from-scratch per keystroke. Keep the existing prefix/substring/fuzzy ranking.
-  - [ ] Include `setItems` in the searchable corpus (currently skipped, itemSearch.ts:41-53). Extend `SearchResult.type` to `'base' | 'unique' | 'set'` (itemDatabase.ts:73-79) and everything that switches on it (incl. `getRarityColorForItemType`, Task 3).
-  - [ ] Perf test: <100ms over the full real corpus (897 + 471 + 23 = 1,391) — extend itemSearch.test.ts:127-149. Assert the index builds **once**, not per query. No new dependency (AR-8) — hand-built index.
-- [ ] **Task 2 — ItemPickerModal shell + grid + sidebar (AC1)** — new file `lebo/src/features/item-database/ItemPickerModal.tsx` (DN-2)
-  - [ ] **Copy** the Headless UI `Dialog` scaffold from `DeleteConfirmDialog.tsx` **locally** (do NOT import it — cross-feature import forbidden, RemoveNodeConfirmDialog.tsx:10-11): `<Dialog open onClose>` + `fixed inset-0` overlay `rgba(0,0,0,0.5)` + flex-center + `<DialogPanel>` tokens (`--color-bg-surface`, border `--color-bg-elevated`). Widen well beyond `max-w-sm` for sidebar + grid.
-  - [ ] Sidebar filters (all sourced): **Rarity** = Base/Unique/Set toggle; **Item Type** = select over the 39 real `baseType` values (the honest Required-Tags analog); **Item Level** = range slider over `levelRequirement` (min/max from the corpus). Result count in a `role="status" aria-live="polite"` region (BlessingsPanel/SuggestionsList idiom).
-  - [ ] Item grid: reuse `SkillPickerGrid.tsx`'s roving-tabindex `role="grid"` + arrow/Enter/Escape (copy locally, :54-170). Each card = slot glyph (Task 3) + name (rarity-colored) + baseType + affix-slot-count (unique `affixes.length` / base+set `CRAFTABLE_AFFIX_SLOTS=4`). Single-click selects (`<button aria-pressed>` gold-active, BlessingsPanel.tsx:38-60 inner OptionRow, NOT the outer BlessingCard).
-  - [ ] Handle **item-DB-not-loaded** via existing `gameDataStore` flags (`itemDatabase===null`, `isItemDataUpdating`, `isItemDataStale`) — mirror GearSlot's "Database unavailable" fallback (GearSlot.tsx:225-255). Do not invent new state.
-- [ ] **Task 3 — Slot glyph in rarity color (AC1 card icon)**
-  - [ ] No item icon pipeline exists (`useIconTextures` is PixiJS skill-only). Render an **inline SVG slot glyph** (ClassGlyph.tsx pattern), one per slot type, tinted by rarity color.
-  - [ ] Color **only** via `rarityColors.ts` (AR-9): extend `getRarityColorForItemType` (rarityColors.ts:15-17) to accept `'set'` (currently `'base'|'unique'`). Never hardcode hex; CSS side uses the mirrored `--color-rarity-*` tokens.
-- [ ] **Task 4 — Slot-scoped opening + GEAR_SLOTS↔DB-slot map (AC1)**
-  - [ ] Author a mapping table: `GEAR_SLOTS` ids (gearData.ts:1-13 — 11 ids: `helmet, body, gloves, belt, boots, ring1, ring2, amulet, relic, weapon, offhand`) ↔ DB `slot` values (`helm, chest, gloves, belt, boots, ring_1, amulet, relic, weapon, off_hand, catalyst, ...`). Mismatches: `helmet≠helm`, `body≠chest`, `offhand≠off_hand`; **only `ring_1` exists** — map both `ring1`/`ring2` to it; handle absent ring bases gracefully.
-  - [ ] Make the picker slot-aware: opening from a slot filters the grid to slot-valid items (`searchItems` has no slot filter today — add one). A helmet slot must not list weapons.
-- [ ] **Task 5 — Hover tooltip = real stat description (AC3)**
-  - [ ] Tooltip renders the item's real text: base → `implicits[].text` (from 4.1.5); unique → `affixes[].text` (from 4.1.5). Render directly as display strings — do NOT go through `resolveAffixes`'s `implicitAffixIds`/corpus join (empty/non-joining on real data). The unique-flavor card branch shows the same stat lines (DN-4 fallback).
-- [ ] **Task 6 — Equip wiring: Equip button + double-click (AC3)**
-  - [ ] Equip writes through the **existing idiom** (reuse, do not fork): read `useBuildStore.getState().activeBuild?.contextData.gear ?? []`, filter out the target `slotId`, append `{ slotId, itemId, itemName, affixes }`, call `updateContextGear(next)` (mirror GearSlot.writeToStore, GearSlot.tsx:106-127). **Populate `itemId`** (the `SearchResult.id`) — currently omitted (build.ts:23); the serializer already forwards it (toGearSlots:169), so it flows end-to-end with no serializer change. Never call `set()` directly; never pass `BuildState` around.
-  - [ ] Double-click = equip with default affix config = median-tier resolved affixes (reuse `handleSelect`, GearSlot.tsx:129-145). User modifies via the retained `GearSlot` affix-tier editor / AffixPicker.
-  - [ ] `showSuccessToast('Equipped …')` (Toast.tsx:9-11) + announce in the modal's `aria-live` region; close on equip.
-  - [ ] **Do NOT add a manual re-score.** Equipping mutates the build store; `useStatSheet` (whole-store subscribe, useStatSheet.ts:51) + `useGearStream` (useGearStream.ts:24,32 via `startGearAnalysis`) recompute `compute_stats` + `run_gear_scoring` automatically through `toBuildSnapshot`.
-- [ ] **Task 7 — Accessibility (NFR-14)**
-  - [ ] Rely on the **global** `:focus-visible` 2px gold ring (global.css:181-184, which also sets `outline-offset:2px` at :183) for buttons — do not re-implement per element; add explicit `onFocus/onBlur` outline ONLY for the `<select>` (IdolAffixPicker precedent). Headless UI `Dialog` supplies focus-trap + Escape→onClose + restore-focus; do not hand-roll `role="dialog"`.
-  - [ ] Keep the modal **un-animated** (no Headless UI `Transition` — matches every existing modal) or gate any animation behind `useReducedMotion()`.
-  - [ ] `vitest-axe`: `expect(await axe(container)).toHaveNoViolations()` in empty, loaded-grid, and item-selected states (mirror GearSlot.test.tsx).
-- [ ] **Task 8 — Tests + regression green**
-  - [ ] Component tests reuse the house patterns: seed a mock `ItemDatabase` inline as a prop / via `makeDatabase()` (itemSearch.test.ts:5-13, GearSlot.test.tsx:30-93) — the mock DB MUST carry `levelRequirement` + implicit/affix `text` (mirror 4.1.5's real shape); mock IPC via `vi.mock('../../shared/utils/invokeCommand')` (NOT `@tauri-apps/api/core`, itemDatabaseLoader.test.ts:5-13); reset stores with `useBuildStore.setState(initial, true)` in `beforeEach`.
-  - [ ] **Source-Audit tests (non-negotiable):** (a) the grid renders **real** name/baseType/affix-count/tooltip-text from a real-shaped seeded DB (not "a modal opens"); (b) filters actually filter — Rarity=Unique hides bases; Item Type narrows; **Item Level slider narrows by `levelRequirement`** (assert a low-level item shows and a high-level one hides at a given range); slot-scope excludes wrong-slot items; (c) equip writes exactly one `{slotId,itemId,itemName,affixes}` via `updateContextGear`, replacing (not duplicating) an equipped slot; (d) tooltip shows the real implicit/affix text value.
-  - [ ] `pnpm build` clean. Full `pnpm vitest` (from `lebo/`) **no NEW failures vs the standing 7-failure baseline** (ProviderSelector ×5 / Settings ×1 / TreeControls ×1). No Rust change in this story (4.1.5 owns it), so `cargo` suites are unaffected — but do not regress them; the frozen 4.0/4.1 tests stay green.
+- [x] **Task 0 — Confirm the 4.1.5 gate landed (dependency guard)**
+  - [x] Verify the item DB reaching the frontend carries `levelRequirement` on bases + uniques, `implicits[].text` on bases, and `affixes[].text` on uniques (the fields 4.1.5 sources). If they are absent, STOP — 4.1.5 is not done; this story renders blank filters/tooltips without it.
+- [x] **Task 1 — Prebuilt search index + set-item inclusion (AC2, NFR-5)**
+  - [x] Add a prebuilt index (built once from the loaded `ItemDatabase`; lowercased name/baseType token maps) that `searchItems` (or a thin wrapper) consumes — no scan-from-scratch per keystroke. Keep the existing prefix/substring/fuzzy ranking.
+  - [x] Include `setItems` in the searchable corpus (currently skipped, itemSearch.ts:41-53). Extend `SearchResult.type` to `'base' | 'unique' | 'set'` (itemDatabase.ts:73-79) and everything that switches on it (incl. `getRarityColorForItemType`, Task 3).
+  - [x] Perf test: <100ms over the full real corpus (897 + 471 + 23 = 1,391) — extend itemSearch.test.ts:127-149. Assert the index builds **once**, not per query. No new dependency (AR-8) — hand-built index.
+- [x] **Task 2 — ItemPickerModal shell + grid + sidebar (AC1)** — new file `lebo/src/features/item-database/ItemPickerModal.tsx` (DN-2)
+  - [x] **Copy** the Headless UI `Dialog` scaffold from `DeleteConfirmDialog.tsx` **locally** (do NOT import it — cross-feature import forbidden, RemoveNodeConfirmDialog.tsx:10-11): `<Dialog open onClose>` + `fixed inset-0` overlay `rgba(0,0,0,0.5)` + flex-center + `<DialogPanel>` tokens (`--color-bg-surface`, border `--color-bg-elevated`). Widen well beyond `max-w-sm` for sidebar + grid.
+  - [x] Sidebar filters (all sourced): **Rarity** = Base/Unique/Set toggle; **Item Type** = select over the 39 real `baseType` values (the honest Required-Tags analog); **Item Level** = range slider over `levelRequirement` (min/max from the corpus). Result count in a `role="status" aria-live="polite"` region (BlessingsPanel/SuggestionsList idiom).
+  - [x] Item grid: reuse `SkillPickerGrid.tsx`'s roving-tabindex `role="grid"` + arrow/Enter/Escape (copy locally, :54-170). Each card = slot glyph (Task 3) + name (rarity-colored) + baseType + affix-slot-count (unique `affixes.length` / base+set `CRAFTABLE_AFFIX_SLOTS=4`). Single-click selects (`<button aria-pressed>` gold-active, BlessingsPanel.tsx:38-60 inner OptionRow, NOT the outer BlessingCard).
+  - [x] Handle **item-DB-not-loaded** via existing `gameDataStore` flags (`itemDatabase===null`, `isItemDataUpdating`, `isItemDataStale`) — mirror GearSlot's "Database unavailable" fallback (GearSlot.tsx:225-255). Do not invent new state.
+- [x] **Task 3 — Slot glyph in rarity color (AC1 card icon)**
+  - [x] No item icon pipeline exists (`useIconTextures` is PixiJS skill-only). Render an **inline SVG slot glyph** (ClassGlyph.tsx pattern), one per slot type, tinted by rarity color.
+  - [x] Color **only** via `rarityColors.ts` (AR-9): extend `getRarityColorForItemType` (rarityColors.ts:15-17) to accept `'set'` (currently `'base'|'unique'`). Never hardcode hex; CSS side uses the mirrored `--color-rarity-*` tokens.
+- [x] **Task 4 — Slot-scoped opening + GEAR_SLOTS↔DB-slot map (AC1)**
+  - [x] Author a mapping table: `GEAR_SLOTS` ids (gearData.ts:1-13 — 11 ids: `helmet, body, gloves, belt, boots, ring1, ring2, amulet, relic, weapon, offhand`) ↔ DB `slot` values (`helm, chest, gloves, belt, boots, ring_1, amulet, relic, weapon, off_hand, catalyst, ...`). Mismatches: `helmet≠helm`, `body≠chest`, `offhand≠off_hand`; **only `ring_1` exists** — map both `ring1`/`ring2` to it; handle absent ring bases gracefully.
+  - [x] Make the picker slot-aware: opening from a slot filters the grid to slot-valid items (`searchItems` has no slot filter today — add one). A helmet slot must not list weapons.
+- [x] **Task 5 — Hover tooltip = real stat description (AC3)**
+  - [x] Tooltip renders the item's real text: base → `implicits[].text` (from 4.1.5); unique → `affixes[].text` (from 4.1.5). Render directly as display strings — do NOT go through `resolveAffixes`'s `implicitAffixIds`/corpus join (empty/non-joining on real data). The unique-flavor card branch shows the same stat lines (DN-4 fallback).
+- [x] **Task 6 — Equip wiring: Equip button + double-click (AC3)**
+  - [x] Equip writes through the **existing idiom** (reuse, do not fork): read `useBuildStore.getState().activeBuild?.contextData.gear ?? []`, filter out the target `slotId`, append `{ slotId, itemId, itemName, affixes }`, call `updateContextGear(next)` (mirror GearSlot.writeToStore, GearSlot.tsx:106-127). **Populate `itemId`** (the `SearchResult.id`) — currently omitted (build.ts:23); the serializer already forwards it (toGearSlots:169), so it flows end-to-end with no serializer change. Never call `set()` directly; never pass `BuildState` around.
+  - [x] Double-click = equip with default affix config = median-tier resolved affixes (reuse `handleSelect`, GearSlot.tsx:129-145). User modifies via the retained `GearSlot` affix-tier editor / AffixPicker.
+  - [x] `showSuccessToast('Equipped …')` (Toast.tsx:9-11) + announce in the modal's `aria-live` region; close on equip.
+  - [x] **Do NOT add a manual re-score.** Equipping mutates the build store; `useStatSheet` (whole-store subscribe, useStatSheet.ts:51) + `useGearStream` (useGearStream.ts:24,32 via `startGearAnalysis`) recompute `compute_stats` + `run_gear_scoring` automatically through `toBuildSnapshot`.
+- [x] **Task 7 — Accessibility (NFR-14)**
+  - [x] Rely on the **global** `:focus-visible` 2px gold ring (global.css:181-184, which also sets `outline-offset:2px` at :183) for buttons — do not re-implement per element; add explicit `onFocus/onBlur` outline ONLY for the `<select>` (IdolAffixPicker precedent). Headless UI `Dialog` supplies focus-trap + Escape→onClose + restore-focus; do not hand-roll `role="dialog"`.
+  - [x] Keep the modal **un-animated** (no Headless UI `Transition` — matches every existing modal) or gate any animation behind `useReducedMotion()`.
+  - [x] `vitest-axe`: `expect(await axe(container)).toHaveNoViolations()` in empty, loaded-grid, and item-selected states (mirror GearSlot.test.tsx).
+- [x] **Task 8 — Tests + regression green**
+  - [x] Component tests reuse the house patterns: seed a mock `ItemDatabase` inline as a prop / via `makeDatabase()` (itemSearch.test.ts:5-13, GearSlot.test.tsx:30-93) — the mock DB MUST carry `levelRequirement` + implicit/affix `text` (mirror 4.1.5's real shape); mock IPC via `vi.mock('../../shared/utils/invokeCommand')` (NOT `@tauri-apps/api/core`, itemDatabaseLoader.test.ts:5-13); reset stores with `useBuildStore.setState(initial, true)` in `beforeEach`.
+  - [x] **Source-Audit tests (non-negotiable):** (a) the grid renders **real** name/baseType/affix-count/tooltip-text from a real-shaped seeded DB (not "a modal opens"); (b) filters actually filter — Rarity=Unique hides bases; Item Type narrows; **Item Level slider narrows by `levelRequirement`** (assert a low-level item shows and a high-level one hides at a given range); slot-scope excludes wrong-slot items; (c) equip writes exactly one `{slotId,itemId,itemName,affixes}` via `updateContextGear`, replacing (not duplicating) an equipped slot; (d) tooltip shows the real implicit/affix text value.
+  - [x] `pnpm build` clean. Full `pnpm vitest` (from `lebo/`) **no NEW failures vs the standing 7-failure baseline** (ProviderSelector ×5 / Settings ×1 / TreeControls ×1). No Rust change in this story (4.1.5 owns it), so `cargo` suites are unaffected — but do not regress them; the frozen 4.0/4.1 tests stay green.
 
 ## Dev Notes
 
@@ -213,13 +213,56 @@ Tests assert **real field values render and real filters filter**, not "a modal 
 
 ### Agent Model Used
 
-_(dev-story fills this in)_
+claude-opus-4-8 (Claude Code — dev-story workflow, ultracode multi-agent orchestration)
 
 ### Debug Log References
 
+- Recon workflow (6 parallel ground-truth agents, 0 errors) — Task-0 dependency guard **PASS**: shipped `resources/items/*.json` carry the 4.1.5 fields end-to-end via a pass-through loader (base `levelRequirement` 897/897 = 100%, `implicits[].text` 821/897 = 91.5%; unique `levelRequirement` 471/471 = 100%, `affixes[].text` 446/471 = 94.7% — the <100% are genuinely affix-less records; set `description` 23/23). Rust IPC model is camelCase; names match the TS types exactly.
+- Adversarial review workflow (14 agents: 4 review lenses → per-finding verification) — 10 findings raised, **8 CONFIRMED / 2 refuted**, all one root cause (set-rarity handling); all fixed and locked with tests (see Completion Notes).
+
 ### Completion Notes List
 
+Implemented the Item Picker Modal **frontend-only**, extending the existing `item-database/` stack (no greenfield `gear/` folder, no Rust/transform change — 4.1.5 owns item data). **Design decision (documented):** the modal is a self-contained search/filter/grid/tooltip surface that reports the chosen item up via `onEquip`; the equip flows through GearSlot's proven `handleSelect → writeToStore` path (extended to populate `itemId`) — reusing the equip idiom literally, keeping GearSlot's display correct with **no store-sync**, and leaving GearTab untouched. The open trigger therefore lives in GearSlot ("Browse all items…" empty-state / "Swap item" equipped-state), which GearTab renders — a deliberate reconciliation of the story's "wire in GearTab" note that avoids a fragile two-source-of-truth write path.
+
+- **Task 0 (dependency guard):** verified PASS via recon (evidence above) — the 4.1.5 fields reach the frontend intact.
+- **Task 1 (prebuilt index, NFR-5):** new `itemSearchIndex.ts` — built once, set-inclusive, slot/collection/level filters, reuses the exported `scoreLowered` ranking; perf test <100ms over the full 1,423-item corpus; no new dependency (AR-8). `SearchResult.type` widened to `'base'|'unique'|'set'`.
+- **Task 2 (modal):** `ItemPickerModal.tsx` — Headless UI `Dialog` scaffold copied locally, sidebar filters (Rarity collection / Item Type / Item Level range slider), roving-tabindex `role=grid` (SkillPickerGrid pattern copied locally), result count in a `role=status` aria-live region, DB-unavailable + no-results states.
+- **Task 3 (icon):** `SlotGlyph.tsx` — inline-SVG slot glyph tinted by rarity color; `getRarityColorForItemType` extended for `'set'`.
+- **Task 4 (slot scope):** `slotMap.ts` — data-verified GEAR_SLOTS↔DB-slot map; handles the set-items **3rd naming convention** (base/unique `helm`/`chest`/`off_hand` vs set `helmet`/`body`/`off-hand`), `catalyst`→offhand, and `ring_1`-only (both ring slots).
+- **Task 5 (tooltip):** real stat text — base `implicits[].text`, unique `affixes[].text`, set `setBonuses[].description` — rendered directly, never via the empty corpus join.
+- **Task 6 (equip):** Equip button + double-click via `onEquip → handleSelect → updateContextGear`, populating `itemId` (the serializer already forwards it); success toast; auto-recompute (no manual re-score).
+- **Task 7 (a11y):** global `:focus-visible` gold ring; un-animated modal; `vitest-axe` clean in loaded / selected / empty states — caught and fixed an empty-grid `aria-required-children` violation (the grid renders only when non-empty).
+- **Task 8 (tests + regression):** source-audit tests assert real values render and real filters filter (Item Level narrows by real `levelRequirement`, tooltip shows real text, slot-scope excludes wrong-slot items, equip writes exactly one `{slotId,itemId,itemName,affixes}` replacing not duplicating). ~45 new tests.
+
+**Adversarial-review fixes (set-rarity defect class — sets became equippable in this story):** sets were rendering as *editable craftable bases* (fabricated "4 affix slots" footer, "+ Add affix" / tier steppers, dead tooltips, and a `resolveAffixes` id-collision — 4 set ids also exist in `uniques.json`). Fixed: sets now (a) show real `affixes.length` not the craft constant, (b) surface real `setBonuses[].description` in tooltips, (c) render **read-only** like uniques (no craft affordance), (d) resolve via `setItems` (correct item, no collision). All locked with regression tests.
+
+**Verification:** `tsc --noEmit` clean; `pnpm build` clean; full `pnpm vitest` = **1323 passed / 7 failed**, where the 7 are the exact standing baseline (ProviderSelector ×5 / Settings ×1 / TreeControls ×1) — **no new failures**. No Rust change, so `cargo` suites are unaffected. Recommended final human step: in-app visual check via `pnpm tauri dev` (the data-populated modal needs the Tauri backend to load the item DB; the component tests verify behavior against real-shaped data).
+
 ### File List
+
+**New (source):**
+- `lebo/src/features/item-database/itemSearchIndex.ts`
+- `lebo/src/features/item-database/slotMap.ts`
+- `lebo/src/features/item-database/SlotGlyph.tsx`
+- `lebo/src/features/item-database/ItemPickerModal.tsx`
+
+**New (tests):**
+- `lebo/src/features/item-database/itemSearchIndex.test.ts`
+- `lebo/src/features/item-database/slotMap.test.ts`
+- `lebo/src/features/item-database/SlotGlyph.test.tsx`
+- `lebo/src/features/item-database/ItemPickerModal.test.tsx`
+
+**Modified (source):**
+- `lebo/src/shared/types/itemDatabase.ts` — `SearchResult.type` += `'set'`
+- `lebo/src/shared/utils/rarityColors.ts` — `getRarityColorForItemType` accepts `'set'`
+- `lebo/src/features/item-database/itemSearch.ts` — extracted + exported `scoreLowered` (index reuse)
+- `lebo/src/features/item-database/GearSlot.tsx` — picker trigger, `itemId` on equip, success toast, set read-only handling + `resolveAffixes` set branch
+
+**Modified (tests):**
+- `lebo/src/features/item-database/GearSlot.test.tsx` — picker-integration + set read-only tests
+
+**Modified (BMAD tracking):**
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — `4-2-item-picker-modal`: ready-for-dev → in-progress → review
 
 ## Change Log
 
@@ -227,3 +270,5 @@ _(dev-story fills this in)_
 |------|--------|
 | 2026-07-02 | Story 4.2 created (create-story + ultracode). Ground truth by 6 parallel HEAD verifiers + 4-agent adversarial re-verify (33 claims, 0 refuted). Extend-not-greenfield established; original draft recommended Option A (descope Item Level + Tags) pending Alec's decision. |
 | 2026-07-03 | **Scope RESOLVED with Alec: Option B "source what's real."** A source-audit spike proved PoB4LE sources item level (`req.level`, 100%) but has NO tags/rarity-tiers/flavor. Split off Story 4.1.5 (item-metadata + display-text data gate) as a prerequisite. 4.2 rewritten: now **frontend-only**, ships full FR-27 with real Item Level slider + real hover tooltips (from 4.1.5), and honest source-backed reframes (Required Tags → Item Type filter; rarity → Base/Unique/Set collections; unique flavor → stat-line fallback). Depends-on 4.1.5 added with a Task-0 dependency guard. Source Audit updated (every field real / rule-constant / honest fallback; nothing fabricated). Line-number citations corrected per the adversarial verify pass. Status remains ready-for-dev (gated behind 4.1.5). |
+| 2026-07-03 | **Implemented via dev-story (ultracode).** New: `ItemPickerModal.tsx`, `itemSearchIndex.ts` (prebuilt, set-inclusive, <100ms/1,423), `slotMap.ts` (data-verified, handles the set-items 3rd slot-naming convention), `SlotGlyph.tsx`. `GearSlot` wires the picker (reusing `handleSelect`; now populates `itemId`; success toast). `SearchResult.type` += `'set'`; `getRarityColorForItemType('set')`; `scoreLowered` exported. Task-0 dependency re-verified by a 6-agent recon (4.1.5 fields carried end-to-end). A 14-agent adversarial review caught a **set-rarity defect class** (sets became equippable but rendered as craftable bases: fabricated "4 affix slots", "+ Add affix"/tier steppers, dead tooltips, `resolveAffixes` id-collision) — all fixed: sets are read-only like uniques, show real affix count + `setBonuses`, resolve via `setItems`; locked with tests. `tsc`/`pnpm build` clean; `pnpm vitest` 1323 pass / 7 fail = exact standing baseline (no new failures); ~45 new tests. Frontend-only, no Rust change. **Status → review.** |
+| 2026-07-03 | **In-app visual verification (Playwright, real modal + mocked IPC serving a real-shaped DB) → Status: done.** Confirmed live: modal renders populated & slot-scoped (weapon excluded from helmet); rarity colors correct (base white / unique orange / set green); the set-rarity fix holds — set card shows its real `setBonuses` ("20% increased Attack and Cast Speed"), NOT a fabricated "4 affix slots"; Set filter isolates to 1 item; hover tooltip surfaces real set data (both bonus lines); select→Equip flow closes the modal and the slot shows the equipped set item with a Swap affordance. Isolated `item-database` suite: **9 files / 105 tests, 100% pass.** Full-suite 7 fails are the documented standing baseline (ProviderSelector/Settings/TreeControls) — proven unrelated: neither `settings/` nor `skill-tree/` imports any module 4.2 touched. Two `[AutoSave]` snapshots reconstituted into one reviewed commit. |

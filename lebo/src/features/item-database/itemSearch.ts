@@ -1,6 +1,6 @@
 import type { ItemDatabase, SearchResult } from '../../shared/types/itemDatabase'
 
-function levenshtein(a: string, b: string): number {
+export function levenshtein(a: string, b: string): number {
   const m = a.length
   const n = b.length
   const dp: number[] = Array.from({ length: n + 1 }, (_, j) => j)
@@ -16,8 +16,9 @@ function levenshtein(a: string, b: string): number {
   return dp[n]
 }
 
-function scoreItem(name: string, queryLower: string): number {
-  const nameLower = name.toLowerCase()
+// Ranks an already-lowercased name against a lowercased query. Exported so the prebuilt
+// search index (itemSearchIndex.ts) can score precomputed tokens without re-lowercasing per keystroke.
+export function scoreLowered(nameLower: string, queryLower: string): number {
   if (nameLower.startsWith(queryLower)) return 3
   if (nameLower.includes(queryLower)) return 2
   // Fuzzy: check each word in the name individually so "Jugernaut" matches "Juggernaut Helm"
@@ -27,6 +28,10 @@ function scoreItem(name: string, queryLower: string): number {
     if (levenshtein(word, queryLower) <= threshold) return 1
   }
   return 0
+}
+
+function scoreItem(name: string, queryLower: string): number {
+  return scoreLowered(name.toLowerCase(), queryLower)
 }
 
 export function searchItems(query: string, database: ItemDatabase): SearchResult[] {
