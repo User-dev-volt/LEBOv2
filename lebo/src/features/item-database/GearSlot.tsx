@@ -13,6 +13,8 @@ import type { AffixEntryV2 } from '../../shared/types/build'
 import { useBuildStore } from '../../shared/stores/buildStore'
 import { searchItems } from './itemSearch'
 import { getRarityColorForItemType } from '../../shared/utils/rarityColors'
+import { ItemPickerModal } from './ItemPickerModal'
+import { showSuccessToast } from '../../shared/components/Toast'
 
 interface ResolvedAffix {
   affixId: string
@@ -72,6 +74,7 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
   const [freeText, setFreeText] = useState<string>('')
   const [affixPickerOpen, setAffixPickerOpen] = useState<boolean>(false)
   const [customAffixIds, setCustomAffixIds] = useState<string[]>([])
+  const [pickerOpen, setPickerOpen] = useState<boolean>(false)
 
   const activeBuildId = useBuildStore((s) => s.activeBuild?.id ?? null)
 
@@ -83,6 +86,7 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
     setFreeText('')
     setAffixPickerOpen(false)
     setCustomAffixIds([])
+    setPickerOpen(false)
   }, [activeBuildId])
 
   const searchResults = useMemo(() => {
@@ -122,7 +126,8 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
     const affixEntries = buildAffixEntries(resolved, tiers)
     useBuildStore.getState().updateContextGear([
       ...otherSlots,
-      { slotId, itemName: item.name, affixes: affixEntries },
+      // Story 4.2: populate itemId (SearchResult.id) so the serializer's toGearSlots forwards it end-to-end.
+      { slotId, itemId: item.id, itemName: item.name, affixes: affixEntries },
     ])
   }
 
@@ -177,6 +182,7 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
   }
 
   return (
+    <>
     <div
       role="group"
       aria-label={`${slotName} slot`}
@@ -300,6 +306,13 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
               </Combobox>
             </div>
             <button
+              onClick={() => setPickerOpen(true)}
+              className="text-[11px] self-start mt-0.5"
+              style={{ color: 'var(--color-accent-gold)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            >
+              Browse all items…
+            </button>
+            <button
               onClick={() => setIsFreeText(true)}
               className="text-[11px] self-start mt-0.5"
               style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
@@ -334,6 +347,14 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
               ×
             </button>
           </div>
+          <button
+            onClick={() => setPickerOpen(true)}
+            aria-label={`Swap ${slotName}`}
+            className="text-[11px] self-start"
+            style={{ color: 'var(--color-accent-gold)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          >
+            Swap item
+          </button>
           {selectedItem.type === 'unique' ? (
             /* Unique item: affixes are fixed — display read-only, no tier controls */
             resolvedAffixes.map((r) => (
@@ -405,5 +426,19 @@ export function GearSlot({ slotId, slotName, itemDatabase }: GearSlotProps) {
         </>
       )}
     </div>
+      {pickerOpen && itemDatabase && (
+        <ItemPickerModal
+          slotId={slotId}
+          slotName={slotName}
+          itemDatabase={itemDatabase}
+          onEquip={(item) => {
+            handleSelect(item)
+            showSuccessToast(`Equipped ${item.name}`)
+            setPickerOpen(false)
+          }}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
+    </>
   )
 }

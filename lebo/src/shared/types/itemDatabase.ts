@@ -90,5 +90,5 @@ export interface SearchResult {
   name: string
   baseType: string
   slot: string
-  type: 'base' | 'unique'
+  type: 'base' | 'unique' | 'set'
 }

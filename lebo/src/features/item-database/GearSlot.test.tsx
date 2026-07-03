@@ -588,4 +588,51 @@ describe('GearSlot', () => {
       expect(speed?.position).toBe('suffix')
     })
   })
+
+  // Story 4.2 — Item Picker Modal integration (equip path + itemId plumbing)
+
+  it('inline Combobox equip now populates itemId (Story 4.2)', async () => {
+    render(<GearSlot slotId="helmet" slotName="Helmet" itemDatabase={mockItemDatabase} />)
+    const input = screen.getByPlaceholderText('Search items…')
+    await userEvent.type(input, 'Iron Helm')
+    await waitFor(() => expect(screen.getByText('Iron Helm')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('Iron Helm'))
+    await waitFor(() => {
+      const slot = useBuildStore.getState().activeBuild!.contextData.gear.find((g) => g.slotId === 'helmet')
+      expect(slot?.itemId).toBe('iron-helm')
+    })
+  })
+
+  it('"Browse all items…" opens the slot-scoped picker and equips one {slotId,itemId,itemName,affixes}', async () => {
+    render(<GearSlot slotId="helmet" slotName="Helmet" itemDatabase={mockItemDatabase} />)
+    await userEvent.click(screen.getByText('Browse all items…'))
+    // slot-scoped: the helmet-slot item shows; a weapon-slot item does not
+    const card = await screen.findByRole('gridcell', { name: 'Iron Helm, Helmet' })
+    expect(screen.queryByRole('gridcell', { name: /Iron Sword/ })).toBeNull()
+    await userEvent.click(card)
+    await userEvent.click(screen.getByRole('button', { name: 'Equip Item' }))
+    await waitFor(() => {
+      const helmetSlots = useBuildStore.getState().activeBuild!.contextData.gear.filter((g) => g.slotId === 'helmet')
+      expect(helmetSlots).toHaveLength(1)
+      expect(helmetSlots[0].itemId).toBe('iron-helm')
+      expect(helmetSlots[0].itemName).toBe('Iron Helm')
+    })
+  })
+
+  it('equipping via the picker replaces (not duplicates) an already-equipped slot', async () => {
+    render(<GearSlot slotId="helmet" slotName="Helmet" itemDatabase={mockItemDatabase} />)
+    const input = screen.getByPlaceholderText('Search items…')
+    await userEvent.type(input, 'Iron Helm')
+    await waitFor(() => expect(screen.getByText('Iron Helm')).toBeInTheDocument())
+    await userEvent.click(screen.getByText('Iron Helm'))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Swap Helmet' })).toBeInTheDocument())
+
+    await userEvent.click(screen.getByRole('button', { name: 'Swap Helmet' }))
+    await userEvent.dblClick(await screen.findByRole('gridcell', { name: 'Iron Helm, Helmet' }))
+
+    await waitFor(() => {
+      const helmetSlots = useBuildStore.getState().activeBuild!.contextData.gear.filter((g) => g.slotId === 'helmet')
+      expect(helmetSlots).toHaveLength(1)
+    })
+  })
 })

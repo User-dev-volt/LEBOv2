@@ -12,8 +12,10 @@ export const RARITY_COLORS: Record<string, string> = {
   legendary: '#E12166', // red
 }
 
-export function getRarityColorForItemType(type: 'base' | 'unique'): string {
-  return type === 'unique' ? RARITY_COLORS.unique : RARITY_COLORS.common
+export function getRarityColorForItemType(type: 'base' | 'unique' | 'set'): string {
+  if (type === 'unique') return RARITY_COLORS.unique
+  if (type === 'set') return RARITY_COLORS.set
+  return RARITY_COLORS.common
 }
 
 export const DAMAGE_TYPE_COLORS: Record<DamageType, string> = {
