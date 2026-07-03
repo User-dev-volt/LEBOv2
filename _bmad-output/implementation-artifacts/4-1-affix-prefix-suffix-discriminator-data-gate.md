@@ -1,6 +1,6 @@
 # Story 4.1: Affix prefix/suffix discriminator (data gate)
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -260,3 +260,23 @@ Process artifacts:
 | 2026-07-02 | Story 4.1 created (create-story, ultracode). Second Epic 4 data gate: `position` discriminator. Ground-truth verification (6 parallel agents at HEAD 9137ad6) established that Story 4.0 already built the corpus + Rust discriminator (`GearAffixData.affix_class: AffixPosition`, loader ingestion, `GearSlotSnapshot` prefix/suffix vec split, all consumers chain both, MODELS test already 7), so the story narrowed to: add `position?` to `AffixEntryV2` (build.ts), source it from `r.affixEntry.type` in `GearSlot.buildAffixEntries`, route prefix/suffix into the existing `suffixes[]` in `buildSnapshotSerializer.ts` (the real AR-15 fix), re-export `GearSlotRanking`/`WishlistAffix` from `lib.rs`, and routing tests over real corpus ids. Four traps flagged (no Rust `AffixEntry.position` field — D1; no corpus `type`→`position` rename — D2; MODELS test already fixed; `affix_class`-String deferred #127 stale). Source Audit (data-sourced discriminator, real source chain, produced-and-consumed, honest prefix default). Status → ready-for-dev. |
 | 2026-07-02 | Decisions ratified with Alec: D1 (no Rust `AffixEntry` position field — vec split is authoritative), D2 (keep corpus `type`, map to build-side `position`), D3 (`'implicit'`→`'prefix'`) all confirmed as recommended; D4 accepted ("it's fine") — proceed from current HEAD, no reviewed 4.0-baseline commit required. Decisions section marked RESOLVED; no scope change. |
 | 2026-07-02 | Story 4.1 implemented (dev-story). AC1: `position?` on `AffixEntryV2` (build.ts) + sourced from `r.affixEntry.type` in `GearSlot.buildAffixEntries` (`'implicit'`→prefix, D3). AC2 (real AR-15 fix): `toGearSlots` partitions valid affixes → `suffix` to `suffixes[]`, else `prefixes[]`; removed hard-coded `suffixes: []`. AC3: re-exported `GearSlotRanking`/`WishlistAffix` from scoring-core `lib.rs`. Task 5 verify-only confirmed: `affix_class` is the `AffixPosition` enum (#127 stale), `MODELS.len()==7` already green, corpus ships `type` on all 1,117 affixes — no Rust engine/loader/data or MODELS-test change. Tests: replaced the bug-encoding `suffixes===[]` serializer assertion with prefix/suffix **routing** assertions over real corpus ids + a back-compat (absent→prefix) test; +2 GearSlot `type`→`position` sourcing tests. Validation: `pnpm build` clean; full `pnpm vitest` 1281 passed / 7 failed = exact standing baseline (ProviderSelector×5/Settings×1/TreeControls×1), +3 tests, no new failures; `cargo test -p scoring-core` 136 + `-p lebo` 43 + ehp_reference 4/4 all green. Status → review. |
+| 2026-07-02 | Story 4.1 code-reviewed (bmad-code-review + ultracode) — **CLEAN, 0 confirmed defects.** 15-agent adversarial review: 8 parallel finder layers (Blind Hunter / Edge-Case Hunter / Acceptance Auditor + persistence, verify-only-claims, test-integrity, type-safety, integration specialists) → consolidate → per-finding 3-lens verify panel. 7/8 finders returned no findings; the 2 raised (both integration-lens) were unanimously REFUTED (0/3, 0/3). Status → done. |
+
+## Review Findings
+
+**bmad-code-review + ultracode — 2026-07-02 — ✅ CLEAN (0 confirmed defects)**
+
+15 Opus agents, 0 errors, ~788K tokens, ~6.7 min. Eight parallel review layers, then a 3-lens adversarial verification panel (correctness / evidence-at-HEAD / reproduce) on every raised finding (≥2 of 3 required to confirm).
+
+**Layer results:** Blind Hunter, Edge-Case Hunter, Acceptance Auditor, Persistence round-trip, Verify-only-claims auditor, Test-integrity, Type-safety — all returned **no findings**. Integration specialist raised 2 → **both REFUTED 0/3**.
+
+**Independently verified at HEAD (specialist layers):**
+- `position` survives the full build save→load **and** the v1→v2 migration round-trip — no silent AR-15 rebirth for persisted builds.
+- Verify-only claims all TRUE: `GearSlotRanking`/`WishlistAffix` are `pub` (so the `lib.rs` re-export compiles), `MODELS.len() == 7`, and `GearAffixData.affix_class` is the `AffixPosition` enum (deferred-work #127 "String" is **stale**).
+- New tests exercise the real `toGearSlots`/`buildAffixEntries` (non-tautological; assert routing, not counts) and correctly replace the bug-encoding `suffixes === []` assertion.
+- Strict-mode type narrowing in `toGearSlots` is sound; the `'implicit' → prefix` fallback direction is correct.
+
+**Dismissed #1 — integration-scope (medium → refuted 0/3): _not a defect._** The Rust consumers already read `prefixes.iter().chain(suffixes.iter())` and match by `affix_id`, so pre-fix (everything in `prefixes[]`) they ALREADY summed suffix-typed affixes — routing them into `suffixes[]` changes **no** BuildScore / damage / wishlist / mismatch number. The **one** live behavioral change is `defense.rs::find_slot_with_open_suffix` (counts `slot.suffixes.len() < 2`): pre-fix it always returned the first slot ("helm") because `suffixes[]` was empty; post-fix it picks a genuinely-open suffix slot for the resistance-uncapped warning's `suggested_fix`. The spec already documented this ("Rust consumers ALREADY see suffixes… no Rust consumer change"), so the story does not overclaim.
+  - _Optional, non-blocking follow-up:_ a Rust regression test over `find_slot_with_open_suffix` on a build whose earlier slots already carry 2 suffixes (the only externally-observable behavior 4.1 changes). **Not required for done.**
+
+**Dismissed #2 — construction-site-audit (low → refuted 0/3): _not a gap._** The two other `AffixEntryV2` sites without `position` (free-text `GearInput`, v1→v2 migration passthrough) both produce affixes lacking `affixId`+`tier`, which the serializer's `validAffixes` filter drops before routing — so an absent `position` can never mis-route a serializable suffix. `buildAffixEntries` is the sole DB-backed serializable producer and is correctly updated.
